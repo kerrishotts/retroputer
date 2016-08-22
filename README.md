@@ -2,16 +2,18 @@
 
 The Retroputer is intended as both a plaything and
 educational tool. It is intended to simulate what programming
-and using an 8-bit computer of the late 1980s was like. Some
+and using a computer from the late 1980s was like. Some
 liberties, however, are taken, including the following:
 
-* 192KiB of address space -- most 8-bits had 4 - 128KiB
+* 256KiB is addressable; 192KiB is present -- in the 80s, this would
+  have been pretty expensive
 * 64KiB devoted to 320x200 graphics
 * 256 color palette consisting of r,g,b,a elements
 * 64KiB devoted to tile set definitions (4 sets x 16 KiB)
 * 16KiB of ROM
 * 256 traps or interrupts
 * A slightly larger register file than many CPUs of the time
+* 16-bit CPU with a 18-bit address line
 
 The above is to make programming for the Retroputer a little
 easier while also to make it easy to translate the memory for
@@ -144,7 +146,8 @@ Flags are as follows:
 0x08..0x0B              0000 10 r2                DEC r2                       ----OCNZ  r2 := r2 + 1
 
 0x0C..0x0F              0000 11 r2                BYTESWAP r2                  ------NZ  Swaps top and bottom bytes of r2   
-                          
+                                             or?  NULL r2                      ------NZ  Sets register to zero 
+
 0x10..0x1F              0001 r2 r2                CMP r2, r2                   ------NZ  Compare r2, r2
                               
 0x20..0x2F              0010 r2 r2                TXFR r2, r2                  --------  Transfer target, source
@@ -238,6 +241,7 @@ Flags are as follows:
 0xFC..0xFF              1111 11 jm val            JZC
 
 missing JOS, JOC, CMP r2:8, r2:8
+MEMZERO might be nice
 ```
 
 
@@ -248,10 +252,15 @@ missing JOS, JOC, CMP r2:8, r2:8
 ## Sample Assembly and Encoding 
 
 ```
+#   #=Immediate
+#   &=Indirect
+#   {}=Bit range
+#   (nothing) = Absolute
+#
                 .const
                 TILEPAGE0    0xB000
                 TILESETSEL   0xFA03                 # in bank 0x01
-                GRAPHICS     0x0000
+                GRAPHICS     0x0000                 # in bank 0x01
                 GRAPHICSBANK 0x01
                 GRAPHICSLEN  64000
             
@@ -263,22 +272,22 @@ Hello, World!   str   db "Hello, World!"            # 0x2001
                 main: 
 E4 00 1A            JSR setup
 93 2F               XOR X, X                        # X := 0
-A7 20 00            LD8 X, len                      # X := len[0] (abs16)
-90 00               SB 0x00                         # Source bank 0
-90 08               DB 0x00                         # Dest bank 0
+A7 20 00            LD8 X, len[X]                   # X := len[0] (abs16)
+90 00               SB #0x00                        # Source bank 0
+90 08               DB #0x00                        # Dest bank 0
                 _loop:
 0B                  DEC X                           # X--
-A4 20 01            LD8 A, str                      # A{0-7} := str[X]
-94 B0 00            ST8 A, TILEPAGE0                # TILEPAGE0[X] := A{0-7}
+A4 20 01            LD8 A, str[X]                   # A{0-7} := str[X]
+94 B0 00            ST8 A, TILEPAGE0[X]             # TILEPAGE0[X] := A{0-7}
 C3 00 00            CMP X, #0x0000                  # X = 0?
 FC FF F5            JZC _loop                       # if X > 0, loop
 03                  RET
                 end main
             
-                setup:
+                setup:  -- BUG: should have XOR X, X to zero
 93 20               XOR A, A                        # A := 0
-90 01               SB GRAPHICSBANK                 # Source bank 1
-94 FA 03            ST8 A, TILESETSEL               # SB:TILESETSEL := A
+90 01               SB #GRAPHICSBANK                # Source bank 1
+94 FA 03            ST8 A, TILESETSEL[X]            # SB:TILESETSEL[X] := A
 E4 00 02            JSR clearGraphics
 03                  RET        
                 end setup
@@ -286,10 +295,10 @@ E4 00 02            JSR clearGraphics
                 clearGraphics:
 93 20               XOR A, A                        # A := 0
 83 FA 00            LD X, #GRAPHICSLEN              # X := 64000
-90 01               SB GRAPHICSBANK                 # Source Bank 1
+90 01               SB #GRAPHICSBANK                # Source Bank 1
                 _loop:
 0B                  DEC X                           # X--
-94 00 00            ST8 A, GRAPHICS                 # SB:GRAPHICS[X] := A
+94 00 00            ST8 A, GRAPHICS[X]              # SB:GRAPHICS[X] := A
 FC FF FB            JZC _loop                       # If X > 0, back to the top
 03                  RET     
                 end clearGraphics      
