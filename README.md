@@ -248,6 +248,18 @@ MEMZERO might be nice
 ### Instruction Mnemonic Reference
 
 
+## traps
+
+```
+0x00 - Reset
+0xF0 - Divide by zero
+0xF1 - Bad Combined Memory Reference
+0xF2 - Invalid Instruction
+ ..
+0xFE - Stack Overflow (halt) 
+0xFF - Stack Underflow (halt)
+```
+
 
 ## Sample Assembly and Encoding 
 
