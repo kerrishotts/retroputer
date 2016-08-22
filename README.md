@@ -80,21 +80,16 @@ memoryLayout = {
 ## Register file
 
 ```
-    this.registers = {
-      a: 0x00,       // accumulator, general purpose
-      b: 0x00,       // general purpose
-      // ab          // combination of a & b in 16 bits
-      c: 0x00,       // general purpose
-      d: 0x00,       // general purpose
-      // cd          // combination of c & d in 16 bits
-      x: 0x00,       // index register, general purpose
-      y: 0x00,       // index register, general purpose
-      // xy          // index register (x << 8 + y)
-      flags: 0x00,   // 8-bit flags register
-      sp: 0x0FFF,    // stack pointer
-      pc: 0x0000     // program counter
-      bs: 0x00       // bank select (for LD/ST)
-    }
+                   r2  r  reg
+    a    16-bit    00  -  000   Accumulator, General Purpose
+    b    16-bit    01  -  001   General Purpose
+    c    16-bit    10  -  010   General Purpose   
+    x    16-bit    11  -  011   General Purpose, Index
+    sp   16-bit    --  0  100   Stack Pointer
+    f     8-bit    --  1  101   Flags
+    pc   16-bit    --  -  ---   Program Counter
+    sb    4-bit    --  -  110   Source Bank
+    db    4-bit    --  -  111   Destination Bank
 ```
 
 ## Instruction set and encoding
@@ -106,213 +101,206 @@ code.
 
 ### Instruction width [0:1]
 
-Instructions can be 8, 16, or 32 bits long, encoded like so:
-
-* 0 - 8 bits
-* 10 - 16 bits
-* 11 - 32 bits
-
-### Register Encoding 
-
-For 8-bit instructions:
-
-* 000 = a
-* 001 = b
-* 010 = c
-* 011 = d
-* 100 = x
-* 101 = y
-* 110 = flags
-* 111 = sp
-
-For 16-bit instructions:
-
-* 000 = ab
-* 010 = cd
-* 100 = xy
-* 111 = sp
+Instructions can be 8, 16, or 32 bits long
 
 ### Address Mode encoding
 
 The following address modes are available:
 
-* 000 - Immediate8/16
-* 001 - Absolute16
-* 010 - Absolute16 + Indexed16
-* 011 - Indirect16 (Absolute)
-* 100 - Indexed16 Indirect16 (Absolute)
-* 101 - Indirect16 Indexed16 (Absolute)
-* 110 - Relative8
-* 111 - Relative8 + Indexed16?
+```
+                      am  jm   
+    Immediate         00  --    Immediate value; 8/16 dependent upon instruction
+    Relative          --  00    Relative Jump
+    Absolute[X]       01  01    Absolute value, indexed by X; Jump isn't indexed
+    &(Indirect[X])    10  10    Value at location pointed to by (Indirect + X)
+    &(Indirect)[X]    11  11    Value at location pointed to by Indirect, then indexed by X;
+```
 
 ### Flags
 
 Flags are as follows:
 
     8  7  6  5  4  3  2  1
-    O  C  N              Z
+    I  x  x  x  O  C  N  Z
 
+ * (I)nterrupt Enable
  * (O)verflow
  * (C)arry
  * (N)egative/Less-than
  * (Z)ero/equal
 
-### 1 Byte commands
+
+### Opcodes
 
 ```
-0 0000000     NOP
-0 001 0 imm   BS imm        Select Bank 7-bit Immediate 
-0 001 1 r08   BS reg8       Select Bank Register  
-0 010 0 r08   DEC reg8      Decrement 8-bit register
-0 010 1 r16   DEC16 reg16   Decrement 16-bit register
-0 011 0 r08   INC reg8      Increment 8-bit register
-0 011 1 r16   INC16 reg16   Increment 16-bit register
-0 100
-0 101
-0 110
-0 111 0000    LD A, #0x00
-0 111 0001    LD B, #0x00
-0 111 0010    LD C, #0x00
-0 111 0011    LD D, #0x00
-0 111 0100    LD X, #0x00
-0 111 0101    LD Y, #0x00
-0 111 0110    CLF
-0 111 0111    LD SP, #0x1000
-0 111 1000    LD AB, #0x0000
-0 111 1001
-0 111 1010    LD CD, #0x0000
-0 111 1011
-0 111 1100    LD XY, #0x0000
-0 111 1101
-0 111 1110
-0 111 1111    RET           Return
+0x00                    0000 00 00                NOP                          --------  No Operation
+              
+0x01                    0000 00 01                MEMCPY                       --------  Copy sb:b to db:c, indexed X, X times
+0x02                    0000 00 10                MEMSWAP                      --------  Swap sb:b to db:c, indexed X, X times
+
+0x03                    0000 00 11                RET                          ????????  Return (from trap or subroutine)      
+
+0x04..0x07              0000 01 r2                INC r2                       ----OCNZ  r2 := r2 + 1  
+0x08..0x0B              0000 10 r2                DEC r2                       ----OCNZ  r2 := r2 + 1
+
+0x0C..0x0F              0000 11 r2                BYTESWAP r2                  ------NZ  Swaps top and bottom bytes of r2   
+                          
+0x10..0x1F              0001 r2 r2                CMP r2, r2                   ------NZ  Compare r2, r2
+                              
+0x20..0x2F              0010 r2 r2                TXFR r2, r2                  --------  Transfer target, source
+0x30..0x3F              0011 r2 r2                SWAP r2, r2                  --------  Swap target, source
+              
+0x40..0x4F              0100 r2 r2                ADD r2, r2                   ----OCNZ  target := target + source
+0x50..0x5F              0101 r2 r2                SUB r2, r2                   ----OCNZ  target := target - source
+0x60..0x6F              0110 r2 r2                MUL r2, r2                   ----OCNZ  target := target * source
+0x70..0x7F              0111 r2 r2                DIV r2, r2                   ----OCNZ  target := target / source
+                              
+0x80..0x83              1000 00 r2 im16           LD r2, im16                  ------NZ  r2 := imm16
+0x84..0x87              1000 01 r2 ab16           LD r2, sb:ab16[X]            ------NZ  r2 := memory at (sb:abs16[X])
+0x88..0x8B              1000 10 r2 ab16           LD r2, db:&(sb:ab16[X])      ------NZ  r2 := memory at db:&(sb:abs16[X])
+0x8C..0X8F              1000 11 r2 ab16           LD r2, db:&(sb:ab16)[X]      ------NZ  r2 := memory at db:&(sb:abs16)[X]
+                  
+0x90        0x00..0x03  1001 00 00 00 00 00 i2    SB imm2                      --------  SB := imm2
+0x90        0x04..0x07  1001 00 00 00 00 01 r2    SB r2                        --------  SB := r2{0-1}
+0x90        0x08..0x0B  1001 00 00 00 00 10 i2    DB imm2                      --------  DB := imm2
+0x90        0x0C..0x0F  1001 00 00 00 00 11 r2    DB r2                        --------  DB := r2{0-1}
+
+0x90        0x10..0x13  1001 00 00 00 01 00 r2    NEG r2                       ------NZ  Negate r2
+0x90        0x14..0x17  1001 00 00 00 01 01 r2    NEG8 r2:8                     ------NZ  Negate r2{0-7}
+
+                                                  STf?
+                                                  CLf?
+                                                  PUSH
+                                                  POP
+                ..
+0x90        0x80..0x8F  1001 00 00 10 00 r2 i2    SHL r2, i2                   ----OCNZ  r2 << i2
+0x90        0x90..0x9F  1001 00 00 10 01 r2 r2    SHL r2, r2                   ----OCNZ  r2 << r2
+
+0x90        0xA0..0xAF  1001 00 00 10 10 r2 i2    SHR r2, i2                   ----OCNZ  r2 >> i2
+0x90        0xB0..0xBF  1001 00 00 10 11 r2 r2    SHR r2, r2                   ----OCNZ  r2 >> r2
+
+0x90        0xC0..0xCF  1001 00 00 11 00 r2 i2    ROL r2, i2                   ----OCNZ  r2 <<< i2
+0x90        0xD0..0xDF  1001 00 00 11 01 r2 r2    ROL r2, r2                   ----OCNZ  r2 <<< r2
+
+0x90        0xE0..0xEF  1001 00 00 11 10 r2 i2    ROR r2, i2                   ----OCNZ  r2 >>> i2
+0x90        0xF0..0xFF  1001 00 00 11 11 r2 r2    ROR r2, r2                   ----OCNZ  r2 >>> r2
+
+0x91        0x00..0xFF  1001 00 01 imm8           TRAP imm8                    ????????  TRAP imm8
+0x92        0x00..0x03  1001 00 10 00 00 00 r2    TRAP r2                      ????????  TRAP r2
+                ..
+0x93        0x00..0x0F  1001 00 11 00 00 r2 r2    AND r2, r2                   ------NZ  target := target & source 
+0x93        0x10..0x1F  1001 00 11 00 01 r2 r2    OR r2, r2                    ------NZ  target := target | source 
+0x93        0x20..0x2F  1001 00 11 00 10 r2 r2    XOR r2, r2                   ------NZ  target := target ^ source
+                          
+0x94..0x97              1001 01 r2 ab16           ST r2, db:ab16[X]            --------  memory at (sb:abs16[X]) := r2
+0x98..0x9B              1001 10 r2 ab16           ST r2, db:&(sb:ab16[X])      --------  memory at db:&(sb:abs16[X]) := r2
+0x9C..0x9F              1001 11 r2 ab16           ST r2, db:&(sb:ab16)[X]      --------  memory at db:&(sb:abs16)[X] := r2
+                              
+0xA0..0xA3              1010 00 r2 imm8           LD8 r2:8, imm8                ------NZ  r2 := imm8
+0xA4..0xA7              1010 01 r2 ab16           LD8 r2:8, sb:ab16[X]:8        ------NZ  r2 := memory at (sb:abs16[X]){0-7}
+0xA8..0xAB              1010 10 r2 ab16           LD8 r2:8, db:&(sb:ab16[X]):8  ------NZ  r2 := memory at db:&(sb:abs16[X]){0-7}
+0xAC..0xAF              1010 11 r2 ab16           LD8 r2:8, db:&(sb:ab16)[X]:8  ------NZ  r2 := memory at db:&(sb:abs16)[X]{0-7}
+                              
+0xB0                    1011 00 00 im16           JMP imm16
+0xB1                    1011 00 01 ab16           JSR imm16
+0xB2                    1011 00 10 ab16           JZS imm16
+0xB3                    1011 00 11 ab16           JZC imm16   
+                              
+0xB4..0xB7              1011 01 r2 ab16           ST8 r2:8, sb:ab16[X]:8        --------  memory at (sb:abs16[X]) := r2{0-7}
+0xB8..0xBB              1011 10 r2 ab16           ST8 r2:8, db:&(sb:ab16[X]):8  --------  memory at db:&(sb:abs16[X]) := r2{0-7}
+0xBC..0xBF              1011 11 r2 ab16           ST8 r2:8, db:&(sb:ab16)[X]:8  --------  memory at db:&(sb:abs16)[X] := r2{0-7}
+
+0xC0..0xC3              1100 00 r2 im16           CMP r2, imm16                ------NZ  r2 == imm16
+0xC4..0xC7              1100 01 r2 ab16           CMP r2, sb:ab16[X]           ------NZ  r2 == (abs16[X])
+0xC8..0xCB              1100 10 r2 ab16           CMP r2, db:&(sb:ab16[X])     ------NZ  r2 == db:&(sb:abs16[X])
+0xCC..0xCF              1100 11 r2 ab16           CMP r2, db:&(sb:ab16)[X]     ------NZ  r2 == db:&(sb:abs16)[X]
+
+0xD0..0xD3              1101 00 r2 im16           CMP8 r2:8, imm16           :8 ------NZ  r2 == imm8
+0xD4..0xD7              1101 01 r2 ab16           CMP8 r2:8, sb:ab16[X]      :8 ------NZ  r2 == (abs16[X])
+0xD8..0xDB              1101 10 r2 ab16           CMP8 r2:8, db:&(sb:ab16[X]):8 ------NZ  r2 == db:&(sb:abs16[X])
+0xDC..0xDF              1101 11 r2 ab16           CMP8 r2:8, db:&(sb:ab16)[X]:8 ------NZ  r2 == db:&(sb:abs16)[X]
+
+0xE0                    1110 00 00 im16           JMP rel16                    --------  
+0xE1                    1110 00 01 ab16           JMP abs16                    --------  [X]?
+0xE2                    1110 00 10 ab16           JMP &(ab16[X])               --------
+0xE3                    1110 00 11 ab16           JMP &(ab16)[X]               --------
+
+0xE4                    1110 01 00 im16           JSR rel16                    --------  
+0xE5                    1110 01 01 ab16           JSR abs16                    --------  [X]?
+0xE6                    1110 01 10 ab16           JSR &(ab16[X])               --------
+0xE7                    1110 01 11 ab16           JSR &(ab16)[X]               --------
+
+0xE8..0xEB              1110 10 jm val            JCS
+0xEC..0xEF              1110 11 jm val            JCC
+0xF0..0xF3              1111 00 jm val            JNS
+0xF4..0xF7              1111 01 jm val            JNC
+0xF8..0xFB              1111 10 jv val            JZS
+0xFC..0xFF              1111 11 jm val            JZC
+
+missing JOS, JOC, CMP r2:8, r2:8
 ```
 
-### 2 byte commands
 
-```
-10 000 r08 | imm8                      CMP reg8, imm8
-10 001 000 | imm8                      TRAP imm8
-10 001 001 | r08                       TRAP reg8
-10 001 010 | registers                 PUSH registers (by bit position; SP,Flags,Y,X,D,C,B,A)
-10 001 011 | registers                 POP registers
-10 001 100 | r08 r08 ??                CMP reg8, reg8
-10 001 101 | r16 r16 ??                CMP reg16, reg16
-10 001 110 | rel8                      JZ rel8
-10 001 111 | rel8                      JMP rel8
-10 010 r08 | imm8                      LD reg8, imm8
-10 011 100 | r08 r08                   TXFR r08, r08
-10 011 101 | r16 r16                   TXFR r16, r16
-10 011 110 | r08 r08                   SWAP r08, r08
-10 011 111 | r16 r16                   SWAP r16, r16
-10 100 000 | r08 r08                   ADD r08, r08     # src = src + target
-10 100 001 | r16 r16                   ADD r16, r16
-10 100 010 | r08 r08                   SUB r08, r08
-10 100 011 | r16 r16                   SUB r16, r16
-10 101 100 | r08 r08                   MUL r08, r08
-10 101 101 | r16 r16                   MUL r16, r16
-10 101 110 | r08 r08                   DIV r08, r08
-10 101 111 | r16 r16                   DIV r16, r16
-10 110 000 | r08 imm3                  SHL r08, imm3
-10 110 001 | r16 imm3                  SHL r16, imm3   # could optimize this to 2-byte r16 & imm4
-10 110 010 | r08 imm3                  SHR r08, imm3
-10 110 011 | r16 imm3                  SHR r16, imm3
-10 110 100 | r08 imm3                  ROL r08, imm3
-10 110 101 | r16 imm3                  ROL r16, imm3
-10 110 110 | r08 imm3                  ROR r08, imm3
-10 110 111 | r16 imm3                  ROR r16, imm3
-10 111 000 | r08 r08                   SHL r08, r08
-10 111 001 | r16 r08                   SHL r16, r08
-10 111 010 | r08 r08                   SHR r08, r08
-10 111 011 | r16 r08                   SHR r16, r08
-10 111 100 | r08 r08                   ROL r08, r08
-10 111 101 | r16 r08                   ROL r16, r08
-10 111 110 | r08 r08                   ROR r08, r08
-10 111 111 | r16 r08                   ROR r16, r08
-```
+### Instruction Mnemonic Reference
 
-### 4 byte commands
-
-```
-11 00000 0 | r08 mde bs | val16        LD r08, val16(mde); if imm, then imm8 (high bits ignored)
-11 00000 1 | r16 mde bs | val16        LD r16, val16(mde)
-11 00001 0 | r08 mde bs | val16        ST r08, val16(mde); if imm, then imm8 (high bits ignored)
-11 00001 1 | r16 mde bs | val16        ST r16, val16(mde)
-11 00010 0 | r08 mde bs | val16        CMP r08, val16(mde)
-11 00010 1 | r16 mde bs | val16        CMP r16, val16(mde)
-
-                                       AND r08, 
-                                       AND r16
-                                       OR  r08
-                                       OR  r16
-                                       XOR r08
-                                       XOR r16
-                                       NOT r08?
-                                       NOT r16?
-
-                                       JMP
-                                       JSR
-
-
-11 110 mde | bit-flags  | val16        J(flags)S val16(mde)
-11 110 mde | 0000 000 
-11 110 mde | 0000 0001  | val16            JZS val16(mde)
-
-11 111 mde | bit-flags  | val16        J(flags)C
-11 111 mde | 0000 0001  | val16            JZC val16(mde)
-```
 
 
 ## Sample Assembly and Encoding 
 
 ```
+                .const
+                TILEPAGE0    0xB000
+                TILESETSEL   0xFA03                 # in bank 0x01
+                GRAPHICS     0x0000
+                GRAPHICSBANK 0x01
+                GRAPHICSLEN  64000
+            
+                .data = 0x2000
+0D              len   db 13                         # 0x2000
+Hello, World!   str   db "Hello, World!"            # 0x2001
+            
+                .code = 0x1000
+                main: 
+E4 00 1A            JSR setup
+93 2F               XOR X, X                        # X := 0
+A7 20 00            LD8 X, len                      # X := len[0] (abs16)
+90 00               SB 0x00                         # Source bank 0
+90 08               DB 0x00                         # Dest bank 0
+                _loop:
+0B                  DEC X                           # X--
+A4 20 01            LD8 A, str                      # A{0-7} := str[X]
+94 B0 00            ST8 A, TILEPAGE0                # TILEPAGE0[X] := A{0-7}
+C3 00 00            CMP X, #0x0000                  # X = 0?
+FC FF F5            JZC _loop                       # if X > 0, loop
+03                  RET
+                end main
+            
+                setup:
+93 20               XOR A, A                        # A := 0
+90 01               SB GRAPHICSBANK                 # Source bank 1
+94 FA 03            ST8 A, TILESETSEL               # SB:TILESETSEL := A
+E4 00 02            JSR clearGraphics
+03                  RET        
+                end setup
+            
+                clearGraphics:
+93 20               XOR A, A                        # A := 0
+83 FA 00            LD X, #GRAPHICSLEN              # X := 64000
+90 01               SB GRAPHICSBANK                 # Source Bank 1
+                _loop:
+0B                  DEC X                           # X--
+94 00 00            ST8 A, GRAPHICS                 # SB:GRAPHICS[X] := A
+FC FF FB            JZC _loop                       # If X > 0, back to the top
+03                  RET     
+                end clearGraphics      
 
-     .data
-     str_len:    #13
-     str:        "Hello, world!"  --> 0x0A000
-     tilePage0:  #0xB000
-     tilePagePtr: .bytes 0xB0 0x00 --> 0x0A100
 
-     TILE_SET:   0xFA03  # DEVICE ONE
-     GRAPHICS:   0x0000  # DEVICE ONE
-     GRAPHICS_LENGTH: 64000
+0x1000: E4 00 1A 93 2F A7 20 00 - 90 00 90 08 0B A4 20 01
+0x1010: 94 B0 00 C3 00 00 FC FF - F5 03 93 20 90 01 94 FA
+0x1020: 03 E4 00 02 03 92 20 83 - FA 00 90 01 0B 94 00 00
+0x1030: FC FF FB 03 .. .. .. .. - .. .. .. .. .. .. .. ..
+0x2000: 0D H  e  l  l  o  ,     - w  o  r  l  d  !  .. ..
 
-     .code
-     setup:
-            BS #0x00                   # 0 001 0 000
-            LD A, #0x00                # 10 001 000 , 0000 0000
-            LD D, #0x01                # 10 001 011 , 0000 0001
-            BS D                       # 0 001 1 011
-            ST A, TILE_SET             # 11 00010 0,00 001 .01 , 1100 0000 , 0000 0000 
-            BS 0x00                    # 0 001 0 000
-
-     clearGraphics:
-            LD A, #0x00                # 10 001 000 , 0000 0000
-            LD X, HI(GRAPHICS_LENGTH)  # 10 100 000 , 1111 1010
-            LD Y, LO(GRAPHICS_LENGTH)  # 10 101 000 , 0000 0000
-     _cont:
-            DEC16 XY                   # 0 010 1 100 
-            JZ start
-            BS #0x01                   # 0 001 0 001
-            ST A, GRAPHICS[XY]         # 11 00010 0,00 010 ... , 0000 0000 , 0000 0000
-            BS #0x00                   # 0 001 0 000
-            JMP _cont 
-
-     start: 
-            BS #0x00
-            LD X, #0x00
-            LD Y, #0x00              # LD XY, #0x0000
-            LD A, str[XY]            # LD A,  0x0A000[XY]
-            ST A, &(tilePagePtr)[XY] # ST A,  &(0x0A100)[XY]
-            CMP Y, #13               # or CMP16 XY, #13
-            JZ end                   # relative jump forward
-            INC Y                    #
-            JMP start                # relative jump back
-     end:   RET
-
-
-
-    
 ```
 
 
