@@ -82,16 +82,16 @@ memoryLayout = {
 ## Register file
 
 ```
-                   r2  r  reg
-    a    16-bit    00  -  000   Accumulator, General Purpose
-    b    16-bit    01  -  001   General Purpose
-    c    16-bit    10  -  010   General Purpose   
-    x    16-bit    11  -  011   General Purpose, Index
-    sp   16-bit    --  0  100   Stack Pointer
-    f     8-bit    --  1  101   Flags
-    pc   16-bit    --  -  ---   Program Counter
-    sb    4-bit    --  -  110   Source Bank
-    db    4-bit    --  -  111   Destination Bank
+                   r2  r  reg  reg#
+    a    16-bit    00  -  000  0000    Accumulator, General Purpose
+    b    16-bit    01  -  001  0001    General Purpose
+    c    16-bit    10  -  010  0010    General Purpose   
+    x    16-bit    11  -  011  0011    General Purpose, Index
+    sp   16-bit    --  0  100  0100    Stack Pointer
+    f     8-bit    --  1  101  0101    Flags
+    pc   16-bit    --  -  ---  0110    Program Counter
+    sb    4-bit    --  -  110  1110    Source Bank
+    db    4-bit    --  -  111  1111    Destination Bank
 ```
 
 ## Instruction set and encoding
@@ -101,9 +101,88 @@ is kept as orthogonal as possible in order to make assembly of
 languages easier while also aiding comprehension of the underlying
 code.
 
-### Instruction width [0:1]
+|     Type     |   Opcodes        | Encoding                             |  Mnemonic  |  Operand 1  |  Operand 2  |   Flags  | Description
+|:------------:|:----------------:|:-------------------------------------|:----------:|:-----------:|:-----------:|:--------:|:--------------
+| No Op        | 0x00             |`00000000`                            |   `NOP`    |      -      |      -      |`........`| NOP; really CPY A,A
+| Reg Manip.   | 0x00...0x0F      |`0000drsr`                            |   `CPY`    |  dest reg   |    src reg  |`........`| Copies the destination register value to source register
+| Reg Manip.   | 0x10...0x1F      |`0001r1r2`                            |   `SWP`    |     r1      |      r2     |`........`| Swaps r1 and r2
+| Cond. Logic  | 0x20...0x1F      |`0010rrrr`                            |   `CMP`    |     reg     |      reg    |`......NZ`| Compares registers; sets N if less-than; clears if greater; sets Z if zero
+| Math         | 0x30...0x3F      |`0011rrrr`                            |   `ADD`    |  dest reg   |    src reg  |`....OCNZ`| dest reg += src reg
+| Math         | 0x40...0x4F      |`0100rrrr`                            |   `SUB`    |  dest reg   |    src reg  |`....OCNZ`| dest reg -= src reg
+| Bit Manip.   | 0x50...0x5F      |`0101rrrr`                            |   `SHL`    |  dest reg   |      reg    |`....OCNZ`| dest reg << reg
+| Bit Manip.   | 0x60...0x6F      |`0110rrrr`                            |   `SHR`    |  dest reg   |      reg    |`....OCNZ`| dest reg >> reg
+| Bit Manip.   | 0x70...0x7F      |`0111rrrr`                            |   `AND`    |  dest reg   |      reg    |`......NZ`| dest reg &= reg
+| Bit Manip.   | 0x80...0x8F      |`1000rrrr`                            |   `OR`     |  dest reg   |      reg    |`......NZ`| dest reg |= reg
+| Bit Manip.   | 0x90...0x9F      |`1001rrrr`                            |   `XOR`    |  dest reg   |      reg    |`......NZ`| dest reg ^= reg
+| Math         | 0xA0...0xAF      |`1010rrrr`                            |   `MUL`    |  dest reg   |      reg    |`....OCNZ`| dest reg *= reg
+| Math         | 0xB0...0xBF      |`1011rrrr`                            |   `DIV`    |  dest reg   |      reg    |`....OCNZ`| dest reg /= reg
+| Flags        | 0xC0             |`11000000`                            |   `CLI`    |      -      |      -      |`I.......`| Clear interrupt flag (disables hardware interrupts)
+| Flags        | 0xC1             |`11000001`                            |   `B16`    |      -      |      -      |`.8......`| Operations will be 16-bit
+| Flags        | 0xC2             |`11000010`                            |     -      |      -      |      -      |`..!.....`| Invalid Instruction
+| Flags        | 0xC3             |`11000011`                            |   `CLB`    |      -      |      -      |`...B....`| Clear branch flag
+| Flags        | 0xC4             |`11000100`                            |   `CLO`    |      -      |      -      |`....O...`| Clear Overflow flag
+| Flags        | 0xC5             |`11000101`                            |   `CLC`    |      -      |      -      |`.....C..`| Clear Carry Flag
+| Flags        | 0xC6             |`11000110`                            |   `CLN`    |      -      |      -      |`......N.`| Clear Negative Flag
+| Flags        | 0xC7             |`11000111`                            |   `CLZ`    |      -      |      -      |`.......Z`| Clear Zero Flag
+| Flags        | 0xC8             |`11001000`                            |   `STI`    |      -      |      -      |`I.......`| Set interrupt flag (enables hardware interrupts)
+| Flags        | 0xC9             |`11001001`                            |   `B08`    |      -      |      -      |`.8......`| Next operation will be 8-bit
+| Flags        | 0xCA             |`11001010`                            |     -      |      -      |      -      |`..!.....`| Invalid Instruction
+| Flags        | 0xCB             |`11001011`                            |   `STB`    |      -      |      -      |`...B....`| Set branch flag
+| Flags        | 0xCC             |`11001100`                            |   `STO`    |      -      |      -      |`....O...`| Set Overflow flag
+| Flags        | 0xCD             |`11001101`                            |   `STC`    |      -      |      -      |`.....C..`| Set Carry Flag
+| Flags        | 0xCE             |`11001110`                            |   `STN`    |      -      |      -      |`......N.`| Set Negative Flag
+| Flags        | 0xCF             |`11001111`                            |   `STZ`    |      -      |      -      |`.......Z`| Set Zero Flag
+| Flags        | 0xD0             |`11010000`                            |   `TSI`    |      -      |      -      |`...B....`| Test interrupt flag
+| Flags        | 0xD1             |`11010001`                            |   `TS8`    |      -      |      -      |`...B....`| Test 8-bit flag
+| Flags        | 0xD2             |`11010010`                            |     -      |      -      |      -      |`...B....`| Invalid Instruction
+| Flags        | 0xD3             |`11010011`                            |   `TSB`    |      -      |      -      |`...B....`| Test branch flag
+| Flags        | 0xD4             |`11010100`                            |   `TSO`    |      -      |      -      |`...B....`| Test Overflow flag
+| Flags        | 0xD5             |`11010101`                            |   `TSC`    |      -      |      -      |`...B....`| Test Carry Flag
+| Flags        | 0xD6             |`11010110`                            |   `TSN`    |      -      |      -      |`...B....`| Test Negative Flag
+| Flags        | 0xD7             |`11010111`                            |   `TSZ`    |      -      |      -      |`...B....`| Test Zero Flag
+| Reg Manip.   | 0xD8...0xDB      |`110110rr`                            |   `INC`    |     reg     |      -      |`....OCNZ`| Increments register by one
+| Reg Manip.   | 0xDC...0xDF      |`110111rr`                            |   `DEC`    |     reg     |      -      |`....OCNZ`| Decrements register by one
+| Reg Manip.   | 0xE0...0xE3      |`111000rr`                            |   `NEG`    |     reg     |      -      |`......N.`| Negates the register (2s-Compliment)
+| Stack Manip. | 0xE4             |`11100100`                            |   `PUSHP`  |      -      |      -      |`........`| Push Processor State on stack (all registers)
+| Stack Manip. | 0xE5             |`11100101`                            |   `POPP`   |      -      |      -      |`........`| Pops Processor State from stack
+| Control flow | 0xE6             |`11100110`                            |   `RET`    |      -      |      -      |`........`| Return from call
+| 2-Byte Ext.  | 0xE7             |`11100111`                            |     -      |      -      |      -      |`........`| Extended Opcode Group
+| Bank Manip   | 0xE7 0x00...0x03 |`11100111 000000rr`                   |    `SB`    |     reg     |      -      |`........`| Set Source Bank to register
+| Bank Manip   | 0xE7 0x04...0x07 |`11100111 000001##`                   |    `SB`    |    imm(2)   |      -      |`........`| Set Source Bank to immediate value (0-3)
+| Bank Manip   | 0xE7 0x08...0x0B |`11100111 000010rr`                   |    `DB`    |     reg     |      -      |`........`| Set Destination Bank to register
+| Bank Manip   | 0xE7 0x0C...0x0F |`11100111 000011##`                   |    `DB`    |    imm(2)   |      -      |`........`| Set Destination Bank to immediate value (0-3)
+| Bit Manip    | 0xE7 0x10...0x1F |`11100111 0001rrrr`                   |   `ROL`    |  dest reg   |      reg    |`......NZ`| Rotate dest register left number of times (reg)
+| Bit Manip    | 0xE7 0x20...0x2F |`11100111 0010rrrr`                   |   `ROR`    |  dest reg   |      reg    |`......NZ`| Rotate dest register right number of times (reg)
+| Bit Manip    | 0xE7 0x30...0x33 |`11100111 001100rr`                   |   `BSWP`   |     reg     |      -      |`......NZ`| Swaps byte order of register
+|              | 0xE7     ...     |`11100111         `                   |            |      -      |      -      |`........`|  
+| Reg Bit Manip| 0xE7 0x40...0x7F |`11100111 01rrbits`                   |   `TSTB`   |     reg     |      bits   |`...B....`| Tests bit # of register; B indicates set status 
+| Reg Bit Manip| 0xE7 0x80...0xBF |`11100111 10rrbits`                   |   `CLRB`   |     reg     |      bits   |`........`| Clears bit # of register 
+| Reg Bit Manip| 0xE7 0xC0...0xFF |`11100111 11rrbits`                   |   `SETB`   |     reg     |      bits   |`........`| sets bit # of register 
+| Bulk Memory  | 0xE7 0xFD        |`11100111 11111101`                   |    `MC`    |      -      |      -      |`........`| Memory Copy 
+| Bulk Memory  | 0xE7 0xFE        |`11100111 11111110`                   |    `MS`    |      -      |      -      |`........`| Memory Swap 
+| Bulk Memory  | 0xE7 0xFF        |`11100111 11111111`                   |    `MF`    |      -      |      -      |`........`| Memory Fill 
+| Stack Manip. | 0xE8...0xEF      |`11101reg`                            |   `PUSH`   |     reg     |      -      |`........`| Pushes reg on the stack
+| Stack Manip. | 0xF0...0xF7      |`11110reg`                            |   `POP`    |     reg     |      -      |`........`| Pops register off stack
+| Data Load    | 0xF8 0x10...0x13 |`11111000 000100rr ########`          |    `LD`    |     reg  
+| Data Load    | 0xFC             |`11111100 rrsiam## ######## ########` |    `LD`    |     reg     |    varied   |`......NZ`| Loads a value into a register from memory 
+| Control Flow | 0xFF             |`11111111 00sijm## ######## ########` |   `BRA`    |    varied   |             |`........`| Branch Always to address 
 
-Instructions can be 8, 16, or 32 bits long
+* 3-byte LD imm8
+* 3-byte IN reg, port
+* 3-byte OUT reg, port
+* 3-byte TRAP imm8
+* 3-byte TRAP reg
+
+* 4-byte LD
+* 4-byte ST
+* 4-byte BRA (branch always)
+* 4-byte BSA (branch subroutine always)
+* 4-byte BRC (branch if branch clear)
+* 4-byte BRS (branch if branch set)
+
+
+
+
 
 ### Address Mode encoding
 
@@ -123,142 +202,18 @@ The following address modes are available:
 Flags are as follows:
 
     8  7  6  5  4  3  2  1
-    I  x  x  x  O  C  N  Z
+    I  8  x  B  O  C  N  Z
 
  * (I)nterrupt Enable
+ * (8)bit mode -- if set, only the low eight bits of registers are used, and memory is retrieved and stored one byte at a time. 
+ * (B)ranch   -- used for branches; if set causes BRA to branch. If not set, causes BRC to branch
  * (O)verflow
  * (C)arry
  * (N)egative/Less-than
  * (Z)ero/equal
 
 
-### Opcodes
 
-```
-0x00                    0000 00 00                NOP                          --------  No Operation
-              
-0x01                    0000 00 01                MEMCPY                       --------  Copy sb:b to db:c, indexed X, X times
-0x02                    0000 00 10                MEMSWAP                      --------  Swap sb:b to db:c, indexed X, X times
-
-0x03                    0000 00 11                RET                          ????????  Return (from trap or subroutine)      
-
-0x04..0x07              0000 01 r2                INC r2                       ----OCNZ  r2 := r2 + 1  
-0x08..0x0B              0000 10 r2                DEC r2                       ----OCNZ  r2 := r2 + 1
-
-0x0C..0x0F              0000 11 r2                BYTESWAP r2                  ------NZ  Swaps top and bottom bytes of r2   
-                                             or?  NULL r2                      ------NZ  Sets register to zero 
-
-0x10..0x1F              0001 r2 r2                CMP r2, r2                   ------NZ  Compare r2, r2
-                              
-0x20..0x2F              0010 r2 r2                TXFR r2, r2                  --------  Transfer target, source
-0x30..0x3F              0011 r2 r2                SWAP r2, r2                  --------  Swap target, source
-              
-0x40..0x4F              0100 r2 r2                ADD r2, r2                   ----OCNZ  target := target + source
-0x50..0x5F              0101 r2 r2                SUB r2, r2                   ----OCNZ  target := target - source
-0x60..0x6F              0110 r2 r2                MUL r2, r2                   ----OCNZ  target := target * source
-0x70..0x7F              0111 r2 r2                DIV r2, r2                   ----OCNZ  target := target / source
-                              
-0x80..0x83              1000 00 r2 im16           LD r2, im16                  ------NZ  r2 := imm16
-0x84..0x87              1000 01 r2 ab16           LD r2, sb:ab16[X]            ------NZ  r2 := memory at (sb:abs16[X])
-0x88..0x8B              1000 10 r2 ab16           LD r2, db:&(sb:ab16[X])      ------NZ  r2 := memory at db:&(sb:abs16[X])
-0x8C..0X8F              1000 11 r2 ab16           LD r2, db:&(sb:ab16)[X]      ------NZ  r2 := memory at db:&(sb:abs16)[X]
-                  
-0x90        0x00..0x03  1001 00 00 00 00 00 i2    SB imm2                      --------  SB := imm2
-0x90        0x04..0x07  1001 00 00 00 00 01 r2    SB r2                        --------  SB := r2{0-1}
-0x90        0x08..0x0B  1001 00 00 00 00 10 i2    DB imm2                      --------  DB := imm2
-0x90        0x0C..0x0F  1001 00 00 00 00 11 r2    DB r2                        --------  DB := r2{0-1}
-
-0x90        0x10..0x13  1001 00 00 00 01 00 r2    NEG r2                       ------NZ  Negate r2
-0x90        0x14..0x17  1001 00 00 00 01 01 r2    NEG8 r2:8                     ------NZ  Negate r2{0-7}
-
-                                                  STf?
-                                                  CLf?
-                                                  PUSH
-                                                  POP
-                ..
-0x90        0x80..0x8F  1001 00 00 10 00 r2 i2    SHL r2, i2                   ----OCNZ  r2 << i2
-0x90        0x90..0x9F  1001 00 00 10 01 r2 r2    SHL r2, r2                   ----OCNZ  r2 << r2
-
-0x90        0xA0..0xAF  1001 00 00 10 10 r2 i2    SHR r2, i2                   ----OCNZ  r2 >> i2
-0x90        0xB0..0xBF  1001 00 00 10 11 r2 r2    SHR r2, r2                   ----OCNZ  r2 >> r2
-
-0x90        0xC0..0xCF  1001 00 00 11 00 r2 i2    ROL r2, i2                   ----OCNZ  r2 <<< i2
-0x90        0xD0..0xDF  1001 00 00 11 01 r2 r2    ROL r2, r2                   ----OCNZ  r2 <<< r2
-
-0x90        0xE0..0xEF  1001 00 00 11 10 r2 i2    ROR r2, i2                   ----OCNZ  r2 >>> i2
-0x90        0xF0..0xFF  1001 00 00 11 11 r2 r2    ROR r2, r2                   ----OCNZ  r2 >>> r2
-
-0x91        0x00..0xFF  1001 00 01 imm8           TRAP imm8                    ????????  TRAP imm8
-0x92        0x00..0x03  1001 00 10 00 00 00 r2    TRAP r2                      ????????  TRAP r2
-                ..
-0x93        0x00..0x0F  1001 00 11 00 00 r2 r2    AND r2, r2                   ------NZ  target := target & source 
-0x93        0x10..0x1F  1001 00 11 00 01 r2 r2    OR r2, r2                    ------NZ  target := target | source 
-0x93        0x20..0x2F  1001 00 11 00 10 r2 r2    XOR r2, r2                   ------NZ  target := target ^ source
-                          
-0x94..0x97              1001 01 r2 ab16           ST r2, db:ab16[X]            --------  memory at (sb:abs16[X]) := r2
-0x98..0x9B              1001 10 r2 ab16           ST r2, db:&(sb:ab16[X])      --------  memory at db:&(sb:abs16[X]) := r2
-0x9C..0x9F              1001 11 r2 ab16           ST r2, db:&(sb:ab16)[X]      --------  memory at db:&(sb:abs16)[X] := r2
-                              
-0xA0..0xA3              1010 00 r2 imm8           LD8 r2:8, imm8                ------NZ  r2 := imm8
-0xA4..0xA7              1010 01 r2 ab16           LD8 r2:8, sb:ab16[X]:8        ------NZ  r2 := memory at (sb:abs16[X]){0-7}
-0xA8..0xAB              1010 10 r2 ab16           LD8 r2:8, db:&(sb:ab16[X]):8  ------NZ  r2 := memory at db:&(sb:abs16[X]){0-7}
-0xAC..0xAF              1010 11 r2 ab16           LD8 r2:8, db:&(sb:ab16)[X]:8  ------NZ  r2 := memory at db:&(sb:abs16)[X]{0-7}
-                              
-0xB0                    1011 00 00 im16           JMP imm16
-0xB1                    1011 00 01 ab16           JSR imm16
-0xB2                    1011 00 10 ab16           JZS imm16
-0xB3                    1011 00 11 ab16           JZC imm16   
-                              
-0xB4..0xB7              1011 01 r2 ab16           ST8 r2:8, sb:ab16[X]:8        --------  memory at (sb:abs16[X]) := r2{0-7}
-0xB8..0xBB              1011 10 r2 ab16           ST8 r2:8, db:&(sb:ab16[X]):8  --------  memory at db:&(sb:abs16[X]) := r2{0-7}
-0xBC..0xBF              1011 11 r2 ab16           ST8 r2:8, db:&(sb:ab16)[X]:8  --------  memory at db:&(sb:abs16)[X] := r2{0-7}
-
-0xC0..0xC3              1100 00 r2 im16           CMP r2, imm16                ------NZ  r2 == imm16
-0xC4..0xC7              1100 01 r2 ab16           CMP r2, sb:ab16[X]           ------NZ  r2 == (abs16[X])
-0xC8..0xCB              1100 10 r2 ab16           CMP r2, db:&(sb:ab16[X])     ------NZ  r2 == db:&(sb:abs16[X])
-0xCC..0xCF              1100 11 r2 ab16           CMP r2, db:&(sb:ab16)[X]     ------NZ  r2 == db:&(sb:abs16)[X]
-
-0xD0..0xD3              1101 00 r2 im16           CMP8 r2:8, imm16           :8 ------NZ  r2 == imm8
-0xD4..0xD7              1101 01 r2 ab16           CMP8 r2:8, sb:ab16[X]      :8 ------NZ  r2 == (abs16[X])
-0xD8..0xDB              1101 10 r2 ab16           CMP8 r2:8, db:&(sb:ab16[X]):8 ------NZ  r2 == db:&(sb:abs16[X])
-0xDC..0xDF              1101 11 r2 ab16           CMP8 r2:8, db:&(sb:ab16)[X]:8 ------NZ  r2 == db:&(sb:abs16)[X]
-
-0xE0                    1110 00 00 im16           JMP rel16                    --------  
-0xE1                    1110 00 01 ab16           JMP abs16                    --------  [X]?
-0xE2                    1110 00 10 ab16           JMP &(ab16[X])               --------
-0xE3                    1110 00 11 ab16           JMP &(ab16)[X]               --------
-
-0xE4                    1110 01 00 im16           JSR rel16                    --------  
-0xE5                    1110 01 01 ab16           JSR abs16                    --------  [X]?
-0xE6                    1110 01 10 ab16           JSR &(ab16[X])               --------
-0xE7                    1110 01 11 ab16           JSR &(ab16)[X]               --------
-
-0xE8..0xEB              1110 10 jm val            JCS
-0xEC..0xEF              1110 11 jm val            JCC
-0xF0..0xF3              1111 00 jm val            JNS
-0xF4..0xF7              1111 01 jm val            JNC
-0xF8..0xFB              1111 10 jv val            JZS
-0xFC..0xFF              1111 11 jm val            JZC
-
-missing JOS, JOC, CMP r2:8, r2:8
-MEMZERO might be nice
-```
-
-
-### Instruction Mnemonic Reference
-
-
-## traps
-
-```
-0x00 - Reset
-0xF0 - Divide by zero
-0xF1 - Bad Combined Memory Reference
-0xF2 - Invalid Instruction
- ..
-0xFE - Stack Overflow (halt) 
-0xFF - Stack Underflow (halt)
-```
 
 
 ## Sample Assembly and Encoding 
@@ -282,44 +237,41 @@ Hello, World!   str   db "Hello, World!"            # 0x2001
             
                 .code = 0x1000
                 main: 
-E4 00 1A            JSR setup
-93 2F               XOR X, X                        # X := 0
-A7 20 00            LD8 X, len[X]                   # X := len[0] (abs16)
-90 00               SB #0x00                        # Source bank 0
-90 08               DB #0x00                        # Dest bank 0
-                _loop:
-0B                  DEC X                           # X--
-A4 20 01            LD8 A, str[X]                   # A{0-7} := str[X]
-94 B0 00            ST8 A, TILEPAGE0[X]             # TILEPAGE0[X] := A{0-7}
-C3 00 00            CMP X, #0x0000                  # X = 0?
-FC FF F5            JZC _loop                       # if X > 0, loop
-03                  RET
+90 00               SB #0x00                        # Wise to always select the source
+90 08               DB #0x00                        # and destination banks before doing anything
+E4 00 15            CALL setup
+0F                  NULL X                          # X needs to be zero, or we'll mis-index the next cmd
+A7 20 00            LD X.8, :len[X]                  # X := len[0]
+81 20 01            LD B, #str                      # B := address of str
+82 B0 00            LD C, #TILEPAGE0                # C := address of the first tile page
+01                  MEMCPY                          # Copy each byte at SB:B to DB:C, X times
+03                  RET                             # Going to trigger Stack Underflow and HALT
                 end main
-            
-                setup:  -- BUG: should have XOR X, X to zero
-93 20               XOR A, A                        # A := 0
-90 01               SB #GRAPHICSBANK                # Source bank 1
-94 FA 03            ST8 A, TILESETSEL[X]            # SB:TILESETSEL[X] := A
-E4 00 02            JSR clearGraphics
-03                  RET        
-                end setup
-            
+
+                setup:
+90 01               SB #GRAPHICSBANK
+0F                  NULL X                          # Make sure X is zero, or we'll mis-index!
+0C                  NULL A
+B4 FA 03            ST A.8, :TILESETSEL[X]           # Ensure tile page 0 is selected (A = 0)
+E4 00 04            CALL clearGraphics
+03                  RET
+                end setup                    
+
                 clearGraphics:
-93 20               XOR A, A                        # A := 0
-83 FA 00            LD X, #GRAPHICSLEN              # X := 64000
-90 01               SB #GRAPHICSBANK                # Source Bank 1
-                _loop:
-0B                  DEC X                           # X--
-94 00 00            ST8 A, GRAPHICS[X]              # SB:GRAPHICS[X] := A
-FC FF FB            JZC _loop                       # If X > 0, back to the top
-03                  RET     
-                end clearGraphics      
+90 00               SB #0x00                    
+90 09               DB #GRAPHICSBANK
+83 FA 00            LD X, #GRAPHICSLEN              # Graphics display is 64,000 long
+A0 20               LD A:8, 0x20                    # We want to fill it with spaces (32 = 0x20)
+83 00 00            LD C, #GRAPHICS                 # Start at GRAPHICS starting address
+90 1F               MEMFILL                         # Dump a lot of spaces!
+03                  RET
+                end clearGraphics
 
 
-0x1000: E4 00 1A 93 2F A7 20 00 - 90 00 90 08 0B A4 20 01
-0x1010: 94 B0 00 C3 00 00 FC FF - F5 03 93 20 90 01 94 FA
-0x1020: 03 E4 00 02 03 92 20 83 - FA 00 90 01 0B 94 00 00
-0x1030: FC FF FB 03 .. .. .. .. - .. .. .. .. .. .. .. ..
+
+0x1000: 90 00 90 08 E4 00 15 0F - A7 20 00 81 20 01 82 B0 
+0x1010: 00 01 03|90 01 0F 0C B4 - FA 03 E4 00 04 03|90 00
+0x1020: 90 09 83 FA 00 A0 20 83 - 00 00 90 1F 03 .. .. ..
 0x2000: 0D H  e  l  l  o  ,     - w  o  r  l  d  !  .. ..
 
 ```
