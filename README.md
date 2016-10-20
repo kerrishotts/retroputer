@@ -132,9 +132,9 @@ The instruction set uses a variable-width encoding.
 | `04 00-3F`       |`........ ........ 00000100 00drgsrg`| ADD drg, srg                 |`....OCNZ`| drg := srg + drg; with carry if M is 1
 | `04 80-BF`       |`........ ........ 00000100 10drgsrg`| SUB drg, srg                 |`....OCNZ`| drg := drg - srg; with carry if M is 1
 | `04 80-BF`       |`........ ........ 00000100 10drgsrg`| XOR drg, srg                 |`......NZ`| drg := drg ^ srg
-| `04 C0-FF`       |`........ ........ 00000100 11drgsrg`| CMP drg, srg                 |`......NZ`| flags = drg <=> srg
-| `05 00-3F`       |`........ ........ 00000101 00regnum`| SHL reg, times               |`....OCNZ`| reg << times; if M = 1, ROL
-| `05 80-BF`       |`........ ........ 00000101 10drgsrg`| SHR reg, times               |`....OCNZ`| reg >> times; if M = 1, ROR
+| `04 C0-FF`       |`........ ........ 00000100 11drgsrg`| CMP drg, srg                 |`......NZ`| flags = drg cmp srg
+| `05 00-3F`       |`........ ........ 00000101 00regnum`| SHL reg, times               |`....OCNZ`| reg shl times; if M = 1, ROL
+| `05 80-BF`       |`........ ........ 00000101 10drgsrg`| SHR reg, times               |`....OCNZ`| reg shr times; if M = 1, ROR
 | `05 80-BF`       |`........ ........ 00000101 10drgsrg`| AND drg, srg                 |`......NZ`| drg := drg & srg
 | `05 C0-FF`       |`........ ........ 00000101 11drgsrg`| OR  drg, srg                 |`......NZ`| drg := drg || srg
 | `06 01`          |`........ 00000110 00000001 ########`| TRAP imm8                    |`........`| Call trap imm8
@@ -168,88 +168,87 @@ The instruction set uses a variable-width encoding.
 | `FF`             |`........ ........ ........ 11111111`| RET                          |`......N.`| Return from call
 
 
-
-
-
-
 ## Sample Assembly and Encoding 
 
 ```
-#   #      = Immediate
-#   &()    = Absolute
-#   &(&()) = Indirect
-#
+.code = 0x1000
 
-                const TILESETSEL :=  0xFA03                 # in bank 0x01
-                const GRAPHICS   :=  0x0000                 # in bank 0x01
-                const GRAPHICSBANK := 0x01
-                const GRAPHICSLEN :=  64000
-            
-                .global-data 0x2000
-                var len(byte) := 13
-                var str[char] := "Hello, World!"
+FUNC main
+  LD AL, 0x00
+ENDF
 
-                .code = 0x1000
-                FUNC main {
-                  LD A, 0x00                    # set up source and destination banks
-                  MOV SB, AL                    # both are 0
-                  MOV DB, AL
+.func fillGraphicsWithColor ( byte color )
+  .const word GRAPHICS        = 0x0000
+  .const byte GRAPHICS-BANK   = 0x01
+  .const word GRAPHICS-LENGTH = 64000
+  
+  LD AL, GRAPHICS-BANK       #
+  MV DB, A                   # DB := GRAPHICSBANK
+  
+  LD A, GRAPHICS-LENGTH      #
+  MV C, A                    # C := GRAPHICSLENGTH
+  
+  LD A, GRAPHICS             #
+  MV D, A                    # A := GRAPHICS
+  
+  LD AL, color               # AL := color
+  
+  MEMFILL DB:D, AL * C       # Fill memory with color
 
-                  CALL setup                    # setup graphics and such
+  RET
+  
+.func setTileSet ( byte tileSet )
+  .const word TILE-SET-SEL   = 0xFA03
+  .const byte BANK = 0x00
+  
+  LD AL, BANK                #
+  MV DB, A                   # DB := BANK
+  
+  LD AL, tileSet             # A := tileSet
+  ST AL, SB:&TILE-SET-SEL    # Set the tileset
+  
+  RET
+  
+.func printStringAtPos ( wordPtr *str, byte row, byte col )
+  .const word TILE-PAGE-0    = 0xB000
+  .const byte COLS-PER-ROW   = 40
+  .const byte ROWS-PER-PAGE  = 25
+  
+  XOR A, A                   #
+  LD AL, row                 #
+  MV B, A                    #
+  LD AL, COLS-PER-PAGE       #
+  MUL B, A                   # B := row * COLS-PER-PAGE
+  
+  LD AL, col                 #
+  ADD A, B                   #
+  MV B, A                    # B := B + col
+  
+  LD A, TILE-PAGE-0          #
+  ADD B, A                   # B := TILE-PAGE-0 + B
+  
+  XOR A, A                   #
+  LD AL, str[0]              #
+  MV C, A                    # C := str[0] (length)
+  
+  XOR X, X                   # X := 0
 
-                  XOR A, A                      # zero A so next op doesn't have a bad hi byte
-                  LD AL, len[0]                 # AL := 13
-                  MOV C, A                      # C := 13
+_loop:
+  INC X
+  LD AL, str[X]              # AL := str[X]
+  ST AL, &TILE-PAGE-0[X]     # Write character to memory location
+  DEC C
+  IF Z
+    BR _loop                 # Keep going as long as we have characters to write
 
-                  LD A, str
-                  MOV B, A                      # B := address of str
-                  
-                  LD A, tilepage0[0]
-                  MOV D, A                      # D := address pointed to by tilepage0
-
-                  MEMCPY DB:D SB:A * C          # And copy the string!
-
-                  RET
-                }
-
-                FUNC setup {
-                  LD A, GRAPHICSBANK
-                  MOV SB, A
-
-                  LD A, 0x00
-                  ST A, TILESETSEL[0]           # Make sure tile set 0 is selected
-
-                  CALL clearGraphics
-                  RET
-                }
-                
-                FUNC clearGraphics {
-                  LD A, GRAPHICSBANK        
-                  MOV DB, A                     # Destination Bank is graphics
-                  
-                  LD A, GRAPHICS
-                  MOV B, A                      # B has address of graphics
-
-                  LD A, GRAPHICSLEN
-                  MOV C, A                      # C has size of graphics
-
-                  LD AL, 0x00
-                  MEMFILL DB:B, AL * C          # Blank graphics out!
-
-                  RET                  
-                }
-
-
-
-0x1000: 90 00 90 08 E4 00 15 0F - A7 20 00 81 20 01 82 B0 
-0x1010: 00 01 03|90 01 0F 0C B4 - FA 03 E4 00 04 03|90 00
-0x1020: 90 09 83 FA 00 A0 20 83 - 00 00 90 1F 03 .. .. ..
-0x2000: 0D H  e  l  l  o  ,     - w  o  r  l  d  !  .. ..
-
-```
-
-
-
-
-
-
+  RET
+  
+.func main()
+  .var str:byte[]            = L"Hello, World!"
+  
+  CALL setTileSet ( tileSet: 0x00 )
+  CALL fillGraphicsWithColor ( color: 0x00 )
+  CALL printStringAtPos ( str: str,  row: 12, col: 15 )
+  
+  RET
+  
