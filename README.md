@@ -79,8 +79,8 @@ The flags register is laid out as follows:
 |:---:|:----:|:------------------------------------------------------|
 |  7  |  I   | (I)nterrupt Enable (0 = off, 1 = on)                  |
 |  6  |  M   | Calculation (M)ode (0 = no carry, 1 = with carry)     | 
-|  5  |  B   | Load/Store (B)ank target (0 = SB, 1 = DB)             | 
-|  4  |  X   | E(X)ecute next                                        |
+|  5  |  X   | E(X)ecute next                                        |
+|  4  |  -   | Reserved                                              |
 |  3  |  O   | (O)verflow                                            |
 |  2  |  C   | (C)arry                                               |
 |  1  |  N   | (N)egative                                            |
@@ -126,8 +126,8 @@ The instruction set uses a variable-width encoding.
 |:----------------:|:------------------------------------|:-----------------------------|:--------:|:--------------
 |                  |`76543210 76543210 76543210 76543210`|                              |`IMX.OCNZ`|               
 | `00`             |`........ ........ ........ 00000000`| NOP                          |`........`| No operation
-| `01`             |`........ ........ ........ 00000001`| SB:                          |`........`| Target source bank
-| `02`             |`........ ........ ........ 00000010`| DB:                          |`........`| Target destination bank
+| `01`             |`........ ........ 00000001 ########`| ENTER imm8                   |`........`| Create new stack frame with space for imm8 bytes
+| `02`             |`........ ........ 00000010 ########`| EXIT imm8                    |`........`| Pop stack frame of imm8 bytes
 | `03`             |`........ ........ ........ 00000011`| TRAP AL                      |`........`| Call trap AL 
 | `04 00-3F`       |`........ ........ 00000100 00drgsrg`| ADD drg, srg                 |`....OCNZ`| drg := srg + drg; with carry if M is 1
 | `04 80-BF`       |`........ ........ 00000100 10drgsrg`| SUB drg, srg                 |`....OCNZ`| drg := drg - srg; with carry if M is 1
@@ -143,15 +143,17 @@ The instruction set uses a variable-width encoding.
 | `06 40`          |`........ 00000110 00100000 0drg0srg`| MUL drg, srg                 |`....OCNZ`| drg := drg * srg;
 | `06 41`          |`........ 00000110 00100001 0drg0srg`| IDIV drg, srg                |`....OCNZ`| drg := drg / srg;
 | `06 42`          |`........ 00000110 00100010 0drg0srg`| IMOD drg, srg                |`....OCNZ`| drg := drg % srg;
-| `06 6D`          |`........ 00000110 01101101 Ddrgsreg`| MEMFILL D:Drg, sreg          |`........`| Fill memory at D:drg with low 8 bits of sreg
-| `06 6E`          |`........ 00000110 01101110 DSdrgsrg`| MEMSWP D:drg, S:srg          |`........`| Swap memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
-| `06 6F`          |`........ 00000110 01101111 DSdrgsrg`| MEMCPY D:drg, S:srg          |`........`| Move memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
+| `06 6D`          |`........ 00000110 01101101 Ddrgsreg`| MEMFILL D:drg, sreg * C      |`........`| Fill memory at D:drg with low 8 bits of sreg
+| `06 6E`          |`........ 00000110 01101110 DSdrgsrg`| MEMSWP D:drg, S:srg * C      |`........`| Swap memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
+| `06 6F`          |`........ 00000110 01101111 DSdrgsrg`| MEMCPY D:drg, S:srg * C      |`........`| Move memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
 | `06 70-77`       |`........ 00000110 01110reg ########`| IN reg, port                 |`........`| reg := data from port#
 | `06 78-7F`       |`........ 00000110 01111reg ########`| OUT reg, port                |`........`| data from port# := reg
 | `06 80-BF`       |`........ 00000110 10drgsrg ########`| MOV drg, srg                 |`........`| srg := drg
 | `06 C0-FF`       |`........ 00000110 11drgsrg ########`| SWAP reg, reg                |`........`| swap reg and reg
 | `07 00-3F`       |`00000111 00mmmxys ######## ########`| BR                           |`........`| Branch to address
 | `07 40-7F`       |`00000111 01mmmxys ######## ########`| CALL                         |`........`| Call address as subroutine
+| `07 80-BF        |`00000111 10mmmxys ######## ########`| LD A(L) [DB]                 |`......NZ`| scale of 1 = AL; 2 = A
+| `07 C0-FF        |`00000111 11mmmxys ######## ########`| ST A(L) [DB]                 |`........`| scale of 1 = AL; 2 = A
 | `08-0B`          |`........ ........ ........ 000010rg`| MOV reg, SB                  |`........`| Set source bank
 | `0C-0F`          |`........ ........ ........ 000011rg`| MOV reg, DB                  |`........`| Set destination bank
 | `10-17`          |`........ ........ ........ 00010reg`| INC reg                      |`....OCNZ`| Increment register by one
@@ -160,13 +162,73 @@ The instruction set uses a variable-width encoding.
 | `28-2F`          |`........ ........ ........ 00101flg`| IF !flag                     |`...X....`| If flag is NOT set, execute next instruction
 | `30-37`          |`........ ........ ........ 00111flg`| STf                          |`IMX.OCNZ`| Set flag
 | `38-3F`          |`........ ........ ........ 00111flg`| CLf                          |`IMX.OCNZ`| Clear flag
-| `40-7F`          |`........ 01mmmxys ######## ########`| LD A(L)                      |`......NZ`| scale of 1 = AL; 2 = A
-| `80-BF`          |`........ 10mmmxys ######## ########`| ST A(L)                      |`........`| scale of 1 = AL; 2 = A
+| `40-7F`          |`........ 01mmmxys ######## ########`| LD A(L) [SB]                 |`......NZ`| scale of 1 = AL; 2 = A
+| `80-BF`          |`........ 10mmmxys ######## ########`| ST A(L) [SB]                 |`........`| scale of 1 = AL; 2 = A
 | `C0-DF`          |`........ ........ ........ 110dddss`| MOV dest, src                |`........`| transfer dest reg to src reg
-| `E0-EF`          |`........ ........ ........ 1110regs`| PUSH reg                     |`....O...`| push reg on stack; O if stack overflow
-| `F0-FE`          |`........ ........ ........ 1111regs`| POP reg                      |`......N.`| pop reg off stack; N if stack underflow
-| `FF`             |`........ ........ ........ 11111111`| RET                          |`......N.`| Return from call
+| `E0-EF`          |`........ ........ ........ 1110regs`| PUSH reg                     |`........`| push reg on stack
+| `F0-FE`          |`........ ........ ........ 1111regs`| POP reg                      |`........`| pop reg off stack
+| `FF`             |`........ ........ ........ 11111111`| RET                          |`........`| Return from call
 
+## Stack and calling convention
+
+There are two registers that control the stack:
+
+* `SP` indicates the current top of the stack
+* `BP` indicates the bottom of the current stack frame
+
+The stack typically lives at 0x00400 - 0x00FFF. However, this can be relocated by changing SP and BP appropriately. The stack can grow indiscriminately, so it is important that you properly manage the stack.
+
+The stack grows DOWN from SP. This means that the current frame (BP) is always higher than SP. Referencing local variables on the stack will be BP-index, whereas parameters and return values will be BP+index.
+
+The stack at startup looks like this:
+
+```
+   +---------+    SP = 0x1000; BP = 0x1000
+   |         |
+   :         :
+   |         |
+   +---------+
+```
+
+If we PUSH A, the stack looks like this:
+
+```
+   +---------+    BP = 0x1000
+   |    A    |    SP = 0x0FFE  (BP - 0x02)
+   :         :    
+   |         |
+   +---------+
+```
+
+Pushing B on to the stack results in this:
+
+```
+   +---------+    BP = 0x1000
+   |    A    |                 (BP - 0x02)
+   |    B    |    SP = 0x0FFC  (BP - 0x04)
+   :         :    
+   |         |
+   +---------+
+```
+
+Popping B results in the previous setup.
+
+Now, let's define a simple function:
+
+```
+.abi mode1
+FUNC (word) addTwoNumbersReturningResult ( word op1, word op2 )
+  LD A, op1
+  MV B, A
+  LD A, op2
+  ADD A, B
+  ST A, .return
+  RET
+ENDF
+
+FUNC (void) main
+  
+```
 
 ## Sample Assembly and Encoding 
 
@@ -205,7 +267,7 @@ ENDF
   MV DB, A                   # DB := BANK
   
   LD AL, tileSet             # A := tileSet
-  ST AL, SB:&TILE-SET-SEL    # Set the tileset
+  ST AL, DB:&TILE-SET-SEL    # Set the tileset
   
   RET
   
@@ -235,8 +297,8 @@ ENDF
 
 _loop:
   INC X
-  LD AL, str[X]              # AL := str[X]
-  ST AL, &TILE-PAGE-0[X]     # Write character to memory location
+  LD AL, SB:str[X]           # AL := str[X]
+  ST AL, SB:&TILE-PAGE-0[X]  # Write character to memory location
   DEC C
   IF Z
     BR _loop                 # Keep going as long as we have characters to write
