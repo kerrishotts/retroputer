@@ -8,6 +8,11 @@
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+  <script>
+    window.onerror = function (...args) {
+      alert(args.join(" "));
+    }
+  </script>
   <canvas id="screen"></canvas>
   <div id="log"></div>
   <script src="index.js"></script>
