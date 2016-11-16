@@ -1,0 +1,34 @@
+{
+  "name": "retroputer",
+  "version": "1.0.0",
+  "description": "retroputer",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^0.9.0",
+    "jspm": "^0.16.47"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "http-server -p 8080 -c-1 -s ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kerrishotts/retroputer.git"
+  },
+  "author": "Kerri Shotts <kerrishotts@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kerrishotts/retroputer/issues"
+  },
+  "homepage": "https://github.com/kerrishotts/retroputer#readme",
+  "jspm": {
+    "dependencies": {},
+    "devDependencies": {
+      "babel": "npm:babel-core@^5.8.24",
+      "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "core-js": "npm:core-js@^1.1.4",
+      "typescript": "npm:typescript@^1.6.2"
+    }
+  }
+}

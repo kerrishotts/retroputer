@@ -6,15 +6,27 @@
   <meta name="viewport" content="width=device-width">
   <title>Retroputer</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+  <script src="jspm_packages/system.js"></script>
+  <script src="config.js"></script>
 </head>
 <body>
-  <script>
+  <script>/*
     window.onerror = function (...args) {
-      alert(args.join(" "));
-    }
+      console.log(args.join(" "));
+    }*/
+  </script>
+  <script>/*
+    var systemLocate = System.locate;
+    System.locate = function(load) {
+      return Promise.resolve(systemLocate.call(this, load)).then(function(address) {
+        return address + '?bust=' + (Math.random(1)*100000);
+      });
+    }*/
+    System.import ("index.js").
+      then( App => console.log(App) ).
+      catch( err => console.log(err));
   </script>
   <canvas id="screen"></canvas>
   <div id="log"></div>
-  <script src="index.js"></script>
 </body>
 </html>
