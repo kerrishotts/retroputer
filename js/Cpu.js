@@ -100,6 +100,7 @@ export default class CPU {
       imm16: 0x0000,      // imm16 of instruction, if it makes sense
       srceRegister: 0x00, // source register
       destRegister: 0x00, // destination register
+      flag: 0x00,         // flag index
       srceBank: 0x00,     // source bank select
       destBank: 0x00,     // destination bank select
       addressingMode: 0x00,  // addressing mode
@@ -128,6 +129,8 @@ export default class CPU {
     let opcode = this.state.instruction[0];
     let opcodeType = 0x00;
     switch (opcode) {
+      case 0x01:
+      case 0x02:
       case 0x04:
       case 0x05: 
         this.fetch(1);
@@ -142,10 +145,9 @@ export default class CPU {
         this.fetch(3);
         break;
     }
-    
-    if (opcode & 0x04) {
-      opcodeType = opcode;
-      opcode = this.state.instruction[1];
+    if (opcode >= 0x40 && opcode <= 0xBF) {
+        this.fetch(1);
+        this.fetch(2);
     }
     
     this.state.opcodeType = opcodeType;
@@ -153,13 +155,48 @@ export default class CPU {
     
     switch(this.state.instruction.length) {
       case 1:
-        if ((opcode & 0xF8) === 0x08) {
+        if ((opcode & 0b11111000) === 0b00001000) {
           // MV [SB|DB], srg
           // -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    1  bnk src-reg
           this.state.semantic = this.semantic.MOVE;
-          this.state.destRegister = (opcode & 0x04) ? this.registerMap.DB : this.registerMap.SB;
-          this.state.srcRegister = opcode & 0x03;
+          this.state.destRegister = (opcode & 0b00000100) ? this.registerMap.DB : this.registerMap.SB;
+          this.state.srcRegister = (opcode & 0b00000111);
+          break;
+        }
+        if ((opcode & 0b11110000) === 0b00010000) {
+          // INC/DEC reg
+          // -7- -6- -5- -4-  -3- -2- -1- -0-
+          //  0   0   0   1   I/D src-register
+          this.state.semantic = (opcode & 0b00001000) ? this.semantic.DEC : this.semantic.INC;
+          this.state.destRegister = (opcode & 0b00000111);
+          this.state.srcRegister = this.state.destRegister;
+          break;
+        }
+        if ((opcode & 0b11110000) === 0b00100000) {
+          // IF/IF! flag
+          // -7- -6- -5- -4-  -3- -2- -1- -0-
+          //  0   0   0   1   tgl   f l a g 
+          this.state.semantic = (opcode & 0b00001000) ? this.semantic.IFNFLAG : this.semantic.IFFLAG;
+          this.state.flag = (opcode & 0b00000111);
+          break;
+        }
+        if ((opcode & 0b11110000) === 0b00110000) {
+          // ST/CL flag
+          // -7- -6- -5- -4-  -3- -2- -1- -0-
+          //  0   0   1   1   tgl   f l a g 
+          this.state.semantic = (opcode & 0b00001000) ? this.semantic.CLRFLAG : this.semantic.SETFLAG;
+          this.state.flag = (opcode & 0b00000111);
+          break;
+        }
+        if ((opcode & 0b11100000) === 0b11000000) {
+          // MOV dest, src
+          // -7- -6- -5- -4-  -3- -2- -1- -0-
+          //  1   1   0  dst-register src-reg
+          this.state.semantic = (opcode & 0b00001000) ? this.semantic.CLRFLAG : this.semantic.SETFLAG;
+          this.state.destRegister = (opcode & 0b00011100);
+          this.state.srcRegister = (opcode & 0b00000011);
+          break;
         }
         
         break;
