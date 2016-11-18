@@ -1,5 +1,6 @@
+import Memory from "./Memory.js";
 
-export default class Screen {
+ export default class Screen {
   constructor(id, memory) {
     var width = 320, height = 200, layout = memory.layout;
     this._layout = {
@@ -57,6 +58,46 @@ export default class Screen {
     this._frameBuf = new ArrayBuffer(this._frameData.data.length);
     this._frame = new Uint32Array(this._frameBuf);
     this._frame8 = new Uint8ClampedArray(this._frameBuf);    
+
+    // set up our initial values
+    this.init();
+  }
+
+  init() {
+    this.initPalette();
+    this.initScreenConfiguration();
+  }
+
+  initPalette() {
+    var r, g, b, a, m, 
+        ma = [0, 127, 191, 255];
+
+    for (var i = 0; i < 256; i++) {
+      m = ma[(((i & 0xC0) >> 6))];
+      r = ma[((i & 0x30) >> 4)];// || m;
+      g = ma[((i & 0x0C) >> 2)];// || m;
+      b = ma[((i & 0x03) >> 0)];// || m;
+
+      Memory.poke(this._palette, i, (255 << 24) |
+                                    (b << 16) |
+                                    (g << 8) |
+                                    (r));
+    }
+  }
+
+  initScreenConfiguration() {
+    Memory.poke(this._config, this._layout.backgroundColor, 0x01); // dark blue
+    Memory.poke(this._config, this._layout.tileForeground, 0xFF); // white
+    Memory.poke(this._config, this._layout.tileBackground, 0x00); // black
+    Memory.poke(this._config, this._layout.tileSetOffsetX, 0x00);
+    Memory.poke(this._config, this._layout.tileSetOffsetY, 0x00);
+    Memory.poke(this._config, this._layout.borderSizeX, 0x08); // 8px wide
+    Memory.poke(this._config, this._layout.borderSizeY, 0x08); // 8px high
+    Memory.poke(this._config, this._layout.borderColor, 0x09); //
+    Memory.poke(this._config, this._layout.tileSet, 0x00); // first tileset
+    Memory.poke(this._config, this._layout.graphicsDisplay, 0x00); // no graphics
+    Memory.poke(this._config, this._layout.tileDisplay, 0x00); // behind graphics
+    Memory.poke(this._config, this._layout.tilePage, 0x00); // zero tile page
   }
 
   update() {
