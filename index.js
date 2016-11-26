@@ -12,16 +12,6 @@ import memoryLayout from "js/memoryLayout.js";
 export default class App {
   start() {
 
-    let _log = [];
-    function log(s) {
-      _log.push(s);
-      if (_log.length > 24) {
-        _log.shift();
-      }
-      document.getElementById("log").innerHTML = _log.join("<BR>");
-    }
-    window.log = log;
-
     let memory = new Memory(memoryLayout);
     memory.init();
 
@@ -69,7 +59,6 @@ export default class App {
     memory.poke(memoryLayout.tileDisplay,1);
     var oldf = 0;
     function drawLoop(f) {
-        //log([f-oldf,f]);
         oldf = f;
         update();
         screen.update();
