@@ -12,5 +12,8 @@ module.exports = {
     },
     tohex8(v, prefix="0x") {
         return this.toHex(v, "00000000", prefix);
+    },
+    byteArrayToHex(arr, prefix="") {
+        return arr.map(b => this.toHex2(b, prefix)).join(" ");
     }
 };

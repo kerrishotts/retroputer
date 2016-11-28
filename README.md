@@ -130,7 +130,7 @@ The instruction set uses a variable-width encoding.
 | `02`             |`........ ........ 00000010 ########`| EXIT imm8                    |`........`| Pop stack frame of imm8 bytes
 | `03`             |`........ ........ ........ 00000011`| TRAP AL                      |`........`| Call trap AL 
 | `04 00-3F`       |`........ ........ 00000100 00drgsrg`| ADD drg, srg                 |`....OCNZ`| drg := srg + drg; with carry if M is 1
-| `04 80-BF`       |`........ ........ 00000100 10drgsrg`| SUB drg, srg                 |`....OCNZ`| drg := drg - srg; with carry if M is 1
+| `04 80-BF`       |`........ ........ 00000100 01drgsrg`| SUB drg, srg                 |`....OCNZ`| drg := drg - srg; with carry if M is 1
 | `04 80-BF`       |`........ ........ 00000100 10drgsrg`| XOR drg, srg                 |`......NZ`| drg := drg ^ srg
 | `04 C0-FF`       |`........ ........ 00000100 11drgsrg`| CMP drg, srg                 |`......NZ`| flags = drg cmp srg
 | `05 00-3F`       |`........ ........ 00000101 00regnum`| SHL reg, times               |`....OCNZ`| reg shl times; if M = 1, ROL
@@ -231,6 +231,63 @@ FUNC (void) main
 ```
 
 ## Sample Assembly and Encoding 
+
+### Every possible addressing mode
+
+```asm
+.code = 0x1000
+
+    LD AL, 0x80            => 07 80 80             #imm8
+    LD A,  0x80            => 07 89 00 80          #imm16
+    LD AL, [0x2000]        => 07 90 20 00          #abs16 byte
+    LD A,  [0x2000]        => 07 91 20 00          #abs16 word
+    LD AL, [0x2000+Y]      => 07 92 20 00          #abs16 indexed by Y, byte
+    LD A,  [0x2000+Y]      => 07 93 20 00          #abs16 indexed by Y, word
+    LD AL, [0x2000+X]      => 07 94 20 00          #abs16 indexed by X, byte
+    LD A,  [0x2000+X]      => 07 95 20 00          #abs16 indexed by X, word
+    LD AL, [0x2000+X+Y]    => 07 96 20 00          #abs16 indexed by X and Y, byte
+    LD A,  [0x2000+X+Y]    => 07 97 20 00          #abs16 indexed by X and Y, word
+    LD AL, (0x2000)        => 07 98 20 00          #ind16 byte
+    LD A,  (0x2000)        => 07 99 20 00          #ind16 word
+    LD AL, (0x2000)+Y      => 07 9A 20 00          #ind16, indexed by Y, byte
+    LD A,  (0x2000)+Y      => 07 9B 20 00          #ind16, indexed by Y, word
+    LD AL, (0x2000+X)      => 07 9C 20 00          #ind16 indexed by X, byte
+    LD A,  (0x2000+X)      => 07 9D 20 00          #ind16 indexed by X, word
+    LD AL, (0x2000+X)+Y    => 07 9E 20 00          #ind16 indexed by X, then Y, byte
+    LD A,  (0x2000+X)+Y    => 07 9F 20 00          #ind16 indexed by X, then Y, word
+    LD AL, [BP+0x2000]     => 07 A0 20 00          #relBP byte
+    LD A,  [BP+0x2000]     => 07 A1 20 00          #relBP word
+    LD AL, [BP+0x2000+Y]   => 07 A2 20 00          #relBP+Y byte
+    LD A,  [BP+0x2000+Y]   => 07 A3 20 00          #relBP+Y word
+    LD AL, [BP+0x2000+X]   => 07 A4 20 00          #relBP+X byte
+    LD A,  [BP+0x2000+X]   => 07 A5 20 00          #relBP+X word
+    LD AL, [BP+0x2000+X+Y] => 07 A6 20 00          #relBP+XY byte
+    LD A,  [BP+0x2000+X+Y] => 07 A7 20 00          #relBP+XY word
+    LD AL, (BP+0x2000)     => 07 A8 20 00          #indBP byte
+    LD A,  (BP+0x2000)     => 07 A9 20 00          #indBP word
+    LD AL, (BP+0x2000)+Y   => 07 AA 20 00          #indBP+Y byte
+    LD A,  (BP+0x2000)+Y   => 07 AB 20 00          #indBP+Y word
+    LD AL, (BP+0x2000+X)   => 07 AC 20 00          #indBP+X byte
+    LD A,  (BP+0x2000+X)   => 07 AD 20 00          #indBP+X word
+    LD AL, (BP+0x2000+X)+Y => 07 AE 20 00          #indBP+XY byte
+    LD A,  (BP+0x2000+X)+Y => 07 AF 20 00          #indBP+XY word
+    LD AL, [D]             => 07 B0                #relD byte
+    LD A,  [D]             => 07 B1                #relD word
+    LD AL, [D+Y]           => 07 B2                #relD+Y byte
+    LD A,  [D+Y]           => 07 B3                #relD+Y word
+    LD AL, [D+X]           => 07 B4                #relD+X byte
+    LD A,  [D+X]           => 07 B5                #relD+X word
+    LD AL, [D+X+Y]         => 07 B6                #relD+XY byte
+    LD A,  [D+X+Y]         => 07 B7                #relD+XY word
+    LD AL, (D)             => 07 B8                #indD byte
+    LD A,  (D)             => 07 B9                #indD word
+    LD AL, (D)+Y           => 07 BA                #indD+Y byte
+    LD A,  (D)+Y           => 07 BB                #indD+Y word
+    LD AL, (D+X)           => 07 BC                #indD+X byte
+    LD A,  (D+X)           => 07 BD                #indD+X word
+    LD AL, (D+X)+Y         => 07 BE                #indD+XY byte
+    LD A,  (D+X)+Y         => 07 BF                #indD+XY word
+```
 
 ```
 .code = 0x1000
