@@ -253,7 +253,7 @@ export default class Asm {
         r = (r[0] ? r[0] : "").split("=>");
         results.expectedAssembly = shrinkArray((r[1] ? r[1] : "").split(" ")).map(i => parseInt(i, 16));
 
-        r = shrinkArray((r[0] ? r[0] : "").split(/[\s,()=]+/));
+        r = shrinkArray((r[0] ? r[0] : "").split(/[\s,\:=]+/));
 
         if (r.length < 1) {
             // no need to go further; we're done
