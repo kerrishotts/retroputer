@@ -134,22 +134,22 @@ The instruction set uses a variable-width encoding.
 | `04 80-BF`       |`........ ........ 00000100 10drgsrg`| XOR drg, srg                 |`......NZ`| drg := drg ^ srg
 | `04 C0-FF`       |`........ ........ 00000100 11drgsrg`| CMP drg, srg                 |`......NZ`| flags = drg cmp srg
 | `05 00-3F`       |`........ ........ 00000101 00regnum`| SHL reg, times               |`....OCNZ`| reg shl times; if M = 1, ROL
-| `05 80-BF`       |`........ ........ 00000101 10drgsrg`| SHR reg, times               |`....OCNZ`| reg shr times; if M = 1, ROR
+| `05 80-BF`       |`........ ........ 00000101 01drgsrg`| SHR reg, times               |`....OCNZ`| reg shr times; if M = 1, ROR
 | `05 80-BF`       |`........ ........ 00000101 10drgsrg`| AND drg, srg                 |`......NZ`| drg := drg & srg
 | `05 C0-FF`       |`........ ........ 00000101 11drgsrg`| OR  drg, srg                 |`......NZ`| drg := drg || srg
 | `06 01`          |`........ 00000110 00000001 ########`| TRAP imm8                    |`........`| Call trap imm8
 | `06 08`          |`........ 00000110 00001000 00000reg`| NEG reg                      |`......N.`| Two's complement register
-| `06 10`          |`........ 00000110 00010000 00000reg`| BYTESWAP reg                 |`........`| Swap hi/lo byte of register
-| `06 40`          |`........ 00000110 00100000 0drg0srg`| MUL drg, srg                 |`....OCNZ`| drg := drg * srg;
-| `06 41`          |`........ 00000110 00100001 0drg0srg`| IDIV drg, srg                |`....OCNZ`| drg := drg / srg;
-| `06 42`          |`........ 00000110 00100010 0drg0srg`| IMOD drg, srg                |`....OCNZ`| drg := drg % srg;
-| `06 6D`          |`........ 00000110 01101101 Ddrgsreg`| MEMFILL D:drg, sreg * C      |`........`| Fill memory at D:drg with low 8 bits of sreg
-| `06 6E`          |`........ 00000110 01101110 DSdrgsrg`| MEMSWP D:drg, S:srg * C      |`........`| Swap memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
-| `06 6F`          |`........ 00000110 01101111 DSdrgsrg`| MEMCPY D:drg, S:srg * C      |`........`| Move memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
+| `06 10`          |`........ 00000110 00010000 00000reg`| XCB reg                      |`........`| Swap hi/lo byte of register
+| `06 40`          |`........ 00000110 00100000 00drgsrg`| MUL drg, srg                 |`....OCNZ`| drg := drg * srg;
+| `06 41`          |`........ 00000110 00100001 00drgsrg`| IDIV drg, srg                |`....OCNZ`| drg := drg / srg;
+| `06 42`          |`........ 00000110 00100010 00drgsrg`| IMOD drg, srg                |`....OCNZ`| drg := drg % srg;
+| `06 6D`          |`........ 00000110 01101101 D.drgreg`| MFILL  D:drg, sreg * C       |`........`| Fill memory at D:drg with low 8 bits of sreg
+| `06 6E`          |`........ 00000110 01101110 DSdrgsrg`| MSWAP  D:drg, S:srg * C      |`........`| Swap memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
+| `06 6F`          |`........ 00000110 01101111 DSdrgsrg`| MCOPY  D:drg, S:srg * C      |`........`| Move memory C times from address specified in srg in bank register indicated by S to memory in D:DRG
 | `06 70-77`       |`........ 00000110 01110reg ########`| IN reg, port                 |`........`| reg := data from port#
 | `06 78-7F`       |`........ 00000110 01111reg ########`| OUT reg, port                |`........`| data from port# := reg
-| `06 80-BF`       |`........ 00000110 10drgsrg ########`| MOV drg, srg                 |`........`| srg := drg
-| `06 C0-FF`       |`........ 00000110 11drgsrg ########`| SWAP reg, reg                |`........`| swap reg and reg
+| `06 80-BF`       |`........ 00000110 10drgsrg ........`| MOV drg, srg                 |`........`| srg := drg
+| `06 C0-FF`       |`........ 00000110 11drgsrg ........`| SWAP reg, reg                |`........`| swap reg and reg
 | `07 00-3F`       |`00000111 00mmmxys ######## ########`| BR                           |`........`| Branch to address
 | `07 40-7F`       |`00000111 01mmmxys ######## ########`| CALL                         |`........`| Call address as subroutine
 | `07 80-BF        |`00000111 10mmmxys ######## ########`| LD A(L) [DB]                 |`......NZ`| scale of 1 = AL; 2 = A
@@ -159,9 +159,9 @@ The instruction set uses a variable-width encoding.
 | `10-17`          |`........ ........ ........ 00010reg`| INC reg                      |`....OCNZ`| Increment register by one
 | `18-1F`          |`........ ........ ........ 00011reg`| DEC reg                      |`....OCNZ`| Decrement register by one
 | `20-27`          |`........ ........ ........ 00100flg`| IF flag                      |`...X....`| If flag is set, execute next instruction
-| `28-2F`          |`........ ........ ........ 00101flg`| IF !flag                     |`...X....`| If flag is NOT set, execute next instruction
-| `30-37`          |`........ ........ ........ 00111flg`| STf                          |`IMX.OCNZ`| Set flag
-| `38-3F`          |`........ ........ ........ 00111flg`| CLf                          |`IMX.OCNZ`| Clear flag
+| `28-2F`          |`........ ........ ........ 00101flg`| IFN flag                     |`...X....`| If flag is NOT set, execute next instruction
+| `30-37`          |`........ ........ ........ 00110flg`| ST flag                      |`IMX.OCNZ`| Set flag
+| `38-3F`          |`........ ........ ........ 00111flg`| CL flag                      |`IMX.OCNZ`| Clear flag
 | `40-7F`          |`........ 01mmmxys ######## ########`| LD A(L) [SB]                 |`......NZ`| scale of 1 = AL; 2 = A
 | `80-BF`          |`........ 10mmmxys ######## ########`| ST A(L) [SB]                 |`........`| scale of 1 = AL; 2 = A
 | `C0-DF`          |`........ ........ ........ 110dddss`| MOV dest, src                |`........`| transfer dest reg to src reg
