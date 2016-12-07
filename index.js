@@ -9,6 +9,8 @@ import Memory from "js/Memory.js";
 import Screen from "js/Screen.js";
 import memoryLayout from "js/memoryLayout.js";
 
+import font from "design/font0.js";
+
 export default class App {
   start() {
 
@@ -24,14 +26,22 @@ export default class App {
       for (var y = 0; y < 200; y++) {
         for (var x = 0; x < 320; x++) {
           addr = screenOffset + (y * 320) + x;
-          val = (((y & 0x01) + (x & 0x01)) % 2 )* fc;
+          //val = (((y & 0x01) + (x & 0x01)) % 2 )* fc + (x / y) ;
+          val = (1)* fc + (x / (y));
           memory.poke(addr, val);
+        }
+      }
+      for (var row = 0; row < 25; row++) {
+        for (var col = 0; col < 40; col++) {
+          //memory.poke(memoryLayout.tilePage0 + ((row * 40) + col), Math.floor(Math.random()*256));
+          memory.poke(memoryLayout.tilePage0 + ((row * 40) + col), (fc + (row*40) + col) % 256);
         }
       }
     }
 
     // let's create a tile
     var tileSet0Offset = memoryLayout.tileSet0;
+    /*
     var tileSet0 = {
       "65": [ 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00,
@@ -46,12 +56,12 @@ export default class App {
     tileSet0["65"].forEach(function(v,i) {
       memory.poke(i+tileSet0Offset+(65*64),v)
       console.log([v,i]);
+    });*/
+
+    font.forEach((v, i) => {
+      memory.poke(i+tileSet0Offset, v);
     });
-    for (var row = 0; row < 25; row++) {
-      for (var col = 0; col < 40; col++) {
-        memory.poke(memoryLayout.tilePage0 + ((row * 40) + col), 65);
-      }
-    }
+
 
     // and draw it?
     var screen = new Screen("screen", memory);
