@@ -2,55 +2,118 @@
 
 The Retroputer is intended as both a plaything and educational tool. It is intended to simulate what programming and using a computer from the late 1980s was like. Some liberties, however, are taken, including the following:
 
-* 256KiB is addressable; 192KiB is present -- in the 80s, this would have been pretty expensive
+* 256KiB is addressable; 256KiB is present -- in the 80s, this would have been pretty expensive
 * 64KiB devoted to 320x200 graphics
-* 256 color palette consisting of r,g,b,a elements
+* 256 color palette consisting of r,g,b elements
 * 64KiB devoted to tile set definitions (4 sets x 16 KiB)
+* 16KiB devoted to up to four visible tile pages on screen at once (4 pages x 4KiB)
 * 16KiB of ROM
 * 256 traps or interrupts
 * A slightly larger register file than many CPUs of the time
-* 16-bit CPU with a 18-bit address line
+* 16-bit CPU with an 18-bit address line
 
-The above is to make programming for the Retroputer a little easier while also to make it easy to translate the memory for screen graphics to an HTML5 canvas (which uses four bytes per pixel for RGBA). The tilesets are an affectation to make it easy to create levels and side-scrollers -- these are like (but not quite like) the character set definitions on most 8-bit machines.
+The above is to make programming for the Retroputer a little easier while also making it easy to translate the memory for screen graphics to an HTML5 canvas (which uses four bytes per pixel for RGBA). The tilesets are an affectation to make it easy to create levels and side-scrollers -- these are like (but not quite like) the character set definitions on many machines of the time.
+
+## Status
+
+The status of this project is simple: incomplete and tech demo. Currently being worked on:
+
+* Assembler
+* Decode & execute
+* Sprites 
+* ROM and KERNEL
+* Tests
+
+## Launching
+
+You can launch what's runnable by executing:
+
+```
+$ npm install
+$ npm serve run
+```
+
+Then navigate to http://localhost:8080.
+
+## Tests
+
+You can run tests by executing `npm test`.
 
 ## Memory Layout
 
 The memory layout is simple:
 
-|  Start  |   End   | Size | Identifier      | Purpose                                                      |
-|:-------:|:-------:|:----:|:---------------:|:-------------------------------------------------------------|
-|  00000                 ||| memBot          | Bottom of memory                                             |
-|  00000  |  0FFFF  |  64K |                 | Bank 0; code and data                                        |
-|  00000  |  001FF  | 512B | traps           | Traps consisting of 256 2-byte pointers                      |
-|  00000  |  00001  |   2B | trapReset       | Trap 0x00; points to reset()                                 |
-|  00400  |  00FFF  |   3K | stackMax        | Default location of stack; stack grows down from 00FFF       |
-|  01000  |  0AFFF  |  39K | codeStart       | Code and data                                                |
-|  0B000  |  0B3FF  |   1K | tilePage0       | 40x25 Tile Page 0                                            |
-|  0B400  |  0B7FF  |   1K | tilePage1       | 40x25 Tile Page 1                                            |
-|  0B800  |  0BBFF  |   1K | tilePage2       | 40x25 Tile Page 2                                            |
-|  0BC00  |  0BFFF  |   1K | tilePage3       | 40x25 Tile Page 3                                            |
-|  0C000  |  0FFFF  |  16K | romStart        | ROM and KERNEL                                               |
-|  10000  |  1FFFF  |  64K |                 | Bank 1; graphics and video configuration                     |
-|  10000  |  1F9FF  | ~64K | graphicsStart   | 320x200 256-color graphics                                   |
-|  1FA00                 ||| tilePage        | Tile page select (0-3)                                       |
-|  1FA01                 ||| tileDisplay     | Tile display order: 0 = behind graphics, 1 = in front; 0 = hidden |
-|  1FA02                 ||| graphicsDisplay | Display graphics if set to 1                                 |
-|  1FA03                 ||| tileSet         | Tile Set Index (0-4); base 0x20000                           |
-|  1FA04                 ||| borderColor     | Border color                                                 |
-|  1FA05                 ||| borderSizeX     | Width of border, horizontally                                |
-|  1FA06                 ||| borderSizeY     | Height of border, vertically                                 |
-|  1FA07                 ||| tileSetOffsetX  | signed offset for tiles, horizontally                        |
-|  1FA08                 ||| tileSetOffsetY  | signed offset for tiles, vertically                          |
-|  1FA09                 ||| tileBackground  | Tile background color (for 0x00 pixels)                      |
-|  1FA0A                 ||| tileForeground  | Tile foreground color (for 0xFF pixels)                      |
-|  1FA0B                 ||| backgroundColor | Screen background color                                      |
-|  1FC00  |  1FFFF  |   1K | paletteStart    | 256 RGBx color definitions                                   |
-|  20000  |  2FFFF  |  64K |                 | Bank 2; tile set definitions                                 |
-|  20000  |  23FFF  |  16K | tileSet0        | Tile set 0 (256 8x8 tiles)                                   |
-|  24000  |  27FFF  |  16K | tileSet1        | Tile set 1                                                   |
-|  28000  |  2BFFF  |  16K | tileSet2        | Tile set 2                                                   |
-|  2C000  |  2FFFF  |  16K | tileSet3        | Tile set 3                                                   |
-|  2FFFF                 ||| memTop          | Top of memory                                                |
+|  Start  |   End   | Size | Identifier       | Purpose                                                      |
+|:-------:|:-------:|:----:|:----------------:|:-------------------------------------------------------------|
+|  00000                 ||| memBot           | Bottom of memory                                             |
+|  00000  |  0FFFF  |  64K |                  | Bank 0; code and data                                        |
+|  00000  |  001FF  | 512B | traps            | Traps consisting of 256 2-byte pointers                      |
+|  00000  |  00001  |   2B | trapReset        | Trap 0x00; points to reset()                                 |
+|  00400  |  00FFF  |   3K | stackMax         | Default location of stack; stack grows down from 00FFF       |
+|  01000  |  0BFFF  |  43K | codeStart        | Code and data                                                |
+|  0C000  |  0FFFF  |  16K | romStart         | ROM and KERNEL                                               |
+|  10000  |  1FFFF  |  64K |                  | Bank 1; graphics and video configuration                     |
+|  10000  |  1F9FF  | ~64K | graphicsStart    | 320x200 256-color graphics                                   |
+|  1FA00                 ||| reserved         | reserved                                                     |
+|  1FA01                 ||| reserved         |                                                              |
+|  1FA02                 ||| graphicsLayer    | (0-7 visible; else invisible)                                |
+|  1FA03                 ||| reserved         |                                                              |
+|  1FA04                 ||| borderColor      | Border color                                                 |
+|  1FA05                 ||| borderSizeX      | Width of border, horizontally                                |
+|  1FA06                 ||| borderSizeY      | Height of border, vertically                                 |
+|  1FA07                 ||| reserved         |                                                              |
+|  1FA08                 ||| reserved         |                                                              |
+|  1FA09                 ||| reserved         |                                                              |
+|  1FA0A                 ||| reserved         |                                                              |
+|  1FA0B                 ||| backgroundColor  | Screen background color                                      |
+|  1FC00  |  1FFFF  |   1K | paletteStart     | 256 RGBx color definitions                                   |
+|  20000  |  2FFFF  |  64K |                  | Bank 2; tile set definitions                                 |
+|  20000  |  23FFF  |  16K | tileSet0         | Tile set 0 (256 8x8 tiles)                                   |
+|  24000  |  27FFF  |  16K | tileSet1         | Tile set 1                                                   |
+|  28000  |  2BFFF  |  16K | tileSet2         | Tile set 2                                                   |
+|  2C000  |  2FFFF  |  16K | tileSet3         | Tile set 3                                                   |
+|  30000  |  3FFFF  |  64K |                  | Bank 3; tile pages, sprites, data storage                    |
+|  30000  |  303FF  |   1K | tilePage0        | Tile page 0                                                  |
+|  30400  |  307FF  |   1K | tilePage0bgColor | Background color for tile page 0                             |
+|  30800  |  30BFF  |   1K | tilePage0fgColor | Foreground color for tile page 0                             |
+|  30FF9                 ||| tilePage0CropX   | Width of visual crop, in pixels                              |
+|  30FFA                 ||| tilePage0CropY   | Height of visual crop, in pixels                             |
+|  30FFB                 ||| tilePage0Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
+|  30FFC                 ||| tilePage0Set     | Tile set to use (0-3)                                        |
+|  30FFD                 ||| tilePage0OffsetX | Rendering offset (signed)                                    |
+|  30FFE                 ||| tilePage0OffsetY | Rendering offset (signed)                                    |
+|  30FFF                 ||| tilePage0Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
+|  31000  |  313FF  |   1K | tilePage1        | Tile page 0                                                  |
+|  31400  |  317FF  |   1K | tilePage1bgColor | Background color for tile page 0                             |
+|  31800  |  31BFF  |   1K | tilePage1fgColor | Foreground color for tile page 0                             |
+|  31FF9                 ||| tilePage1CropX   | Width of visual crop, in pixels                              |
+|  31FFA                 ||| tilePage1CropY   | Height of visual crop, in pixels                             |
+|  31FFB                 ||| tilePage1Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
+|  31FFC                 ||| tilePage1Set     | Tile set to use (0-3)                                        |
+|  31FFD                 ||| tilePage1OffsetX | Rendering offset (signed)                                    |
+|  31FFE                 ||| tilePage1OffsetY | Rendering offset (signed)                                    |
+|  31FFF                 ||| tilePage1Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
+|  32000  |  323FF  |   1K | tilePage2        | Tile page 0                                                  |
+|  32400  |  327FF  |   1K | tilePage2bgColor | Background color for tile page 0                             |
+|  32800  |  32BFF  |   1K | tilePage2fgColor | Foreground color for tile page 0                             |
+|  32FF9                 ||| tilePage2CropX   | Width of visual crop, in pixels                              |
+|  32FFA                 ||| tilePage2CropY   | Height of visual crop, in pixels                             |
+|  32FFB                 ||| tilePage2Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
+|  32FFC                 ||| tilePage2Set     | Tile set to use (0-3)                                        |
+|  32FFD                 ||| tilePage2OffsetX | Rendering offset (signed)                                    |
+|  32FFE                 ||| tilePage2OffsetY | Rendering offset (signed)                                    |
+|  32FFF                 ||| tilePage2Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
+|  33000  |  333FF  |   1K | tilePage3        | Tile page 0                                                  |
+|  33400  |  337FF  |   1K | tilePage3bgColor | Background color for tile page 0                             |
+|  33800  |  33BFF  |   1K | tilePage3fgColor | Foreground color for tile page 0                             |
+|  33FF9                 ||| tilePage3CropX   | Width of visual crop, in pixels                              |
+|  33FFA                 ||| tilePage3CropY   | Height of visual crop, in pixels                             |
+|  33FFB                 ||| tilePage3Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
+|  33FFC                 ||| tilePage3Set     | Tile set to use (0-3)                                        |
+|  33FFD                 ||| tilePage3OffsetX | Rendering offset (signed)                                    |
+|  33FFE                 ||| tilePage3OffsetY | Rendering offset (signed)                                    |
+|  33FFF                 ||| tilePage3Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
+|  3FFFF                 ||| memTop           | Top of memory                                                |
 
 ## Register file
 
@@ -64,8 +127,8 @@ The memory layout is simple:
 ||         CL  |   8  | Low 8 bits of C                              |
 |   3   |  D   |  16  | aDdress select, General purpose              |
 ||         DL  |   8  | Low 8 bits of D                              |
-|   4   |  X   |  16  | Index, General purpose                       |
-|   5   |  Y   |  16  | Index, General purpose                       |
+|   4   |  X   |  16  | Index before indirect, General purpose       |
+|   5   |  Y   |  16  | Index after indrect, General purpose         |
 |   6   |  SP  |  16  | Stack Pointer                                |
 |   7   |  BP  |  16  | Base Pointer                                 |
 |   C   |  SB  |   2  | Source Bank                                  |
@@ -88,18 +151,18 @@ The flags register is laid out as follows:
 
 ## Addressing modes
 
-| Index | Abbr | Name                | Formula               | Purpose                                |
-|:-----:|-----:|:--------------------|:----------------------|:---------------------------------------|
-|   0   | imm8 | Immediate 8         | (SB:PC)[1]            | Quickly load an 8-bit value            |
-|   0   | rel86| Relative 8          | (SB:PC+(SB:PC)[1])[0] | Jump to an address relative to PC      |
-|   1   | imm16| Immediate 16        | (SB:PC)[1]            | Quickly load a 16-bit value            |
-|   1   | rel16| Relative 16         | (SB:PC+(SB:PC)[1])[0] | Jump to an address relative to PC      |
-|   2   | abs16| Absolute 16         | ((SB:PC)[1])[0]       | Value in memory at SB:PC[1,2]          |
-|   3   | ind16| Indirect 16         | (((SB:PC)[1])[0])     | Value of address pointed to by address |
-|   4   | relBP| Relative BP         | (SB:BP+(SB:PC)[1])[0] | Value relative bytes into stack frame  |
-|   5   | indBP| Indirect BP         | ((SB:BP+(SB:PC)[1])[0])[0] | Indirected value relative bytes into stack frame |
-|   6   | absD | Absolute D          | (SB:D+(SB:PC)[1])[0] ] |  Value at address indicated by SB:D   |
-|   7   | indD | Indirect D          | ((SB:D+(SB:PC)[1])[0])[0] | Indirected value at address indicated by SB:D |
+| Index | Abbr | Name                | Purpose                                |
+|:-----:|-----:|:--------------------|:---------------------------------------|
+|   0   | imm8 | Immediate 8         | Quickly load an immediate 8-bit value  |
+|   0   | rel86| Relative 8          | Jump to an address relative to PC      |
+|   1   | imm16| Immediate 16        | Quickly load an immediate 16-bit value |
+|   1   | rel16| Relative 16         | Jump to an address relative to PC      |
+|   2   | abs16| Absolute 16         | Value in memory                        |
+|   3   | ind16| Indirect 16         | Value of address pointed to by address |
+|   4   | relBP| Relative BP         | Value relative bytes into stack frame  |
+|   5   | indBP| Indirect BP         | Indirected value relative bytes into stack frame |
+|   6   | absD | Absolute D          | Value at address indicated by SB:D   |
+|   7   | indD | Indirect D          | Indirected value at address indicated by SB:D |
 
 Each mode can be modified by the two index registers:
 
@@ -152,16 +215,16 @@ The instruction set uses a variable-width encoding.
 | `06 C0-FF`       |`........ 00000110 11drgsrg ........`| SWAP reg, reg                |`........`| swap reg and reg
 | `07 00-3F`       |`00000111 00mmmxys ######## ########`| BR                           |`........`| Branch to address
 | `07 40-7F`       |`00000111 01mmmxys ######## ########`| CALL                         |`........`| Call address as subroutine
-| `07 80-BF        |`00000111 10mmmxys ######## ########`| LD A(L) [DB]                 |`......NZ`| scale of 1 = AL; 2 = A
-| `07 C0-FF        |`00000111 11mmmxys ######## ########`| ST A(L) [DB]                 |`........`| scale of 1 = AL; 2 = A
+| `07 80-BF`       |`00000111 10mmmxys ######## ########`| LD A(L) [DB]                 |`......NZ`| scale of 1 = AL; 2 = A
+| `07 C0-FF`       |`00000111 11mmmxys ######## ########`| ST A(L) [DB]                 |`........`| scale of 1 = AL; 2 = A
 | `08-0B`          |`........ ........ ........ 000010rg`| MOV reg, SB                  |`........`| Set source bank
 | `0C-0F`          |`........ ........ ........ 000011rg`| MOV reg, DB                  |`........`| Set destination bank
 | `10-17`          |`........ ........ ........ 00010reg`| INC reg                      |`....OCNZ`| Increment register by one
 | `18-1F`          |`........ ........ ........ 00011reg`| DEC reg                      |`....OCNZ`| Decrement register by one
 | `20-27`          |`........ ........ ........ 00100flg`| IF flag                      |`...X....`| If flag is set, execute next instruction
 | `28-2F`          |`........ ........ ........ 00101flg`| IFN flag                     |`...X....`| If flag is NOT set, execute next instruction
-| `30-37`          |`........ ........ ........ 00110flg`| ST flag                      |`IMX.OCNZ`| Set flag
-| `38-3F`          |`........ ........ ........ 00111flg`| CL flag                      |`IMX.OCNZ`| Clear flag
+| `30-37`          |`........ ........ ........ 00110flg`| SET flag                     |`IMX.OCNZ`| Set flag
+| `38-3F`          |`........ ........ ........ 00111flg`| CLR flag                     |`IMX.OCNZ`| Clear flag
 | `40-7F`          |`........ 01mmmxys ######## ########`| LD A(L) [SB]                 |`......NZ`| scale of 1 = AL; 2 = A
 | `80-BF`          |`........ 10mmmxys ######## ########`| ST A(L) [SB]                 |`........`| scale of 1 = AL; 2 = A
 | `C0-DF`          |`........ ........ ........ 110dddss`| MOV dest, src                |`........`| transfer dest reg to src reg
@@ -180,59 +243,9 @@ The stack typically lives at 0x00400 - 0x00FFF. However, this can be relocated b
 
 The stack grows DOWN from SP. This means that the current frame (BP) is always higher than SP. Referencing local variables on the stack will be BP-index, whereas parameters and return values will be BP+index.
 
-The stack at startup looks like this:
-
-```
-   +---------+    SP = 0x1000; BP = 0x1000
-   |         |
-   :         :
-   |         |
-   +---------+
-```
-
-If we PUSH A, the stack looks like this:
-
-```
-   +---------+    BP = 0x1000
-   |    A    |    SP = 0x0FFE  (BP - 0x02)
-   :         :    
-   |         |
-   +---------+
-```
-
-Pushing B on to the stack results in this:
-
-```
-   +---------+    BP = 0x1000
-   |    A    |                 (BP - 0x02)
-   |    B    |    SP = 0x0FFC  (BP - 0x04)
-   :         :    
-   |         |
-   +---------+
-```
-
-Popping B results in the previous setup.
-
-Now, let's define a simple function:
-
-```
-.abi mode1
-FUNC (word) addTwoNumbersReturningResult ( word op1, word op2 )
-  LD A, op1
-  MV B, A
-  LD A, op2
-  ADD A, B
-  ST A, .return
-  RET
-ENDF
-
-FUNC (void) main
-  
-```
-
 ## Sample Assembly and Encoding 
 
-### Every possible addressing mode
+### Every possible addressing mode with LD
 
 ```asm
 .code = 0x1000
@@ -288,86 +301,3 @@ FUNC (void) main
     LD AL, (D+X)+Y         => 07 BE                #indD+XY byte
     LD A,  (D+X)+Y         => 07 BF                #indD+XY word
 ```
-
-```
-.code = 0x1000
-
-FUNC main
-  LD AL, 0x00
-ENDF
-
-.func fillGraphicsWithColor ( byte color )
-  .const word GRAPHICS        = 0x0000
-  .const byte GRAPHICS-BANK   = 0x01
-  .const word GRAPHICS-LENGTH = 64000
-  
-  LD AL, GRAPHICS-BANK       #
-  MV DB, A                   # DB := GRAPHICSBANK
-  
-  LD A, GRAPHICS-LENGTH      #
-  MV C, A                    # C := GRAPHICSLENGTH
-  
-  LD A, GRAPHICS             #
-  MV D, A                    # A := GRAPHICS
-  
-  LD AL, color               # AL := color
-  
-  MEMFILL DB:D, AL * C       # Fill memory with color
-
-  RET
-  
-.func setTileSet ( byte tileSet )
-  .const word TILE-SET-SEL   = 0xFA03
-  .const byte BANK = 0x00
-  
-  LD AL, BANK                #
-  MV DB, A                   # DB := BANK
-  
-  LD AL, tileSet             # A := tileSet
-  ST AL, DB:&TILE-SET-SEL    # Set the tileset
-  
-  RET
-  
-.func printStringAtPos ( wordPtr *str, byte row, byte col )
-  .const word TILE-PAGE-0    = 0xB000
-  .const byte COLS-PER-ROW   = 40
-  .const byte ROWS-PER-PAGE  = 25
-  
-  XOR A, A                   #
-  LD AL, row                 #
-  MV B, A                    #
-  LD AL, COLS-PER-PAGE       #
-  MUL B, A                   # B := row * COLS-PER-PAGE
-  
-  LD AL, col                 #
-  ADD A, B                   #
-  MV B, A                    # B := B + col
-  
-  LD A, TILE-PAGE-0          #
-  ADD B, A                   # B := TILE-PAGE-0 + B
-  
-  XOR A, A                   #
-  LD AL, str[0]              #
-  MV C, A                    # C := str[0] (length)
-  
-  XOR X, X                   # X := 0
-
-_loop:
-  INC X
-  LD AL, SB:str[X]           # AL := str[X]
-  ST AL, SB:&TILE-PAGE-0[X]  # Write character to memory location
-  DEC C
-  IF Z
-    BR _loop                 # Keep going as long as we have characters to write
-
-  RET
-  
-.func main()
-  .var str:byte[]            = L"Hello, World!"
-  
-  CALL setTileSet ( tileSet: 0x00 )
-  CALL fillGraphicsWithColor ( color: 0x00 )
-  CALL printStringAtPos ( str: str,  row: 12, col: 15 )
-  
-  RET
-  
