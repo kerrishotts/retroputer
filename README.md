@@ -83,9 +83,9 @@ The memory layout is simple:
 |  30FFD                 ||| tilePage0OffsetX | Rendering offset (signed)                                    |
 |  30FFE                 ||| tilePage0OffsetY | Rendering offset (signed)                                    |
 |  30FFF                 ||| tilePage0Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
-|  31000  |  313FF  |   1K | tilePage1        | Tile page 0                                                  |
-|  31400  |  317FF  |   1K | tilePage1bgColor | Background color for tile page 0                             |
-|  31800  |  31BFF  |   1K | tilePage1fgColor | Foreground color for tile page 0                             |
+|  31000  |  313FF  |   1K | tilePage1        | Tile page 1                                                  |
+|  31400  |  317FF  |   1K | tilePage1bgColor | Background color for tile page 1                             |
+|  31800  |  31BFF  |   1K | tilePage1fgColor | Foreground color for tile page 1                             |
 |  31FF9                 ||| tilePage1CropX   | Width of visual crop, in pixels                              |
 |  31FFA                 ||| tilePage1CropY   | Height of visual crop, in pixels                             |
 |  31FFB                 ||| tilePage1Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
@@ -93,9 +93,9 @@ The memory layout is simple:
 |  31FFD                 ||| tilePage1OffsetX | Rendering offset (signed)                                    |
 |  31FFE                 ||| tilePage1OffsetY | Rendering offset (signed)                                    |
 |  31FFF                 ||| tilePage1Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
-|  32000  |  323FF  |   1K | tilePage2        | Tile page 0                                                  |
-|  32400  |  327FF  |   1K | tilePage2bgColor | Background color for tile page 0                             |
-|  32800  |  32BFF  |   1K | tilePage2fgColor | Foreground color for tile page 0                             |
+|  32000  |  323FF  |   1K | tilePage2        | Tile page 2                                                  |
+|  32400  |  327FF  |   1K | tilePage2bgColor | Background color for tile page 2                             |
+|  32800  |  32BFF  |   1K | tilePage2fgColor | Foreground color for tile page 2                             |
 |  32FF9                 ||| tilePage2CropX   | Width of visual crop, in pixels                              |
 |  32FFA                 ||| tilePage2CropY   | Height of visual crop, in pixels                             |
 |  32FFB                 ||| tilePage2Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
@@ -103,9 +103,9 @@ The memory layout is simple:
 |  32FFD                 ||| tilePage2OffsetX | Rendering offset (signed)                                    |
 |  32FFE                 ||| tilePage2OffsetY | Rendering offset (signed)                                    |
 |  32FFF                 ||| tilePage2Layer   | Rendering layer (0-7 visible, otherwise hidden)              |
-|  33000  |  333FF  |   1K | tilePage3        | Tile page 0                                                  |
-|  33400  |  337FF  |   1K | tilePage3bgColor | Background color for tile page 0                             |
-|  33800  |  33BFF  |   1K | tilePage3fgColor | Foreground color for tile page 0                             |
+|  33000  |  333FF  |   1K | tilePage3        | Tile page 3                                                  |
+|  33400  |  337FF  |   1K | tilePage3bgColor | Background color for tile page 3                             |
+|  33800  |  33BFF  |   1K | tilePage3fgColor | Foreground color for tile page 3                             |
 |  33FF9                 ||| tilePage3CropX   | Width of visual crop, in pixels                              |
 |  33FFA                 ||| tilePage3CropY   | Height of visual crop, in pixels                             |
 |  33FFB                 ||| tilePage3Scale   | Scaling factor (0 = 1x1, 1 = 2x2, 2 = 4x4, etc.              |
