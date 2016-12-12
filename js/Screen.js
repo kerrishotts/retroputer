@@ -3,20 +3,6 @@ import Memory from "./Memory.js";
  export default class Screen {
   constructor(id, memory) {
     var width = 320, height = 200, layout = memory.layout;
-    this._layout = {
-      backgroundColor: layout.backgroundColor - layout.screenConfigStart,
-      tileForeground: layout.tileForeground - layout.screenConfigStart,
-      tileBackground: layout.tileBackground - layout.screenConfigStart,
-      tileSetOffsetY: layout.tileSetOffsetY - layout.screenConfigStart,
-      tileSetOffsetX: layout.tileSetOffsetX - layout.screenConfigStart,
-      borderSizeY: layout.borderSizeY - layout.screenConfigStart,
-      borderSizeX: layout.borderSizeX - layout.screenConfigStart,
-      borderColor: layout.borderColor - layout.screenConfigStart,
-      tileSet: layout.tileSet - layout.screenConfigStart,
-      graphicsDisplay: layout.graphicsDisplay - layout.screenConfigStart,
-      tileDisplay: layout.tileDisplay - layout.screenConfigStart,
-      tilePage: layout.tilePage - layout.screenConfigStart
-    };
 
     this._width = width;
     this._height = height;
@@ -33,18 +19,22 @@ import Memory from "./Memory.js";
     this._canvas.setAttribute("height", height);
     this._canvas_ctx = this._canvas.getContext("2d");
 
+    this._memory = memory;
+    this._layout = layout;
+    this._palette = memory.range32(layout.paletteStart,
+                                   layout.paletteLength32);
+
+/*
     // the screen occupies the second block of memory
     this._memory = memory.range(layout.graphicsStart,
                                 layout.graphicsLength);
 
     // the palette is 256 entries of rgba bytes
-    this._palette = memory.range32(layout.paletteStart,
-                                   layout.paletteLength32);
 
     // configuration settings
     this._config = memory.range(layout.screenConfigStart,
                                 layout.screenConfigLength);
-
+*/
     // tilesets
     this._tilesets = memory.range(layout.tileSetsStart,
                                   layout.tileSetsLength);
@@ -68,6 +58,23 @@ import Memory from "./Memory.js";
     this.initScreenConfiguration();
   }
 
+  setPaletteEntry(idx, r, g, b) {
+    let addr = this._layout.paletteStart + (idx << 2)
+    this._memory.poke(addr + 3, 0xFF);
+    this._memory.poke(addr + 2, b);
+    this._memory.poke(addr + 1, g);
+    this._memory.poke(addr + 0, r);
+  }
+
+  getPaletteEntry(idx) {
+    let addr = this._layout.paletteStart + (idx << 2)
+    return {
+      r: this._memory.peek(addr),
+      g: this._memory.peek(addr+1),
+      b: this._memory.peek(addr+2)
+    };
+  }
+
   initPalette() {
     var r, g, b, a, m, 
         ma = [0, 127, 191, 255];
@@ -77,65 +84,201 @@ import Memory from "./Memory.js";
       r = ma[((i & 0x30) >> 4)];// || m;
       g = ma[((i & 0x0C) >> 2)];// || m;
       b = ma[((i & 0x03) >> 0)];// || m;
-
-      Memory.poke(this._palette, i, (255 << 24) |
-                                    (b << 16) |
-                                    (g << 8) |
-                                    (r));
+      this.setPaletteEntry (i, r, g, b);
     }
   }
 
-  initScreenConfiguration() {
-    Memory.poke(this._config, this._layout.backgroundColor, 0x01); // dark blue
-    Memory.poke(this._config, this._layout.tileForeground, 0xFF); // white
-    Memory.poke(this._config, this._layout.tileBackground, 0x00); // black
-    Memory.poke(this._config, this._layout.tileSetOffsetX, 0x00);
-    Memory.poke(this._config, this._layout.tileSetOffsetY, 0x00);
-    Memory.poke(this._config, this._layout.borderSizeX, 0x08); // 8px wide
-    Memory.poke(this._config, this._layout.borderSizeY, 0x08); // 8px high
-    Memory.poke(this._config, this._layout.borderColor, 0x09); //
-    Memory.poke(this._config, this._layout.tileSet, 0x00); // first tileset
-    Memory.poke(this._config, this._layout.graphicsDisplay, 0x00); // no graphics
-    Memory.poke(this._config, this._layout.tileDisplay, 0x00); // behind graphics
-    Memory.poke(this._config, this._layout.tilePage, 0x00); // zero tile page
+  setBackgroundColor(c) {
+    this._memory.poke(this._layout.backgroundColor, c);
+  }
+  getBackgroundColor() {
+    return this._memory.peek(this._layout.backgroundColor);
   }
 
-  update() {
-    var tileForegroundColor = 
-          this._config[this._layout.tileForeground],
-        tileBackgroundColor = 
-          this._config[this._layout.tileBackground],
-        backgroundColor = this._config[this._layout.backgroundColor],
-        borderSizeX = this._config[this._layout.borderSizeX],
-        borderSizeY = this._config[this._layout.borderSizeY],
-        borderColor = this._config[this._layout.borderColor],
-        graphicsDisplay = this._config[this._layout.graphicsDisplay],
-        tileDisplay = this._config[this._layout.tileDisplay],
-        tileSet = this._config[this._layout.tileSet],
-        tileSetBase = tileSet * 16384,
-        tilePage = this._config[this._layout.tilePage],
-        tilePageBase = tilePage * 1024,
-        //todo: need to sign these two
-        tileSetOffsetX = this._config[this._layout.tileSetOffsetX], 
-        tileSetOffsetY = this._config[this._layout.tileSetOffsetY],
-        leftBorder = borderSizeX, 
-        rightBorder = this._width - borderSizeX,
-        topBorder = borderSizeY, 
-        bottomBorder = this._height - borderSizeY,
-        displayOrder = tileDisplay & 0x01,
-        color, addr, gpix, tpix, tile, tileSetAddr, pix;
+  setBorderSize(x, y) {
+    this._memory.poke(this._layout.borderSizeX, x);
+    this._memory.poke(this._layout.borderSizeY, y);
+  }
+  getBorderSize() {
+    return [this._memory.peek(this._layout.borderSizeX),
+            this._memory.peek(this._layout.borderSizeY)];
+  }
+
+  setBorderColor(c) {
+    this._memory.poke(this._layout.borderColor, c);
+  }
+  getBorderColor() {
+    return this._memory.peek(this._layout.borderColor);
+  }
+
+  setGraphicsLayer(l) {
+    this._memory.poke(this._layout.graphicsLayer, l);
+  }
+  getGraphicsLayer() {
+    return this._memory.peek(this._layout.graphicsLayer);
+  }
+
+  setTilePageLayer(page, l) {
+    var layers = [this._layout.tilePage0Layer,
+                  this._layout.tilePage1Layer,
+                  this._layout.tilePage2Layer,
+                  this._layout.tilePage3Layer];
+    this._memory.poke(layers[page], l);
+  }
+  getTilePageLayer(page) {
+    var layers = [this._layout.tilePage0Layer,
+                  this._layout.tilePage1Layer,
+                  this._layout.tilePage2Layer,
+                  this._layout.tilePage3Layer];
+    return this._memory.peek(layers[page]);
+  }
+
+  setTilePageOffsets(page, x, y) {
+    var offsetX = [this._layout.tilePage0OffsetX,
+                   this._layout.tilePage1OffsetX,
+                   this._layout.tilePage2OffsetX,
+                   this._layout.tilePage3OffsetX];
+    this._memory.poke(offsetX[page], x < 0 ? x + 256 : x),
+    this._memory.poke(offsetX[page]+1, y< 0 ? y + 256 : y);
+  }
+  getTilePageOffsets(page) {
+    var offsetX = [this._layout.tilePage0OffsetX,
+                   this._layout.tilePage1OffsetX,
+                   this._layout.tilePage2OffsetX,
+                   this._layout.tilePage3OffsetX];
+    return [this._memory.peek(offsetX[page]),
+            this._memory.peek(offsetX[page]+1)];
+  }
+
+  setTilePageCrops(page, x, y) {
+    var cropX = [this._layout.tilePage0CropX,
+                 this._layout.tilePage1CropX,
+                 this._layout.tilePage2CropX,
+                 this._layout.tilePage3CropX] ;
+    this._memory.poke(cropX[page], x),
+    this._memory.poke(cropX[page]+1, y);
+  }
+  getTilePageCrops(page) {
+    var cropX = [this._layout.tilePage0CropX,
+                 this._layout.tilePage1CropX,
+                 this._layout.tilePage2CropX,
+                 this._layout.tilePage3CropX] ;
+    return [this._memory.peek(cropX[page]),
+            this._memory.peek(cropX[page]+1)];
+  }
+
+  setTilePageSet(page, set) {
+    var layers = [this._layout.tilePage0Set,
+                  this._layout.tilePage1Set,
+                  this._layout.tilePage2Set,
+                  this._layout.tilePage3Set];
+    this._memory.poke(layers[page], set);
+  }
+  getTilePageSet(page) {
+    var layers = [this._layout.tilePage0Set,
+                  this._layout.tilePage1Set,
+                  this._layout.tilePage2Set,
+                  this._layout.tilePage3Set];
+    return this._memory.peek(layers[page]);
+  }
+
+  setTilePageScale(page, scale) {
+    var layers = [this._layout.tilePage0Scale,
+                  this._layout.tilePage1Scale,
+                  this._layout.tilePage2Scale,
+                  this._layout.tilePage3Scale];
+    this._memory.poke(layers[page], scale);
+  }
+  getTilePageScale(page) {
+    var layers = [this._layout.tilePage0Scale,
+                  this._layout.tilePage1Scale,
+                  this._layout.tilePage2Scale,
+                  this._layout.tilePage3Scale];
+    return this._memory.peek(layers[page]);
+  }
+
+
+  initScreenConfiguration() {
+    this.setBackgroundColor(0x01);  // dark blue
+    this.setBorderSize(0x08, 0x08); // 8px on all sides
+    this.setBorderColor(0x09);
+    this.setGraphicsLayer(0xFF); // graphics hidden by default;
+    for (let page=0; page<4; page++) {
+      let tilePageBase = this._layout.tilePage0 + (this._layout.tilePageLength * page);
+      let tileBGColor = tilePageBase + 0x0400;
+      let tileFGColor = tileBGColor + 0x0400;
+      for (let idx = 0; idx < 0x0400; idx++) {
+        this._memory.poke(tilePageBase + idx, 0);
+        this._memory.poke(tileBGColor + idx, 0);
+        this._memory.poke(tileFGColor + idx, 0xFF);
+      }
+      this.setTilePageLayer(page, (page === 0) ? 0x01 : 0xFF); // only tile page 0 is visible by default
+      this.setTilePageCrops(page, 0, 0); // no crops
+      this.setTilePageOffsets(page, 0, 0); // no offsets
+      this.setTilePageScale(page, 0); // no scaling
+      this.setTilePageSet(page, 0); // first tile set
+    }
+  }
+
+  setPixel (x, y, c) {
+      let addr = (y*this._width) + x;
+      let color = this._palette[c];
+      this._frame[addr] = color;
+  }
+  
+  setTile (page, row, col, tile, bgColor = 0x00, fgColor = 0xFF) {
+    let baseAddr = this._layout.tilePage0 + (this._layout.tilePageLength * page);
+    let tileAddr = baseAddr + (row * this._tileColumns) + col;
+    let bgAddr = tileAddr + 0x0400;
+    let fgAddr = tileAddr + 0x0800;
+
+    this._memory.poke(tileAddr, tile);
+    this._memory.poke(bgAddr, bgColor);
+    this._memory.poke(fgAddr, fgColor);
+  }
+
+  renderBackgroundColorToCanvas() {
+    var c = this.getBackgroundColor();
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
+        this.setPixel(x, y, c);
+      }
+    }
+  }
+
+  renderTilePageToCanvas(page) {
+    var [cropX, cropY] = this.getTilePageCrops(page),
+        cropLeft = cropX,
+        cropRight = this._width - cropX,
+        cropTop = cropY,
+        cropBottom = this._height - cropY,
+        [offsetX, offsetY] = this.getTilePageOffsets(page),
+        scale = this.getTilePageScale(page),
+        tileSet = this.getTilePageSet(page),
+        tileSetBase = tileSet*16384,
+        tilePageBase = page * 0x1000,
+        tileForegroundColor, tileBackgroundColor,
+        addr, tile, tileSetAddr, tpix,
+        newx, newy;
+     
+    var shift = 3 + scale;
+
+    offsetX = (offsetX > 127) ? -256+offsetX : offsetX;
+    offsetY = (offsetY > 127) ? -256+offsetY : offsetY;
 
     for (var y = 0; y < this._height; y++) {
       for (var x = 0; x < this._width; x++) {
 
         // get the tile index
-        addr = ((y >> 3) * this._tileColumns) + (x >> 3);
+        addr = ((y >> shift) * this._tileColumns) + (x >> shift);
         tile = this._tiles[tilePageBase + addr]; 
+
+        // get corresponding colors
+        tileForegroundColor = this._tiles[tilePageBase + addr + 0x0800];
+        tileBackgroundColor = this._tiles[tilePageBase + addr + 0x0400];
         
         // get the tile pixel
-        tileSetAddr = ((y & 0x07) << 3) + (x & 0x07) +
-                      (tile << 6); // tile*64
-
+        tileSetAddr = (((y >> scale) & 0x07) << 3) + ((x >> scale) & 0x07) + (tile << 6); 
         tpix = this._tilesets[tileSetBase + tileSetAddr];
 
         if (tpix === 0x00 || tpix === 0xFF) {
@@ -143,31 +286,97 @@ import Memory from "./Memory.js";
                                      : tileBackgroundColor;
         }
 
-        tpix = (tileDisplay === 2) ? 0 : tpix;
+        newx = x + offsetX;
+        newy = y + offsetY;
 
-        // get the graphics pixel
-        addr = (y*this._width) + x;
-        gpix = this._memory[addr];
+        if (tpix > 0) {
+          if (((newx >= cropLeft) && (newx < cropRight)) &&
+              ((newy >= cropTop) && (newy < cropBottom))) {
+            this.setPixel (newx, newy, tpix);
+          }
+        }
+      }
+    }
+  }
 
-        gpix = (graphicsDisplay === 1) ? gpix : 0; 
+  renderGraphicsToCanvas() {
+    var addr, gpix;
+    addr = this._layout.graphicsStart;
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
+        addr++;
+        gpix = this._memory.peek(addr);
+        if (gpix > 0) {
+          this.setPixel (x, y, gpix);
+        }
+      }
+    }
+  }
 
-        // which one?
-        pix = (displayOrder === 0) ? ((gpix === 0) ? tpix : gpix)
-                                   : ((tpix === 0) ? gpix : tpix);
+  renderSpriteToCanvas(sprite) {
 
-        pix = (pix ===0) ? backgroundColor : pix;
+  }
 
-        // handle the border
+  renderBorderToCanvas() {
+    var borderColor = this.getBorderColor();
+    var [borderSizeX, borderSizeY] = this.getBorderSize(),
+        leftBorder = borderSizeX,
+        rightBorder = this._width - borderSizeX,
+        topBorder = borderSizeY,
+        bottomBorder = this._height - borderSizeY;
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
         if (((x < leftBorder) || (x >= rightBorder)) ||
             ((y < topBorder) || (y >= bottomBorder))) {
-          pix = borderColor;
+          this.setPixel (x, y, borderColor);
         }
-
-        // store the pixel
-        color = this._palette[pix];
-        this._frame[addr] = color;
       }
-    }   
+    }
+  }
+
+  update() {
+    var layer;
+    var layers = [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ];
+
+    // background color goes first
+    layers[0].push(this.renderBackgroundColorToCanvas.bind(this));
+
+    // next figure out where the tile pages go
+    for (var page=0; page<4; page++) {
+      layer = this.getTilePageLayer(page);
+      if (layer < 8) {
+        layers[layer].push(this.renderTilePageToCanvas.bind(this, page));
+      }
+    }
+
+    // then the graphics page
+    layer = this.getGraphicsLayer();
+    if (layer < 8) {
+      layers[layer].push(this.renderGraphicsToCanvas.bind(this));
+    }
+
+    // then the sprites
+    // TODO
+
+    // then the border
+    layers[7].push(this.renderBorderToCanvas.bind(this));
+
+    // and now composite!
+    for (var layerIdx=0; layerIdx<8; layerIdx++) {
+      var actions = layers[layerIdx];
+      for (var actionIdx=0; actionIdx<actions.length; actionIdx++) {
+        actions[actionIdx]();
+      }
+    }
   }
 
   draw() {

@@ -422,7 +422,7 @@ export default class CPU {
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
-          this.imm16 = (this.instruction[2] << 8) & this.instruction[3];
+          this.imm16 = (this.state.instruction[2] << 8) & this.state.instruction[3];
           break;
         }
         if ((opcode & 0b10000000) === 0b10000000) {
@@ -434,7 +434,7 @@ export default class CPU {
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
-          this.imm16 = (this.instruction[2] << 8) & this.instruction[3];
+          this.imm16 = (this.state.instruction[2] << 8) & this.state.instruction[3];
           break;
         }
 

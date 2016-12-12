@@ -3,7 +3,7 @@
 <head>
 <meta name="description" content="An 8-bit retro-emulator in JavaScript">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
+  <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,minimum-scale=1">
   <title>Retroputer</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <script src="jspm_packages/system.js"></script>
@@ -26,7 +26,9 @@
       then( App => console.log(App) ).
       catch( err => console.log(err));
   </script>
-  <canvas id="screen"></canvas>
-  <div id="log"></div>
+  <div id="frame">
+    <canvas id="screen"></canvas>
+    <div id="log"></div>
+  </div>
 </body>
 </html>

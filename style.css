@@ -2,18 +2,33 @@ body {
   background-color: black;
   margin: 0;
 }
-    #screen {
-      width: 640px;
-      height: 400px;
+
+#frame {
+  position: absolute;
+  top: 0; left: 0;
+  bottom: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#screen {
+  width: 100vw;
+  height: calc( 100vw * (200 / 320) );
+  flex: 0 0 auto;
+  margin: auto auto;
+
   image-rendering: optimizeSpeed;             /* Older versions of FF          */
   image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
   image-rendering: -webkit-optimize-contrast; /* Safari                        */
   image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
   image-rendering: pixelated;                 /* Awesome future-browsers       */
   -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
-    }
+}
 
 #log {
+  flex: 1 1 auto;
   color: white;
   background-color: red !important;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
 }

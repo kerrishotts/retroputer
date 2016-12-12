@@ -22,6 +22,17 @@ export default class Memory {
   }
 
   init() {
+    for (let i=0; i<(this.layout.size*1024); i++) {
+      // simulate old-style memory being random at boot
+      this.poke(i, Math.floor(Math.random()*256));
+    };
+
+    // but we do need a valid reset vector
+    this.poke(0, 0xFF);
+    this.poke(1, 0x00);
+
+    // and we'll need to load a ROM in soon as well
+    // TODO: load boot rom
   }
 
   static poke(buffer, addr, val)  {
