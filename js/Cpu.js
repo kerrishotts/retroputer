@@ -1,6 +1,8 @@
 import Register from "./Register.js";
 import log from "./log.js";
 import hexUtils from "./hexUtils.js";
+import { exec } from "./cpu-semantics/index.js";
+import cpuSemantics from "./cpu-semantics/index.js";
 
 export default class CPU {
   constructor(memory) {
@@ -31,6 +33,9 @@ export default class CPU {
     
     this.registers[this.registerMap.SP].U16 = 0x1000;
     this.registers[this.registerMap.BP].U16 = 0x1000;
+
+    this.setFlag(this.flagMap.X);
+    this.setFlag(this.flagMap.I);
     
     this.memory = memory;
 
@@ -46,30 +51,27 @@ export default class CPU {
       flag: 0x00,         // flag index
       srcBank: 0x00,     // source bank select
       destBank: 0x00,     // destination bank select
+      whichBank: 0x00,    // which bank
       addressingMode: 0x00,  // addressing mode
       indexByX: false,
       indexByY: false,
       scale: 1
     }  
-    
-    this.semantics = {
-      NOP:     0x00, MOVE:    0x10, SWAP:    0x11, LOAD:    0x20,
-      STORE:   0x21, IN:      0x28, OUT:     0x29, MEMFILL: 0x2D,
-      MEMCOPY: 0x2E, MEMSWAP: 0x2F, PUSH:    0x30, POP:     0x31,
-      ADD:     0x40, INC:     0x41, SUB:     0x48, DEC:     0x49,
-      CMP:     0x4F, IMUL:    0x50, IDIV:    0x51, IMOD:    0x52,
-      SHL:     0x58, SHR:     0x59, ROL:     0x5A, ROR:     0x5B,
-      XOR:     0x5C, AND:     0x5D, OR:      0x5E, NEG:     0x5F,
-      SETFLAG: 0x60, CLRFLAG: 0x61, IFFLAG:  0x68, IFNFLAG: 0x69,
-      BR:      0x70, CALL:    0x71, ENTER:   0x72, EXIT:    0x73,
-      TRAP:    0x74, BYTESWAP:0x78, RET:     0x7F, BADOP:   0xFF
-    };
 
-    this.semanticsMap = Object.keys(this.semantics).reduce((p, c) => {
-      p[this.semantics[c]] = c;
-      return p;
-    }, {});
-    
+    this.semantics = cpuSemantics.semantics;
+    this.semanticsMap = cpuSemantics.semanticsMap;
+  }
+
+  getFlag(flag) {
+    return (this.registers[this.registerMap.Flags].U8 & (0x01 << flag)) > 0;
+  }
+  setFlag(flag) {
+    this.registers[this.registerMap.Flags].U8 |= (0x01 << flag);
+  }
+  clrFlag(flag) {
+    if (this.getFlag(flag)) {
+      this.registers[this.registerMap.Flags].U8 -= (0x01 << flag);
+    }
   }
   
   clearState() {
@@ -84,6 +86,7 @@ export default class CPU {
     this.state.flag= 0x00;         // flag index
     this.state.srcBank= 0x00;     // source bank select
     this.state.destBank= 0x00;     // destination bank select
+    this.state.whichBank = 0x00;   // 00 = SB, 01 = DB
     this.state.addressingMode= 0x00;  // addressing mode
     this.state.indexByX= false;
     this.state.indexByY= false;
@@ -159,10 +162,12 @@ export default class CPU {
           break;
         }
         if (opcode === 0x00) {
+          // NOP
           this.state.semantic = this.semantics.NOP;
           break;
         }
         if (opcode === 0x03) {
+          // TRAP AL
           this.state.semantic = this.semantics.TRAP;
           this.destRegister = this.registerMap.AL;
           this.srcRegister = this.destRegister;
@@ -187,7 +192,7 @@ export default class CPU {
           break;
         }
         if ((opcode & 0b11110000) === 0b00100000) {
-          // IF/IF! flag
+          // IF/IFN flag
           // -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   1   tgl   f l a g 
           this.state.semantic = (opcode & 0b00001000) ? this.semantics.IFNFLAG : this.semantics.IFFLAG;
@@ -195,7 +200,7 @@ export default class CPU {
           break;
         }
         if ((opcode & 0b11110000) === 0b00110000) {
-          // ST/CL flag
+          // SET/CLR flag
           // -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   1   1   tgl   f l a g 
           this.state.semantic = (opcode & 0b00001000) ? this.semantics.CLRFLAG : this.semantics.SETFLAG;
@@ -225,11 +230,13 @@ export default class CPU {
       case 2:
         opcodeExt = this.state.instruction[1];
         if ((opcode === 0x01)) {
+          // ENTER imm8
           this.state.semantic = this.semantics.ENTER;
           this.state.imm8 = opcodeExt;
           break;
         }
         if ((opcode === 0x02)) {
+          // EXIT imm8
           this.state.semantic = this.semantics.EXIT;
           this.state.imm8 = opcodeExt;
           break;
@@ -291,9 +298,11 @@ export default class CPU {
         this.state.semantic = this.semantics.BADOP;
         break;
       case 3:
-        opcode = this.state.instruction[1];
-        opparm = this.state.instruction[2];
-        if ((opcode === 0x01)) {
+        if (opcode === 0x06) {
+          opcode = (opcode << 8) | this.state.instruction[1];
+          opparm = this.state.instruction[2];
+        }
+        if ((opcode === 0x0601)) {
           // TRAP imm8
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   0   0   0    0   0   0   1       i  m  m  e  d  i  a  t  e
@@ -301,7 +310,7 @@ export default class CPU {
           this.state.imm8 = opparm;
           break;
         }
-        if ((opcode === 0x08)) {
+        if ((opcode === 0x0608)) {
           // NEG reg
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   0   0   0    1   0   0   0    0   0   0   0    0  src-register
@@ -310,7 +319,7 @@ export default class CPU {
           this.state.srcRegister = this.state.destRegister;
           break;
         }
-        if ((opcode === 0x10)) {
+        if ((opcode === 0x0610)) {
           // BYTESWAP reg
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   0   0   1    0   0   0   0    0   0   0   0    0  src-register
@@ -319,94 +328,107 @@ export default class CPU {
           this.state.srcRegister = this.state.destRegister;
           break;
         }
-        if ((opcode === 0x40)) {
+        if ((opcode === 0x0640)) {
           // MUL drg, srg
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   0   0    0   0   0   0    0  dst-register  0  src-register
           this.state.semantic = this.semantics.IMUL;
-          this.state.destRegister = (opparm & 0b01110000) >> 4;
-          this.state.srcRegister = (opparm & 0b00000111);
+          this.state.destRegister = (opparm & 0b00111000) >> 3;
+          this.state.srcRegister =  (opparm & 0b00000111);
           break;
         }
-        if ((opcode === 0x41)) {
+        if ((opcode === 0x0641)) {
           // IDIV drg, srg
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   0   0    0   0   0   1    0  dst-register  0  src-register
           this.state.semantic = this.semantics.IDIV;
-          this.state.destRegister = (opparm & 0b01110000) >> 4;
+          this.state.destRegister = (opparm & 0b00111000) >> 3;
           this.state.srcRegister = (opparm & 0b00000111);
           break;
         }
-        if ((opcode === 0x42)) {
+        if ((opcode === 0x0642)) {
           // IMOD drg, srg
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   0   0    0   0   1   0    0  dst-register  0  src-register
           this.state.semantic = this.semantics.IMOD;
-          this.state.destRegister = (opparm & 0b01110000) >> 4;
+          this.state.destRegister = (opparm & 0b00111000) >> 3;
           this.state.srcRegister = (opparm & 0b00000111);
           break;
         }
-        if ((opcode === 0x6D)) {
+        if ((opcode === 0x066D)) {
           // MEMFILL D:drg, srg * c
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   1   0    1   1   0   1   d:b dst-register s:b src-register
           this.state.semantic = this.semantics.MEMFILL;
-          this.state.destBank = (opparm & 0b10000000) >> 7;
-          this.state.destRegister = (opparm & 0b01110000) >> 4;
-          this.state.srcBank = (opparm & 0b00001000) >> 3;
-          this.state.srcRegister = (opparm & 0b00000111);
+          this.state.destBank =     (opparm & 0b10000000) >> 7;
+          this.state.srcBank = 0x00
+          this.state.destRegister = (opparm & 0b00111000) >> 3;
+          this.state.srcRegister =  (opparm & 0b00000111);
           break;
         }
-        if ((opcode === 0x6E)) {
+        if ((opcode === 0x066E)) {
           // MEMSWAP D:drg, srg * c
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   1   0    1   1   1   0   d:b dst-register s:b src-register
           this.state.semantic = this.semantics.MEMSWAP;
-          this.state.destBank = (opparm & 0b10000000) >> 7;
-          this.state.destRegister = (opparm & 0b01110000) >> 4;
-          this.state.srcBank = (opparm & 0b00001000) >> 3;
-          this.state.srcRegister = (opparm & 0b00000111);
+          this.state.destBank =     (opparm & 0b10000000) >> 7;
+          this.state.srcBank =      (opparm & 0b01000000) >> 6;
+          this.state.destRegister = (opparm & 0b00111000) >> 3;
+          this.state.srcRegister =  (opparm & 0b00000111);
           break;
         }
-        if ((opcode === 0x6F)) {
+        if ((opcode === 0x066F)) {
           // MEMCOPY D:drg, srg * c
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   1   0    1   1   1   1   d:b dst-register s:b src-register
           this.state.semantic = this.semantics.MEMCOPY;
-          this.state.destBank = (opparm & 0b10000000) >> 7;
-          this.state.destRegister = (opparm & 0b01110000) >> 4;
-          this.state.srcBank = (opparm & 0b00001000) >> 3;
-          this.state.srcRegister = (opparm & 0b00000111);
+          this.state.destBank =     (opparm & 0b10000000) >> 7;
+          this.state.srcBank =      (opparm & 0b01000000) >> 6;
+          this.state.destRegister = (opparm & 0b00111000) >> 3;
+          this.state.srcRegister =  (opparm & 0b00000111);
           break;
         }
-        if ((opcode & 0b11110000) === 0b01110000) {
+        if ((opcode & 0b1111111111110000) === 0x0670) {
           // IN/OUT reg, port
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   0    0   1   1   1   s/w  register    imm8
-          this.state.semantic = (opcode & 0b00001000) ? this.semantics.OUT : this.semantics.IN;
-          this.state.destRegister = (opcode & 0b00000111);
+          this.state.semantic = (opcode & 0b0000000000001000) ? this.semantics.OUT : this.semantics.IN;
+          this.state.destRegister = (opcode & 0b0000000000000111);
           this.state.srcRegister = this.state.destRegister;
           this.state.imm8 = opparm;
           break;
         }
-        if ((opcode & 0b11000000) === 0b10000000) {
-          // MOV drg(masked by imm8), srg
-          // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
-          //  0   0   0   0    0   1   1   0    1   0  dst-register src-register imm8
+        if ((opcode & 0b1111111111000000) === 0x0680) {
+          // MOV drg, srg
+          // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0- 
+          //  0   0   0   0    0   1   1   0    1   0  dst-register src-register 
           this.state.semantic = this.semantics.MOVE;
-          this.state.destRegister = (opcode & 0b00111000) >> 3;
-          this.state.srcRegister = (opcode & 0b00000111);
-          this.state.imm8 = opparm;
+          this.state.destRegister = (opcode & 0b0000000000111000) >> 3;
+          this.state.srcRegister = (opcode & 0b0000000000000111);
+          this.state.instruction.pop(); // give a byte back; this is technically a shorter instruction
           break;
         }
-        if ((opcode & 0b11000000) === 0b11000000) {
-          // SWAP drg(masked by imm8), srg
-          // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
-          //  0   0   0   0    0   1   1   0    1   1  dst-register src-register imm8
+        if ((opcode & 0b1111111111000000) === 0x06C0) {
+          // SWAP drg, srg
+          // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  
+          //  0   0   0   0    0   1   1   0    1   1  dst-register src-register 
           this.state.semantic = this.semantics.SWAP;
-          this.state.destRegister = (opcode & 0b00111000) >> 3;
-          this.state.srcRegister = (opcode & 0b00000111);
-          this.state.imm8 = opparm;
+          this.state.destRegister = (opcode & 0b0000000000111000) >> 3;
+          this.state.srcRegister = (opcode & 0b0000000000000111);
+          this.state.instruction.pop(); // give a byte back; this is technically a shorter instruction
+          break;
+        }
+        if (opcode >= 0x40 && opcode < 0xC0) {
+          // LDS / STD
+          // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
+          // s/w s/w address mode +x? +y? w/b  ...  s  i  x  t  e  e  n      b  i  t      a  d  d  r  e  s  s  ...
+          this.state.semantic = ((opcode & 0b11000000) === 0x80 ) ? this.semantics.STORE : this.semantics.LOAD;
+          this.state.addressingMode = (opcode & 0b00111000) >> 3;
+          this.state.indexByX = (opcode & 0b00000100) >> 2;
+          this.state.indexByY = (opcode & 0b00000010) >> 1;
+          this.state.scale = (opcode & 0b00000001);
+          this.state.whichBank = (this.state.semantic === this.semantics.STORE ? 0x01 : 0x00);
+          this.state.imm16 = (this.state.instruction[1] << 8) | this.state.instruction[2];
           break;
         }
         this.state.semantic = this.semantics.BADOP;
@@ -422,11 +444,16 @@ export default class CPU {
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
-          this.imm16 = (this.state.instruction[2] << 8) & this.state.instruction[3];
+          if (this.state.scale > 0) {
+            this.state.imm16 = (this.state.instruction[2] << 8) | this.state.instruction[3];
+          } else {
+            this.state.imm8 = this.state.instruction[2];
+            this.state.instruction.pop(); // give a byte back
+          }
           break;
         }
         if ((opcode & 0b10000000) === 0b10000000) {
-          // LD / ST
+          // LDD / STS
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   1    1  s/w address mode +x? +y? w/b  ...  s  i  x  t  e  e  n      b  i  t      a  d  d  r  e  s  s  ...
           this.state.semantic = (opcode & 0b01000000) ? this.semantics.STORE : this.semantics.LOAD;
@@ -434,7 +461,8 @@ export default class CPU {
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
-          this.imm16 = (this.state.instruction[2] << 8) & this.state.instruction[3];
+          this.state.whichBank = (this.state.semantic === this.semantics.STORE ? 0x00 : 0x01);
+          this.state.imm16 = (this.state.instruction[2] << 8) | this.state.instruction[3];
           break;
         }
 
@@ -445,7 +473,7 @@ export default class CPU {
   }
 
   execute() {
-
+    exec(this);
   }
   
   advancePC() {
@@ -461,7 +489,11 @@ export default class CPU {
       this.advancePC();
     }
     this.dump();
-    this.execute();
+    if (this.getFlag(this.flagMap.X)) {
+      this.execute();
+    } else {
+      this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
+    }
   }
 
   sendTrap(trap) {
