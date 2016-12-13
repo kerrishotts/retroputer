@@ -109,6 +109,22 @@ describe("#CPU", () => {
                 expect(cpu.state.destRegister).to.equal(cpu.registerMap.B); 
                 expect(cpu.state.srcRegister).to.equal(cpu.registerMap.D); 
             });
+            it("MOV C, B", () => {
+                // we're technically a two-byte instruction, but the decoder pulls three first
+                // before giving one back
+                cpu.state.instruction = [0x06, 0b10010001, 0x00]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.MOVE)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.C); 
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.B); 
+            });
+            it("SWAP C, B", () => {
+                // we're technically a two-byte instruction, but the decoder pulls three first
+                // before giving one back
+                cpu.state.instruction = [0x06, 0b11010001, 0x00]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.SWAP)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.C); 
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.B); 
+            });
 
         });
 
@@ -116,19 +132,82 @@ describe("#CPU", () => {
             beforeEach( () => {
                 expectedPC = 0x0003;
             });
-            it("MOV C:00110011, B", () => {
-                cpu.state.instruction = [0x06, 0b10010001, 0b00110011]; cpu.decode(false);
-                expect(cpu.state.semantic).to.equal(cpu.semantics.MOVE)
-                expect(cpu.state.destRegister).to.equal(cpu.registerMap.C); 
-                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.B); 
-                expect(cpu.state.imm8).to.equal(0b00110011);
+            it("TRAP 0x40", () => {
+                cpu.state.instruction = [0x06, 0x01, 0x40]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.TRAP)
+                expect(cpu.state.imm8).to.equal(0x40);
             });
+            it("NEG C", () => {
+                cpu.state.instruction = [0x06, 0x08, 0x02]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.NEG)
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.C);
+            });
+            it("XCB D", () => {
+                cpu.state.instruction = [0x06, 0x10, 0x03]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.BYTESWAP)
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.D);
+            });
+            it("MUL B, D", () => {
+                cpu.state.instruction = [0x06, 0x40, 0x0B]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.IMUL)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.B);
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.D);
+            });
+            it("IDIV B, D", () => {
+                cpu.state.instruction = [0x06, 0x41, 0x0B]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.IDIV)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.B);
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.D);
+            });
+            it("IMOD B, D", () => {
+                cpu.state.instruction = [0x06, 0x42, 0x0B]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.IMOD)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.B);
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.D);
+            });
+            it("MFILL DB:D, A * C", () => {
+                cpu.state.instruction = [0x06, 0x6D, 0b10011000]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.MEMFILL)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.D);
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.A);
+                expect(cpu.state.destBank).to.equal(1);
+            });
+            it("MSWAP DB:D, DB:B * C", () => {
+                cpu.state.instruction = [0x06, 0x6E, 0b11011001]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.MEMSWAP)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.D);
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.B);
+                expect(cpu.state.destBank).to.equal(1);
+                expect(cpu.state.srcBank).to.equal(1);
+            });
+            it("MCOPY DB:D, DB:B * C", () => {
+                cpu.state.instruction = [0x06, 0x6F, 0b11011001]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.MEMCOPY)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.D);
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.B);
+                expect(cpu.state.destBank).to.equal(1);
+                expect(cpu.state.srcBank).to.equal(1);
+            });
+            it("IN A, 0x40", () => {
+                cpu.state.instruction = [0x06, 0x70, 0x40]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.IN)
+                expect(cpu.state.destRegister).to.equal(cpu.registerMap.A);
+                expect(cpu.state.imm8).to.equal(0x40);
+            });
+            it("OUT D, 0x40", () => {
+                cpu.state.instruction = [0x06, 0x7B, 0x40]; cpu.decode(false);
+                expect(cpu.state.semantic).to.equal(cpu.semantics.OUT)
+                expect(cpu.state.srcRegister).to.equal(cpu.registerMap.D);
+                expect(cpu.state.imm8).to.equal(0x40);
+            });
+            // TODO: LDS, STD
         });
 
         describe("#four byte instructions", () => {
             beforeEach( () => {
                 expectedPC = 0x0004;
             });
+            // TODO: BR, CALL, LDD, STS
         });
 
     });
