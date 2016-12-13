@@ -91,6 +91,34 @@ export class CExpectedError extends Error {
     }
 }
 
+export class XExpectedError extends Error {
+    constructor(extra) {
+        super(`X(16) register expected; got ${extra}`);
+        this.code = 0x8038;
+    }
+}
+
+export class YExpectedError extends Error {
+    constructor(extra) {
+        super(`Y(16) register expected; got ${extra}`);
+        this.code = 0x8039;
+    }
+}
+
+export class BPExpectedError extends Error {
+    constructor(extra) {
+        super(`BP register expected; got ${extra}`);
+        this.code = 0x803A;
+    }
+}
+
+export class DExpectedError extends Error {
+    constructor(extra) {
+        super(`D(16) register expected; got ${extra}`);
+        this.code = 0x803B;
+    }
+}
+
 export class PushRegisterExpectedError extends Error {
     constructor(extra) {
         super(`Valid PUSH register expected; got ${extra}`);
@@ -109,6 +137,13 @@ export class FlagExpectedError extends Error {
     constructor(extra) {
         super(`Flag expected; got ${extra}`);
         this.code = 0x8040;
+    }
+}
+
+export class ExpectedSymbol extends Error {
+    constructor(whichSymbol, got) {
+        super (`Expected ${whichSymbol}, got ${got}`);
+        this.code = 0x8050;
     }
 }
 
@@ -136,6 +171,8 @@ let validPopRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp", "sb", "db", "
 let validWordDataRegisters = ["a", "b", "c", "d"];
 let validBankRegisters = ["sb", "db"];
 let validIndexRegisters = ["x", "y"];
+let validXRegister = "x";
+let validYRegister = "y";
 let validDataRegister = "d";
 let validAccumulatorWordRegister = "a";
 let validAccumulatorByteRegister = "al";
@@ -160,10 +197,118 @@ let flagMap = {
     o: 3, c: 2, n: 1, z: 0
 };
 
+/**
+ * 
+ * Removes undefined, null, or empty items from an array
+ * @param {Array} arr
+ * @returns {Array}
+ */
 function shrinkArray(arr) {
     let newArr = [];
     arr.forEach(i => (i !== undefined && i !== null && i !== "") ? newArr.push(i) : undefined);
     return newArr;
+}
+
+/**
+ * Returns a mapped value from a mapping list if the original value is found in a valid list
+ * or throws the desired error.
+ * 
+ * @param {Array} validList
+ * @param {Array} mappingList
+ * @param {string} item
+ * @param {Error} ErrorToThrow
+ * @returns any
+ */
+function mappedListItem(validList, mappingList, item, ErrorToThrow) {
+    if (validList.findIndex(r => r === item) < 0) {
+        throw new ErrorToThrow(item);
+    }
+    return mappingList[item];
+}
+
+/**
+ * returns a string converted to a number, provided it is within the range lo to hi,
+ * and can be converted. Otherwise the desired error is thrown.
+ * 
+ * @param {string} str
+ * @param {number} lo
+ * @param {number} hi
+ * @param {Error} ErrorToThrow
+ * @returns number
+ */
+function toNumberInRange(str, lo, hi, ErrorToThrow) {
+    let n = Number(str).valueOf();
+    if (n<lo || n>hi || Number.isNaN(n)) {
+        throw new ErrorToThrow(str, lo, hi);
+    }
+    return n;
+}
+
+function dissectAddress(operand) {
+    /*
+     * Addresses can take the following form:
+     * 
+     * [ or (, indicating Absolute or Indirect
+     * Either BP+number, D, or number
+     * Optionally +x
+     * Optionally +y if in absolute
+     * ] or ) (must match start)
+     * Optionally +y if in indirect
+     */
+    let address = {
+        direct: false,
+        indirect: false,
+        mode: undefined,
+        addr: undefined,
+        reg: undefined,
+        indexByX: false,
+        indexByY: false
+    };
+    let operands = shrinkArray(operand.split(/[\s\+\[\]\(\)]+/));
+
+    switch (operand.substr(0,1)) {
+        case "[":
+            address.direct = true;
+            if (operand[operand.length-1] !== "]") {
+                throw new ExpectedSymbol("Bracket", operand);
+            }
+            break;
+        case "(":
+            address.indirect = true;
+            if (operand[operand.length-3] !== ")" &&
+                operand[operand.length-1] !== ")") {
+                throw new ExpectedSymbol("Parentheses", operand);
+            }
+            break;
+        default:
+            throw new ExpectedSymbol("Parentheses or Bracket", operand);
+    }
+
+    address.reg = expectOperand(operands, {type: "bp", throws: false});
+    if (address.reg === undefined) {
+        address.reg = expectOperand(operands, {type: "d16", throws: false});
+    }
+    if (address.reg === registerMap.bp) {
+        address.addr = expectOperand(operands, {type: "s16", throws: false});
+    } else if (address.reg === undefined) {
+        address.addr = expectOperand(operands, {type: "u16", throws: false});
+    }
+
+    address.indexByX = !!expectOperand(operands, {type: "x16", throws: false});
+    address.indexByY = !!expectOperand(operands, {type: "y16", throws: false});
+
+    if (operands.length !== 0) {
+        throw new UnexpectedTokenError(operands);
+    }
+
+    if (address.direct) {
+        address.mode = (address.reg === registerMap.bp ? 4 : (address.reg === registerMap.d ? 6 : 2));
+    } if (address.indirect) {
+        address.mode = (address.reg === registerMap.bp ? 5 : (address.reg === registerMap.d ? 7 : 3));
+    }
+
+    return address;
+
 }
 
 function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
@@ -177,125 +322,34 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
         switch (type) {
             case "*":
                 return operand;
-            case "f":
-                if (validFlags.findIndex(r => r === operand) < 0) {
-                    throw new FlagExpectedError(operand);
-                }
-                return flagMap[operand];
-            case "r":
-                if (validRegisters.findIndex(r => r === operand) < 0) {
-                    throw new RegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "pushr":
-                if (validPushRegisters.findIndex(r => r === operand) < 0) {
-                    throw new PushRegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "popr":
-                if (validPopRegisters.findIndex(r => r === operand) < 0) {
-                    throw new PopRegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "r16":
-                if (validWordRegisters.findIndex(r => r === operand) < 0) {
-                    throw new RegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "r8":
-                if (validByteRegisters.findIndex(r => r === operand) < 0) {
-                    throw new RegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "dr16":
-                if (validWordDataRegisters.findIndex(r => r === operand) < 0) {
-                    throw new RegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "dr8":
-                if (validByteDataRegisters.findIndex(r => r === operand) < 0) {
-                    throw new RegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "c16":
-                if (operand !== validCounterWordRegister) {
-                    throw new CExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "a16":
-                if (operand !== validAccumulatorWordRegister) {
-                    throw new AExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "a8":
-                if (operand !== validAccumulatorByteRegister) {
-                    throw new ALExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "a":
-                if (validAccumulatorRegisters.findIndex(r => r === operand) < 0) {
-                    throw new RegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "br":
-                if (validBankRegisters.findIndex(r => r === operand) < 0) {
-                    throw new BankRegisterExpectedError(operand);
-                }
-                return registerMap[operand];
-            case "u2":
-                b = Number(operand).valueOf();
-                if (b<0 || b>3 || Number.isNaN(b)) {
-                    throw new UnsignedValueOutOfRange(operand, 0, 3);
-                }
-                return b;
-            case "u3":
-                b = Number(operand).valueOf();
-                if (b<0 || b>7 || Number.isNaN(b)) {
-                    throw new UnsignedValueOutOfRange(operand, 0, 7);
-                }
-                return b;
-            case "u4":
-                b = Number(operand).valueOf();
-                if (b<0 || b>15 || Number.isNaN(b)) {
-                    throw new UnsignedByteExpectedError(operand);
-                }
-                return b;
-            case "u8":
-                b = Number(operand).valueOf();
-                if (b<0 || b>255 || Number.isNaN(b)) {
-                    throw new UnsignedByteExpectedError(operand);
-                }
-                return b;
-            case "s8":
-                b = Number(operand).valueOf();
-                if (b<-128 || b>127 || Number.isNaN(b)) {
-                    throw new SignedByteExpectedError(operand);
-                }
-                return b;
-            case "u16":
-                w = Number(operand).valueOf();
-                if (w<0 || w>65536 || Number.isNaN(w)) {
-                    throw new UnsignedWordExpectedError(operand);
-                }
-                return w;
-            case "s16":
-                let w = Number(operand).valueOf();
-                if (w<-32768 || w>32767 || Number.isNaN(w)) {
-                    throw new SignedWordExpectedError(operand);
-                }
-                return w;
-            case "bankvalue":
-                let b = Number(operand).valueOf();
-                if (b<0 || b>3 || Number.isNaN(b) ) {
-                    throw new BankExpectedError(operand);
-                }
-                return b;
-            case "address":
-                let matches;
-                if (!(matches=operand.match(/([\[\(]){1}(bp\+|d){0,1}(0x[a-f0-9]{1,4}){0,1}(\+x){0,1}([\]\)]){1}(\+y){0,1}/))) {
-                    throw new AddressExpectedError(operand);
-                }
-                return matches;
+            case "f":     return mappedListItem(validFlags,                     flagMap,     operand, FlagExpectedError);
+            case "r":     return mappedListItem(validRegisters,                 registerMap, operand, RegisterExpectedError);
+            case "pushr": return mappedListItem(validPushRegisters,             registerMap, operand, PushRegisterExpectedError);
+            case "popr":  return mappedListItem(validPopRegisters,              registerMap, operand, PopRegisterExpectedError);
+            case "r16":   return mappedListItem(validWordRegisters,             registerMap, operand, RegisterExpectedError);
+            case "r8":    return mappedListItem(validByteRegisters,             registerMap, operand, RegisterExpectedError);
+            case "dr16":  return mappedListItem(validWordDataRegisters,         registerMap, operand, RegisterExpectedError);
+            case "dr8":   return mappedListItem(validByteDataRegisters,         registerMap, operand, RegisterExpectedError);
+            case "c16":   return mappedListItem([validCounterWordRegister],     registerMap, operand, CExpectedError);
+            case "a16":   return mappedListItem([validAccumulatorWordRegister], registerMap, operand, AExpectedError);
+            case "a8":    return mappedListItem([validAccumulatorByteRegister], registerMap, operand, ALExpectedError);
+            case "a":     return mappedListItem(validAccumulatorRegisters,      registerMap, operand, RegisterExpectedError);
+            case "d16":   return mappedListItem([validDataRegister],            registerMap, operand, DExpectedError);
+            case "x16":   return mappedListItem([validXRegister],               registerMap, operand, XExpectedError);
+            case "y16":   return mappedListItem([validYRegister],               registerMap, operand, YExpectedError);
+            case "bp":    return mappedListItem([validBasePointerRegister],     registerMap, operand, BPExpectedError);
+            case "br":    return mappedListItem(validBankRegisters,             registerMap, operand, BankRegisterExpectedError);
+            case "u2":    return toNumberInRange(operand, 0, 3, UnsignedValueOutOfRange);
+            case "u3":    return toNumberInRange(operand, 0, 7, UnsignedValueOutOfRange);
+            case "u4":    return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
+            case "u8":    return toNumberInRange(operand, 0, 255, UnsignedByteExpectedError);
+            case "s8":    return toNumberInRange(operand, -128, 127, SignedByteExpectedError);
+            case "n8":    return toNumberInRange(operand, -128, 255, SignedWordExpectedError);
+            case "u16":   return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
+            case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
+            case "n16":   return toNumberInRange(operand, -32768, 65535, SignedWordExpectedError);
+            case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
+            case "address": return dissectAddress(operand);
         }
 
         throw new UnexpectedTokenError(operands);
@@ -304,7 +358,9 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
             throw err;
         } else {
             if (eats) { 
-                operands.unshift(operand);
+                if (operand !== undefined && operand !== null) {
+                    operands.unshift(operand);
+                }
             }
             return undefined;
         }
@@ -348,8 +404,8 @@ export default class Asm {
             return results;
         }
 
-        // is there a label (of the form label:)
-        if (matches = r[0].match(/([\_\-A-Za-z0-9]+)\:/)) {
+        // is there a label (of the form label>)
+        if (matches = r[0].match(/([\_\-A-Za-z0-9]+)\>/)) {
             results.label = matches[0].toLowerCase();
             r.shift();
         }
@@ -372,7 +428,7 @@ export default class Asm {
         if (r.opcode === "") {
             return instruction;
         }
-        let op1, op2, op3, op4, op5;
+        let op1, op2, op3, op4, op5, scale;
         let translate;
         let ops = r.operands;
 
@@ -474,13 +530,13 @@ export default class Asm {
                 break;
             case "if":      // if flag
             case "ifn":     // ifn flag
-            case "set":      // st flag
-            case "clr":      // cl flag
+            case "set":     // set flag
+            case "clr":     // clr flag
                 translate = {
                     if:  0b00100000,
                     ifn: 0b00101000,
-                    set:  0b00110000,
-                    clr:  0b00111000
+                    set: 0b00110000,
+                    clr: 0b00111000
                 }
                 op1 = expectOperand(ops, {type: "f"});
                 instruction.push(translate[r.opcode] | op1);
@@ -496,11 +552,54 @@ export default class Asm {
                     instruction.push (0x07, (r.opcode === "br" ? 0b00000001 : 0b01000001), (op1 & 0xFF00) >> 8, (op1 & 0xFF));
                 } else {
                     op1 = expectOperand(ops, {type: "address"});
-                    //todo
+                    instruction.push (0x07, (r.opcode === "br" ? 0b00000001 : 0b01000001) |
+                                            (op1.mode << 3) | 
+                                            (op1.indexByX ? 0b00000100 : 0) |
+                                            (op1.indexByY ? 0b00000010 : 0), (op1.addr & 0xFF00) >> 8, (op1.addr & 0xFF));
                 }
                 break;
-            case "ld":      // ld [br:]a(l), ...
-            case "st":      // st [br:]a(l), ...
+            case "lds":      // lds a(l), ...
+            case "sts":      // sts a(l), ...
+            case "ldd":      // ldd a(l), ...
+            case "std":      // std a(l), ...
+                translate = {
+                    lds: [undefined, 0b01000000],
+                    std: [undefined, 0b10000000],
+                    ldd: [0x07,      0b10000000],
+                    sts: [0x07,      0b11000000]
+                }
+                op1 = expectOperand(ops, {type: "a8", throws: false});
+                scale = 1;
+                if (op1 === undefined) {
+                    op1 = expectOperand(ops, {type: "a16"});
+                    scale = 2;
+                }
+                if ((op2 = expectOperand(ops, {type: (scale === 1 ? "n8" : "n16"), throws: false})) !== undefined) {
+                    if (translate[r.opcode][0]) {
+                        instruction.push(translate[r.opcode][0]);
+                    }
+                    instruction.push(translate[r.opcode][1] |
+                                            (scale === 2 ? 0b00001000 : 0) | 
+                                            (scale === 2 ? 0b00000001 : 0));
+                    if (scale === 1) {
+                        instruction.push ((op2 & 0xFF));
+                    } else {
+                        instruction.push ((op2 & 0xFF00) >> 8, (op2 & 0xFF));
+                    }
+                } else {
+                    op2 = expectOperand(ops, {type: "address"});
+                    if (translate[r.opcode][0]) {
+                        instruction.push(translate[r.opcode][0]);
+                    }
+                    instruction.push(translate[r.opcode][1] |
+                                            (op2.mode << 3) | 
+                                            (op2.indexByX ? 0b00000100 : 0) |
+                                            (op2.indexByY ? 0b00000010 : 0) | 
+                                            (scale === 2 ?  0b00000001 : 0));
+                    if (op2.mode < 6) {
+                        instruction.push((op2.addr & 0xFF00) >> 8, (op2.addr & 0xFF));
+                    }
+                }
                 break;
             case "mov":     // mov drg, srg
                 op1 = expectOperand(ops, {type: "r16"});
