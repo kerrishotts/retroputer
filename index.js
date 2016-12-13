@@ -23,26 +23,26 @@ export default class App {
     // let's put some random dots onscreen
     var fc = 1;
     function update(df) {
-      log(df);
+      let mfc = fc % 256;
       var screenOffset = memoryLayout.graphicsStart, addr, val;
       addr = screenOffset;
       for (var y = 0; y < 200; y++) {
         for (var x = 0; x < 320; x++) {
           addr++; 
           //val = (((y & 0x01) + (x & 0x01)) % 2 )* fc + (x / y) ;
-          val = (1)* fc + (x / (y));
+          val = (1)* mfc + (x / (y));
           memory.poke(addr, val);
         }
       }
       for (var row = 0; row < 25; row++) {
         for (var col = 0; col < 40; col++) {
           //memory.poke(memoryLayout.tilePage0 + ((row * 40) + col), Math.floor(Math.random()*256));
-          screen.setTile(3, row, col, ((fc>>2)+ (row*40) + col) % 256);
+          screen.setTile(3, row, col, ((mfc>>2)+ (row*40) + col) % 256);
         }
       }
-      screen.setTilePageOffsets(3, Math.floor(Math.sin(fc/6.28) * 16), Math.floor(Math.cos(fc/6.28) * 16));
-      screen.setTilePageOffsets(1, -Math.floor(Math.sin(fc/6.28) * 16), Math.floor(Math.cos(fc/6.28) * 8));
-      screen.setTilePageOffsets(0, Math.floor(Math.sin(fc/6.28) * 16), -Math.floor(Math.cos(fc/6.28) * 4));
+      screen.setTilePageOffsets(3, Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 16));
+      screen.setTilePageOffsets(1, -Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 8));
+      screen.setTilePageOffsets(0, Math.floor(Math.sin(mfc/6.28) * 16), -Math.floor(Math.cos(mfc/6.28) * 4));
     }
 
     // let's load a font
@@ -82,19 +82,38 @@ export default class App {
 
 
     var oldf = 0;
+    var instructions = 0;
+    var frames = 0;
+    var sumdf = 0;
     function drawLoop(f) {
+      let startTime = performance.now();
       let df = f - oldf;
       oldf = f;
 
       update(df);
       screen.update();
       screen.draw();
-      
-      cpu.step();
-      
+
+      let curTime = performance.now();
+      let deltaTime = curTime - startTime;
+      let endTime = curTime + (16 - deltaTime);
+      let i = 0;
+      while (performance.now() < endTime) {
+        cpu.step();
+        i++;
+        instructions++;
+      }
+      frames++;
       fc++;
-      if (fc<242) { window.requestAnimationFrame(drawLoop);}
+
+      endTime = performance.now();
+      deltaTime = endTime - startTime;
+      sumdf += deltaTime;
+      if (fc<1242) { window.requestAnimationFrame(drawLoop);} else {
+        log(`this ms: ${Math.round(df*100)/100} | avg ms: ${Math.round(sumdf/frames*100)/100} | avg mips: ${Math.round(((instructions/frames)*60)/10000)/100} | this frame: ${i} | total: ${instructions}`);
+      }
     }
+    log(`${performance.now()}`);
     window.requestAnimationFrame(drawLoop);
 
   }
