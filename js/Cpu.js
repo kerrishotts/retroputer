@@ -488,7 +488,7 @@ export default class CPU {
     if (!skipFetch) { 
       this.advancePC();
     }
-    this.dump();
+    //this.dump();
     if (this.getFlag(this.flagMap.X)) {
       this.execute();
     } else {
