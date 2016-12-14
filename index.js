@@ -4,25 +4,17 @@
  *
  *******************************************************************/
 
-import CPU from "js/Cpu.js";
-import Memory from "js/Memory.js";
-import Screen from "js/Screen.js";
 import memoryLayout from "js/memoryLayout.js";
+import Computer from "js/Computer.js";
 import log from "./js/log.js";
 
-import font from "design/font0.js";
 
 export default class App {
   start() {
 
-    let memory = new Memory(memoryLayout);
-    memory.init();
-
-    let cpu = new CPU(memory);
-
-    // let's put some random dots onscreen
     var fc = 1;
-    function update(df) {
+    function beforeFrameUpdate(computer, df) {
+      // this is so we know things are working for now
       let mfc = fc % 256;
       var screenOffset = memoryLayout.graphicsStart, addr, val;
       addr = screenOffset;
@@ -31,91 +23,60 @@ export default class App {
           addr++; 
           //val = (((y & 0x01) + (x & 0x01)) % 2 )* fc + (x / y) ;
           val = (1)* mfc + (x / (y));
-          memory.poke(addr, val);
+          computer.memory.poke(addr, val);
         }
       }
       for (var row = 0; row < 25; row++) {
         for (var col = 0; col < 40; col++) {
           //memory.poke(memoryLayout.tilePage0 + ((row * 40) + col), Math.floor(Math.random()*256));
-          screen.setTile(3, row, col, ((mfc>>2)+ (row*40) + col) % 256);
+          computer.screen.setTile(3, row, col, ((mfc>>2)+ (row*40) + col) % 256);
         }
       }
-      screen.setTilePageOffsets(3, Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 16));
-      screen.setTilePageOffsets(1, -Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 8));
-      screen.setTilePageOffsets(0, Math.floor(Math.sin(mfc/6.28) * 16), -Math.floor(Math.cos(mfc/6.28) * 4));
+      computer.screen.setTilePageOffsets(3, Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 16));
+      computer.screen.setTilePageOffsets(1, -Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 8));
+      computer.screen.setTilePageOffsets(0, Math.floor(Math.sin(mfc/6.28) * 16), -Math.floor(Math.cos(mfc/6.28) * 4));
+
+      fc++;
     }
 
-    // let's load a font
-    var tileSet0Offset = memoryLayout.tileSet0;
-    font.forEach((v, i) => {
-      memory.poke(i+tileSet0Offset, v);
+    let computer = new Computer({
+      screenId: "screen",
+      beforeFrameUpdate,
+      debug: true
     });
 
-    // and draw it?
-    var screen = new Screen("screen", memory);
-
-    screen.setBackgroundColor(0x02);
-    screen.setBorderColor(0x0B);
-    screen.setBorderSize(4, 4);
-    screen.setGraphicsLayer(0);
+    computer.screen.setBackgroundColor(0x02);
+    computer.screen.setBorderColor(0x0B);
+    computer.screen.setBorderSize(4, 4);
+    computer.screen.setGraphicsLayer(0);
 
     // let's play with layers!
-    screen.setTilePageLayer(0, 1);
-    screen.setTilePageLayer(1, 2);
-    screen.setTilePageLayer(3, 3);
-    screen.setTilePageScale(3, 1);
-    screen.setTilePageCrops(3, 16, 16);
-    screen.setTilePageOffsets(3, -4, -4);
+    computer.screen.setTilePageLayer(0, 1);
+    computer.screen.setTilePageLayer(1, 2);
+    computer.screen.setTilePageLayer(3, 3);
+    computer.screen.setTilePageScale(3, 1);
+    computer.screen.setTilePageCrops(3, 16, 16);
+    computer.screen.setTilePageOffsets(3, -4, -4);
     
     for (var col = 0; col < 40; col++) {
-      screen.setTile(0, 0, col, 0x23);
-      screen.setTile(0, 24, col, 0x23);
-      screen.setTile(1, 1, col, 0x07);
-      screen.setTile(1, 23, col, 0x07);
+      computer.screen.setTile(0, 0, col, 0x23);
+      computer.screen.setTile(0, 24, col, 0x23);
+      computer.screen.setTile(1, 1, col, 0x07);
+      computer.screen.setTile(1, 23, col, 0x07);
     }
     for (var row = 0; row < 25; row++) {
-      screen.setTile(0, row, 0, 0x23);
-      screen.setTile(0, row, 39, 0x23);
-      screen.setTile(1, row, 1, 0x07);
-      screen.setTile(1, row, 38, 0x07);
+      computer.screen.setTile(0, row, 0, 0x23);
+      computer.screen.setTile(0, row, 39, 0x23);
+      computer.screen.setTile(1, row, 1, 0x07);
+      computer.screen.setTile(1, row, 38, 0x07);
     }
 
+    computer.start();
 
-    var oldf = 0;
-    var instructions = 0;
-    var frames = 0;
-    var sumdf = 0;
-    function drawLoop(f) {
-      let startTime = performance.now();
-      let df = f - oldf;
-      oldf = f;
-
-      update(df);
-      screen.update();
-      screen.draw();
-
-      let curTime = performance.now();
-      let deltaTime = curTime - startTime;
-      let endTime = curTime + (16 - deltaTime);
-      let i = 0;
-      while (performance.now() < endTime) {
-        cpu.step();
-        i++;
-        instructions++;
-      }
-      frames++;
-      fc++;
-
-      endTime = performance.now();
-      deltaTime = endTime - startTime;
-      sumdf += deltaTime;
-      if (fc<1242) { window.requestAnimationFrame(drawLoop);} else {
-        log(`this ms: ${Math.round(df*100)/100} | avg ms: ${Math.round(sumdf/frames*100)/100} | avg mips: ${Math.round(((instructions/frames)*60)/10000)/100} | this frame: ${i} | total: ${instructions}`);
-      }
-    }
-    log(`${performance.now()}`);
-    window.requestAnimationFrame(drawLoop);
-
+    // stop computer after 10s
+    setInterval(() => {
+      computer.stop();
+    }, 10000);
   }
 }
 
