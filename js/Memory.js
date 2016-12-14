@@ -13,6 +13,10 @@ export default class Memory {
     return this._mem[addr];
   }
 
+  peek16(addr) {
+    return (this._mem[addr] << 8) | this._mem[addr+1];
+  }
+
   range(addr,len) {
     return new Uint8ClampedArray(this._buf, addr, len);
   }
