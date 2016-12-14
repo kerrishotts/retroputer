@@ -1,4 +1,8 @@
 import Memory from "./Memory.js";
+import WebGL2D from "webgl-2d";
+
+const ENABLE_WEBGL = false;
+
 
  export default class Screen {
   constructor(id, memory) {
@@ -11,13 +15,24 @@ import Memory from "./Memory.js";
     this._tileColumns = width / this._tileWidth;
     this._tileRows = height / this._tileHeight;
     this._screen = document.getElementById(id);
-    this._screen_ctx = this._screen.getContext("2d");
     this._screen.setAttribute("width", width);
     this._screen.setAttribute("height", height);
+    if (ENABLE_WEBGL) {
+      window.WebGL2D.enable(this._screen);
+      this._screen_ctx = this._screen.getContext("webgl-2d");
+    } else {
+      this._screen_ctx = this._screen.getContext("2d");
+    }
+
     this._canvas = document.createElement("canvas");
     this._canvas.setAttribute("width", width);
     this._canvas.setAttribute("height", height);
-    this._canvas_ctx = this._canvas.getContext("2d");
+    if (ENABLE_WEBGL) {
+      window.WebGL2D.enable(this._canvas);
+      this._canvas_ctx = this._canvas.getContext("webgl-2d");
+    } else {
+      this._canvas_ctx = this._canvas.getContext("2d");
+    }
 
     this._memory = memory;
     this._layout = layout;
