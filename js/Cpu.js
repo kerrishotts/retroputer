@@ -1,8 +1,8 @@
 import Register from "./Register.js";
 import log from "./log.js";
 import hexUtils from "./hexUtils.js";
-import { exec } from "./cpu-semantics/index.js";
-import cpuSemantics from "./cpu-semantics/index.js";
+import { exec } from "./Semantics.js";
+import cpuSemantics from "./Semantics.js";
 
 export default class CPU {
   constructor(memory) {
@@ -423,6 +423,8 @@ export default class CPU {
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           // s/w s/w address mode +x? +y? w/b  ...  s  i  x  t  e  e  n      b  i  t      a  d  d  r  e  s  s  ...
           this.state.semantic = ((opcode & 0b11000000) === 0x80 ) ? this.semantics.STORE : this.semantics.LOAD;
+          this.state.destRegister = this.registerMap.A;
+          this.state.srcRegister = this.registerMap.A;
           this.state.addressingMode = (opcode & 0b00111000) >> 3;
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
@@ -457,6 +459,8 @@ export default class CPU {
           // -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-  -7- -6- -5- -4-  -3- -2- -1- -0-
           //  0   0   0   0    0   1   1   1    1  s/w address mode +x? +y? w/b  ...  s  i  x  t  e  e  n      b  i  t      a  d  d  r  e  s  s  ...
           this.state.semantic = (opcode & 0b01000000) ? this.semantics.STORE : this.semantics.LOAD;
+          this.state.destRegister = this.registerMap.A;
+          this.state.srcRegister = this.registerMap.A;
           this.state.addressingMode = (opcode & 0b00111000) >> 3;
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
