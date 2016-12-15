@@ -1,6 +1,6 @@
 module.exports = {
     toHex(v, format="0000", prefix="0x") {
-        let hexValue = v.toString(16);
+        let hexValue = (v === undefined ? "0" : v).toString(16);
         hexValue = format.substr(0, format.length - hexValue.length) + hexValue;
         return `${prefix}${hexValue}`;
     },
