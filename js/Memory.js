@@ -115,8 +115,8 @@ export default class Memory {
     };
 
     // but we do need a valid reset vector
-    this.poke(0, 0xFF);
-    this.poke(1, 0x00);
+    this.poke16(0x0000, 0xFF00);
+    this.poke16(0x01E0, 0xFE00);
 
     // and we'll need to load a ROM in soon as well
     // TODO: load boot rom
