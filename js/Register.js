@@ -6,13 +6,10 @@ export default class Register {
     this._max = size - 1;
     this._data = new ArrayBuffer(size);
     this._UINT8 = new Uint8ClampedArray(this._data);
-    if (this.size > 1) { 
-      this._UINT16 = new Uint16Array(this._data);
-    }
   }
   
   get U2() {
-    return this.U8 && 0x03;
+    return this.U8 & 0x03;
   }
 
   get U8() {
@@ -24,12 +21,13 @@ export default class Register {
   }
   
   get U16() {
-    return (this.size > 1) ? this._UINT16[0] : this.U8;
+    return (this.size > 1) ? (this._UINT8[0] << 8 | this._UINT8[1]) : this.U8;
   }
   
   set U16(value) {
     if (this.size > 1) {
-      this._UINT16[0] = value;
+      this._UINT8[0] = (value & 0xFF00) >> 8;
+      this._UINT8[1] = (value & 0x00FF);
     } else {
       this.U8 = value & 0x00FF;
     }
