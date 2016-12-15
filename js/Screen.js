@@ -62,7 +62,7 @@ const ENABLE_WEBGL = false;
                           width, height);
     this._frameBuf = new ArrayBuffer(this._frameData.data.length);
     this._frame = new Uint32Array(this._frameBuf);
-    this._frame8 = new Uint8ClampedArray(this._frameBuf);    
+    this._frame8 = new Uint8Array(this._frameBuf);    
 
     // set up our initial values
     this.init();
@@ -115,8 +115,8 @@ const ENABLE_WEBGL = false;
     this._memory.poke(this._layout.borderSizeY, y);
   }
   getBorderSize() {
-    return [this._memory.peek(this._layout.borderSizeX),
-            this._memory.peek(this._layout.borderSizeY)];
+    return [this._memory.peek(this._layout.borderSizeX) & 0x3F,
+            this._memory.peek(this._layout.borderSizeY) & 0x3F];
   }
 
   setBorderColor(c) {
@@ -130,7 +130,7 @@ const ENABLE_WEBGL = false;
     this._memory.poke(this._layout.graphicsLayer, l);
   }
   getGraphicsLayer() {
-    return this._memory.peek(this._layout.graphicsLayer);
+    return this._memory.peek(this._layout.graphicsLayer) & 0x87;
   }
 
   setTilePageLayer(page, l) {
@@ -145,7 +145,7 @@ const ENABLE_WEBGL = false;
                   this._layout.tilePage1Layer,
                   this._layout.tilePage2Layer,
                   this._layout.tilePage3Layer];
-    return this._memory.peek(layers[page]);
+    return this._memory.peek(layers[page]) & 0x87;
   }
 
   setTilePageOffsets(page, x, y) {
@@ -178,8 +178,8 @@ const ENABLE_WEBGL = false;
                  this._layout.tilePage1CropX,
                  this._layout.tilePage2CropX,
                  this._layout.tilePage3CropX] ;
-    return [this._memory.peek(cropX[page]),
-            this._memory.peek(cropX[page]+1)];
+    return [this._memory.peek(cropX[page]) & 0x3F,
+            this._memory.peek(cropX[page]+1) & 0x3F];
   }
 
   setTilePageSet(page, set) {
@@ -194,7 +194,7 @@ const ENABLE_WEBGL = false;
                   this._layout.tilePage1Set,
                   this._layout.tilePage2Set,
                   this._layout.tilePage3Set];
-    return this._memory.peek(layers[page]);
+    return this._memory.peek(layers[page]) & 0x03;
   }
 
   setTilePageScale(page, scale) {
@@ -209,7 +209,7 @@ const ENABLE_WEBGL = false;
                   this._layout.tilePage1Scale,
                   this._layout.tilePage2Scale,
                   this._layout.tilePage3Scale];
-    return this._memory.peek(layers[page]);
+    return this._memory.peek(layers[page]) & 0x0F;
   }
 
 
@@ -236,9 +236,15 @@ const ENABLE_WEBGL = false;
   }
 
   setPixel (x, y, c) {
-      let addr = (y*this._width) + x;
-      let color = this._palette[c];
-      this._frame[addr] = color;
+      let addr = (((y*this._width) + x) & 0xFFFF) << 2;
+      let paddr = this._layout.paletteStart + (c <<2 )
+      //let color = this._palette[c];
+      // this._frame[addr] = color
+      let b;
+      for (var i = 0; i < 4; i++) {
+        b = this._memory.peek(paddr+i);
+        this._frame8[addr+i] = (i===3 ? 0xFF : b);
+      }
   }
   
   setTile (page, row, col, tile, bgColor = 0x00, fgColor = 0xFF) {
@@ -268,6 +274,7 @@ const ENABLE_WEBGL = false;
         cropTop = cropY,
         cropBottom = this._height - cropY,
         [offsetX, offsetY] = this.getTilePageOffsets(page),
+        //[offsetX, offsetY] = [0, 0],
         scale = this.getTilePageScale(page),
         tileSet = this.getTilePageSet(page),
         tileSetBase = tileSet*16384,
