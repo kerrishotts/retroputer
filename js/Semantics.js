@@ -51,15 +51,8 @@ function handleFlags(cpu, v, size=16) {
 }
 
 function getAddr(cpu, bankSelect) {
-    let addr;
-    let indirect = false;
-    switch (cpu.state.addressingMode) {
-        case 3:
-        case 5:
-        case 7:
-            indirect = true;
-            break;
-    }
+    var addr;
+    var indirect = !!(cpu.state.addressingMode & 1);
     switch (cpu.state.addressingMode) {
         case 2:
         case 3:
@@ -78,9 +71,11 @@ function getAddr(cpu, bankSelect) {
             addr = cpu.registers[cpu.registerMap.D].U16;
             break;
     }
-
     // make sure bank is added in 
-    addr |= (bankSelect ? cpu.registers[cpu.registerMap.DB].U8 : cpu.registers[cpu.registerMap.SB]).U8 << 17;
+    if ((cpu.state.addressingMode < 4) || (cpu.state.addressingMode > 5)) {
+        // BP can only be from bank 0x00
+        addr |= (cpu.registers[cpu.registerMap.SB + bankSelect].U2) << 16;
+    }
 
     // index by X first, if we must
     if (cpu.state.indexByX) {
@@ -106,22 +101,30 @@ let semanticsOps = {
     [semantics.SWAP]:   function swap(cpu) { [ cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16 ] =
                                              [ cpu.registers[cpu.state.srcRegister].U16,  cpu.registers[cpu.state.destRegister].U16 ]; },
     [semantics.LOAD]:   function load(cpu) {
-        switch (cpu.state.addressingMode) {
-            case 0:
-                cpu.registers[cpu.state.destRegister].U8 = cpu.state.imm8;
-                break;
-            case 1:
-                cpu.registers[cpu.state.destRegister].U16 = cpu.state.imm16;
-                break;
-            default:
-                if (cpu.state.scale) {
-                    cpu.registers[cpu.state.destRegister].U16 = cpu.memory.peek16(getAddr(cpu, cpu.state.whichBank));
-                } else {
-                    cpu.registers[cpu.state.destRegister].U8 = cpu.memory.peek(getAddr(cpu, cpu.state.whichBank));
-                }
+        if (cpu.state.addressingMode === 0) {
+            cpu.registers[cpu.state.destRegister].U8 = cpu.state.imm8;
+        } else if (cpu.state.addressingMode === 1) {
+            cpu.registers[cpu.state.destRegister].U16 = cpu.state.imm16;
+        } else {
+            if (cpu.state.scale) {
+                cpu.registers[cpu.state.destRegister].U16 = cpu.memory.peek16(getAddr(cpu, cpu.state.whichBank));
+            } else {
+                cpu.registers[cpu.state.destRegister].U8 = cpu.memory.peek(getAddr(cpu, cpu.state.whichBank));
+            }
         }
     },
-    [semantics.STORE]:  undefined,
+    [semantics.STORE]:  function store(cpu) {
+        if (cpu.state.addressingMode < 2) {
+            // can't store to immediate values
+            return;
+        } else {
+            if (cpu.state.scale) {
+                cpu.memory.poke16(getAddr(cpu, cpu.state.whichBank), cpu.registers[cpu.state.srcRegister].U16 );
+            } else {
+                cpu.memory.poke(getAddr(cpu, cpu.state.whichBank), cpu.registers[cpu.state.srcRegister].U8 );
+            }
+        }
+    },
     [semantics.IN]:     undefined,
     [semantics.OUT]:    undefined,
     [semantics.MEMFILL]:undefined,
