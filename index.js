@@ -6,81 +6,82 @@
 
 import memoryLayout from "js/memoryLayout.js";
 import Computer from "js/Computer.js";
-import log from "./js/log.js";
+import log from "js/log.js";
+import Asm from "js/Asm.js";
 
 
 export default class App {
   start() {
 
-    var fc = 1;
-    function beforeFrameUpdate(computer, df) {
-      // this is so we know things are working for now
-      let mfc = fc % 256;
-      var screenOffset = memoryLayout.graphicsStart, addr, val;
-      addr = screenOffset;
-      for (var y = 0; y < 200; y++) {
-        for (var x = 0; x < 320; x++) {
-          addr++; 
-          //val = (((y & 0x01) + (x & 0x01)) % 2 )* fc + (x / y) ;
-          val = (1)* mfc + (x / (y));
-          computer.memory.poke(addr, val);
-        }
-      }
-      for (var row = 0; row < 25; row++) {
-        for (var col = 0; col < 40; col++) {
-          //memory.poke(memoryLayout.tilePage0 + ((row * 40) + col), Math.floor(Math.random()*256));
-          computer.screen.setTile(3, row, col, ((mfc>>2)+ (row*40) + col) % 256);
-        }
-      }
-      computer.screen.setTilePageOffsets(3, Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 16));
-      computer.screen.setTilePageOffsets(1, -Math.floor(Math.sin(mfc/6.28) * 16), Math.floor(Math.cos(mfc/6.28) * 8));
-      computer.screen.setTilePageOffsets(0, Math.floor(Math.sin(mfc/6.28) * 16), -Math.floor(Math.cos(mfc/6.28) * 4));
-
-      fc++;
-    }
-
     let computer = new Computer({
       screenId: "screen",
-      //beforeFrameUpdate,
       debug: false
     });
 
-    computer.screen.setBackgroundColor(0x02);
-    computer.screen.setBorderColor(0x0B);
-    computer.screen.setBorderSize(4, 4);
-    computer.screen.setGraphicsLayer(0);
-
-    // let's play with layers!
-    computer.screen.setTilePageLayer(0, 1);
-    computer.screen.setTilePageLayer(1, 2);
-    computer.screen.setTilePageLayer(3, 3);
-    computer.screen.setTilePageScale(3, 1);
-    computer.screen.setTilePageCrops(3, 16, 16);
-    computer.screen.setTilePageOffsets(3, -4, -4);
-    
-    for (var col = 0; col < 40; col++) {
-      computer.screen.setTile(0, 0, col, 0x23);
-      computer.screen.setTile(0, 24, col, 0x23);
-      computer.screen.setTile(1, 1, col, 0x07);
-      computer.screen.setTile(1, 23, col, 0x07);
+    // fill in a program
+    let prog = [
+      "LDS A, 0x03FF",
+      "MOV B, A",
+      "LDS A, 0x03",
+      "MOV DB, A",
+      "XOR A, A",
+      "MOV X, B",
+      "CLR Z",
+      "STD AL, [0x0000+X]",
+      "INC A",
+      "DEC X",
+      "IFN Z",
+      "BR -10",
+      "HALT 0x00",
+      "BR -7"
+    ];
+    let addr = 0xFF00;
+    try {
+      for (let i = 0; i< prog.length; i++) {
+        let assembly = Asm.assembleSingleInstruction(prog[i]);
+        log(prog[i]);
+        assembly.instruction.forEach(v => computer.memory.poke(addr++, v));
+      }
+    } catch (err) {
+      log (JSON.stringify(err));
     }
-    for (var row = 0; row < 25; row++) {
-      computer.screen.setTile(0, row, 0, 0x23);
-      computer.screen.setTile(0, row, 39, 0x23);
-      computer.screen.setTile(1, row, 1, 0x07);
-      computer.screen.setTile(1, row, 38, 0x07);
-    }
 
-    computer.start();
+    // drop a RET at the frame interrupt
+    computer.memory.poke(0xFE00, 0xFF);
 
-    // stop computer after 10s
-    setTimeout(() => {
-      computer.stop();
-                computer.cpu.dump();
-                computer.memory.dump();
-                computer.dump();
-
-    }, 30000);
+    let cold = true;
+    document.getElementById("toolbar").addEventListener("click", (e) => {
+      if (e.target.matches("button")) {
+        switch (e.target.getAttribute("data-cmd")) {
+          case "start":
+            if (cold) {
+              computer.reset();
+              cold = false;
+            }
+            computer.start();
+            break;
+          case "stop":
+            computer.stop();
+            break;
+          case "step":
+            if (cold) {
+              cold = false;
+              computer.reset();
+              computer.dumpAll();
+            }
+            computer.step();
+            computer.dumpAll();
+            break;
+          case "dump":
+            computer.dumpAll();
+            break;
+          case "reset":
+            computer.reset();
+            computer.dumpAll();
+            break;
+        }
+      }
+    });
   }
 }
 
