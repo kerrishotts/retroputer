@@ -6,6 +6,14 @@ import cpuSemantics from "./Semantics.js";
 
 export default class CPU {
   constructor(memory) {
+    // status
+    this.running = false;
+    this.paused = false;
+    this.pauseTimer = 0;
+    this.stepping = false;
+    this.noAdvance = false; // used when PC changes to prevent advancement
+
+    // register and flag mapping
     this.registers = [
       new Register("A", 2), new Register("B", 2),
       new Register("C", 2), new Register("D", 2),
@@ -14,7 +22,7 @@ export default class CPU {
       undefined, undefined,
       undefined, undefined,
       new Register("SB", 1), new Register("DB", 1),
-      new Register("F", 1), new Register("PC", 16)];
+      new Register("F", 1), new Register("PC", 2)];
     this.registerMap = {
       A: 0, AL: 0, B: 1, BL: 0,
       C: 2, CL: 2, D: 3, DL: 3,
@@ -30,7 +38,8 @@ export default class CPU {
       "Z": 0, "N": 1, "C": 2, "O": 3,         "X": 5, "M": 6, "I": 7
     };
     this.addressingModeMap = [ "imm8/rel8", "imm16/rel16", "abs16", "ind16", "relBP", "indBP", "absD", "indD" ];
-    
+
+    // give defaults for registers and flags 
     this.registers[this.registerMap.SP].U16 = 0x1000;
     this.registers[this.registerMap.BP].U16 = 0x1000;
 
@@ -72,6 +81,32 @@ export default class CPU {
     if (this.getFlag(flag)) {
       this.registers[this.registerMap.Flags].U8 -= (0x01 << flag);
     }
+  }
+
+  push(reg, v, dsize = 2) {
+    let SP = this.registers[this.registerMap.SP];
+    let size = (reg ? reg.size : dsize);
+    SP.U16 -= size;
+    if (size === 1) {
+        this.memory.poke(SP.U16, (reg ? reg.U8 : v));
+    } else {
+        this.memory.poke16(SP.U16, (reg ? reg.U16 : v));
+    }
+  }
+
+  pop (reg, dsize = 2) {
+    let v;
+    let SP = this.registers[this.registerMap.SP];
+    let size = (reg ? reg.size : dsize);
+    if (size === 1) {
+        v = this.memory.peek(SP.U16);
+        if (reg) { reg.U8 = v; }
+    } else {
+        v = this.memory.peek16(SP.U16);
+        if (reg) { reg.U16 = v; }
+    }
+    SP.U16 += size;
+    return v;
   }
   
   clearState() {
@@ -179,7 +214,7 @@ export default class CPU {
           //  0   0   0   0    1  bnk src-reg
           this.state.semantic = this.semantics.MOVE;
           this.state.destRegister = (opcode & 0b00000100) ? this.registerMap.DB : this.registerMap.SB;
-          this.state.srcRegister = (opcode & 0b00000111);
+          this.state.srcRegister = (opcode & 0b00000011);
           break;
         }
         if ((opcode & 0b11110000) === 0b00010000) {
@@ -222,7 +257,7 @@ export default class CPU {
           //  1   1   1  s/w  r e g i s t e r
           this.state.semantic = (opcode & 0b00010000) ? this.semantics.POP : this.semantics.PUSH;
           this.state.destRegister = (opcode & 0b00001111);
-          this.state.srcRegister = this.state.destBank;
+          this.state.srcRegister = this.state.destRegister;
           break;
         }
         this.state.semantic = this.semantics.BADOP;
@@ -326,6 +361,12 @@ export default class CPU {
           this.state.semantic = this.semantics.BYTESWAP;
           this.state.destRegister = (opparm & 0b00000111);
           this.state.srcRegister = this.state.destRegister;
+          break;
+        }
+        if ((opcode === 0x0620)) {
+          // HALT imm8
+          this.state.semantic = this.semantics.HALT;
+          this.state.imm8 = opparm;
           break;
         }
         if ((opcode === 0x0640)) {
@@ -446,6 +487,7 @@ export default class CPU {
           this.state.indexByX = (opcode & 0b00000100) >> 2;
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
+          this.state.whichBank = 0x00;
           if (this.state.scale > 0) {
             this.state.imm16 = (this.state.instruction[2] << 8) | this.state.instruction[3];
           } else {
@@ -488,20 +530,40 @@ export default class CPU {
     if (!skipFetch) {
       this.fetch(0);
     }
-    this.decode();
-    if (!skipFetch) { 
+    this.decode(!skipFetch);
+
+    if (this.state.semantic === this.semantics.RET) {
+      this.noAdvance = true;
+    }
+
+    if (!skipFetch && !this.noAdvance) { 
       this.advancePC();
     }
-    //this.dump();
-    if (this.getFlag(this.flagMap.X)) {
+    // if X is set, execute the instruction. OR, execute it if we're called with skipFetch
+    // which means we're probably servicing an interrupt
+    if (this.getFlag(this.flagMap.X) || skipFetch) {
       this.execute();
     } else {
       this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
     }
+
+
+    if (this.noAdvance) {
+      this.noAdvance = false;
+    }
+
   }
 
   sendTrap(trap) {
-    this.state.instruction = [ 0x06, 0x01, trap ];
-    
+    if (trap === 0x00 || (trap > 0x00 && this.getFlag(this.flagMap.I))) {
+      this.paused = false;
+      this.state.instruction = [ 0x06, 0x01, trap ];
+      this.step(true); // don't fetch anything -- we want the above instruction
+    }
+  }
+
+  pause(cycles = 0) {
+    this.paused = true;
+    this.pauseTimer = cycles;
   }
 }
