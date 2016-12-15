@@ -89,13 +89,13 @@ export default class Computer {
             if (totalTime > this.performance.throttlePoint) {
                 // we need to limit processing time
                 this.performance.timeToDevoteToCPU -= 0.25;
-                if (this.performance.timeToDevoteToCPU < 0) {
-                    this.performance.timeToDevoteToCPU = 0;
+                if (this.performance.timeToDevoteToCPU < 0.25) {
+                    this.performance.timeToDevoteToCPU = 0.25;
                 }
             } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
                 // but we need to increase processing to use the most of the
                 // available time as possible
-                this.performance.timeToDevoteToCPU += 0.25;
+                this.performance.timeToDevoteToCPU += 1;
                 if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
                     this.performance.timeToDevoteToCPU = 14;
                 }
@@ -103,6 +103,7 @@ export default class Computer {
 
             if (this.debug) {
                 this.cpu.dump();
+                this.memory.dump();
                 this.dump();
             }
             if (this.running) {
