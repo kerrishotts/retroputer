@@ -1,20 +1,103 @@
+import log from "./log.js";
+import hexUtils from "./hexUtils.js";
+
 export default class Memory {
   constructor(layout) {
     this.layout = layout;
     this._buf = new ArrayBuffer(layout.size * 1024);
     this._mem = new Uint8ClampedArray(this._buf);
+    this.stats = {
+      readsTotal: 0,
+      byteReadsTotal: 0,
+      wordReadsTotal: 0,
+      writesTotal: 0,
+      byteWritesTotal: 0,
+      wordWritesTotal: 0,
+      lastReadAddr: 0,
+      lastWriteAddr: 0,
+      lastValueRead: 0,
+      lastValueWritten: 0,
+    }
+  }
+
+  dump() {
+    log(`mem stats | reads  8: ${this.stats.byteReadsTotal}  16: ${this.stats.wordReadsTotal}  All: ${this.stats.readsTotal}`);
+    log(`mem stats | writes 8: ${this.stats.byteWritesTotal}  16: ${this.stats.wordWritesTotal}  All: ${this.stats.writesTotal}`);
+    log(`mem stats | last read: ${hexUtils.toHex4(this.stats.lastValueRead)}@${hexUtils.toHex4(this.stats.lastReadAddr)}  write: ${hexUtils.toHex4(this.stats.lastValueWritten)}@${hexUtils.toHex4(this.stats.lastWriteAddr)}`);
   }
 
   poke(addr, val) {
-    this._mem[addr] = val;
+    if (val === undefined) {
+      throw new Error("can't write undefined to memory!");
+    }
+    addr = addr & 0x3FFFF;
+    var v = (val & 0xFF);
+    this._mem[addr] = v;
+    this.stats.lastValueWritten = v;
+    this.stats.writesTotal++;
+    this.stats.byteWritesTotal++;
+    this.stats.lastValueWritten = (val & 0xFF);
+    this.stats.lastWriteAddr = addr;
   }
 
+  poke16(addr, val) {
+    if (val === undefined) {
+      throw new Error("can't write undefined to memory!");
+    }
+    addr = addr & 0x3FFFF;
+    var v = (val & 0xFFFF);
+    this._mem[addr] = (v & 0xFF00) >> 8;
+    this._mem[addr+1] = (v & 0x00FF);
+    this.stats.writesTotal++;
+    this.stats.wordWritesTotal++;
+    this.stats.lastValueWritten = v;
+    this.stats.lastWriteAddr = addr;
+  }
+
+  poke32(addr, val) {
+    if (val === undefined) {
+      throw new Error("can't write undefined to memory!");
+    }
+    addr = addr & 0x3FFFF;
+    var v = (val & 0xFFFFFFFF);
+    this._mem[addr] = (v & 0xFF000000) >> 24;
+    this._mem[addr+1] = (v & 0xFF0000) >> 16;
+    this._mem[addr+2] = (v & 0xFF00) >> 8;
+    this._mem[addr+1] = (v & 0x00FF);
+//    this.stats.writesTotal++;
+//    this.stats.lastValueWritten = v;
+//    this.stats.lastWriteAddr = addr;
+  }
+
+
   peek(addr) {
-    return this._mem[addr];
+    addr = addr & 0x3FFFF;
+    var v = this._mem[addr];
+    this.stats.readsTotal++;
+    this.stats.byteReadsTotal++;
+    this.stats.lastValueRead = v;
+    this.stats.lastReadAddr = addr;
+    return v;
   }
 
   peek16(addr) {
-    return (this._mem[addr] << 8) | this._mem[addr+1];
+    addr = addr & 0x3FFFF;
+    var v = (this._mem[addr] << 8) | this._mem[addr+1];
+    this.stats.readsTotal++;
+    this.stats.wordReadsTotal++;
+    this.stats.lastValueRead = v;
+    this.stats.lastReadAddr = addr;
+    return v;
+  }
+
+  peek32(addr) {
+    addr = addr & 0x3FFFF;
+    var v = (this._mem[addr] << 24) | (this._mem[addr+1] << 16) | (this._mem[addr+2] << 8) | (this._mem[addr+3]);
+    //this.stats.readsTotal++;
+    //this.stats.wordReadsTotal++;
+    //this.stats.lastValueRead = v;
+    //this.stats.lastReadAddr = addr;
+    return v;
   }
 
   range(addr,len) {
