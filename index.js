@@ -41,8 +41,8 @@ export default class App {
 
     let computer = new Computer({
       screenId: "screen",
-      beforeFrameUpdate,
-      debug: true
+      //beforeFrameUpdate,
+      debug: false
     });
 
     computer.screen.setBackgroundColor(0x02);
@@ -74,9 +74,13 @@ export default class App {
     computer.start();
 
     // stop computer after 10s
-    setInterval(() => {
+    setTimeout(() => {
       computer.stop();
-    }, 10000);
+                computer.cpu.dump();
+                computer.memory.dump();
+                computer.dump();
+
+    }, 30000);
   }
 }
 
