@@ -2,140 +2,160 @@ import hexUtils from "./hexUtils.js";
 
 export class OperandExpectedError extends Error {
     constructor(extra) {
-        super(`Operand expected`);
+        super();
+        this.message = (`Operand expected`);
         this.code = 0x8001;
     }
 }
 
 export class RegisterExpectedError extends Error {
     constructor(extra) {
-        super(`Register expected; got ${extra}`);
+        super();
+        this.message = (`Register expected; got ${extra}`);
         this.code = 0x8030;
     }
 }
 
 export class BankRegisterExpectedError extends Error {
     constructor(extra) {
-        super(`Bank register expected; got ${extra}`);
+        super();
+        this.message = (`Bank register expected; got ${extra}`);
         this.code = 0x8033;
     }
 }
 
 export class UnsignedByteExpectedError extends Error {
     constructor(extra) {
-        super(`Unsigned byte value expected; got ${extra}`);
+        super();
+        this.message = (`Unsigned byte value expected; got ${extra}`);
         this.code = 0x8010;
     }
 }
 
 export class SignedByteExpectedError extends Error {
     constructor(extra) {
-        super(`Signed byte value expected; got ${extra}`);
+        super();
+        this.message = (`Signed byte value expected; got ${extra}`);
         this.code = 0x8011;
     }
 }
 
 export class UnsignedWordExpectedError extends Error {
     constructor(extra) {
-        super(`Unsigned word value expected; got ${extra}`);
+        super();
+        this.message = (`Unsigned word value expected; got ${extra}`);
         this.code = 0x8012;
     }
 }
 
 export class UnsignedValueOutOfRange extends Error {
     constructor(extra, lo, hi) {
-        super(`Unsigned value out of range; got ${extra}, expected ${lo} to ${hi}`);
+        super();
+        this.message = (`Unsigned value out of range; got ${extra}, expected ${lo} to ${hi}`);
         this.code = 0x8015;
     }
 }
 
 export class SignedWordExpectedError extends Error {
     constructor(extra) {
-        super(`Signed word value expected; got ${extra}`);
+        super();
+        this.message = (`Signed word value expected; got ${extra}`);
         this.code = 0x8013;
     }
 }
 
 export class BankExpectedError extends Error {
     constructor(extra) {
-        super(`Bank value expected; got ${extra}`);
+        super();
+        this.message = (`Bank value expected; got ${extra}`);
         this.code = 0x8014;
     }
 }
 
 export class AddressExpectedError extends Error {
     constructor(extra) {
-        super(`Address expected; got ${extra}`);
+        super();
+        this.message = (`Address expected; got ${extra}`);
         this.code = 0x8020;
     }
 }
 
 export class ALExpectedError extends Error {
     constructor(extra) {
-        super(`AL(8) register expected; got ${extra}`);
+        super();
+        this.message = (`AL(8) register expected; got ${extra}`);
         this.code = 0x8031;
     }
 }
 
 export class AExpectedError extends Error {
     constructor(extra) {
-        super(`A(16) register expected; got ${extra}`);
+        super();
+        this.message = (`A(16) register expected; got ${extra}`);
         this.code = 0x8032;
     }
 }
 
 export class CExpectedError extends Error {
     constructor(extra) {
-        super(`C(16) register expected; got ${extra}`);
+        super();
+        this.message = (`C(16) register expected; got ${extra}`);
         this.code = 0x8034;
     }
 }
 
 export class XExpectedError extends Error {
     constructor(extra) {
-        super(`X(16) register expected; got ${extra}`);
+        super();
+        this.message = (`X(16) register expected; got ${extra}`);
         this.code = 0x8038;
     }
 }
 
 export class YExpectedError extends Error {
     constructor(extra) {
-        super(`Y(16) register expected; got ${extra}`);
+        super();
+        this.message = (`Y(16) register expected; got ${extra}`);
         this.code = 0x8039;
     }
 }
 
 export class BPExpectedError extends Error {
     constructor(extra) {
-        super(`BP register expected; got ${extra}`);
+        super();
+        this.message = (`BP register expected; got ${extra}`);
         this.code = 0x803A;
     }
 }
 
 export class DExpectedError extends Error {
     constructor(extra) {
-        super(`D(16) register expected; got ${extra}`);
+        super();
+        this.message = (`D(16) register expected; got ${extra}`);
         this.code = 0x803B;
     }
 }
 
 export class PushRegisterExpectedError extends Error {
     constructor(extra) {
-        super(`Valid PUSH register expected; got ${extra}`);
+        super();
+        this.message = (`Valid PUSH register expected; got ${extra}`);
         this.code = 0x8036;
     }
 }
 
 export class PopRegisterExpectedError extends Error {
     constructor(extra) {
-        super(`Valid POP register expected; got ${extra}`);
+        super();
+        this.message = (`Valid POP register expected; got ${extra}`);
         this.code = 0x8037;
     }
 }
 
 export class FlagExpectedError extends Error {
     constructor(extra) {
-        super(`Flag expected; got ${extra}`);
+        super();
+        this.message = (`Flag expected; got ${extra}`);
         this.code = 0x8040;
     }
 }
@@ -149,14 +169,16 @@ export class ExpectedSymbol extends Error {
 
 export class UnexpectedAssemblyError extends Error {
     constructor(expected, got) {
-        super(`Unexpected assembly; expected ${hexUtils.byteArrayToHex(expected)}; got ${hexUtils.byteArrayToHex(got)}`);
+        super();
+        this.message = (`Unexpected assembly; expected ${hexUtils.byteArrayToHex(expected)}; got ${hexUtils.byteArrayToHex(got)}`);
         this.code = 0xFF00;
     }
 }
 
 export class UnexpectedTokenError extends Error {
     constructor(extra) {
-        super(`Got an unexpected token: ${JSON.stringify(extra)}`);
+        super();
+        this.message = (`Got an unexpected token: ${JSON.stringify(extra)}`);
         this.code = 0xFFFF;
     }
 }
@@ -549,7 +571,7 @@ export default class Asm {
             case "br":      // br address
             case "call":    // call address
                 if ((op1 = expectOperand(ops, {type: "s16", throws: false})) !== undefined) {
-                    instruction.push (0x07, (r.opcode === "br" ? 0b00000001 : 0b01000001), (op1 & 0xFF00) >> 8, (op1 & 0xFF));
+                    instruction.push (0x07, (r.opcode === "br" ? 0b00001001 : 0b01001001), (op1 & 0xFF00) >> 8, (op1 & 0xFF));
                 } else {
                     op1 = expectOperand(ops, {type: "address"});
                     instruction.push (0x07, (r.opcode === "br" ? 0b00000001 : 0b01000001) |
@@ -602,14 +624,25 @@ export default class Asm {
                 }
                 break;
             case "mov":     // mov drg, srg
-                op1 = expectOperand(ops, {type: "r16"});
-                op2 = expectOperand(ops, {type: "r16"});
-                if (op2>3) {
-                    instruction.push(0x06, 0b10000000 | (op1 << 3) | op2);
+                if (op1 = expectOperand(ops, {type: "br", throws: false})) {
+                    op2 = expectOperand(ops, {type: "dr16"});
+                    instruction.push(0b00001000 | ( op1 === registerMap.sb ? 0x0 : 0b00000100) | op2);
+                    break;
                 } else {
-                    instruction.push(0b11000000 | (op1 << 2) | op2);
+                    op1 = expectOperand(ops, {type: "r16"});
+                    op2 = expectOperand(ops, {type: "r16"});
+                    if (op2>3) {
+                        instruction.push(0x06, 0b10000000 | (op1 << 3) | op2);
+                    } else {
+                        instruction.push(0b11000000 | (op1 << 2) | op2);
+                    }
+                    break;
                 }
+            case "halt": {   // halt imm8
+                op1 = expectOperand(ops, {type: "u8"});
+                instruction.push(0x06, 0x20, op1);
                 break;
+            }
         }
 
         if (r.expectedAssembly.length > 0) {
