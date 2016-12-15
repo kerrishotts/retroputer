@@ -22,11 +22,21 @@
         return address + '?bust=' + (Math.random(1)*100000);
       });
     }*/
+    window.onerror = function (...args) {
+      window.log(JSON.stringify(args));
+    }
     System.import ("index.js").
       then( App => console.log(App) ).
-      catch( err => console.error(err));
+      catch( err => { window.log(JSON.stringify(err)); console.error(err); });
   </script>
   <div id="frame">
+    <div id="toolbar">
+      <button data-cmd="start" id="start">Start</button>
+      <button data-cmd="step" id="step">Step</button>
+      <button data-cmd="stop" id="stop">Stop</button>
+      <button data-cmd="dump" id="dump">Dump state</button>
+      <button data-cmd="reset" id="reset">Reset</button>
+    </div>
     <canvas id="screen"></canvas>
     <div id="log"></div>
   </div>
