@@ -1,5 +1,5 @@
 import Memory from "./Memory.js";
-import WebGL2D from "webgl-2d";
+//import WebGL2D from "webgl-2d";
 
 const ENABLE_WEBGL = false;
 
