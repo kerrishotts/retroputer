@@ -5,7 +5,7 @@ function log(...args) {
         if (_log.length > 24) {
         _log.pop();
         }
-        document.getElementById("log").innerHTML = _log.join("<BR>");
+        document.getElementById("log").textContent = _log.join(String.fromCharCode(10) + String.fromCharCode(13));
     } else {
         console.log(args.join(" "));
     }

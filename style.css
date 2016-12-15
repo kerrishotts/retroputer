@@ -12,6 +12,7 @@ body {
   overflow: scroll;
 }
 #screen {
+  /*transform: translate3d(0,0,0);*/
   width: 100vw;
   height: calc( 100vw * (200 / 320) );
   flex: 0 0 auto;
@@ -32,4 +33,5 @@ body {
   background-color: red !important;
   overflow: scroll;
   -webkit-overflow-scrolling: touch;
+  white-space: pre-line;
 }
