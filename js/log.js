@@ -10,4 +10,7 @@ function log(...args) {
         console.log(args.join(" "));
     }
 }
+if (typeof window !== "undefined") {
+    window.log = log;
+}
 module.exports = log;
