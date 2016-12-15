@@ -11,6 +11,10 @@ export default class Register {
     }
   }
   
+  get U2() {
+    return this.U8 && 0x03;
+  }
+
   get U8() {
     return this._UINT8[this._max];
   }
