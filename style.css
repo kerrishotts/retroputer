@@ -34,4 +34,17 @@ body {
   overflow: scroll;
   -webkit-overflow-scrolling: touch;
   white-space: pre-line;
+  font-family: "menlo", "consolas", "courier new", monospace;
+  font-size: 10px;
+}
+
+#toolbar {
+  flex: 0 0 auto;
+  background-color: #248;
+  line-height: 2;
+  text-align: center;
+}
+
+#toolbar button {
+
 }
