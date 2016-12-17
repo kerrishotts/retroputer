@@ -1,5 +1,8 @@
 import hexUtils from "./hexUtils.js";
 
+/*
+ * EXCEPTIONS
+ */
 export class OperandExpectedError extends Error {
     constructor(extra) {
         super();
@@ -183,6 +186,9 @@ export class UnexpectedTokenError extends Error {
     }
 }
 
+/*
+ * Valid registers (used in different assembly contexts)
+ */
 let validRegisters = ["a", "al", "b", "bl", "c", "cl", "d", "dl", "x", "xl", "y", "yl",
                       "sp", "bp", "sb", "db", "flags", "pc"];
 let validByteRegisters = ["al", "bl", "cl", "dl", "xl", "yl"];
@@ -203,6 +209,9 @@ let validFlagsRegister = "flags";
 let validBasePointerRegister = "bp";
 let validCounterWordRegister = "c";
 
+/*
+ * Register map
+ */
 let registerMap = {
     a: 0, al: 0, b: 1, bl: 1,
     c: 2, cl: 2, d: 3, dl: 3,
@@ -213,6 +222,9 @@ let registerMap = {
 
 let bankRegisterOffset = 12;
 
+/*
+ * flag map
+ */
 let validFlags = ["i", "m", "x", "o", "c", "n", "z"];
 let flagMap = {
     i: 7, m: 6, x: 5,
@@ -266,6 +278,12 @@ function toNumberInRange(str, lo, hi, ErrorToThrow) {
     return n;
 }
 
+/**
+ * Returns an address object including information about the addressing mode, indexes, and associated registers
+ * 
+ * @param {string} operand
+ * @return {Object}
+ */
 function dissectAddress(operand) {
     /*
      * Addresses can take the following form:
@@ -286,8 +304,11 @@ function dissectAddress(operand) {
         indexByX: false,
         indexByY: false
     };
+
+    // clear out some stuff we don't care about like brackets, parens and plusses
     let operands = shrinkArray(operand.split(/[\s\+\[\]\(\)]+/));
 
+    // detect if the address reference is direct (absolute) or indirect
     switch (operand.substr(0,1)) {
         case "[":
             address.direct = true;
@@ -306,23 +327,29 @@ function dissectAddress(operand) {
             throw new ExpectedSymbol("Parentheses or Bracket", operand);
     }
 
+    // try to detect if we have a register
     address.reg = expectOperand(operands, {type: "bp", throws: false});
     if (address.reg === undefined) {
         address.reg = expectOperand(operands, {type: "d16", throws: false});
     }
+
+    // BP is base-pointer-relative and expects a number
     if (address.reg === registerMap.bp) {
         address.addr = expectOperand(operands, {type: "s16", throws: false});
-    } else if (address.reg === undefined) {
+    } else if (address.reg === undefined) { // otherwise we expect a number as well, but not for a D register
         address.addr = expectOperand(operands, {type: "u16", throws: false});
     }
 
+    // check for indexing by X and Y
     address.indexByX = !!expectOperand(operands, {type: "x16", throws: false});
     address.indexByY = !!expectOperand(operands, {type: "y16", throws: false});
 
+    // if there's still stuff left that we haven't parsed, ERROR!
     if (operands.length !== 0) {
         throw new UnexpectedTokenError(operands);
     }
 
+    /// set the address mode
     if (address.direct) {
         address.mode = (address.reg === registerMap.bp ? 4 : (address.reg === registerMap.d ? 6 : 2));
     } if (address.indirect) {
@@ -330,9 +357,15 @@ function dissectAddress(operand) {
     }
 
     return address;
-
 }
 
+/**
+ * Expect an operand matching type in the provided operands array. Return it if it exists, or throw an error if it doesn't.
+ * If throws is set to false, no error will be thrown; undefined is returned instead. If eats is true in this case, the
+ * token is pushed back on the operands array.
+ * 
+ * Eats can be false, in which case this method just looks at it rather than consuming a token.
+ */
 function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
     let operand = eats ? operands.shift() : operands[0];
     let b, w;
@@ -344,7 +377,10 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
         switch (type) {
             case "*":
                 return operand;
+            // flags
             case "f":     return mappedListItem(validFlags,                     flagMap,     operand, FlagExpectedError);
+
+            // register types
             case "r":     return mappedListItem(validRegisters,                 registerMap, operand, RegisterExpectedError);
             case "pushr": return mappedListItem(validPushRegisters,             registerMap, operand, PushRegisterExpectedError);
             case "popr":  return mappedListItem(validPopRegisters,              registerMap, operand, PopRegisterExpectedError);
@@ -361,6 +397,8 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
             case "y16":   return mappedListItem([validYRegister],               registerMap, operand, YExpectedError);
             case "bp":    return mappedListItem([validBasePointerRegister],     registerMap, operand, BPExpectedError);
             case "br":    return mappedListItem(validBankRegisters,             registerMap, operand, BankRegisterExpectedError);
+
+            // numbers
             case "u2":    return toNumberInRange(operand, 0, 3, UnsignedValueOutOfRange);
             case "u3":    return toNumberInRange(operand, 0, 7, UnsignedValueOutOfRange);
             case "u4":    return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
@@ -371,6 +409,8 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
             case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
             case "n16":   return toNumberInRange(operand, -32768, 65535, SignedWordExpectedError);
             case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
+            
+            // address
             case "address": return dissectAddress(operand);
         }
 
@@ -390,9 +430,102 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
 }
 
 export default class Asm {
+
+    constructor() {
+        this.symbols = {};
+        this.labels = {};
+        this.segments = {
+            code: {
+                current: 0x1000,
+                0x1000: []
+            },
+            data: {
+                current: undefined
+            }
+        };
+    }
+
+    rewriteLineSymbols(line, stage) {
+        // if stage is symbols, be permissive
+        // rewrite symbols of form $A-Za-z0-9\_\-, and labels of the form >A-Za-z0-9\_\-
+        // use values if we know them when permissive. if not permissive, throw that the symbol couldn't be found
+        return line;
+    }
+
+    handleDirective(parseResults, stage) {
+        let addr;
+        switch(parseResults.directive) {
+            case "code": 
+            case "data":
+                // create a segment for this directive
+                addr = Number(parseResults.directiveData).valueOf();
+                this.segments[parseResults.directive][addr] = [];
+                this.segments[parseResults.directive].current = addr;
+                break;
+            case "var":
+                addr = this.segments.data.current + this.segments.data[this.segments.data.current].length;
+                this.symbols[parseResults.directiveData] = addr;
+                break;
+            case "db":
+                this.segments.data[this.segments.data.current].push(parseResults.directiveData.split(" ").map(b => Number(b).valueOf() & 0xFF));
+                break;
+            case "dw":
+                let words = parseResults.directiveData.split(" ").map(w => number(w).valueOf() & 0xFFFF);
+                this.segments.data[this.segments.data.current].push(words.reduce((p, c) => {
+                    p.push((c & 0xFF00) >> 8);
+                    p.push((c & 0x00FF));
+                    return p;
+                }, []));
+                break;
+            case "ds":
+                this.segments.data[this.segments.data.current].push(Array.from(parseResults.directiveData).map(c => c.charCodeAt(0)));
+                break;
+
+            default:
+                // unknown directive, complain
+        }
+    }
+
+    handleLabel(parseResults, stage) {
+        let addr = this.segments.code.current + this.segments.code[this.segments.code.current].length;
+        this.labels[parseResults.label] = addr;
+    }
+
+    handleAssembly(line, stage) {
+        let instructions = Asm.assembleSingleInstruction(line);
+        this.segments.code[this.segments.data.current].push(...instructions);
+    }
+
+    assemble(lines = []) {
+        for (let stage of ["symbols", "assembly"]) {
+            for (let line of lines) {
+                line = this.rewriteLineSymbols(line, stage);
+                let parseResults = Asm.parseSingleInstruction(line);
+                if (parseResults.directive !== "") {
+                    this.handleDirective(parseResults, stage);
+                }
+
+                if (parseResults.label !== "") {
+                    this.handleLabel(parseResults, stage);
+                }
+
+                if (parseResults.opcode !== "") {
+                    this.handleAssembly(line, stage);
+                }
+            }
+        }
+    }
+
+    /**
+     * Parses a single assembly instruction and returns a dictionary containing the various components.
+     * 
+     * @param {string} text
+     * @return {Object}
+     */
     static parseSingleInstruction(text = "") {
         let results = {
             directive: "",
+            directiveData: "",
             label: "",
             opcode: "",
             operands: [],
@@ -408,6 +541,7 @@ export default class Asm {
         r = (r[0] ? r[0] : "").split("=>");
         results.expectedAssembly = shrinkArray((r[1] ? r[1] : "").split(" ")).map(i => parseInt(i, 16));
 
+        // ignore things like whitespace, colons, equal signs, and asterisks -- this makes our parser a bit lax, but that's OK
         r = shrinkArray((r[0] ? r[0] : "").split(/[\s,\:=\*]+/));
 
         if (r.length < 1) {
@@ -420,9 +554,8 @@ export default class Asm {
         if (matches = r[0].match(/\.([A-Za-z0-9]+)/)) {
             results.directive = matches[1].toLowerCase();
             r.shift();
-        }
 
-        if (r.length < 1) {
+            results.directiveData = r.join(" ");
             return results;
         }
 
@@ -436,14 +569,23 @@ export default class Asm {
             return results;
         }
 
-        // next has to be an operand, if it exists
+        // next has to be an opcode, if it exists
         results.opcode = r[0].toLowerCase();
         r.shift();
 
+        // and then all the operands, if they exist
         results.operands = r.map(i => i.toLowerCase());
 
         return results;
     }
+
+    /**
+     * Assemble a single instruction, returning an array of bytes representing the machine code for the instruction
+     * Doesn't parse directives, respond to labels or anything like that -- just regular instructions
+     * 
+     * @param {string} text
+     * @returns {Array}
+     */
     static assembleSingleInstruction(text = "") {
         let r = Asm.parseSingleInstruction(text);
         let instruction = [];
@@ -455,10 +597,10 @@ export default class Asm {
         let ops = r.operands;
 
         switch (r.opcode) {
-            case "nop": 
+            case "nop":     // nop
                 instruction.push(0x00);
                 break;
-            case "ret":
+            case "ret":     // ret
                 instruction.push(0xFF);
                 break;
             case "enter":   // enter imm8
@@ -580,11 +722,13 @@ export default class Asm {
                                             (op1.indexByY ? 0b00000010 : 0), (op1.addr & 0xFF00) >> 8, (op1.addr & 0xFF));
                 }
                 break;
-            case "lds":      // lds a(l), ...
-            case "sts":      // sts a(l), ...
-            case "ldd":      // ldd a(l), ...
-            case "std":      // std a(l), ...
+            case "ldi":     // alias for lds, but short for load immediate
+            case "lds":     // lds a(l), ...
+            case "sts":     // sts a(l), ...
+            case "ldd":     // ldd a(l), ...
+            case "std":     // std a(l), ...
                 translate = {
+                    ldi: [undefined, 0b01000000],
                     lds: [undefined, 0b01000000],
                     std: [undefined, 0b10000000],
                     ldd: [0x07,      0b10000000],
@@ -645,6 +789,7 @@ export default class Asm {
             }
         }
 
+        // if expected assembly has been passed, throw an error if it doesn't match
         if (r.expectedAssembly.length > 0) {
             r.expectedAssembly.forEach((b, idx) => {
                 if (b !== instruction[idx]) {
@@ -653,6 +798,7 @@ export default class Asm {
             });
         }
 
+        // if we didn't generate any instruction, error
         if (instruction.length === 0) {
             throw new Error(`Unexpected opcode ${r.opcode}`);
         } else {

@@ -18,6 +18,7 @@ describe("#ASM", () => {
             expectedParseResult = {
                 label: "",
                 directive: "",
+                directiveData: "",
                 opcode: "",
                 operands: [],
                 expectedAssembly: [],
@@ -57,9 +58,15 @@ describe("#ASM", () => {
             });
         });
         describe ("#directives", () => {
-            it ("should be able to parse a directive with no instruction", () => {
+            it ("should be able to parse a directive with no extra data", () => {
                 let r = Asm.parseSingleInstruction(".main");
                 expectedParseResult.directive = "main";
+                expect(r).to.deep.equal(expectedParseResult);
+            });
+            it ("should be able to parse a directive with extra data", () => {
+                let r = Asm.parseSingleInstruction(".code=0x0100");
+                expectedParseResult.directive = "code";
+                expectedParseResult.directiveData = "0x0100";
                 expect(r).to.deep.equal(expectedParseResult);
             });
         });
@@ -158,13 +165,13 @@ describe("#ASM", () => {
               "MOV A, D                    => C3",
               "MOV Y, D                    => D7",
               "MOV C, X                    => 06 94",
-              "BR +127                     => 07 01 00 7F",
-              "BR -32768                   => 07 01 80 00",
-              "CALL +127                   => 07 41 00 7F",
-              "CALL -1                     => 07 41 FF FF",
+              "BR +127                     => 07 09 00 7F",
+              "BR -32768                   => 07 09 80 00",
+              "CALL +127                   => 07 49 00 7F",
+              "CALL -1                     => 07 49 FF FF",
               "CALL [0x2000]               => 07 51 20 00",
-              "LDS AL, 0x80                => 40 80",
-              "LDS A, 0x0080               => 49 00 80",
+              "LDI AL, 0x80                => 40 80",
+              "LDI A, 0x0080               => 49 00 80",
               "LDS AL, [0x2000]            => 50 20 00",
               "LDS A, [0x2000]             => 51 20 00",
               "LDS A, [0x2000+Y]           => 53 20 00",
