@@ -13,28 +13,10 @@
 //     ...
 
 let fs = require("fs");
+let cvtDataToBin = require("../js/cvtDataToBin");
 let hexUtils = require("../js/hexUtils");
 
 module.exports = function createbin(file, data, addr, format="bin") {
-    let fileContents = data.reduce((p, c, idx) => {
-        if (idx % 16 === 0) {
-            if (format === "bin") {
-                p.push(`${hexUtils.toHex(addr+idx, "00000", "")}:`);
-            } else {
-                p.push(` /*${hexUtils.toHex(addr+idx, "00000", "")}*/ `);
-            }
-        }
-        if (format === "bin") {
-            p[p.length-1] += `${((idx % 8 === 0) && (idx % 16 !== 0)) ? " -" : ""} ${hexUtils.toHex2(c, "")}`;
-        } else {
-            p[p.length-1] += `${hexUtils.toHex2(c, "0x")},`;
-        }
-        return p;
-    }, []);
-    if (format !== "bin") {
-        fileContents.unshift("module.exports = [");
-        fileContents.push("];")
-    }
-    fileContents = fileContents.join(String.fromCharCode(13));
+    let fileContents = cvtDataToBin(data, addr, format);
     fs.writeFileSync(file, fileContents);
 }

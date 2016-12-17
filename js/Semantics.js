@@ -241,10 +241,11 @@ let semanticsOps = {
     }
 }
 
-export function exec(cpu) {
-    let op = semanticsOps[cpu.state.semantic];
+// this expects to be bound to a cpu
+export function exec() {
+    let op = semanticsOps[this.state.semantic];
     if (op) {
-        op(cpu);
+        op(this);
     }
 }
 
