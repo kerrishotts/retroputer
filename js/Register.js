@@ -17,7 +17,8 @@ export default class Register {
   }
   
   set U8(value) {
-    this._UINT8[this._max] = value;
+    if (value < 0) { value += 256; }
+    this._UINT8[this._max] = value & 0xFF;
   }
   
   get U16() {
@@ -25,6 +26,7 @@ export default class Register {
   }
   
   set U16(value) {
+    if (value < 0) { value += 65536; }
     if (this.size > 1) {
       this._UINT8[0] = (value & 0xFF00) >> 8;
       this._UINT8[1] = (value & 0x00FF);
