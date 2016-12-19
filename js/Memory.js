@@ -5,7 +5,11 @@ export default class Memory {
   constructor(layout) {
     this.layout = layout;
     this._buf = new ArrayBuffer(layout.size * 1024);
-    this._mem = new Uint8ClampedArray(this._buf);
+    this._mem = new Uint8Array(this._buf);
+    this.resetStats();
+  }
+
+  resetStats() {
     this.stats = {
       readsTotal: 0,
       byteReadsTotal: 0,
@@ -17,7 +21,7 @@ export default class Memory {
       lastWriteAddr: 0,
       lastValueRead: 0,
       lastValueWritten: 0,
-    }
+    };
   }
 
   dump() {
@@ -31,6 +35,7 @@ export default class Memory {
       throw new Error("can't write undefined to memory!");
     }
     addr = addr & 0x3FFFF;
+    if (val < 0) { val += 256; }
     var v = (val & 0xFF);
     this._mem[addr] = v;
     this.stats.lastValueWritten = v;
@@ -45,6 +50,7 @@ export default class Memory {
       throw new Error("can't write undefined to memory!");
     }
     addr = addr & 0x3FFFF;
+    if (val < 0) { val += 65536; }
     var v = (val & 0xFFFF);
     this._mem[addr] = (v & 0xFF00) >> 8;
     this._mem[addr+1] = (v & 0x00FF);
@@ -59,11 +65,12 @@ export default class Memory {
       throw new Error("can't write undefined to memory!");
     }
     addr = addr & 0x3FFFF;
+    if (val < 0) { val += 4294967296; }
     var v = (val & 0xFFFFFFFF);
     this._mem[addr] = (v & 0xFF000000) >> 24;
-    this._mem[addr+1] = (v & 0xFF0000) >> 16;
-    this._mem[addr+2] = (v & 0xFF00) >> 8;
-    this._mem[addr+1] = (v & 0x00FF);
+    this._mem[addr+1] = (v & 0x00FF0000) >> 16;
+    this._mem[addr+2] = (v & 0x0000FF00) >> 8;
+    this._mem[addr+3] = (v & 0x000000FF);
 //    this.stats.writesTotal++;
 //    this.stats.lastValueWritten = v;
 //    this.stats.lastWriteAddr = addr;
@@ -131,7 +138,7 @@ export default class Memory {
   }
 
   static range(buffer, addr, len) {
-    return new Uint8ClampedArray(buffer, addr, len);
+    return new Uint8Array(buffer, addr, len);
   }
 
   static range32(buffer, addr, len) {
