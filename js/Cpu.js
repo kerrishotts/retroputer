@@ -224,6 +224,9 @@ export default class CPU {
     // which means we're probably servicing an interrupt
     if (this.getFlag(this.flagMap.X) || skipFetch) {
       this.execute();
+      if (!this.getFlag(this.flagMap.X)) {
+        this.step();  // go ahead and skip the next instruction
+      }
     } else {
       this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
     }
