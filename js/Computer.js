@@ -19,20 +19,11 @@ export default class Computer {
         debug
     } = {}) {
         this.debug = debug;
-        this.stats = {
-            totalInstructions: 0,
-            lastFrameInstructions: 0,
-            totalFrames: 0,
-            totalTime: 0,
-            lastFrameTime: 0,
-            oldf: 0,
-            startTime: 0
-        };
         this.performance = {
-            iterationsBetweenTimeCheck: 100,
-            timeToDevoteToCPU: 1,
+            iterationsBetweenTimeCheck: 100,  //1, //100,
+            timeToDevoteToCPU: 1,//, 0.05, //1
             throttlePoint: 14,
-            maxTimeToDevoteToCPU: 12
+            maxTimeToDevoteToCPU: 12//, 0.05 //12
         };
 
         this.memory = new Memory(memoryLayout);
@@ -49,6 +40,8 @@ export default class Computer {
         this.screen = new Screen(screenId, this.memory);
 
         this.rafId = undefined;
+
+        this.resetStats();
 
         this.tick = (f) => {
             let startTime = performance.now();
@@ -73,6 +66,7 @@ export default class Computer {
 
             // send a frame interrupt to the CPU
             this.cpu.sendTrap(TRAPS.FRAME);
+
 
             // run the processor for awhile
             if (this.cpu.stepping) {
@@ -102,19 +96,20 @@ export default class Computer {
             this.stats.lastFrameTime = totalTime;
             this.stats.totalTime += totalTime;
             this.stats.totalFrames ++;
+            this.stats.performanceAtTime = endTime;
 
             if (!this.cpu.stepping) {
                 // only throttle when stepping
                 if (totalTime > this.performance.throttlePoint) {
                     // we need to limit processing time
                     this.performance.timeToDevoteToCPU -= 0.25;
-                    if (this.performance.timeToDevoteToCPU < 0.25) {
-                        this.performance.timeToDevoteToCPU = 0.25;
+                    if (this.performance.timeToDevoteToCPU < 0.00001) {
+                        this.performance.timeToDevoteToCPU = 0.00001;
                     }
                 } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
                     // but we need to increase processing to use the most of the
                     // available time as possible
-                    this.performance.timeToDevoteToCPU += 1;
+                    this.performance.timeToDevoteToCPU = Math.round(this.performance.timeToDevoteToCPU + 1);
                     if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
                         this.performance.timeToDevoteToCPU = 14;
                     }
@@ -134,6 +129,20 @@ export default class Computer {
                 this.cpu.running = false;
             }
         }
+    }
+
+    resetStats() {
+        this.stats = {
+            totalInstructions: 0,
+            lastFrameInstructions: 0,
+            totalFrames: 0,
+            totalTime: 0,
+            lastFrameTime: 0,
+            oldf: 0,
+            startTime: 0,
+            performanceAtTime: 0
+        };
+        this.memory.resetStats();
     }
 
     dumpAll() {
