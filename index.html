@@ -29,16 +29,62 @@
       then( App => console.log(App) ).
       catch( err => { window.log(JSON.stringify(err)); console.error(err); });
   </script>
-  <div id="frame">
-    <div id="toolbar">
-      <button data-cmd="start" id="start">Start</button>
-      <button data-cmd="step" id="step">Step</button>
-      <button data-cmd="stop" id="stop">Stop</button>
-      <button data-cmd="dump" id="dump">Dump state</button>
-      <button data-cmd="reset" id="reset">Reset</button>
+  <div id="ui" class="horizontal panel">
+    <div class="main vertical panel">
+      <div class="screen-panel vertical panel">
+        <div class="title">Screen</div>
+        <canvas id="screen"></canvas>
+        <div id="stats"></div>
+      </div>
+      <div class="bottom-panel collapsible horizontal panel">
+        <div class="collapsible log-panel vertical panel">
+          <div class="title">Log</div>
+          <div id="log"></div>
+        </div>
+        <div class="callapsible cpu-panel vertical panel">
+          <div class="title">CPU</div>
+          <div id="cpu">
+            <table>
+              <tr><td>A</td><td id="reg-A"></td><td>X</td><td id="reg-X"></td><td>SB</td><td id="reg-SB"></td></tr>
+              <tr><td>B</td><td id="reg-B"></td><td>Y</td><td id="reg-Y"></td><td>DB</td><td id="reg-DB"></td></tr>
+              <tr><td>C</td><td id="reg-C"></td><td>SP</td><td id="reg-SP"></td><td>Flags</td><td id="reg-F"></td></tr>
+              <tr><td>D</td><td id="reg-D"></td><td>BP</td><td id="reg-BP"></td><td>PC</td><td id="reg-PC"></td></tr>
+            </table>
+
+            <table>
+              <tr><td>Int.</td><td id="flag-7"></td><td>Mode</td><td id="flag-6"></td><td>eXec</td><td id="flag-5"></td><td>-</td><td id="flag-4"></td></tr>
+              <tr><td>Over</td><td id="flag-3"></td><td>Carry</td><td id="flag-2"></td><td>Neg</td><td id="flag-1"></td><td>Zero</td><td id="flag-0"></td></tr>
+            </table>
+
+            <table>
+              <tr><td>Inst</td><td id="instructions"></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
-    <canvas id="screen"></canvas>
-    <div id="log"></div>
+    <div class="secondary vertical panel">
+      <div class="collapsible vertical panel fixed">
+        <div class="title">Control</div>
+        <div id="toolbar">
+          <button data-cmd="start" id="start">Start</button>
+          <button data-cmd="step" id="step">Step</button>
+          <button data-cmd="stop" id="stop">Stop</button>
+          <button data-cmd="dump" id="dump">Dump state</button>
+          <button data-cmd="reset" id="reset">Reset</button>
+        </div>
+      </div>
+      <div class="collapsible vertical panel">
+        <div class="title">Memory</div>
+        <div id="memory">
+        </div>
+      </div>
+      <div class="collapsible vertical panel">
+        <div class="title">Code</div>
+        <div id="code">
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>
