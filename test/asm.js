@@ -64,7 +64,7 @@ describe("#ASM", () => {
                 expect(r).to.deep.equal(expectedParseResult);
             });
             it ("should be able to parse a directive with extra data", () => {
-                let r = Asm.parseSingleInstruction(".code=0x0100");
+                let r = Asm.parseSingleInstruction(".code 0x0100");
                 expectedParseResult.directive = "code";
                 expectedParseResult.directiveData = "0x0100";
                 expect(r).to.deep.equal(expectedParseResult);
