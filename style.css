@@ -1,19 +1,24 @@
+html * {
+  box-sizing: border-box;
+  font-size: 100%;
+}
+
 body {
   background-color: black;
   margin: 0;
   font-family: Menlo, Consolas, "Courier New", Courier, monospace;
-  font-size: 14px;
+  font-size: 0.875rem;
+  color: white;
 }
 
-html * {
-  box-sizing: border-box;
-}
 
 .panel {
   display: flex;
-  outline: 1px solid #90989F;
+  outline: 1px solid #C8CBCD;
   overflow: hidden;
   position: relative;
+  background-color: #303234;
+  color: white;
 }
 
 .panel * {
@@ -34,9 +39,9 @@ html * {
 
 .panel .title {
   flex: 0 0 auto;
-  background-color: #90989F;
-  background-image: linear-gradient(0deg, #606468, #90989F);
-  color: white;
+  background-color: #D0D2D4;
+  background-image: linear-gradient(0deg, #B0B2B4, #E0E2E4);
+  color: #303234;
   height: 2em;
   line-height: 1;
   padding: 0.5em;
@@ -92,23 +97,79 @@ html * {
   -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
 }
 
+#log, #memory-dump {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: pre-line;
+  font-size: 0.625rem;
+}
+
 #log {
   flex: 1 1 auto;
   min-height: 100px;
-  color: white;
-  background-color: #303234;
-  overflow: scroll;
-  -webkit-overflow-scrolling: touch;
-  white-space: pre-line;
-  font-family: "menlo", "consolas", "courier new", monospace;
-  font-size: 10px;
 }
 
-#toolbar {
+.toolbar {
   flex: 0 0 auto;
-  background-color: #248;
+  background-color: #E0E2E4;
   line-height: 2;
   text-align: center;
+  color: #303234;
+  font-size: 0.875rem;
+  position: relative;
+}
+
+.toolbar hr {
+  -webkit-appearance: none;
+  border: 1px outset #303234;
+  height: 1px;
+}
+
+.toolbar .row {
+  border: 1px outset #C0C2C4;
+}
+
+.toolbar label {
+  font-size: 87.5%;
+}
+
+.toolbar button, 
+.toolbar input[type=text],
+textarea {
+  font-family: Menlo, Consolas, "Courier New", Courier, monospace;
+  font-size: 87.5%;
+  color: #303234;
+  border: 1px solid #D0D2D4;
+  display: inline-block;
+  padding: 0.5em;
+  position: relative;
+  top: -2px;
+  margin: 0;
+  margin-bottom: -1px;
+  vertical-align: middle;
+  background-color: transparent;
+  outline: none;
+}
+
+.toolbar button:hover, .toolbar button:focus {
+  border: 1px outset #C0C2C4;
+  background-color: rgba(0,0,0,0.0625);
+}
+.toolbar button:active {
+  background-color: rgba(0,0,0,0.25);
+  border: 1px inset #C0C2C4;
+}
+
+.toolbar input[type=text]:focus,
+textarea {
+  border: 1px solid #C0C2C4;
+  background-color: white;
+}
+
+#cpu-speed {
+  width: 6em;
+  display: inline-block;
+  text-align: right;
 }
 
 #stats {
@@ -119,11 +180,6 @@ html * {
   background-color: rgba(0,0,0,0.75);
   color: white;
   text-shadow: 1px 1px 0 #000000;
-}
-
-#cpu {
-  background-color: #303234;
-  color: white;
 }
 
 #cpu table {
@@ -141,6 +197,13 @@ html * {
   text-align: right;
 }
 
-#toolbar button {
+#memory {
+  font-size: 0.875rem;
+  color: white;
+  max-height: 30em;
+  min-height: 10em;
+}
+
+#memory {
 
 }

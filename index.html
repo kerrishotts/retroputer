@@ -64,24 +64,54 @@
       </div>
     </div>
     <div class="secondary vertical panel">
-      <div class="collapsible vertical panel fixed">
+      <div id="control" class="collapsible vertical panel fixed">
         <div class="title">Control</div>
-        <div id="toolbar">
-          <button data-cmd="start" id="start">Start</button>
-          <button data-cmd="step" id="step">Step</button>
-          <button data-cmd="stop" id="stop">Stop</button>
-          <button data-cmd="dump" id="dump">Dump state</button>
-          <button data-cmd="reset" id="reset">Reset</button>
+        <div class="toolbar">
+          <div class="row">
+            <button data-cmd="start">Start</button>
+            <button data-cmd="stop">Stop</button>
+          </div>
+          <div class="row">
+            Speed: <span id="cpu-speed"></span>
+          </div>
+          <div class="row">
+            <button data-cmd="slowest">|&lt;</button>
+            <button data-cmd="slow">&lt;</button>
+            <button data-cmd="fast">&gt;</button>
+            <button data-cmd="fastest">&gt;|</button>
+          </div>
+          <div class="row">
+            <button data-cmd="step">Step</button>
+            <button data-cmd="dump-cpu">Dump</button>
+            <button data-cmd="reset"">Reset</button>
+          </div>
         </div>
       </div>
-      <div class="collapsible vertical panel">
+      <div class="collapsible vertical panel fixed">
         <div class="title">Memory</div>
-        <div id="memory">
+        <div id="memory" class="vertical panel">
+          <div class="toolbar">
+            <div class="row">
+              <label>Start: <input id="mem-start" type="text" size=7 value="0x00000" /></label>
+              <label>End:   <input id="mem-end" type="text" size=7 value="0x00007" /></label>
+            </div>
+            <div class="row">
+              <button data-cmd="dump-mem">Dump memory</button>
+            </div>
+          </div>
+          <div id="memory-dump">
+          </div>
         </div>
       </div>
       <div class="collapsible vertical panel">
         <div class="title">Code</div>
-        <div id="code">
+        <div id="code" class="vertical panel">
+          <div class="toolbar">
+            <div class="row">
+              <button data-cmd="assemble">Assemble</button>
+            </div>
+          </div>
+          <textarea></textarea>
         </div>
       </div>
     </div>

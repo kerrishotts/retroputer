@@ -80,6 +80,87 @@ export default class App {
     }
     el = document.getElementById(`instructions`);
     el.textContent = computer.cpu.state.instruction.map(i => hexUtils.toHex2(i,"").toUpperCase()).join(" ");
+
+    // update speed
+    el = document.getElementById(`cpu-speed`);
+    el.textContent = `${computer.performance.timeToDevoteToCPU}/${computer.performance.maxTimeToDevoteToCPU}`;
+
+  }
+
+  dumpMemory() {
+    let startAddr = Number(document.getElementById("mem-start").value).valueOf();
+    let endAddr = Number(document.getElementById("mem-end").value).valueOf();
+    let el = document.getElementById("memory-dump");
+    let div = 8;
+    let brk = 8;
+
+    let dump = this.computer.memory.range(startAddr, (endAddr - startAddr) + 1).reduce(
+      (p, c, idx) => {
+        let str = "", pos;
+        if ((idx % div) === 0) {
+          if (Math.floor((idx / div)) % brk === 0) {
+            p.push (String.fromCharCode(13) + String.fromCharCode(10));
+          }
+          str = `${hexUtils.toHex(startAddr + idx, "00000", "")}: `;
+          for (let i = 0; i < div; i++) {
+            str += ".. ";
+          }
+          for (let i = 0; i < div; i++) {
+            str += "."
+          }
+          str += String.fromCharCode(13) + String.fromCharCode(10);
+          p.push(str);
+        }
+        str = p[p.length-1];
+        pos = 7 + ((idx % div) * 3);
+        str = str.substr(0, pos) + (hexUtils.toHex2(c, "").toUpperCase() + " ") + str.substr(pos + 3, 255);
+        if (((c >= 33) && (c <= 127)) || (c === 255)) {
+          pos = 7 + (div * 3) + (idx % div);
+          if (c===255) { c = 0x2588; }
+          str = str.substr(0, pos) + String.fromCharCode(c) + str.substr(pos+1, 255);
+        }
+        p[p.length-1] = str;
+        return p;
+      }, []).join("");
+
+      el.textContent = dump;
+  }
+
+  assemble() {
+    try {
+      log ("Assembling...");
+      let el = document.querySelector("#code textarea");
+      let code = el.value.split(String.fromCharCode(10));
+      let asm = new Asm();
+      let c = 0;
+      asm.assemble(code);
+
+      log ("Assembled; writing...");
+      for (let segmentName of Object.keys(asm.segments)) {
+        let segment = asm.segments[segmentName];
+        for (let addr of Object.keys(segment)) {
+          let arr = segment[addr];
+          if (arr instanceof Array) {
+            log (`Writing ${segmentName}:${addr}`);
+            let s = "";
+            for (let i = 0; i < arr.length; i++) {
+              this.computer.memory.poke(i + Number(addr).valueOf(), arr[i]);
+              s += hexUtils.toHex2(arr[i], "") + " ";
+              if (i % 16 === 15) {
+                log (`... ${s}`);
+                s = "";
+              }
+              c++;
+            }
+            log (`... ${s}`);
+          }
+        }
+      }
+
+      log(`Assembly complete; wrote ${c} bytes`);
+    } catch (err) {
+      log(`Assembly error ${err.message} (${hexUtils.toHex4(err.code)}) at line # ${err.lineNumber}:${err.line}`);
+    }
   }
 
   start() {
@@ -100,9 +181,10 @@ export default class App {
 
     // fill in a program
     let prog = [
+      ".code 0xFF00",
       "LDI A, 0x03",
       "MOV DB, A",
-      "LDI A, 0x03FF",
+      "LDI A, 0x03E7",
       "MOV B, A",
       "XOR A, A",
       "MOV X, B",
@@ -110,12 +192,15 @@ export default class App {
       "STD AL, [0x0000+X]",
       "INC A",
       "DEC X",
-      "IFN Z",
+      "IFN N",
       "BR -10",
-      "BR -16"
-      //"HALT 0x00",
-      //"BR -7"
+      "INC A",
+      "BR -17",
+      ".code 0xFE00",
+      "RET"
     ];
+    document.querySelector("#code textarea").value = prog.join(String.fromCharCode(10));
+/*
     let addr = 0xFF00;
     try {
       for (let i = 0; i< prog.length; i++) {
@@ -129,9 +214,20 @@ export default class App {
 
     // drop a RET at the frame interrupt
     computer.memory.poke(0xFE00, 0xFF);
-
+*/
     let cold = true;
-    document.getElementById("toolbar").addEventListener("click", (e) => {
+    document.body.addEventListener("click", (e) => {
+      let incr = 0;
+      incr = 0.01;
+      if (computer.performance.maxTimeToDevoteToCPU >= 0.3) {
+        incr = 0.05;
+      }
+      if (computer.performance.maxTimeToDevoteToCPU >= 2) {
+        incr = 0.25;
+      }
+      if (computer.performance.maxTimeToDevoteToCPU >= 5) {
+        incr = 1;
+      }
       if (e.target.matches("button")) {
         switch (e.target.getAttribute("data-cmd")) {
           case "start":
@@ -159,9 +255,15 @@ export default class App {
               computer.dumpAll();
             }, 32);
             break;
-          case "dump":
+          case "dump-cpu":
             this.updatePanels();
             computer.dumpAll();
+            break;
+          case "dump-mem":
+            this.dumpMemory();
+            break;
+          case "assemble":
+            this.assemble();
             break;
           case "reset":
             computer.resetStats();
@@ -169,6 +271,31 @@ export default class App {
             this.updatePanels();
             computer.dumpAll();
             break;
+          case "slowest":
+            computer.performance.maxTimeToDevoteToCPU = 0.02;
+            incr = 0;
+          case "slow":
+            computer.performance.maxTimeToDevoteToCPU = Math.round((computer.performance.maxTimeToDevoteToCPU - incr) * 100) / 100;
+            if (computer.performance.maxTimeToDevoteToCPU < 0.01) {
+              computer.performance.maxTimeToDevoteToCPU = 0.01;
+            }
+            computer.performance.timeToDevoteToCPU = computer.performance.maxTimeToDevoteToCPU;
+            computer.performance.iterationsBetweenTimeCheck = (computer.performance.maxTimeToDevoteToCPU < 0.3) ? 1 : 100;
+            this.updatePanels();
+            break;
+          case "fastest":
+            computer.performance.maxTimeToDevoteToCPU = 12;
+            incr = 0;
+          case "fast":
+            computer.performance.maxTimeToDevoteToCPU = Math.round((computer.performance.maxTimeToDevoteToCPU + incr) * 100) / 100;
+            if (computer.performance.maxTimeToDevoteToCPU > 16) {
+              computer.performance.maxTimeToDevoteToCPU = 16;
+            }
+            computer.performance.timeToDevoteToCPU = computer.performance.maxTimeToDevoteToCPU;
+            computer.performance.iterationsBetweenTimeCheck = (computer.performance.maxTimeToDevoteToCPU < 0.3) ? 1 : 100;
+            this.updatePanels();
+            break;
+
         }
       }
     });
