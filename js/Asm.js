@@ -1,4 +1,5 @@
 import hexUtils from "./hexUtils.js";
+import log from "./log.js";
 
 /*
  * EXCEPTIONS
@@ -165,8 +166,41 @@ export class FlagExpectedError extends Error {
 
 export class ExpectedSymbol extends Error {
     constructor(whichSymbol, got) {
-        super (`Expected ${whichSymbol}, got ${got}`);
+        super();
+        this.message = (`Expected ${whichSymbol}, got ${got}`);
         this.code = 0x8050;
+    }
+}
+
+export class UnknownDirectiveError extends Error {
+    constructor(extra) {
+        super();
+        this.message = (`Unexpected directive: ${extra}`);
+        this.code = 0x8100;
+    }
+}
+
+export class UnknownTypeSentinelError extends Error {
+    constructor(extra) {
+        super();
+        this.message = (`Unknown type sentinel: ${extra}`);
+        this.code = 0x8200;
+    }
+}
+
+export class UnexpectedOpcodeError extends Error {
+    constructor(extra) {
+        super();
+        this.message = (`Unexpected opcode: ${extra}`);
+        this.code = 0x8300;
+    }
+}
+
+export class UndefinedSymbolError extends Error {
+    constructor(extra) {
+        super();
+        this.message = (`Undefined symbol: ${extra}`);
+        this.code = 0x8400;
     }
 }
 
@@ -432,7 +466,8 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
 export default class Asm {
 
     constructor() {
-        this.symbols = {};
+        this.vars = {};
+        this.defs = {};
         this.labels = {};
         this.segments = {
             code: {
@@ -447,13 +482,62 @@ export default class Asm {
 
     rewriteLineSymbols(line, stage) {
         // if stage is symbols, be permissive
-        // rewrite symbols of form $A-Za-z0-9\_\-, and labels of the form >A-Za-z0-9\_\-
+        // rewrite symbols of form @A-Za-z0-9\_\-, and labels of the form >A-Za-z0-9\_\-
         // use values if we know them when permissive. if not permissive, throw that the symbol couldn't be found
+        line = line.replace(/(\#[A-Za-z0-9\-\_]+)|(\>[A-Za-z0-9\-\_]+)|(\&[A-Za-z0-9\-\_]+)/g, (match) => {
+            let typeOfSymbol = match[0];
+            let symbolName = match.substr(1,255);
+            let data = undefined;
+            switch (typeOfSymbol) {
+                case "&": 
+                    data = this.vars[symbolName];
+                    break;
+                case "#":
+                    data = this.defs[symbolName];
+                    break;
+                case ">":
+                    let pc = Number(this.segments.code.current).valueOf() + this.segments.code[this.segments.code.current].length;
+                    data = this.labels[symbolName];
+                    if (data !== undefined) {
+                        data = data - (pc + 4);
+                    }
+                    break;
+                default:
+                    throw new UnknownTypeSentinelError (match);
+            }
+            if (data === undefined) {
+                if (stage === "symbols") {
+                    return "0x00000";
+                } else {
+                    throw new UndefinedSymbolError (match);
+                }
+            } else {
+                return data;
+            }
+        });
+        return line;
+    }
+
+    handleFunctions(line) {
+        let functions = {
+            bank: (m, n) => ((Number(n).valueOf() & 0x30000) >> 16),
+            addr: (m, n) => (Number(n).valueOf() & 0xFFFF),
+            word: (m, n) => (Number(n).valueOf() & 0xFFFF),
+            ord: (m, n) => (n.charCodeAt(0)),
+            chr: (m, n) => (String.fromCharCode(n)),
+            lo: (m, n) => (Number(n).valueOf() & 0x00FF),
+            hi: (m, n) => ((Number(n).valueOf() & 0xFF00) >> 8),
+
+        }
+        for (let name of Object.keys(functions)) {
+            let fn = functions[name];
+            line = line.replace(new RegExp(`${name}\\(([0-9A-Za-z]+)\\)`, "gi"), fn);
+        }
         return line;
     }
 
     handleDirective(parseResults, stage) {
-        let addr;
+        let addr, parm1, parm2;
         switch(parseResults.directive) {
             case "code": 
             case "data":
@@ -464,25 +548,40 @@ export default class Asm {
                 break;
             case "var":
                 addr = this.segments.data.current + this.segments.data[this.segments.data.current].length;
-                this.symbols[parseResults.directiveData] = addr;
+                this.vars[parseResults.directiveData] = addr;
+                break;
+            case "def":
+                let [parm1, parm2] = parseResults.directiveData.split(" ");
+                this.defs[parm1] = parm2;
                 break;
             case "db":
-                this.segments.data[this.segments.data.current].push(parseResults.directiveData.split(" ").map(b => Number(b).valueOf() & 0xFF));
+                this.segments.data[this.segments.data.current].push(...parseResults.directiveData.split(" ").map(b => Number(b).valueOf() & 0xFF));
                 break;
+            case "db[]":
+                parm1 = Number(parseResults.directiveData).valueOf();
+                for (let i = 0; i<parm1; i++) {
+                    this.segments.data[this.segments.data.current].push(0);
+                }
             case "dw":
                 let words = parseResults.directiveData.split(" ").map(w => number(w).valueOf() & 0xFFFF);
-                this.segments.data[this.segments.data.current].push(words.reduce((p, c) => {
+                this.segments.data[this.segments.data.current].push(...words.reduce((p, c) => {
                     p.push((c & 0xFF00) >> 8);
                     p.push((c & 0x00FF));
                     return p;
                 }, []));
                 break;
+            case "dw[]":
+                parm1 = Number(parseResults.directiveData).valueOf() * 2;
+                for (let i = 0; i<parm1; i++) {
+                    this.segments.data[this.segments.data.current].push(0);
+                }
             case "ds":
-                this.segments.data[this.segments.data.current].push(Array.from(parseResults.directiveData).map(c => c.charCodeAt(0)));
+                this.segments.data[this.segments.data.current].push(...Array.from(parseResults.directiveData).map(c => c.charCodeAt(0)));
                 break;
 
             default:
                 // unknown directive, complain
+                throw new UnknownDirectiveError(parseResults.directive);
         }
     }
 
@@ -492,25 +591,39 @@ export default class Asm {
     }
 
     handleAssembly(line, stage) {
-        let instructions = Asm.assembleSingleInstruction(line);
-        this.segments.code[this.segments.data.current].push(...instructions);
+        let r = Asm.assembleSingleInstruction(line);
+        this.segments.code[this.segments.code.current].push(...r.instruction);
     }
 
     assemble(lines = []) {
+        let lineNumber = 0;
         for (let stage of ["symbols", "assembly"]) {
+            this.segments.code = {
+                current: 0x1000,
+                0x1000: []
+            };
+            lineNumber = 0;
             for (let line of lines) {
-                line = this.rewriteLineSymbols(line, stage);
-                let parseResults = Asm.parseSingleInstruction(line);
-                if (parseResults.directive !== "") {
-                    this.handleDirective(parseResults, stage);
-                }
+                lineNumber ++;
+                try {
+                    line = this.rewriteLineSymbols(line, stage);
+                    line = this.handleFunctions(line, stage);
+                    let parseResults = Asm.parseSingleInstruction(line);
+                    if (parseResults.directive !== "") {
+                        this.handleDirective(parseResults, stage);
+                    }
 
-                if (parseResults.label !== "") {
-                    this.handleLabel(parseResults, stage);
-                }
+                    if (parseResults.label !== "") {
+                        this.handleLabel(parseResults, stage);
+                    }
 
-                if (parseResults.opcode !== "") {
-                    this.handleAssembly(line, stage);
+                    if (parseResults.opcode !== "") {
+                        this.handleAssembly(line, stage);
+                    }
+                } catch (err) {
+                    err.line = line;
+                    err.lineNumber = lineNumber;
+                    throw err;
                 }
             }
         }
@@ -542,7 +655,7 @@ export default class Asm {
         results.expectedAssembly = shrinkArray((r[1] ? r[1] : "").split(" ")).map(i => parseInt(i, 16));
 
         // ignore things like whitespace, colons, equal signs, and asterisks -- this makes our parser a bit lax, but that's OK
-        r = shrinkArray((r[0] ? r[0] : "").split(/[\s,\:=\*]+/));
+        r = shrinkArray((r[0] ? r[0] : "").split(/[\s]+/));
 
         if (r.length < 1) {
             // no need to go further; we're done
@@ -561,13 +674,15 @@ export default class Asm {
 
         // is there a label (of the form label>)
         if (matches = r[0].match(/([\_\-A-Za-z0-9]+)\>/)) {
-            results.label = matches[0].toLowerCase();
+            results.label = matches[1].toLowerCase();
             r.shift();
         }
 
         if (r.length < 1) {
             return results;
         }
+
+        r = shrinkArray(r.join(" ").split(/[\s,\:=\*]+/));
 
         // next has to be an opcode, if it exists
         results.opcode = r[0].toLowerCase();
@@ -590,7 +705,8 @@ export default class Asm {
         let r = Asm.parseSingleInstruction(text);
         let instruction = [];
         if (r.opcode === "") {
-            return instruction;
+            r.instruction = instruction;
+            return r;
         }
         let op1, op2, op3, op4, op5, scale;
         let translate;
@@ -800,7 +916,7 @@ export default class Asm {
 
         // if we didn't generate any instruction, error
         if (instruction.length === 0) {
-            throw new Error(`Unexpected opcode ${r.opcode}`);
+            throw new UnexpectedOpcodeError(r.opcode);
         } else {
             r.instruction = instruction;
             return r;
