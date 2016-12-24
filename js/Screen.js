@@ -215,7 +215,7 @@ const ENABLE_WEBGL = false;
 
   initScreenConfiguration() {
     this.setBackgroundColor(0x01);  // dark blue
-    this.setBorderSize(0x08, 0x08); // 8px on all sides
+    this.setBorderSize(0x01, 0x01); // 8px on all sides
     this.setBorderColor(0x0A);
     this.setGraphicsLayer(0xFF); // graphics hidden by default;
     for (let page=0; page<4; page++) {
