@@ -314,7 +314,16 @@
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
           this.state.whichBank = (this.state.semantic === this.semantics.STORE ? 0x01 : 0x00);
-          this.state.imm16 = (this.state.instruction[1] << 8) | this.state.instruction[2];
+          if (this.state.addressingMode === 0) {
+            this.state.imm8 = (this.state.instruction[1]);
+            this.state.instruction.pop();
+          } else if (this.state.addressingMode >= 6) {
+            this.state.imm16 = 0;
+            this.state.instruction.pop();
+            this.state.instruction.pop();
+          } else {
+            this.state.imm16 = (this.state.instruction[1] << 8) | this.state.instruction[2];
+          }
           break;
         }
         this.state.semantic = this.semantics.BADOP;
@@ -351,7 +360,17 @@
           this.state.indexByY = (opcode & 0b00000010) >> 1;
           this.state.scale = (opcode & 0b00000001);
           this.state.whichBank = (this.state.semantic === this.semantics.STORE ? 0x00 : 0x01);
-          this.state.imm16 = (this.state.instruction[2] << 8) | this.state.instruction[3];
+          if (this.state.addressingMode === 0) {
+            this.state.imm8 = (this.state.instruction[2]);
+            this.state.instruction.pop();
+          } else if (this.state.addressingMode >= 6) {
+            this.state.imm16 = 0;
+            this.state.instruction.pop();
+            this.state.instruction.pop();
+          }
+          else {
+            this.state.imm16 = (this.state.instruction[2] << 8) | this.state.instruction[3];
+          }
           break;
         }
 
