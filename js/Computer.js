@@ -63,6 +63,9 @@ export default class Computer {
             let curTime = performance.now();
             let deltaToNow = curTime - startTime;
             let stopTime = curTime + (this.performance.timeToDevoteToCPU);
+            if (stopTime < performance.now()) {
+                stopTime = performance.now()+0.01;
+            }
 
             // send a frame interrupt to the CPU
             this.cpu.sendTrap(TRAPS.FRAME);
@@ -103,8 +106,8 @@ export default class Computer {
                 if (totalTime > this.performance.throttlePoint) {
                     // we need to limit processing time
                     this.performance.timeToDevoteToCPU -= 0.25;
-                    if (this.performance.timeToDevoteToCPU < 0.00001) {
-                        this.performance.timeToDevoteToCPU = 0.00001;
+                    if (this.performance.timeToDevoteToCPU < 0.01) {
+                        this.performance.timeToDevoteToCPU = 0.01;
                     }
                 } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
                     // but we need to increase processing to use the most of the
