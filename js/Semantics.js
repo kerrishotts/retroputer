@@ -31,7 +31,7 @@ function handleFlags(cpu, v, size=16) {
     // handle Negative flag
     cpu.clrFlag(cpu.flagMap.N);
 
-    if (v < 0) { v = (unsignedSize - v) & unsignedMax; }
+    if (v < 0) { v = (unsignedSize + v) & unsignedMax; }
     if (v > signedMax) {
         cpu.setFlag(cpu.flagMap.N);
         carry = true;
