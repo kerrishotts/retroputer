@@ -1,4 +1,6 @@
 import Asm from "../js/Asm.js";
+let fs = require("fs");
+let path = require("path");
 
 let expect = require("chai").expect;
 
@@ -300,6 +302,27 @@ describe("#ASM", () => {
                 } else {
                     throw err;
                 }
+            }
+        }));
+    });
+    describe ("multi-line assembly", () => {
+        // it is assumed these tests will have => to mark expected assembly. All we're doing
+        // is assembling the code; the process itself will verify generated assembly against
+        // expected assembly
+        let tests = [
+            "../asm/test/charset.asm",
+            "../asm/test/hello-world.asm",
+            "../asm/test/banner.asm",
+        ];
+
+        tests.forEach(filename => it(filename, () => {
+            let fileContents = fs.readFileSync(path.join(__dirname, filename), {encoding: "utf8"});
+            fileContents = fileContents.split(/\n/g);
+            try {
+                let asm = new Asm();
+                asm.assemble(fileContents);
+            } catch (err) {
+                throw err;
             }
         }));
     });
