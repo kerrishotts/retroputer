@@ -1,6 +1,10 @@
 import CPU from "./Cpu.js";
 import Memory from "./Memory.js";
 import Screen from "./Screen.js";
+import IO from "./IO.js";
+import Keyboard from "./devices/Keyboard.js";
+
+
 import memoryLayout from "./memoryLayout.js";
 import log from "./log.js";
 
@@ -20,16 +24,23 @@ export default class Computer {
     } = {}) {
         this.debug = debug;
         this.performance = {
-            iterationsBetweenTimeCheck: 100,  //1, //100,
-            timeToDevoteToCPU: 1,//, 0.05, //1
+            iterationsBetweenTimeCheck: 100,
+            timeToDevoteToCPU: 1,
             throttlePoint: 14,
-            maxTimeToDevoteToCPU: 12//, 0.05 //12
+            maxTimeToDevoteToCPU: 12,
+            minTimeToDevoteToCPU: 0.2
         };
 
         this.memory = new Memory(memoryLayout);
         this.memory.init();
 
-        this.cpu = new CPU(this.memory);
+        this.io = new IO();
+
+        this.devices = {
+            keyboard: new Keyboard(this.io),
+        }
+
+        this.cpu = new CPU(this.memory, this.io);
 
         // simulate ROM font for now
         var tileSet0Offset = memoryLayout.tileSet0;
@@ -64,12 +75,11 @@ export default class Computer {
             let deltaToNow = curTime - startTime;
             let stopTime = curTime + (this.performance.timeToDevoteToCPU);
             if (stopTime < performance.now()) {
-                stopTime = performance.now()+0.01;
+                stopTime = performance.now() + this.performance.minTimeToDevoteToCPU;
             }
 
             // send a frame interrupt to the CPU
             this.cpu.sendTrap(TRAPS.FRAME);
-
 
             // run the processor for awhile
             if (this.cpu.stepping) {
@@ -105,16 +115,16 @@ export default class Computer {
                 // only throttle when stepping
                 if (totalTime > this.performance.throttlePoint) {
                     // we need to limit processing time
-                    this.performance.timeToDevoteToCPU -= 0.25;
-                    if (this.performance.timeToDevoteToCPU < 0.01) {
-                        this.performance.timeToDevoteToCPU = 0.01;
+                    this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - 25) / 100;
+                    if (this.performance.timeToDevoteToCPU < this.performance.minTimeToDevoteToCPU) {
+                        this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU 
                     }
                 } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
                     // but we need to increase processing to use the most of the
                     // available time as possible
-                    this.performance.timeToDevoteToCPU = Math.round(this.performance.timeToDevoteToCPU + 1);
+                    this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) + 25) / 100;
                     if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
-                        this.performance.timeToDevoteToCPU = 14;
+                        this.performance.timeToDevoteToCPU = this.performance.maxTimeToDevoteToCPU;
                     }
                 }
             }
@@ -197,6 +207,22 @@ export default class Computer {
     reset() {
         // send reset trap
         this.cpu.sendTrap(TRAPS.RESET);
+    }
+
+    hardReset() {
+        this.cpu.stepping = false;
+        this.cpu.running = false;
+        this.cpu.init();
+        this.memory.init();
+        this.screen.init();
+
+        // simulate ROM font for now
+        var tileSet0Offset = memoryLayout.tileSet0;
+        font.forEach((v, i) => {
+            this.memory.poke(i+tileSet0Offset, v);
+        });
+
+        //this.reset();
     }
 
 }

@@ -109,9 +109,9 @@ let semanticsOps = {
             dreg.U16 = cpu.state.imm16;
         } else {
             if (cpu.state.scale) {
-                dreg.U16 = cpu.memory.peek16(getAddr(cpu, cpu.state.whichBank));
+                dreg.U16 = handleFlags(cpu, cpu.memory.peek16(getAddr(cpu, cpu.state.whichBank)), 16);
             } else {
-                dreg.U8 = cpu.memory.peek(getAddr(cpu, cpu.state.whichBank));
+                dreg.U8 = handleFlags(cpu, cpu.memory.peek(getAddr(cpu, cpu.state.whichBank)), 8);
             }
         }
     },
@@ -137,8 +137,8 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.IN]:     undefined,
-    [semantics.OUT]:    undefined,
+    [semantics.IN]:     function _in(cpu) { cpu.registers[cpu.state.destRegister].U8 = handleFlags(cpu, cpu.io.read(cpu.state.imm8), 8); },
+    [semantics.OUT]:    function _out(cpu){ cpu.io.write(cpu.state.imm8, cpu.registers[cpu.state.srcRegister].U8); },
     [semantics.MEMFILL]:undefined,
     [semantics.MEMCOPY]:undefined,
     [semantics.MEMSWAP]:undefined,
@@ -173,13 +173,15 @@ let semanticsOps = {
     [semantics.SHR]:    function shl(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 >> cpu.registers[cpu.state.srcRegister].U16, 16); },
     [semantics.ROL]:    undefined,
+    [semantics.ROR]:    undefined,
     [semantics.AND]:    function and(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 & cpu.registers[cpu.state.srcRegister].U16, 16); },
     [semantics.OR ]:    function or (cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 | cpu.registers[cpu.state.srcRegister].U16, 16); },
     [semantics.XOR]:    function xor(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 ^ cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.NEG]:    undefined,
+    [semantics.NEG]:    function neg(cpu) { cpu.registers[cpu.state.destRegister].U16 =
+                                            handleFlags(cpu, 256 - cpu.registers[cpu.state.destRegister].U16); },
     [semantics.SETFLAG]:function setflag(cpu) { cpu.setFlag(cpu.state.flag); },
     [semantics.CLRFLAG]:function clrflag(cpu) { cpu.clrFlag(cpu.state.flag); },
     [semantics.IFFLAG]: function ifflag(cpu)  { if (!cpu.getFlag(cpu.state.flag)) { cpu.clrFlag(cpu.flagMap.X); }},

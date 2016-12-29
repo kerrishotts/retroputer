@@ -6,7 +6,7 @@ import cpuSemantics from "./semantics.js";
 import decode from "./decoder.js";
 
 export default class CPU {
-  constructor(memory) {
+  constructor(memory, io) {
     // status
     this.running = false;
     this.paused = false;
@@ -38,19 +38,11 @@ export default class CPU {
     };
     this.addressingModeMap = [ "imm8/rel8", "imm16/rel16", "abs16", "ind16", "relBP", "indBP", "absD", "indD" ];
 
-    // give defaults for registers and flags 
-    this.registers[this.registerMap.SP].U16 = 0x1000;
-    this.registers[this.registerMap.BP].U16 = 0x1000;
-
-    this.setFlag(this.flagMap.X);
-    this.setFlag(this.flagMap.I);
-    
     // need to keep track of memory
     this.memory = memory;
 
-    // instruction decoding and execution state
-    this.state = { };
-    this.clearState();
+    // and io
+    this.io = io;
 
     // semantics for execution
     this.semantics = cpuSemantics.semantics;
@@ -61,6 +53,22 @@ export default class CPU {
 
     // also bind decode
     this.decode = decode.bind(this);
+
+    this.init();
+  }
+
+  init() {
+
+    // give defaults for registers and flags 
+    this.registers[this.registerMap.SP].U16 = 0x1000;
+    this.registers[this.registerMap.BP].U16 = 0x1000;
+
+    this.setFlag(this.flagMap.X);
+    this.setFlag(this.flagMap.I);
+    
+    // instruction decoding and execution state
+    this.state = { };
+    this.clearState();
   }
 
   /**
