@@ -482,11 +482,15 @@ export default class Asm {
 
     rewriteLineSymbols(line, stage) {
         // if stage is symbols, be permissive
-        // rewrite symbols of form @A-Za-z0-9\_\-, and labels of the form >A-Za-z0-9\_\-
+        // rewrite symbols; symbols start with type sentinels:
+        //      # = item defined with .def
+        //      & = item defined with .var
+        //      : = label
+        //      > = label
         // use values if we know them when permissive. if not permissive, throw that the symbol couldn't be found
-        line = line.replace(/(\#[A-Za-z0-9\-\_]+)|(\>[A-Za-z0-9\-\_]+)|(\&[A-Za-z0-9\-\_]+)/g, (match) => {
+        line = line.replace(/(\#[A-Za-z0-9\-\_]+)|(\>[A-Za-z0-9\-\_]+)|(\&[A-Za-z0-9\-\_]+)|(\:[A-Za-z0-9\-\_]+)/g, (match) => {
             let typeOfSymbol = match[0];
-            let symbolName = match.substr(1,255);
+            let symbolName = match.substr(1,255).toLowerCase();
             let data = undefined;
             switch (typeOfSymbol) {
                 case "&": 
@@ -496,6 +500,7 @@ export default class Asm {
                     data = this.defs[symbolName];
                     break;
                 case ">":
+                case ":":
                     let pc = Number(this.segments.code.current).valueOf() + this.segments.code[this.segments.code.current].length;
                     data = this.labels[symbolName];
                     if (data !== undefined) {
@@ -563,7 +568,7 @@ export default class Asm {
                     this.segments.data[this.segments.data.current].push(0);
                 }
             case "dw":
-                let words = parseResults.directiveData.split(" ").map(w => number(w).valueOf() & 0xFFFF);
+                let words = parseResults.directiveData.split(" ").map(w => Number(w).valueOf() & 0xFFFF);
                 this.segments.data[this.segments.data.current].push(...words.reduce((p, c) => {
                     p.push((c & 0xFF00) >> 8);
                     p.push((c & 0x00FF));
@@ -591,7 +596,7 @@ export default class Asm {
     }
 
     handleAssembly(line, stage) {
-        let r = Asm.assembleSingleInstruction(line);
+        let r = Asm.assembleSingleInstruction(line, {throwIfUnexpectedAssembly: (stage === "assembly")});
         this.segments.code[this.segments.code.current].push(...r.instruction);
     }
 
@@ -673,7 +678,7 @@ export default class Asm {
         }
 
         // is there a label (of the form label>)
-        if (matches = r[0].match(/([\_\-A-Za-z0-9]+)\>/)) {
+        if (matches = r[0].match(/([\_\-A-Za-z0-9]+)[\>|\:]/)) {
             results.label = matches[1].toLowerCase();
             r.shift();
         }
@@ -701,7 +706,7 @@ export default class Asm {
      * @param {string} text
      * @returns {Array}
      */
-    static assembleSingleInstruction(text = "") {
+    static assembleSingleInstruction(text = "", {throwIfUnexpectedAssembly = true} = {}) {
         let r = Asm.parseSingleInstruction(text);
         let instruction = [];
         if (r.opcode === "") {
@@ -909,7 +914,9 @@ export default class Asm {
         if (r.expectedAssembly.length > 0) {
             r.expectedAssembly.forEach((b, idx) => {
                 if (b !== instruction[idx]) {
-                    throw new UnexpectedAssemblyError(r.expectedAssembly, instruction);
+                    if (throwIfUnexpectedAssembly) {
+                        throw new UnexpectedAssemblyError(r.expectedAssembly, instruction);
+                    }
                 }
             });
         }
