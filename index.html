@@ -83,7 +83,7 @@
           <div class="row">
             <button data-cmd="step">Step</button>
             <button data-cmd="dump-cpu">Dump</button>
-            <button data-cmd="reset"">Reset</button>
+            <button data-cmd="reset">Reset</button><button data-cmd="hard-reset">(hard)</button>
           </div>
         </div>
       </div>
@@ -108,10 +108,22 @@
         <div id="code" class="vertical panel">
           <div class="toolbar">
             <div class="row">
-              <button data-cmd="assemble">Assemble</button>
+              <select id="asm-select">
+                <option>Select a saved assembly file</option>
+                <optgroup id="saved-asms">
+                  <option>None</option>
+                </optgroup>
+              </select>
+              <button data-cmd="load-asm">Load</button>
             </div>
           </div>
           <textarea></textarea>
+          <div class="toolbar">
+            <div class="row">
+              <button data-cmd="assemble">Assemble</button>
+              <button data-cmd="save-asm">Save</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

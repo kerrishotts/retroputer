@@ -15,6 +15,90 @@ export default class App {
   constructor() {
     this.panelTimer = undefined;
   }
+
+  createSampleProgram() {
+    let prog = [
+      ".code 0xFF00",
+      "LDI A, 0x03",
+      "MOV DB, A",
+      "LDI A, 0x03E7",
+      "MOV B, A",
+      "XOR A, A",
+      "MOV X, B",
+      "CLR Z",
+      "STD AL, [0x0000+X]",
+      "INC A",
+      "DEC X",
+      "IFN N",
+      "BR -10",
+      "INC A",
+      "BR -17",
+      ".code 0xFE00",
+      "RET"
+    ];
+    this.saveProgram(prog.join(String.fromCharCode(10)), "sample");
+  }
+
+  saveProgram(code, programName) {
+    localStorage.setItem(programName, code);
+    let storedProgramKeys = localStorage.getItem("_stored-asm-keys");
+    if (!storedProgramKeys) {
+      storedProgramKeys = "[]";
+    }
+    storedProgramKeys = JSON.parse(storedProgramKeys);
+    if (storedProgramKeys.find(v => v === programName)) {
+      return; // already exists, no need to go further
+    }
+    storedProgramKeys.push(programName);
+    storedProgramKeys = storedProgramKeys.sort((a, b) => a < b);
+    localStorage.setItem("_stored-asm-keys", JSON.stringify(storedProgramKeys));
+  }
+
+  loadProgram(programName) {
+    let prog = localStorage.getItem(programName);
+    if (!prog) {
+      alert(`There is no program named ${programName}`);
+      return "";
+    }
+
+    return prog;
+  }
+
+  saveProgramFromEditor() {
+    let programName = prompt("Name your program", "program");
+    this.saveProgram(document.querySelector("#code textarea").value, programName);
+    this.updateListOfStoredPrograms();
+    alert("Program saved");
+  }
+
+  loadProgramToEditor(programName) {
+    if (programName) {
+      let prog = this.loadProgram(programName);
+      document.querySelector("#code textarea").value = prog;
+    }
+  }
+
+  updateListOfStoredPrograms() {
+    let storedProgramKeys = localStorage.getItem("_stored-asm-keys");
+    if (!storedProgramKeys) {
+      this.createSampleProgram();
+      this.updateListOfStoredPrograms();
+      return;
+    }
+    storedProgramKeys = JSON.parse(storedProgramKeys);
+    let targetOptGroup = document.getElementById("saved-asms");
+
+    let df = storedProgramKeys.reduce((p, c) => {
+      let opt = document.createElement("option");
+      opt.setAttribute("value", c);
+      opt.textContent = c;
+      p.appendChild(opt);
+      return p;
+    }, document.createDocumentFragment());
+    targetOptGroup.innerHTML = "";
+    targetOptGroup.appendChild(df);
+  }
+
   sizeScreen() {
     let el = document.getElementById("screen");
     let ui = document.getElementById("ui");
@@ -179,42 +263,10 @@ export default class App {
 
     this.panelTimer = setInterval( () => this.updatePanels(), 125);
 
-    // fill in a program
-    let prog = [
-      ".code 0xFF00",
-      "LDI A, 0x03",
-      "MOV DB, A",
-      "LDI A, 0x03E7",
-      "MOV B, A",
-      "XOR A, A",
-      "MOV X, B",
-      "CLR Z",
-      "STD AL, [0x0000+X]",
-      "INC A",
-      "DEC X",
-      "IFN N",
-      "BR -10",
-      "INC A",
-      "BR -17",
-      ".code 0xFE00",
-      "RET"
-    ];
-    document.querySelector("#code textarea").value = prog.join(String.fromCharCode(10));
-/*
-    let addr = 0xFF00;
-    try {
-      for (let i = 0; i< prog.length; i++) {
-        let assembly = Asm.assembleSingleInstruction(prog[i]);
-        log(prog[i]);
-        assembly.instruction.forEach(v => computer.memory.poke(addr++, v));
-      }
-    } catch (err) {
-      log (JSON.stringify(err));
-    }
+    this.updateListOfStoredPrograms();
 
-    // drop a RET at the frame interrupt
-    computer.memory.poke(0xFE00, 0xFF);
-*/
+
+
     let cold = true;
     document.body.addEventListener("click", (e) => {
       let incr = 0;
@@ -265,11 +317,24 @@ export default class App {
           case "assemble":
             this.assemble();
             break;
+          case "load-asm":
+            let programName = document.getElementById("asm-select").value;
+            if (confirm(`Load ${programName} into editor?`)) {
+              this.loadProgramToEditor(programName);
+            }
+            break;
+          case "save-asm":
+            this.saveProgramFromEditor();
+            break;
           case "reset":
-            computer.resetStats();
             computer.reset();
             this.updatePanels();
             computer.dumpAll();
+            break;
+          case "hard-reset":
+            cold = true;
+            computer.hardReset();
+            this.updatePanels();
             break;
           case "slowest":
             computer.performance.maxTimeToDevoteToCPU = 0.02;
