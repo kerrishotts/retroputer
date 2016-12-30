@@ -30,6 +30,20 @@ export default class Memory {
     log(`mem stats | last read: ${hexUtils.toHex4(this.stats.lastValueRead)}@${hexUtils.toHex4(this.stats.lastReadAddr)}  write: ${hexUtils.toHex4(this.stats.lastValueWritten)}@${hexUtils.toHex4(this.stats.lastWriteAddr)}`);
   }
 
+  loadFromJS(data, addrOverride) {
+    let addr = data.addr;
+    if (addrOverride) {
+      addr = addrOverride;
+    }
+    data.data.forEach((v, i) => {
+        this.poke(i+addr, v);
+    });
+  }
+
+  loadFromBIN(bin) {
+    // TODO
+  }
+
   poke(addr, val) {
     if (val === undefined) {
       throw new Error("can't write undefined to memory!");
@@ -71,9 +85,9 @@ export default class Memory {
     this._mem[addr+1] = (v & 0x00FF0000) >> 16;
     this._mem[addr+2] = (v & 0x0000FF00) >> 8;
     this._mem[addr+3] = (v & 0x000000FF);
-//    this.stats.writesTotal++;
-//    this.stats.lastValueWritten = v;
-//    this.stats.lastWriteAddr = addr;
+    this.stats.writesTotal++;
+    this.stats.lastValueWritten = v;
+    this.stats.lastWriteAddr = addr;
   }
 
 
@@ -100,10 +114,10 @@ export default class Memory {
   peek32(addr) {
     addr = addr & 0x3FFFF;
     var v = (this._mem[addr] << 24) | (this._mem[addr+1] << 16) | (this._mem[addr+2] << 8) | (this._mem[addr+3]);
-    //this.stats.readsTotal++;
-    //this.stats.wordReadsTotal++;
-    //this.stats.lastValueRead = v;
-    //this.stats.lastReadAddr = addr;
+    this.stats.readsTotal++;
+    this.stats.wordReadsTotal++;
+    this.stats.lastValueRead = v;
+    this.stats.lastReadAddr = addr;
     return v;
   }
 
@@ -121,12 +135,22 @@ export default class Memory {
       this.poke(i, Math.floor(Math.random()*256));
     };
 
-    // but we do need a valid reset vector
-    this.poke16(0x0000, 0xFF00);
-    this.poke16(0x01E0, 0xFE00);
+    // we need three RETs at known important vectors
+    [0x0FE00, 0x0FF00, 0x0FFFF].forEach(addr => {
+      this.poke(addr, 0xFF);
+    });
 
-    // and we'll need to load a ROM in soon as well
-    // TODO: load boot rom
+    // All trap vectors initially point at 0xFFFF
+    for (let addr=0; addr<512; addr++) {
+      this.poke(addr, 0xFF);
+    }
+
+    // but we do need a valid FRAME and RESET vector
+    this.poke16(0x00000, 0xFF00);
+    this.poke16(0x001E0, 0xFE00);
+
+    // loading boot ROM is the responsibility of our owner.
+
   }
 
   static poke(buffer, addr, val)  {
