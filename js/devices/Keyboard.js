@@ -59,8 +59,10 @@ function isInvalidTarget(evt) {
 }
 
 export default class Keyboard extends GenericDevice {
-    constructor(io) {
-        super(io, {name: "keyboard", type: "buffered"});
+    constructor({io, cpu, memory} = {}) {
+        super({io, cpu, memory, name: "keyboard", type: "buffered"});
+
+        this._cpu = cpu;
 
         this._buffer = [];
         this._state = 0b00000000;       // modifier keys like CTRL, ALT, etc.
@@ -132,6 +134,8 @@ export default class Keyboard extends GenericDevice {
         bitmask = directionalBitmap[key] || 0x00;
         this._directions = this._directions & (256 - bitmask);
 
+        this._cpu.sendTrap(0x11);
+
         evt.preventDefault();
     }
 
@@ -143,6 +147,8 @@ export default class Keyboard extends GenericDevice {
         if (this._buffer.length > this._maxBuffer) {
             this._buffer.shift();
         }
+
+        this._cpu.sendTrap(0x10);
 
         evt.preventDefault();
     }
