@@ -13,4 +13,7 @@ function log(...args) {
 if (typeof window !== "undefined") {
     window.log = log;
 }
+if (typeof global !== "undefined") {
+    global.log = log;
+}
 module.exports = log;
