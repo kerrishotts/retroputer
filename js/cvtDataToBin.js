@@ -26,8 +26,8 @@ module.exports =  function cvtDataToBin(data, addr, format="bin") {
     }, []);
 
     if (format !== "bin") {
-        text.unshift("module.exports = [");
-        text.push("];")
+        text.unshift(`module.exports = {addr: ${addr}, data: [`);
+        text.push("]};")
     }
     text = text.join(String.fromCharCode(13));
 
