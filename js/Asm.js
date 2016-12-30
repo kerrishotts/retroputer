@@ -634,6 +634,39 @@ export default class Asm {
         }
     }
 
+    writeToMemory(memory, {debug = false} = {}) {
+        let c = 0;
+        for (let segmentName of Object.keys(this.segments)) {
+            let segment = this.segments[segmentName];
+            for (let addr of Object.keys(segment)) {
+                let arr = segment[addr];
+                if (arr instanceof Array) {
+                    if (debug) {
+                        log (`Writing ${segmentName}:${addr}`);
+                    }
+                    let s = "";
+                    for (let i = 0; i < arr.length; i++) {
+                    memory.poke(i + Number(addr).valueOf(), arr[i]);
+                    if (debug) {
+                        s += hexUtils.toHex2(arr[i], "") + " ";
+                        if (i % 16 === 15) {
+                            log (`... ${s}`);
+                            s = "";
+                        }
+                    }
+                    c++;
+                    }
+                    if (debug) {
+                        log (`... ${s}`);
+                    }
+                }
+            }
+        }
+        if (debug) {
+            log(`... Wrote ${c} bytes`);
+        }
+    }
+
     /**
      * Parses a single assembly instruction and returns a dictionary containing the various components.
      * 
@@ -758,7 +791,7 @@ export default class Asm {
             case "shl":     // shl reg, # times
             case "shr":     // shr reg, # times
                 op1 = expectOperand(ops, {type: "r16"});
-                op2 = expectOperand(ops, {type: "u3"});
+                op2 = expectOperand(ops, {type: "r16"});
                 instruction.push(0x05, (r.opcode === "shl" ? 0b00000000 : 0b01000000) | (op1 << 3) | op2);
                 break;
             case "neg":     // neg reg
