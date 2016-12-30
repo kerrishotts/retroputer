@@ -47,11 +47,16 @@ The memory layout is simple:
 |:-------:|:-------:|:----:|:----------------:|:-------------------------------------------------------------|
 |  00000                 ||| memBot           | Bottom of memory                                             |
 |  00000  |  0FFFF  |  64K |                  | Bank 0; code and data                                        |
-|  00000  |  001FF  | 512B | traps            | Traps consisting of 256 2-byte pointers                      |
-|  00000  |  00001  |   2B | trapReset        | Trap 0x00; points to reset()                                 |
+|  00000  |  001FF  | 512B | traps            | Traps consisting of 256 2-byte pointers; all but 0x00 and 0xFE default to 0xFFFF|
+|  00000  |  00001  |   2B | trapRESET        | Trap 0x00; points to reset()                                 |
+|  001E0  |  001E1  |   2B | trapFRAME        | Trap 0xF0; points to frame()                                 |
 |  00400  |  00FFF  |   3K | stackMax         | Default location of stack; stack grows down from 00FFF       |
-|  01000  |  0BFFF  |  43K | codeStart        | Code and data                                                |
+|  01000  |  0AFFF  |  39K | codeStart        | Code and data                                                |
+|  0B000  |  0BFFF  |   4K | romScratchStart  | ROM and KERNEL scratch area                                  |
 |  0C000  |  0FFFF  |  16K | romStart         | ROM and KERNEL                                               |
+|  0FE00  |  0FEFF  | 256B | frame            | Called after each frame is drawn to screen                   |
+|  0FF00  |  0FFFE  | 255B | reset            | Performs initialization steps and jumps to 0x01000           |
+|  0FFFF                 |||defaultTrapHandler| Just a RET for any TRAPs that aren't overridden              |
 |  10000  |  1FFFF  |  64K |                  | Bank 1; graphics and video configuration                     |
 |  10000  |  1F9FF  | ~64K | graphicsStart    | 320x200 256-color graphics                                   |
 |  1FA00                 ||| reserved         | reserved                                                     |
@@ -122,18 +127,15 @@ The memory layout is simple:
 |   0   |  A   |  16  | Accumulator, General purpose                 |
 ||         AL  |   8  | Low 8 bits of Accumulator                    |
 |   1   |  B   |  16  | General purpose                              |
-||         BL  |   8  | Low 8 bits of B                              |
 |   2   |  C   |  16  | Counter, General purpose                     |
-||         CL  |   8  | Low 8 bits of C                              |
 |   3   |  D   |  16  | aDdress select, General purpose              |
-||         DL  |   8  | Low 8 bits of D                              |
 |   4   |  X   |  16  | Index before indirect, General purpose       |
 |   5   |  Y   |  16  | Index after indrect, General purpose         |
 |   6   |  SP  |  16  | Stack Pointer                                |
 |   7   |  BP  |  16  | Base Pointer                                 |
 |   C   |  SB  |   2  | Source Bank                                  |
 |   D   |  DB  |   2  | Destination Bank                             |
-|   E   |  F   |   8  | Flags / processor state                      |
+|   E   |Flags |   8  | Flags / processor state                      |
 |   F   |  PC  |  16  | Program counter                              |
 
 The flags register is laid out as follows:
@@ -141,7 +143,7 @@ The flags register is laid out as follows:
 | Bit | Name | Purpose                                               |
 |:---:|:----:|:------------------------------------------------------|
 |  7  |  I   | (I)nterrupt Enable (0 = off, 1 = on)                  |
-|  6  |  M   | Calculation (M)ode (0 = no carry, 1 = with carry)     | 
+|  6  |  M?  | Calculation (M)ode (0 = no carry, 1 = with carry)     | 
 |  5  |  X   | E(X)ecute next                                        |
 |  4  |  -   | Reserved                                              |
 |  3  |  O   | (O)verflow                                            |
@@ -196,13 +198,15 @@ The instruction set uses a variable-width encoding.
 | `04 80-BF`       |`........ ........ 00000100 01drgsrg`| SUB drg, srg                 |`....OCNZ`| drg := drg - srg; with carry if M is 1
 | `04 80-BF`       |`........ ........ 00000100 10drgsrg`| XOR drg, srg                 |`....OCNZ`| drg := drg ^ srg
 | `04 C0-FF`       |`........ ........ 00000100 11drgsrg`| CMP drg, srg                 |`....OCNZ`| flags = drg cmp srg
-| `05 00-3F`       |`........ ........ 00000101 00regnum`| SHL reg, times               |`....OCNZ`| reg shl times; if M = 1, ROL
-| `05 80-BF`       |`........ ........ 00000101 01drgsrg`| SHR reg, times               |`....OCNZ`| reg shr times; if M = 1, ROR
+| `05 00-3F`       |`........ ........ 00000101 00drgsrg`| SHL drg, times(srg)          |`....OCNZ`| reg shl times; if M = 1, ROL
+| `05 80-BF`       |`........ ........ 00000101 01drgsrg`| SHR drg, times(srg)          |`....OCNZ`| reg shr times; if M = 1, ROR
 | `05 80-BF`       |`........ ........ 00000101 10drgsrg`| AND drg, srg                 |`....OCNZ`| drg := drg & srg
 | `05 C0-FF`       |`........ ........ 00000101 11drgsrg`| OR  drg, srg                 |`....OCNZ`| drg := drg || srg
 | `06 01`          |`........ 00000110 00000001 ########`| TRAP imm8                    |`........`| Call trap imm8
 | `06 08`          |`........ 00000110 00001000 00000reg`| NEG reg                      |`....OCNZ`| Two's complement register
 | `06 10`          |`........ 00000110 00010000 00000reg`| XCB reg                      |`........`| Swap hi/lo byte of register
+| `06 20`          |`........ 00000110 00010000 ........`| PUSHA                        |`........`| Push all registers (except PC)
+| `06 21`          |`........ 00000110 00010001 ........`| POPA                         |`........`| Pop all registers (except PC)
 | `06 40`          |`........ 00000110 00100000 00drgsrg`| MUL drg, srg                 |`....OCNZ`| drg := drg * srg;
 | `06 41`          |`........ 00000110 00100001 00drgsrg`| IDIV drg, srg                |`....OCNZ`| drg := drg / srg;
 | `06 42`          |`........ 00000110 00100010 00drgsrg`| IMOD drg, srg                |`....OCNZ`| drg := drg % srg;
@@ -248,56 +252,56 @@ The stack grows DOWN from SP. This means that the current frame (BP) is always h
 ### Every possible addressing mode with LD
 
 ```asm
-.code = 0x1000
+.code 0x1000
 
-    LDS AL, 0x80            => 07 80 80             #imm8
-    LDS A,  0x80            => 07 89 00 80          #imm16
-    LDS AL, [0x2000]        => 07 90 20 00          #abs16 byte
-    LDS A,  [0x2000]        => 07 91 20 00          #abs16 word
-    LDS AL, [0x2000+Y]      => 07 92 20 00          #abs16 indexed by Y, byte
-    LDS A,  [0x2000+Y]      => 07 93 20 00          #abs16 indexed by Y, word
-    LDS AL, [0x2000+X]      => 07 94 20 00          #abs16 indexed by X, byte
-    LDS A,  [0x2000+X]      => 07 95 20 00          #abs16 indexed by X, word
-    LDS AL, [0x2000+X+Y]    => 07 96 20 00          #abs16 indexed by X and Y, byte
-    LDS A,  [0x2000+X+Y]    => 07 97 20 00          #abs16 indexed by X and Y, word
-    LDS AL, (0x2000)        => 07 98 20 00          #ind16 byte
-    LDS A,  (0x2000)        => 07 99 20 00          #ind16 word
-    LDS AL, (0x2000)+Y      => 07 9A 20 00          #ind16, indexed by Y, byte
-    LDS A,  (0x2000)+Y      => 07 9B 20 00          #ind16, indexed by Y, word
-    LDS AL, (0x2000+X)      => 07 9C 20 00          #ind16 indexed by X, byte
-    LDS A,  (0x2000+X)      => 07 9D 20 00          #ind16 indexed by X, word
-    LDS AL, (0x2000+X)+Y    => 07 9E 20 00          #ind16 indexed by X, then Y, byte
-    LDS A,  (0x2000+X)+Y    => 07 9F 20 00          #ind16 indexed by X, then Y, word
-    LDS AL, [BP+0x2000]     => 07 A0 20 00          #relBP byte
-    LDS A,  [BP+0x2000]     => 07 A1 20 00          #relBP word
-    LDS AL, [BP+0x2000+Y]   => 07 A2 20 00          #relBP+Y byte
-    LDS A,  [BP+0x2000+Y]   => 07 A3 20 00          #relBP+Y word
-    LDS AL, [BP+0x2000+X]   => 07 A4 20 00          #relBP+X byte
-    LDS A,  [BP+0x2000+X]   => 07 A5 20 00          #relBP+X word
-    LDS AL, [BP+0x2000+X+Y] => 07 A6 20 00          #relBP+XY byte
-    LDS A,  [BP+0x2000+X+Y] => 07 A7 20 00          #relBP+XY word
-    LDS AL, (BP+0x2000)     => 07 A8 20 00          #indBP byte
-    LDS A,  (BP+0x2000)     => 07 A9 20 00          #indBP word
-    LDS AL, (BP+0x2000)+Y   => 07 AA 20 00          #indBP+Y byte
-    LDS A,  (BP+0x2000)+Y   => 07 AB 20 00          #indBP+Y word
-    LDS AL, (BP+0x2000+X)   => 07 AC 20 00          #indBP+X byte
-    LDS A,  (BP+0x2000+X)   => 07 AD 20 00          #indBP+X word
-    LDS AL, (BP+0x2000+X)+Y => 07 AE 20 00          #indBP+XY byte
-    LDS A,  (BP+0x2000+X)+Y => 07 AF 20 00          #indBP+XY word
-    LDS AL, [D]             => 07 B0                #relD byte
-    LDS A,  [D]             => 07 B1                #relD word
-    LDS AL, [D+Y]           => 07 B2                #relD+Y byte
-    LDS A,  [D+Y]           => 07 B3                #relD+Y word
-    LDS AL, [D+X]           => 07 B4                #relD+X byte
-    LDS A,  [D+X]           => 07 B5                #relD+X word
-    LDS AL, [D+X+Y]         => 07 B6                #relD+XY byte
-    LDS A,  [D+X+Y]         => 07 B7                #relD+XY word
-    LDS AL, (D)             => 07 B8                #indD byte
-    LDS A,  (D)             => 07 B9                #indD word
-    LDS AL, (D)+Y           => 07 BA                #indD+Y byte
-    LDS A,  (D)+Y           => 07 BB                #indD+Y word
-    LDS AL, (D+X)           => 07 BC                #indD+X byte
-    LDS A,  (D+X)           => 07 BD                #indD+X word
-    LDS AL, (D+X)+Y         => 07 BE                #indD+XY byte
-    LDS A,  (D+X)+Y         => 07 BF                #indD+XY word
+    LDD AL, 0x80            => 07 80 80             #imm8
+    LDD A,  0x80            => 07 89 00 80          #imm16
+    LDD AL, [0x2000]        => 07 90 20 00          #abs16 byte
+    LDD A,  [0x2000]        => 07 91 20 00          #abs16 word
+    LDD AL, [0x2000+Y]      => 07 92 20 00          #abs16 indexed by Y, byte
+    LDD A,  [0x2000+Y]      => 07 93 20 00          #abs16 indexed by Y, word
+    LDD AL, [0x2000+X]      => 07 94 20 00          #abs16 indexed by X, byte
+    LDD A,  [0x2000+X]      => 07 95 20 00          #abs16 indexed by X, word
+    LDD AL, [0x2000+X+Y]    => 07 96 20 00          #abs16 indexed by X and Y, byte
+    LDD A,  [0x2000+X+Y]    => 07 97 20 00          #abs16 indexed by X and Y, word
+    LDD AL, (0x2000)        => 07 98 20 00          #ind16 byte
+    LDD A,  (0x2000)        => 07 99 20 00          #ind16 word
+    LDD AL, (0x2000)+Y      => 07 9A 20 00          #ind16, indexed by Y, byte
+    LDD A,  (0x2000)+Y      => 07 9B 20 00          #ind16, indexed by Y, word
+    LDD AL, (0x2000+X)      => 07 9C 20 00          #ind16 indexed by X, byte
+    LDD A,  (0x2000+X)      => 07 9D 20 00          #ind16 indexed by X, word
+    LDD AL, (0x2000+X)+Y    => 07 9E 20 00          #ind16 indexed by X, then Y, byte
+    LDD A,  (0x2000+X)+Y    => 07 9F 20 00          #ind16 indexed by X, then Y, word
+    LDD AL, [BP+0x2000]     => 07 A0 20 00          #relBP byte
+    LDD A,  [BP+0x2000]     => 07 A1 20 00          #relBP word
+    LDD AL, [BP+0x2000+Y]   => 07 A2 20 00          #relBP+Y byte
+    LDD A,  [BP+0x2000+Y]   => 07 A3 20 00          #relBP+Y word
+    LDD AL, [BP+0x2000+X]   => 07 A4 20 00          #relBP+X byte
+    LDD A,  [BP+0x2000+X]   => 07 A5 20 00          #relBP+X word
+    LDD AL, [BP+0x2000+X+Y] => 07 A6 20 00          #relBP+XY byte
+    LDD A,  [BP+0x2000+X+Y] => 07 A7 20 00          #relBP+XY word
+    LDD AL, (BP+0x2000)     => 07 A8 20 00          #indBP byte
+    LDD A,  (BP+0x2000)     => 07 A9 20 00          #indBP word
+    LDD AL, (BP+0x2000)+Y   => 07 AA 20 00          #indBP+Y byte
+    LDD A,  (BP+0x2000)+Y   => 07 AB 20 00          #indBP+Y word
+    LDD AL, (BP+0x2000+X)   => 07 AC 20 00          #indBP+X byte
+    LDD A,  (BP+0x2000+X)   => 07 AD 20 00          #indBP+X word
+    LDD AL, (BP+0x2000+X)+Y => 07 AE 20 00          #indBP+XY byte
+    LDD A,  (BP+0x2000+X)+Y => 07 AF 20 00          #indBP+XY word
+    LDD AL, [D]             => 07 B0                #relD byte
+    LDD A,  [D]             => 07 B1                #relD word
+    LDD AL, [D+Y]           => 07 B2                #relD+Y byte
+    LDD A,  [D+Y]           => 07 B3                #relD+Y word
+    LDD AL, [D+X]           => 07 B4                #relD+X byte
+    LDD A,  [D+X]           => 07 B5                #relD+X word
+    LDD AL, [D+X+Y]         => 07 B6                #relD+XY byte
+    LDD A,  [D+X+Y]         => 07 B7                #relD+XY word
+    LDD AL, (D)             => 07 B8                #indD byte
+    LDD A,  (D)             => 07 B9                #indD word
+    LDD AL, (D)+Y           => 07 BA                #indD+Y byte
+    LDD A,  (D)+Y           => 07 BB                #indD+Y word
+    LDD AL, (D+X)           => 07 BC                #indD+X byte
+    LDD A,  (D+X)           => 07 BD                #indD+X word
+    LDD AL, (D+X)+Y         => 07 BE                #indD+XY byte
+    LDD A,  (D+X)+Y         => 07 BF                #indD+XY word
 ```
