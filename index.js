@@ -10,6 +10,9 @@ import log from "js/log.js";
 import Asm from "js/Asm.js";
 import hexUtils from "js/hexUtils.js";
 
+import Keyboard from "js/devices/Keyboard.js";
+
+import font from "../design/font0.js";
 
 export default class App {
   constructor() {
@@ -220,28 +223,7 @@ export default class App {
       asm.assemble(code);
 
       log ("Assembled; writing...");
-      for (let segmentName of Object.keys(asm.segments)) {
-        let segment = asm.segments[segmentName];
-        for (let addr of Object.keys(segment)) {
-          let arr = segment[addr];
-          if (arr instanceof Array) {
-            log (`Writing ${segmentName}:${addr}`);
-            let s = "";
-            for (let i = 0; i < arr.length; i++) {
-              this.computer.memory.poke(i + Number(addr).valueOf(), arr[i]);
-              s += hexUtils.toHex2(arr[i], "") + " ";
-              if (i % 16 === 15) {
-                log (`... ${s}`);
-                s = "";
-              }
-              c++;
-            }
-            log (`... ${s}`);
-          }
-        }
-      }
-
-      log(`Assembly complete; wrote ${c} bytes`);
+      asm.writeToMemory(this.computer.memory, {debug: true});
     } catch (err) {
       log(`Assembly error ${err.message} (${hexUtils.toHex4(err.code)}) at line # ${err.lineNumber}:${err.line}`);
     }
@@ -255,6 +237,8 @@ export default class App {
     });
     setTimeout( () => this.sizeScreen(), 50);
     let computer = new Computer({
+      devices: [Keyboard],
+      roms: [font],
       screenId: "screen",
       debug: false
     });
