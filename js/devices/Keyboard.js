@@ -9,10 +9,10 @@ let specialKeyMap = {
      37: 5,              /* left */
      38: 6,              /* up */
      39: 7,              /* right */
-     40: 8,              /* down */
+     40: 10,              /* down */
       9: 9,              /* tab */
-     45: 10,             /* insert */
-     46: 11,             /* delete */
+     45: 11,             /* insert */
+     46: 12,             /* delete */
     112: 16,             /* f1 */
     113: 17,
     114: 18,
