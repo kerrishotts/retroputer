@@ -2,11 +2,14 @@ let semantics = {
       NOP:     0x00, MOVE:    0x10, SWAP:    0x11, LOAD:    0x20,
       STORE:   0x21, IN:      0x28, OUT:     0x29, MEMFILL: 0x2D,
       MEMCOPY: 0x2E, MEMSWAP: 0x2F, PUSH:    0x30, POP:     0x31,
+      PUSHA:   0x32, POPA:    0x33,
       ADD:     0x40, INC:     0x41, SUB:     0x48, DEC:     0x49,
       CMP:     0x4F, IMUL:    0x50, IDIV:    0x51, IMOD:    0x52,
       SHL:     0x58, SHR:     0x59, ROL:     0x5A, ROR:     0x5B,
       XOR:     0x5C, AND:     0x5D, OR:      0x5E, NEG:     0x5F,
-      SETFLAG: 0x60, CLRFLAG: 0x61, IFFLAG:  0x68, IFNFLAG: 0x69,
+      SETFLAG: 0x60, CLRFLAG: 0x61, 
+      IFR:     0x64, IFNR:    0x65, SETR:    0x66, CLRR:    0x67,
+      IFFLAG:  0x68, IFNFLAG: 0x69,
       BR:      0x70, CALL:    0x71, ENTER:   0x72, EXIT:    0x73,
       TRAP:    0x74, BYTESWAP:0x78, RET:     0x7F, HALT:    0x80,
       BADOP:   0xFF
@@ -17,12 +20,67 @@ let semanticsMap = Object.keys(semantics).reduce((p, c) => {
       return p;
     }, {});
 
+function addUpdatingFlags(cpu, a, b, size=16) {
+    let unsignedSize = (size === 16 ? 65536 : 256);
+    let unsignedMax = unsignedSize - 1;
+    let neg = (size === 16 ? 0b1000000000000000 : 0b10000000);
+
+    // clear overflow and carry
+    cpu.clrFlag(cpu.flagMap.V);
+    cpu.clrFlag(cpu.flagMap.C);
+
+    let v = (a & unsignedMax) + (b & unsignedMax);
+
+    // carry is easy -- use the MSB of the operation
+    if (v > unsignedMax) {
+        cpu.setFlag(cpu.flagMap.C);
+    }
+
+    // handle overflow
+    if ( (a & neg) === (b & neg) ) {
+        let opSigns = ((a & neg) | (b & neg)) ? 1 : 0;
+        let resultSign = (v > unsignedMax) ? 1 : 0;
+        if (opSigns !== resultSign) {
+            cpu.setFlag(cpu.flagMap.V);
+        }
+    }
+
+    v = v & unsignedMax;
+
+    return v;
+}
+
+function subtractUpdatingFlags (cpu, a, b, size=16) {
+    return addUpdatingFlags(cpu, a, (-b) & (size === 16 ? 0xFFFF : 0xFF), size);
+}
+
+function shiftLeftUpdatingFlags(cpu, a, b, size=16) {
+    let unsignedSize = (size === 16 ? 65536 : 256);
+    let unsignedMax = unsignedSize - 1;
+    let msb = (size === 16 ? 0b10000000000000000 : 0b100000000);
+
+    // clear overflow and carry
+    cpu.clrFlag(cpu.flagMap.V);
+    cpu.clrFlag(cpu.flagMap.C);
+
+    let v = (a & unsignedMax) << (b & unsignedMax);
+
+    // use the MSB of the operation for Carry
+    if (v & msb) {
+        cpu.setFlag(cpu.flagMap.C);
+    }
+
+    v = v & unsignedMax;
+
+    return v;
+}
+
+
 function handleFlags(cpu, v, size=16) {
     let unsignedSize = (size === 16 ? 65536 : 256);
     let unsignedMax = unsignedSize - 1;
     let signedSize = (size === 16 ? 32768 : 128);
     let signedMax = signedSize - 1;
-    let carry = false;
     
 
     // handle Zero flag
@@ -34,21 +92,9 @@ function handleFlags(cpu, v, size=16) {
     if (v < 0) { v = (unsignedSize + v) & unsignedMax; }
     if (v > signedMax) {
         cpu.setFlag(cpu.flagMap.N);
-        carry = true;
     }
 
-    // handle Overflow flag
-    cpu.clrFlag(cpu.flagMap.O);
-    if (v > unsignedMax) {
-        v = (v - unsignedSize) & unsignedMax; 
-        cpu.setFlag(cpu.flagMap.O);
-        carry = true;
-    }
-
-    // handle Carry
-    (carry ? cpu.setFlag(cpu.flagMap.C) : cpu.clrFlag(cpu.flagMap.C));
-
-    return v;
+    return v & unsignedMax;
 }
 
 function getAddr(cpu, bankSelect) {
@@ -147,29 +193,84 @@ let semanticsOps = {
         if (!sreg) { return; }
         cpu.push(sreg);
     },
+    [semantics.PUSHA]:  function pusha(cpu) {
+        let sreg;
+        for (let i=0; i<cpu.registers.length; i++) {
+            sreg = cpu.registers[i];
+            if (sreg && sreg.name !== "PC") {
+                cpu.push(sreg);
+            }
+        }
+    },
     [semantics.POP]:    function pop(cpu) {
         let dreg = cpu.registers[cpu.state.destRegister];
         if (!dreg) { return; }
         cpu.pop(dreg);
     },
-    [semantics.ADD]:    function add(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 + cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.SUB]:    function sub(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 - cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.INC]:    function inc(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 + 1, 16); },
-    [semantics.DEC]:    function dec(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 - 1, 16); },
-    [semantics.CMP]:    function cmp(cpu) { (cpu.registers[cpu.state.destRegister].U16 === cpu.registers[cpu.state.srcRegister].U16 ?
-                                             cpu.setFlag(cpu.flagMap.Z) : cpu.clrFlag(cpu.flagMap.Z)); },
-    [semantics.IMUL]:   function imul(cpu){ cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 * cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.IDIV]:   function idiv(cpu){ cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, Math.floor(cpu.registers[cpu.state.destRegister].U16 / cpu.registers[cpu.state.srcRegister].U16, 16)); },
+    [semantics.POPA]:   function popa(cpu) {
+        let sreg;
+        for (let i=cpu.registers.length-1; i>=0; i--) {
+            sreg = cpu.registers[i];
+            if (sreg && sreg.name !== "PC") {
+                cpu.pop(sreg);
+            }
+        }
+    },
+    [semantics.ADD]:    function add(cpu) { 
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, 
+                addUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 
+                                      cpu.registers[cpu.state.srcRegister].U16, 16), 
+            16); 
+    },
+    [semantics.SUB]:    function sub(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, 
+                subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 
+                                           cpu.registers[cpu.state.srcRegister].U16, 16), 
+            16); 
+    },
+    [semantics.INC]:    function inc(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, 
+                addUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 1, 16), 
+            16); 
+    },
+    [semantics.DEC]:    function dec(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, 
+                subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 1, 16), 
+            16); 
+    },
+    [semantics.CMP]:    function cmp(cpu) {
+        // compare is just subraction without storing the result -- just flags!
+        handleFlags(cpu, 
+            subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 
+                                       cpu.registers[cpu.state.srcRegister].U16, 16), 
+        16); 
+    },
+    [semantics.IMUL]:   function imul(cpu) { 
+        let result = cpu.registers[cpu.state.destRegister].U16 * cpu.registers[cpu.state.srcRegister].U16;
+        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, result, 16);
+        cpu.clrFlag(cpu.flagMap.C);
+        if (result > 65535) {
+            cpu.setFlag(cpu.flagMap.C);
+        }
+
+    },
+    [semantics.IDIV]:   function idiv(cpu) { 
+        let [a, b] = [cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16];
+        cpu.clrFlag(cpu.flagMap.E);
+        if (b === 0) {
+            cpu.setFlag(cpu.flagMap.E); // can't divide by zero!
+        } else {
+         cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, Math.floor(a / b), 16);
+        }
+    },
     [semantics.IMOD]:   function imod(cpu){ cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, Math.floor(cpu.registers[cpu.state.destRegister].U16 % cpu.registers[cpu.state.srcRegister].U16, 16)); },
     [semantics.SHL]:    function shl(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 << cpu.registers[cpu.state.srcRegister].U16, 16); },
+                                            handleFlags(cpu, shiftLeftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16), 16); },
     [semantics.SHR]:    function shl(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 >> cpu.registers[cpu.state.srcRegister].U16, 16); },
     [semantics.ROL]:    undefined,
@@ -186,6 +287,10 @@ let semanticsOps = {
     [semantics.CLRFLAG]:function clrflag(cpu) { cpu.clrFlag(cpu.state.flag); },
     [semantics.IFFLAG]: function ifflag(cpu)  { if (!cpu.getFlag(cpu.state.flag)) { cpu.clrFlag(cpu.flagMap.X); }},
     [semantics.IFNFLAG]:function ifnflag(cpu) { if (cpu.getFlag(cpu.state.flag))  { cpu.clrFlag(cpu.flagMap.X); }},
+    [semantics.SETR]:   function setr(cpu)    { cpu.registers[cpu.state.srcRegister].U8 |= cpu.state.imm8; },
+    [semantics.CLRR]:   function clrr(cpu)    { cpu.registers[cpu.state.srcRegister].U8 &= (0xFF - cpu.state.imm8); },
+    [semantics.IFR]:    function ifr(cpu)     { if (!((cpu.registers[cpu.state.srcRegister].U8 & cpu.state.imm8)) === cpu.state.imm8) { cpu.clrFlag(cpu.flagMap.X); }},
+    [semantics.IFNR]:   function ifnr(cpu)    { if ( ((cpu.registers[cpu.state.srcRegister].U8 & cpu.state.imm8)) === cpu.state.imm8) { cpu.clrFlag(cpu.flagMap.X); }},
     [semantics.BR]:     function br(cpu) {
         let PC = cpu.registers[cpu.registerMap.PC];
         if (cpu.state.addressingMode === 0) {

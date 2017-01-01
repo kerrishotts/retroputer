@@ -33,8 +33,9 @@ export default class CPU {
       12:"SB",   13:"DB",   14:"Flags", 15: "PC"
     };
     this.flagMap = {
-      0: "Z", 1: "N", 2: "C", 3: "O", 4: "-", 5: "X", 6: "M", 7: "I",
-      "Z": 0, "N": 1, "C": 2, "O": 3,         "X": 5, "M": 6, "I": 7
+      0: "Z", 1: "N", 2: "C", 3: "V", 4: "E", 5: "X", 6: "M", 7: "I",
+      "Z": 0, "N": 1, "C": 2, "V": 3, "E": 4, "X": 5, "M": 6, "I": 7,
+      "EQ":0,         "LT":2, "O": 3
     };
     this.addressingModeMap = [ "imm8/rel8", "imm16/rel16", "abs16", "ind16", "relBP", "indBP", "absD", "indD" ];
 

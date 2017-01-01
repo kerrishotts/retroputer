@@ -206,9 +206,26 @@
           this.state.srcRegister = this.state.destRegister;
           break;
         }
-        if ((opcode === 0x0620)) {
+        if ((opcode === 0x0614)) {
           // HALT imm8
           this.state.semantic = this.semantics.HALT;
+          this.state.imm8 = opparm;
+          break;
+        }
+        if ((opcode === 0x0618)) {
+          this.state.semantic = this.semantics.PUSHA;
+          this.state.instruction.pop(); // give a byte back; this is technically a shorter instruction
+          break;
+        }
+        if ((opcode === 0x0619)) {
+          this.state.semantic = this.semantics.POPA;
+          this.state.instruction.pop(); // give a byte back; this is technically a shorter instruction
+          break;
+        }
+        if ((opcode >= 0x0620) && opcode < 0x0640) {
+          this.state.srcRegister = (opcode & 0b00000111);
+          this.state.destRegister = this.state.srcRegister;
+          this.state.semantic = [this.semantics.SETR, this.semantics.CLRR, this.semantics.IFR, this.semantics.IFNR][(opcode & 0b00011000) >> 3];
           this.state.imm8 = opparm;
           break;
         }

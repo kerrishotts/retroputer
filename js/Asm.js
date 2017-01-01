@@ -259,10 +259,12 @@ let bankRegisterOffset = 12;
 /*
  * flag map
  */
-let validFlags = ["i", "m", "x", "o", "c", "n", "z"];
+let validFlags = ["i", "m", "x", "v", "c", "n", "z", 
+                  "eq", "lt", "o"];
 let flagMap = {
-    i: 7, m: 6, x: 5,
-    o: 3, c: 2, n: 1, z: 0
+    i: 7, m: 6, x: 5, e: 4,
+    o: 3, c: 2, n: 1, z: 0,
+    v: 3, lt: 2, eq: 0
 };
 
 /**
@@ -859,10 +861,28 @@ export default class Asm {
                 op1 = expectOperand(ops, {type: "f"});
                 instruction.push(translate[r.opcode] | op1);
                 break;
+            case "ifr":     // ifr reg, imm8
+            case "ifnr":    // ifnr reg, imm8
+            case "setr":    // set reg, imm8
+            case "clrr":    // clr reg, imm8
+                translate = {
+                    setr: 0b00100000,
+                    clrr: 0b00101000,
+                    ifr:  0b00110000,
+                    ifnr: 0b00111000,
+                }
+                op1 = expectOperand(ops, {type: "r16"});
+                op2 = expectOperand(ops, {type: "u8"});
+                instruction.push(0x06, translate[r.opcode] | op1, op2);
+                break;
             case "push":    // push reg
             case "pop":     // pop reg
                 op1 = expectOperand(ops, {type: (r.opcode === "push" ? "pushr" : "popr")});
                 instruction.push((r.opcode === "push" ? 0b11100000 : 0b11110000) | op1);
+                break;
+            case "pusha":
+            case "popa":
+                instruction.push(0x06, (r.opcode === "pusha" ? 0x18 : 0x19));
                 break;
             case "br":      // br address
             case "call":    // call address
@@ -938,7 +958,7 @@ export default class Asm {
                 }
             case "halt": {   // halt imm8
                 op1 = expectOperand(ops, {type: "u8"});
-                instruction.push(0x06, 0x20, op1);
+                instruction.push(0x06, 0x14, op1);
                 break;
             }
         }
