@@ -42,7 +42,7 @@ loop>
     IFN Z                               => 28                           # If X is not zero,
         BR >loop                        => 07 09 ff f4                  # ... branch to loop
 halt>                                                                   # otherwise:
-    HALT 0x00                           => 06 20 00                     # HALT! (until next trap)
+    HALT 0x00                           => 06 14 00                     # HALT! (until next trap)
     BR >halt                            => 07 09 ff f9                  # loop forever
     RET                                 => ff
         
