@@ -30,7 +30,7 @@
     # Reset flags
     CLR Z
     CLR N
-    CLR O 
+    CLR V 
     CLR C 
     CLR M
     SET I
@@ -62,14 +62,7 @@ end:
 FRAME-start:
 
     # we need to be good citizens; push what we muck about with
-    PUSH A
-    PUSH B
-    PUSH C
-    PUSH X
-    PUSH Y
-    PUSH DB
-    PUSH SB
-    PUSH Flags
+    PUSHA
 
     # disable interrupts for the duration of this frame 
     CLR I
@@ -115,8 +108,7 @@ render-cursor:
     LDI AL, 0x03
     MOV B, A
     LDS AL, [addr(&cursor-blink-enabled)]
-    CMP A, B
-    IF Z
+    IFNR A, 0b00000010
         BR :render-cursor-off
 
 render-cursor-on:
@@ -184,12 +176,5 @@ check-for-keypress:
     STS A, [addr(&cursor-pos)]
 
 FRAME-end:
-    POP Flags
-    POP SB
-    POP DB
-    POP Y
-    POP X
-    POP C
-    POP B
-    POP A
+    POPA
     RET
