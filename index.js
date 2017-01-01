@@ -264,7 +264,8 @@ export default class App {
       if (computer.performance.maxTimeToDevoteToCPU >= 5) {
         incr = 1;
       }
-      if (e.target.matches("button")) {
+      let matches = e.target.matches || e.target.msMatchesSelector;
+      if (matches.call(e.target, "button")) {
         switch (e.target.getAttribute("data-cmd")) {
           case "start":
             if (cold) {
