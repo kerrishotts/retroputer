@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "retroputer",
   "main": "index.js",
-  "dependencies": {},
+  "browser": "index.js",
+  "dependencies": {
+    "cli": "^1.0.1",
+    "plugin-typescript": "^5.3.1",
+    "typescript": "^1.8.10"
+  },
   "devDependencies": {
     "babel-core": "^6.18.2",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
