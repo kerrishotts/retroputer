@@ -1,5 +1,4 @@
-#
-The 6516's Register File
+# The 6516's Register File
 
 The 6516 has twelve registers within the register file, enumerated as follows:
 
