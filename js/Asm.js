@@ -869,17 +869,18 @@ export default class Asm {
                 op1 = expectOperand(ops, {type: "r16"});
                 instruction.push(0x06, (r.opcode === "neg" ? 0x08 : 0x10), op1);
                 break;
-            case "mul":     // mul drg, srg
-            case "idiv":    // idiv drg, srg
-            case "imod":    // imod drg, srg
+            case "mul":     // mul dr*drg, srg
+            case "idiv":    // idiv dr*drg, srg
+            case "imod":    // imod dr*drg, srg
                 translate={
                     mul: 0x40,
                     idiv: 0x41,
                     imod: 0x42
                 };
-                op1 = expectOperand(ops, {type: "r16"});
+                op1 = expectOperand(ops, {type: "dr16"});
                 op2 = expectOperand(ops, {type: "r16"});
-                instruction.push(0x06, translate[r.opcode], (op1 << 3) | op2);
+                op3 = expectOperand(ops, {type: "r16"});
+                instruction.push(0x06, translate[r.opcode], (op1 << 6) | (op2 << 3) | op3);
                 break;
             case "mfill":   // mfill br [:] drg, srg [*] C
             case "mswap":   // mswap br [:] drg, br [:] srg [*] C

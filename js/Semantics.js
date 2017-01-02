@@ -23,6 +23,8 @@ let semanticsMap = Object.keys(semantics).reduce((p, c) => {
 function addUpdatingFlags(cpu, a, b, size=16) {
     let unsignedSize = (size === 16 ? 65536 : 256);
     let unsignedMax = unsignedSize - 1;
+    let signedSize = (size === 16 ? 32768 : 128);
+    let signedMax = signedSize - 1;
     let neg = (size === 16 ? 0b1000000000000000 : 0b10000000);
 
     // clear overflow and carry
@@ -39,7 +41,7 @@ function addUpdatingFlags(cpu, a, b, size=16) {
     // handle overflow
     if ( (a & neg) === (b & neg) ) {
         let opSigns = ((a & neg) | (b & neg)) ? 1 : 0;
-        let resultSign = (v > unsignedMax) ? 1 : 0;
+        let resultSign = (v > signedMax) ? 1 : 0;
         if (opSigns !== resultSign) {
             cpu.setFlag(cpu.flagMap.V);
         }
@@ -250,25 +252,50 @@ let semanticsOps = {
         16); 
     },
     [semantics.IMUL]:   function imul(cpu) { 
-        let result = cpu.registers[cpu.state.destRegister].U16 * cpu.registers[cpu.state.srcRegister].U16;
-        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, result, 16);
+        let result = ((cpu.registers[cpu.state.othRegister].U16 << 16) | cpu.registers[cpu.state.destRegister].U16) * cpu.registers[cpu.state.srcRegister].U16;
+        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, result & 0x0000FFFF, 16);
         cpu.clrFlag(cpu.flagMap.C);
+        cpu.clrFlag(cpu.flagMap.V);
         if (result > 65535) {
+            cpu.registers[cpu.state.othRegister].U16 = (result & 0xFFFF0000) >> 16;
             cpu.setFlag(cpu.flagMap.C);
+            cpu.setFlag(cpu.flagMap.V);
         }
-
     },
     [semantics.IDIV]:   function idiv(cpu) { 
-        let [a, b] = [cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16];
+        let [a, b] = [(cpu.registers[cpu.state.othRegister].U16 << 16) | cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16];
         cpu.clrFlag(cpu.flagMap.E);
         if (b === 0) {
             cpu.setFlag(cpu.flagMap.E); // can't divide by zero!
         } else {
-         cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, Math.floor(a / b), 16);
+            let result = Math.floor(a / b);
+            cpu.clrFlag(cpu.flagMap.C);
+            cpu.clrFlag(cpu.flagMap.V);
+            cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, result & 0x0000FFFF, 16);
+            if (result > 65535) {
+                cpu.registers[cpu.state.othRegister].U16 = (result & 0xFFFF0000) >> 16;
+                cpu.setFlag(cpu.flagMap.C);
+                cpu.setFlag(cpu.flagMap.V);
+            }
         }
     },
-    [semantics.IMOD]:   function imod(cpu){ cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, Math.floor(cpu.registers[cpu.state.destRegister].U16 % cpu.registers[cpu.state.srcRegister].U16, 16)); },
+    [semantics.IMOD]:   function imod(cpu){
+        let [a, b] = [(cpu.registers[cpu.state.othRegister].U16 << 16) | cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16];
+        cpu.clrFlag(cpu.flagMap.E);
+        if (b === 0) {
+            cpu.setFlag(cpu.flagMap.E); // can't divide by zero!
+        } else {
+            let result = Math.floor(a % b);
+            cpu.clrFlag(cpu.flagMap.C);
+            cpu.clrFlag(cpu.flagMap.V);
+            cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, result & 0x0000FFFF, 16);
+            if (result > 65535) {
+                cpu.registers[cpu.state.othRegister].U16 = (result & 0xFFFF0000) >> 16;
+                cpu.setFlag(cpu.flagMap.C);
+                cpu.setFlag(cpu.flagMap.V);
+            }
+        }
+    },
     [semantics.SHL]:    function shl(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, shiftLeftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16), 16); },
     [semantics.SHR]:    function shl(cpu) { cpu.registers[cpu.state.destRegister].U16 = 

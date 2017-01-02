@@ -159,6 +159,7 @@ export default class CPU {
     this.state.imm16= 0x0000;      // imm16 of instruction, if it makes sense
     this.state.srcRegister= 0x00; // source register
     this.state.destRegister= 0x00; // destination register
+    this.state.othRegister = 0x00; // other register
     this.state.flag= 0x00;         // flag index
     this.state.srcBank= 0x00;     // source bank select
     this.state.destBank= 0x00;     // destination bank select
@@ -175,6 +176,7 @@ export default class CPU {
   dump() {
     log( "---- REGISTERS" );
     log( this.registers.map(r => r ? `${r ? r.name : ""}: ${r ? hexUtils.toHex4(r.U16) : ""} ` : ``).join("") );
+    log( [7, 6, 5, 4, 3, 2, 1, 0].map(flag => `${this.flagMap[flag]}: ${this.getFlag(flag) ? 1 : 0}, `).join("") );
     log( "---- STATE" );
     log( "inst[]=", this.state.instruction.map(b => hexUtils.toHex2(b)),
          "|", "opcode=", hexUtils.toHex2(this.state.opcode),
