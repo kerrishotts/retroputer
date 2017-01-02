@@ -1,5 +1,6 @@
 import hexUtils from "./hexUtils.js";
 import log from "./log.js";
+import cvtDataToBin from "./cvtDataToBin.js";
 
 /*
  * EXCEPTIONS
@@ -468,6 +469,8 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
 export default class Asm {
 
     constructor() {
+        this.basepath = "";
+        this.importCallback = undefined;
         this.vars = {};
         this.defs = {};
         this.labels = {};
@@ -546,12 +549,38 @@ export default class Asm {
     handleDirective(parseResults, stage) {
         let addr, parm1, parm2;
         switch(parseResults.directive) {
+            case "import":
+                if (this.importCallback) {
+                    this.assemble(this.importCallback(parseResults.directiveData), {
+                        stageOverride: stage,
+                        filename: parseResults.directiveData,
+                        isImport: true
+                    });
+                } else {
+                    throw new Error("No import functionality available.");
+                }
+                break;
             case "code": 
+            case "code+":
             case "data":
+            case "data+":
                 // create a segment for this directive
                 addr = Number(parseResults.directiveData).valueOf();
-                this.segments[parseResults.directive][addr] = [];
-                this.segments[parseResults.directive].current = addr;
+                var segmentName = parseResults.directive;
+                var isAppending = segmentName[segmentName.length-1] === "+";
+                if (isAppending) {
+                    segmentName = segmentName.substr(0, segmentName.length-1);
+                }
+                if (!isAppending) {
+                    // if we're appending to a segment, don't clear it. But if we aren't appending,
+                    // clear away
+                    this.segments[segmentName][addr] = [];
+                }
+                if (this.segments[segmentName][addr] === undefined) {
+                    // if there's still no segment present, make sure it's initialized with an empty array
+                    this.segments[segmentName][addr] = [];
+                }
+                this.segments[segmentName].current = addr;
                 break;
             case "var":
                 addr = this.segments.data.current + this.segments.data[this.segments.data.current].length;
@@ -602,13 +631,30 @@ export default class Asm {
         this.segments.code[this.segments.code.current].push(...r.instruction);
     }
 
-    assemble(lines = []) {
+    assemble(lines = [], {stageOverride = "", filename = "stdin", isImport = false} = {}) {
         let lineNumber = 0;
         for (let stage of ["symbols", "assembly"]) {
-            this.segments.code = {
-                current: 0x1000,
-                0x1000: []
-            };
+            if (stageOverride !== "") {
+                if (stage !== stageOverride) {
+                    continue;
+                }
+            }
+
+            // reset segments
+            if (!isImport) {
+                [this.segments.code, this.segments.data].forEach(segments => {
+                    for (let segmentKey of Object.keys(segments)) {
+                        let segment = segments[segmentKey];
+                        if (segment instanceof Array) {
+                            segment.length = 0;
+                        }
+                    }
+                });
+                this.segments.code = {
+                    current: 0x1000
+                };
+            }
+
             lineNumber = 0;
             for (let line of lines) {
                 lineNumber ++;
@@ -628,12 +674,34 @@ export default class Asm {
                         this.handleAssembly(line, stage);
                     }
                 } catch (err) {
+                    err.file = filename;
                     err.line = line;
                     err.lineNumber = lineNumber;
                     throw err;
                 }
             }
         }
+    }
+
+    writeToString(format = "js", newline) {
+        let c = 0;
+        if (!newline) {
+            newline = String.fromCharCode(13) + String.fromCharCode(10);
+        }
+        let text = (format !== "bin") ? "module.exports = [" : "";
+        for (let segmentName of Object.keys(this.segments)) {
+            let segment = this.segments[segmentName];
+            for (let addr of Object.keys(segment)) {
+                let arr = segment[addr];
+                if (arr instanceof Array) {
+                    text += cvtDataToBin(arr, addr, format, newline, "", "") + (format !== "bin" ? "," : "") + newline;
+                }
+            }
+        }
+        if (format !== "bin") {
+            text += "];";
+        }
+        return text;
     }
 
     writeToMemory(memory, {debug = false} = {}) {
@@ -694,7 +762,7 @@ export default class Asm {
         r = (r[0] ? r[0] : "").split("=>");
         results.expectedAssembly = shrinkArray((r[1] ? r[1] : "").split(" ")).map(i => parseInt(i, 16));
 
-        // ignore things like whitespace, colons, equal signs, and asterisks -- this makes our parser a bit lax, but that's OK
+        // remove whitespace so we have pure tokens
         r = shrinkArray((r[0] ? r[0] : "").split(/[\s]+/));
 
         if (r.length < 1) {
@@ -704,7 +772,7 @@ export default class Asm {
 
         // do we have a directive (of the form .directive)?
         let matches;
-        if (matches = r[0].match(/\.([A-Za-z0-9]+)/)) {
+        if (matches = r[0].match(/\.([A-Za-z0-9\-\_\+]+)/)) {
             results.directive = matches[1].toLowerCase();
             r.shift();
 
