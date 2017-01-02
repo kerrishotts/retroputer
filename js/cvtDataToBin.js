@@ -1,4 +1,5 @@
-import hexUtils from "./hexUtils.js";
+//import hexUtils from "./hexUtils.js";
+let hexUtils = require("./hexUtils.js");
 
 /**
  * Converts a data array to a BIN or JSON format
@@ -8,7 +9,11 @@ import hexUtils from "./hexUtils.js";
  * @param {string} [format="bin"]
  * @return {string}
  */
-module.exports =  function cvtDataToBin(data, addr, format="bin") {
+module.exports =  function cvtDataToBin(data, addr, format="bin", newline, jsprefix = "module.exports = ", jspostfix = ";") {
+    addr = Number(addr).valueOf();
+    if (!newline) {
+        newline = String.fromCharCode(13) + String.fromCharCode(10);
+    }
     let text = data.reduce((p, c, idx) => {
         if (idx % 16 === 0) {
             if (format === "bin") {
@@ -26,10 +31,10 @@ module.exports =  function cvtDataToBin(data, addr, format="bin") {
     }, []);
 
     if (format !== "bin") {
-        text.unshift(`module.exports = {addr: ${addr}, data: [`);
-        text.push("]};")
+        text.unshift(`${jsprefix}{{addr: ${addr}, data: [`);
+        text.push(`]}${jspostfix}`)
     }
-    text = text.join(String.fromCharCode(13));
+    text = text.join(newline);
 
     return  text;
 }
