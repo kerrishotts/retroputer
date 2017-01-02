@@ -19,3 +19,17 @@ $ npm run asm -- --format bin < infile.asm > outfile.out
 
 ### Options
 
+There are a few useful options that you may wish to use.
+
+### Debug mode
+
+The `--debug` switch will show debugging information.
+
+### Output format
+
+The `--format` switch specifies the output format. Accepts `js` and `bin`; `js` is the default. 
+
+### Base Path
+
+Because the CLI works on STDIN, it needs to know where any `.imports` should come from. This defaults to the current working directory, but if that's not the case, you can specify this with `--basepath`.
+
