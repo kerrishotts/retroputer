@@ -21,6 +21,7 @@
     "mocha": "^3.2.0"
   },
   "scripts": {
+    "asm": "node bin/asm",
     "test": "mocha --compilers js:babel-core/register",
     "serve": "http-server -p 8080 -c-1 -s ."
   },
