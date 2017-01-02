@@ -24,7 +24,7 @@ describe("create bin file", () => {
         it ("should have saved correctly", () => {
             let filename = path.join(tmpPath, "a.bin");
             let fileContents = fs.readFileSync(filename, "utf8");
-            fileContents = fileContents.split(String.fromCharCode(13));
+            fileContents = fileContents.split(String.fromCharCode(13) + String.fromCharCode(10));
             expect(fileContents).to.deep.equal([
                 "21040: 00 00 00 ff 00 00 00 00 - 00 00 ff ff ff 00 00 00",
                 "21050: 00 ff ff 00 ff ff 00 00 - ff ff 00 00 00 ff ff 00",
