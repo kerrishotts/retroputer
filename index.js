@@ -226,6 +226,7 @@ export default class App {
       asm.writeToMemory(this.computer.memory, {debug: true});
     } catch (err) {
       log(`Assembly error ${err.message} (${hexUtils.toHex4(err.code)}) at line # ${err.lineNumber}:${err.line}`);
+      log(err.stack);
     }
   }
 
