@@ -251,7 +251,16 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.IN]:     function _in(cpu) { cpu.registers[cpu.state.destRegister].U8 = handleFlags(cpu, cpu.io.read(cpu.state.imm8), 8); },
+    [semantics.IN]:     function _in(cpu) { 
+        let data = cpu.io.read(cpu.state.imm8);
+        if (data !== undefined) {
+            cpu.clrFlag(cpu.flagMap.E);
+        } else {
+            data = 0x00;
+            cpu.setFlag(cpu.flagMap.E);
+        }
+        cpu.registers[cpu.state.destRegister].U8 = handleFlags(cpu, data, 8);
+    },
     [semantics.OUT]:    function _out(cpu){ cpu.io.write(cpu.state.imm8, cpu.registers[cpu.state.srcRegister].U8); },
     [semantics.MEMFILL]:undefined,
     [semantics.MEMCOPY]:undefined,

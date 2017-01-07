@@ -18,9 +18,14 @@ export default class IO {
     read(port) {
         let fn = this.ports.read[port];
         if (fn) {
-            return fn(port) & 0xFF;
+            let r = fn(port);
+            if (r !== undefined && r !== null) {
+                return r & 0xFF;
+            } else {
+                return undefined;
+            }
         } else {
-            return 0;
+            return undefined;
         }
     }
 

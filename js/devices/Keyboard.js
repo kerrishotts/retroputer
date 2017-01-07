@@ -92,7 +92,7 @@ export default class Keyboard extends GenericDevice {
 
     readKey() {
         let v = this._buffer.shift();
-        return v ? v : 0x00;
+        return v;
     }
     
     readState() {

@@ -143,7 +143,7 @@ check-for-keypress:
     IN AL, 0x10
 
     ; If no key pressed, get out!
-    IF Z
+    IF E
         BR :FRAME-end
 
     ; 
