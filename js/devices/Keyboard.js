@@ -55,7 +55,7 @@ let directionalBitmap = {
 
 function isInvalidTarget(evt) {
     let targetTag = evt.target.tagName.toLowerCase();
-    return targetTag === "input" || targetTag === "textarea" || targetTag === "button";
+    return (targetTag === "input" && evt.target.getAttribute("id") !== "kbd") || targetTag === "textarea" || targetTag === "button";
 }
 
 export default class Keyboard extends GenericDevice {

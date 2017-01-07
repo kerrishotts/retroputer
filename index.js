@@ -168,6 +168,9 @@ export default class App {
     el = document.getElementById(`instructions`);
     el.textContent = computer.cpu.state.instruction.map(i => hexUtils.toHex2(i,"").toUpperCase()).join(" ");
 
+    el = document.getElementById(`disassembly`);
+    el.textContent = computer.cpu.mapStateToAsm();
+
     // update speed
     el = document.getElementById(`cpu-speed`);
     el.textContent = `${computer.performance.timeToDevoteToCPU}/${computer.performance.maxTimeToDevoteToCPU}`;

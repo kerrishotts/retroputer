@@ -1,3 +1,5 @@
+import hexUtils from "./hexUtils.js";
+
 let semantics = {
       NOP:     0x00, MOVE:    0x10, SWAP:    0x11, LOAD:    0x20,
       STORE:   0x21, IN:      0x28, OUT:     0x29, MEMFILL: 0x2D,
@@ -15,10 +17,74 @@ let semantics = {
       BADOP:   0xFF
     };
 
+let semanticAssemblyMap = {
+      NOP:     "nop"            ,MOVE:    "mov DR, SR"    ,SWAP:    "swap DR, SR"   ,LOAD:    "ldB DR, OP",
+      STORE:   "stB SR, OP"     ,IN:      "in SR, U8"     ,OUT:     "out SR, U8"    ,MEMFILL: "mfill",
+      MEMCOPY: "mcopy"          ,MEMSWAP: "mswap"         ,PUSH:    "push SR"       ,POP:     "pop DR",
+      PUSHA:   "pusha"          ,POPA:    "popa"          ,
+      ADD:     "add SR, DR"     ,INC:     "inc SR"        ,SUB:     "sub SR, DR"    ,DEC:     "dec SR",
+      CMP:     "cmp SR, DR"     ,IMUL:    "mul SR, DR"    ,IDIV:    "idiv SR, DR"   ,IMOD:    "imod SR, DR",
+      SHL:     "shl SR, DR"     ,SHR:     "shr SR, DR"    ,ROL:     "rol SR, DR"    ,ROR:     "ror SR, DR",
+      XOR:     "xor SR, DR"     ,AND:     "and SR, DR"    ,OR:      "or SR, DR"     ,NEG:     "neg DR",
+      SETFLAG: "set F"          ,CLRFLAG: "clr F"         ,
+      IFR:     "ifr SR"         ,IFNR:    "ifnr SR"       ,SETR:    "setr SR"       ,CLRR:    "clrr SR",
+      IFFLAG:  "if F"           ,IFNFLAG: "ifn F"         ,
+      BR:      "br OP"          ,CALL:    "call OP"       ,ENTER:   "enter U8"      ,EXIT:    "exit U8",
+      TRAP:    "trap OP"        ,BYTESWAP:"xcb SR"        ,RET:     "ret"           ,HALT:    "halt U8",
+      BADOP:   "???"
+    };
+
 let semanticsMap = Object.keys(semantics).reduce((p, c) => {
       p[semantics[c]] = c;
       return p;
     }, {});
+
+function mapStateToAsm(cpu) {
+    let asm = semanticAssemblyMap[semanticsMap[cpu.state.semantic]] || "";
+
+    asm = asm.replace("B", ["s", "d"][cpu.state.whichBank]);
+    asm = asm.replace("SR", cpu.registerMap[cpu.state.srcRegister] || "BAD");
+    asm = asm.replace("DR", cpu.registerMap[cpu.state.destRegister] || "BAD");
+    asm = asm.replace("U8", hexUtils.toHex2(cpu.state.imm8));
+
+
+    if (asm.indexOf("OP") > -1) {
+        // special handling
+        switch (cpu.state.semantic) {
+            case semantics.LOAD:
+            case semantics.STORE:
+            case semantics.BR:
+            case semantics.CALL:
+                asm = asm.replace(/\(L\)/g, cpu.state.scale === 0 ? "L" : "");
+                let relative = false;
+                let brackets = (cpu.state.addressingMode & 1) === 0 ? "[]" : "()";
+                let indexByX = cpu.state.indexByX ? "+X" : "";
+                let indexByY = cpu.state.indexByY ? "+Y" : "";
+                if (cpu.state.semantic === cpu.semantics.BR ||
+                    cpu.state.semantic === cpu.semantics.CALL) {
+                    relative = true;
+                }
+                switch (cpu.state.addressingMode) {
+                    case 0: asm = asm.replace("OP", relative ? (cpu.state.imm8 > 127 ? -(256 - cpu.state.imm8) : hexUtils.toHex2(cpu.state.imm8)) : hexUtils.toHex2(cpu.state.imm8) ); break;
+                    case 1: asm = asm.replace("OP", relative ? (cpu.state.imm16 > 32767 ? -(65536 - cpu.state.imm16) : hexUtils.toHex4(cpu.state.imm16)) : hexUtils.toHex4(cpu.state.imm16) ); break;
+                    case 2: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
+                    case 3: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
+                    case 4: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
+                    case 5: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
+                    case 6: asm = asm.replace("OP", brackets[0] + "D" + indexByX + indexByY + brackets[1]); break;
+                    case 7: asm = asm.replace("OP", brackets[0] + "D" + indexByX + brackets[1] + indexByY); break;
+                }
+                break;
+            case semantics.TRAP:
+                asm = asm.replace("OP",  (cpu.state.opcode === 0x03 ? "AL" : hexUtils.toHex2(cpu.state.imm8)));
+                break;
+        }
+    } else {
+        asm = asm.replace(/\(L\)/g, "");
+    }
+
+    return asm;
+}
 
 function addUpdatingFlags(cpu, a, b, size=16) {
     let unsignedSize = (size === 16 ? 65536 : 256);
@@ -133,7 +199,7 @@ function getAddr(cpu, bankSelect) {
 
     // indirect
     if (indirect) {
-        addr |= cpu.memory.peek16(addr);
+        addr = (addr & 0x30000) | cpu.memory.peek16(addr);
     }
 
     // index by Y if we must
@@ -385,5 +451,7 @@ export function exec() {
 
 export default {
     semantics,
-    semanticsMap
+    semanticsMap,
+    semanticAssemblyMap,
+    mapStateToAsm
 };

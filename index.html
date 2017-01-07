@@ -58,6 +58,7 @@
 
             <table>
               <tr><td>Inst</td><td id="instructions"></td></tr>
+              <tr><td> => </td><td id="disassembly"></td></tr>
             </table>
           </div>
         </div>
@@ -84,6 +85,14 @@
             <button data-cmd="step">Step</button>
             <button data-cmd="dump-cpu">Dump</button>
             <button data-cmd="reset">Reset</button><button data-cmd="hard-reset">(hard)</button>
+          </div>
+        </div>
+      </div>
+      <div class="collapsible vertical panel fixed">
+        <div class="title">Keyboard</div>
+        <div class="toolbar">
+          <div class="row">
+            <label>Focus: <input id="kbd" type="text" size= 1 value="" /></label>
           </div>
         </div>
       </div>

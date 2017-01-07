@@ -48,6 +48,7 @@ export default class CPU {
     // semantics for execution
     this.semantics = cpuSemantics.semantics;
     this.semanticsMap = cpuSemantics.semanticsMap;
+    this.mapStateToAsm = cpuSemantics.mapStateToAsm.bind(this, this);
 
     // bind semantic exec to our execute
     this.execute = exec.bind(this);
