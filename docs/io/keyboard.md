@@ -36,10 +36,10 @@ If you're reading the keyboard directly, you can easily determine how to react b
 readkey:
 LDI A, 32
 MOV B, A
-IN A, 0x10 # read key into A
+IN A, 0x10 ; read key into A
 CMP A, B
-IF N # if key code is < 32
-BR :handle-control-key # it's a control key
+IF N ; if key code is < 32
+BR :handle-control-key ; it's a control key
 handle-normal-key:
 ...
 BR :readkey

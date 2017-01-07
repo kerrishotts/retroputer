@@ -17,6 +17,10 @@ The following conventions are used:
 * `regs` - register (any register, including bank registers or `Flags`)
 * `addr` - address
 * `flg` - flag
+* `mmm` - addressing mode
+* `x` - index by x
+* `y` - index by y
+* `s` - scale (0 = byte, 1 = word)
 
 ## ADD
 
@@ -44,7 +48,24 @@ ANDs the `dst` and `src` registers together, and then stores the result in the `
 
 ## BR
 
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `BR addr`                  | `0x07 0b00mmmxys addr`             | -                      |
+
+Assigns the address to the `PC` register, transferring control to the desired address. The address is always based in bank zero, which means that code execution is limited to bank zero.
+
+> Note: immediate values are _relative_, meaning you can jump up to 32768 bytes back and 32767 bytes forward.
+
 ## CALL
+
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `CALL addr`                | `0x07 0b01mmmxys addr`             | -                      |
+
+Pushes the current value of `PC` on to the stack, and then assigns the address to the `PC` register, transferring control to the desired address. The address is always based in bank zero, which means that code execution is limited to bank zero.
+
+> Note: immediate values are _relative_, meaning you can jump up to 32768 bytes back and 32767 bytes forward.
+
 
 ## CLR
 

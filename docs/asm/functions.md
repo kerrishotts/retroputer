@@ -27,9 +27,9 @@ Example:
 .code 0x01000
 
     XOR A, A
-    LDI AL, bank(&score)        # AL = 0x03
-    MOV SB, AL                  # SB = 0x03
-    LDS A, addr(&score)         # Load word at SB:0x8000 (0x38000) into A
+    LDI AL, bank(&score)        ; AL = 0x03
+    MOV SB, AL                  ; SB = 0x03
+    LDS A, addr(&score)         ; Load word at SB:0x8000 (0x38000) into A
 ```
 
 ## ord() and chr()

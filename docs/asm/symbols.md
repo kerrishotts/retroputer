@@ -51,7 +51,7 @@ Although these are often used as constants, defined values can in fact be used a
 ```asm
 .def LOAD-FROM-SB LDS
 
-#LOAD-FROM-SB A, [0x1000]    # translates to LDS A, [0x1000]
+#LOAD-FROM-SB A, [0x1000]    ; translates to LDS A, [0x1000]
 ```
 
 ## Variables

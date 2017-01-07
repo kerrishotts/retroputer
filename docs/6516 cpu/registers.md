@@ -54,40 +54,40 @@ There are several ways to convert this into instructions the computer can unders
 ```
 .data 0x08000
 .var a
-.dw[] 32 # Array of 32 ints, "a"
+.dw[] 32 ; Array of 32 ints, "a"
 
 .var b
-.dw 0x0000 # Result, "b"
+.dw 0x0000 ; Result, "b"
 
 .code 0x01000
-XOR A, A # Make sure A is zero
+XOR A, A ; Make sure A is zero
 LDI AL, bank(&a)
-MOV SB, AL # Source Bank is now 0
-MOV DB, AL # as is data bank
-LDI A, addr(&a) # Get address of A
-MOV B, A # and copy to B
+MOV SB, AL ; Source Bank is now 0
+MOV DB, AL ; as is data bank
+LDI A, addr(&a) ; Get address of A
+MOV B, A ; and copy to B
 LDI A, 0x0001 #
-MOV C, A # C := 0x0001
-LDI A, 0x0005 # We want the fifth index
-SHL A, C # multiply by two (C = 0x0001) --> 0x0A
-ADD A, B # Add 0x8000 + 0x0A --> 0x800A
-MOV D, A # Move to D register
-LDS A, [D] # Get value at a[5]
-STD A, [addr(&b)] # Store value of a[5] to b
+MOV C, A ; C := 0x0001
+LDI A, 0x0005 ; We want the fifth index
+SHL A, C ; multiply by two (C = 0x0001) --> 0x0A
+ADD A, B ; Add 0x8000 + 0x0A --> 0x800A
+MOV D, A ; Move to D register
+LDS A, [D] ; Get value at a[5]
+STD A, [addr(&b)] ; Store value of a[5] to b
 ```
 
 This is a little... _painful_. Index registers simplify the code greatly:
 
 ```
 .code 0x01000
-XOR A, A # make sure A is zero
+XOR A, A ; make sure A is zero
 LDI AL, bank(&a)
-MOV SB, AL # set SB
-MOV DB, AL # and DB to bank of a & b
+MOV SB, AL ; set SB
+MOV DB, AL ; and DB to bank of a & b
 LDI A, 0x0005
-MOV Y, A # Y = 0x0005
-LDS A, [addr(&a)+Y] # A = value at 0x800A (Y*2)
-STD A, [addr(&b)] # b = value of a[5]
+MOV Y, A ; Y = 0x0005
+LDS A, [addr(&a)+Y] ; A = value at 0x800A (Y*2)
+STD A, [addr(&b)] ; b = value of a[5]
 ```
 
 When using absolute memory references, **X** and **Y** are both added to the memory reference, and are scaled based on the register size. That is, when using **AL**, **X** and **Y** are not scaled, but when using **A**, **X** and **Y** are multiplied by two.
@@ -159,10 +159,10 @@ When used in conjunction with instructions that test the state of various flags,
 LDI A, 0x1000
 MOV C, A
 loop:
-DEC C # C = C - 1
-IFN Z # If C isn't zero
-BR :loop # then branch back to loop
-done: # otherwise, we're done!
+DEC C ; C = C - 1
+IFN Z ; If C isn't zero
+BR :loop ; then branch back to loop
+done: ; otherwise, we're done!
 HALT 0x00
 BR :done
 ```
