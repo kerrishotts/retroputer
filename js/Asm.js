@@ -260,7 +260,7 @@ let bankRegisterOffset = 12;
 /*
  * flag map
  */
-let validFlags = ["i", "m", "x", "v", "c", "n", "z", 
+let validFlags = ["i", "m", "x", "e", "v", "c", "n", "z", 
                   "eq", "lt", "o"];
 let flagMap = {
     i: 7, m: 6, x: 5, e: 4,
