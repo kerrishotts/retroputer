@@ -22,19 +22,74 @@ The following variables are used by the KERNEL. For each variable, the address l
 
 The following subroutines are exposed to program. For each routine, the trap and any associated "in" and "out" registers are provided, as well as the name and description.
 
-| Name | TRAP and IN Registers | OUT Registers | Description |
-| :--- | :--- | :--- | :--- |
-| draw-cursor | TRAP 0x80; A = 0x0000 | N/A | Draws the cursor according to cursor configuration variables. |
-| get-key | TRAP 0x90; A = 0x0000 | AL = key pressed | Waits for a key to be pressed, and returns it |
-| | | | |
-| | | | |
+For example, to wait until a keyboard key is pressed and write it to the screen when it is pressed
 
-# KERNEL Processes
+```
+    LDI A, 0x0000
+    MOV X, A
+    MOV Y, A
+    TRAP 0x80           ; set cursor to 0, 0
+    TRAP 0xD1           ; key pressed is in AL
+    TRAP 0x9C           ; write key (in AL) at cursor
+```
 
-There are some processes within the KERNEL that occur on a regular basis in order to take care of various housekeeping items.
-
-| Name | Trap | Location | Description |
-| :--- | :--- | :--- | :--- |
-| FRAME | 0xF0 | 0xFE00 | Performs house keeping tasks each frame |
+|    Name             | Addr |Trap|    Description    
+|:-------------------:|:----:|:--:|:-------------------------------------------
+| RESET               | FF00 | 00 | Resets the machine (warm)
+| ...                 |      | .. | 
+| CURSOR-SET-POS      |      | 80 | Sets the cursor position to X, Y
+| CURSOR-GET-POS      |      | 81 | Returns the cursor position in X and Y
+| CURSOR-SET-PAGE     |      | 82 | Sets the current cursor page to X
+| CURSOR-GET-PAGE     |      | 83 | Returns the current cursor page in X
+| CURSOR-SHOW         |      | 84 | Shows the cursor
+| CURSOR-HIDE         |      | 85 | Hides the cursor
+| CURSOR-BLINK-SPEED  |      | 86 | Determines cursor blink speed; # of frames is in X; X = 0 means no blinking
+| CURSOR-RENDER       |      | 87 | Render the cursor (updates blink, etc.)
+| CURSOR-RESET-BLINK  |      | 88 | Resets cursor blink value (e.g., after keypress)
+| CURSOR-ADVANCE      |      | 89 | Advances the cursor by a character, wrapping and scrolling if necessary
+| ...                 |      | .. | 
+| SET-PAGE-LAYER      |      | 90 | Sets selected page (X)'s layer to Y
+| GET-PAGE-LAYER      |      | 91 | Returns page (X) layer in Y
+| SCROLL-PAGE-UP      |      | 92 | Scrolls the desired page (X) up by Y lines
+| SCROLL-PAGE-DOWN    |      | 93 | Scrolls the desired page (X) down by Y lines
+| CLEAR-PAGE          |      | 94 | Clears the desired page (X)
+| FILL-PAGE           |      | 95 | Fills the desired page (X) with YL
+| SET-PAGE-FGCOLOR    |      | 96 | Sets selected page's (X) foreground color
+| SET-PAGE-BGCOLOR    |      | 97 | Sets selected page's (X) background color
+| SET-PAGE-TILESET    |      | 98 | Sets selected page's (X) tile setting
+| SET-BORDER-COLOR    |      | 99 | Sets the border color      
+| SET-BORDER-SIZE     |      | 9A | Sets the border size (X = width, Y = height)
+| SET-GRAPHICS-LAYER  |      | 9B | Sets the graphics layer to Y
+| PUT-CHAR            |      | 9C | Writes a character (AL) at the current cursor position
+| PUT-STRING          |      | 9D | Writes a pascal string (DB:D) at the current cursor position
+| ...                 |      | .. | 
+| CVT-INT-TO-STR      |      | A0 | Converts an int in A to a string at DB:D
+| CVT-STR-TO-INT      |      | A1 | Converts a string at DB:D into an integer (A), setting E if not a number
+| ...                 |      | .. | 
+| EDITOR-ENTER        |      | B0 | Enter the program editor
+| EDITOR-EXIT         |      | B1 | Exit the program editor 
+| EDITOR-INIT         |      |    | Initializes the program editor
+| ...                 |      | .. | 
+| CHANNEL-OPEN        |      | C0 | Opens channel (X) with options (Y, like Read, write, etc)
+| CHANNEL-CLOSE       |      | C1 | Closes channel (X)
+| CHANNEL-COMMAND     |      | C2 | Sends command (Y) to channel (X)
+| CHANNEL-READ-BYTE   |      | C3 | Reads a single byte (AL) from channel (X) 
+| CHANNEL-WRITE-BYTE  |      | C4 | Writes a single byte (AL) to channel (X)
+| CHANNEL-READ        |      | C5 | Reads a string (DB:D) with C characters from channel (X)
+| CHANNEL-WRITE       |      | C6 | Writes a pascal string (DB:D) to channel (X)
+| CHANNEL-READ-BLOCK  |      | C7 | Reads a block (DB:D) with C bytes from channel (X)
+| CHANNEL-WRITE-BLOCK |      | C8 | Writes a block (DB:D) with C bytes to channel (X)
+| ...                 |      | .. | 
+| KBD-GET-KEY         |      | D0 | Returns the key pressed in A; E is set if no key has been pressed
+| KBD-WAIT-FOR-KEY    |      | D1 | Waits for a key press and returns it in A (efficient loop)
+| ...                 |      | .. | 
+| FRAME               |      | F0 | Called after a screen frame is drawn
+| SECOND              |      | F1 | Called once per SECOND
+| MINUTE              |      | F2 | Called once per MINUTE
+| HOUR                |      | F3 | Called once per DAY
+| ...                 |      | .. | 
+| INIT-1125           |      | FD | Initializes the 1125 sound generator
+| INIT-4025           |      | FE | Initializes the 4025 video generator
+| INIT-RAM            |      | FF | Initializes memory, devices, etc.
 
 
