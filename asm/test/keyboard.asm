@@ -1,6 +1,6 @@
-#
-# Test the keyboard device without a kernel
-#
+;
+; Test the keyboard device without a kernel
+;
 
 .data 0x0B000
 
@@ -20,14 +20,14 @@
 .var cursor-blink-toggle
 .db 30
 
-# 
-# Basic RESET handler
-#
+; 
+; Basic RESET handler
+;
 .code 0xFF00
-    # pop garbage PC off stack
+    ; pop garbage PC off stack
     POP A
 
-    # Reset flags
+    ; Reset flags
     CLR Z
     CLR N
     CLR V 
@@ -36,12 +36,12 @@
     SET I
     SET X
 
-    # Set SP and BP appropriately
+    ; Set SP and BP appropriately
     LDI A, 0x1000
     MOV SP, A
     MOV BP, A
 
-    # code typically starts at 0x1000, so we'll pop there when we RET
+    ; code typically starts at 0x1000, so we'll pop there when we RET
     LDI A, 0x1000
     PUSH A
     RET
@@ -53,35 +53,35 @@ end:
     HALT 0x00
     BR :end
 
-#
-# FRAME handler 
+;
+; FRAME handler 
 .code 0xFE00
 
 .def tile-page-0 0x30000
 
 FRAME-start:
 
-    # we need to be good citizens; push what we muck about with
+    ; we need to be good citizens; push what we muck about with
     PUSHA
 
-    # disable interrupts for the duration of this frame 
+    ; disable interrupts for the duration of this frame 
     CLR I
 
-    # set up destination bank (0x03)
+    ; set up destination bank (0x03)
     LDI A, bank(#tile-page-0)
     MOV DB, A
 
-    # zero A and set up source bank
+    ; zero A and set up source bank
     XOR A, A
     MOV SB, A
 
 cursor-blink-start:
-    # check if we should blink our cursor at all
+    ; check if we should blink our cursor at all
     LDS AL, [addr(&cursor-blink-enabled)]
-    # if zero, blinking is disabled, so don't do anything
+    ; if zero, blinking is disabled, so don't do anything
     IF Z
         BR :render-cursor
-    # otherwise, we can blink!
+    ; otherwise, we can blink!
     LDS AL, [addr(&cursor-blink-counter)]
     IF Z
         BR :cursor-blink-toggle
@@ -139,28 +139,28 @@ render-cursor-off:
 
 render-cursor-end:
 check-for-keypress:
-    # zero B so that we can see if the user typed something
+    ; zero B so that we can see if the user typed something
     IN AL, 0x10
 
-    # If no key pressed, get out!
+    ; If no key pressed, get out!
     IF Z
         BR :FRAME-end
 
-    # 
-    # key pressed, let's store it, write it to the screen, and increment address
-    #
+    ; 
+    ; key pressed, let's store it, write it to the screen, and increment address
+    ;
 
-    # Save key
+    ; Save key
     MOV C, A
     STS AL, [addr(&key)]
 
-    # get pos and write key to screen
+    ; get pos and write key to screen
     LDS A, [addr(&cursor-pos)]
     MOV X, A
     MOV A, C
     STD AL, [addr(#tile-page-0)+X]
 
-    # make sure the cursor is hidden
+    ; make sure the cursor is hidden
     LDI A, 0x0400
     MOV Y, A
     LDI A, 0x0000
@@ -170,7 +170,7 @@ check-for-keypress:
     LDI A, 0x00FF
     STD AL, [addr(#tile-page-0)+X+Y]
 
-    # increment pos
+    ; increment pos
     INC X
     MOV A, X
     STS A, [addr(&cursor-pos)]

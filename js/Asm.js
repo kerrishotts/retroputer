@@ -754,8 +754,8 @@ export default class Asm {
             expectedAssembly: []
         }
 
-        // get comment, if it exists (form: # comment)
-        let r = text.split("#");
+        // get comment, if it exists (form: ; comment)
+        let r = text.split(";");
         results.comment = r[1] || "";
 
         // get expected assembly results, if present (form => 00,00,00)

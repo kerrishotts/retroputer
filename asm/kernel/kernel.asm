@@ -1,6 +1,6 @@
-#
-# 6516 Retroputer KERNEL
-#
+;
+; 6516 Retroputer KERNEL
+;
 
 .data 0x0B000
 

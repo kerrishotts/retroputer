@@ -39,22 +39,22 @@ describe("#ASM", () => {
         });
         describe ("#comments", () => {
             it ("should be able to parse a comment with no instruction", () => {
-                let r = Asm.parseSingleInstruction("# this is a comment");
+                let r = Asm.parseSingleInstruction("; this is a comment");
                 expectedParseResult.comment = " this is a comment";
                 expect(r).to.deep.equal(expectedParseResult);
             });
             it ("should be able to parse a comment with only a directive", () => {
-                let r = Asm.parseSingleInstruction(".code = 0x1000 # this is a comment");
+                let r = Asm.parseSingleInstruction(".code = 0x1000 ; this is a comment");
                 expectedParseResult.comment = " this is a comment";
                 expect(r.comment).to.equal(expectedParseResult.comment);
             });
             it ("should be able to parse a comment with only a label", () => {
-                let r = Asm.parseSingleInstruction("label: # this is a comment");
+                let r = Asm.parseSingleInstruction("label: ; this is a comment");
                 expectedParseResult.comment = " this is a comment";
                 expect(r.comment).to.equal(expectedParseResult.comment);
             });
             it ("should be able to parse a comment with an instruction", () => {
-                let r = Asm.parseSingleInstruction("MOV A, B # this is a comment");
+                let r = Asm.parseSingleInstruction("MOV A, B ; this is a comment");
                 expectedParseResult.comment = " this is a comment";
                 expect(r.comment).to.equal(expectedParseResult.comment);
             });
@@ -80,11 +80,11 @@ describe("#ASM", () => {
               "HALT 0x00                   => 06 14 00",
               "ENTER 0x40                  => 01 40",
               "ENTER 64                    => 01 40",
-              "ENTER AL                                    # 0x8010",
+              "ENTER AL                                    ; 0x8010",
               "EXIT 0x40                   => 02 40",
               "EXIT 64                     => 02 40",
               "TRAP AL                     => 03",
-              "TRAP A                                      # 0x8031",
+              "TRAP A                                      ; 0x8031",
               "TRAP 0x40                   => 06 01 40",
               "TRAP 64                     => 06 01 40",
               "ADD A, A                    => 04 00",
