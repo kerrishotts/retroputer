@@ -24,13 +24,15 @@ export default class Computer {
         debug
     } = {}) {
         this.debug = debug;
+
         this.performance = {
             iterationsBetweenTimeCheck: 100,
             timeToDevoteToCPU: 1,
-            throttlePoint: 14,
-            maxTimeToDevoteToCPU: 12,
+            throttlePoint: 14,          // floor((850/60))
+            maxTimeToDevoteToCPU: 12,   // floor((725/60))
             minTimeToDevoteToCPU: 0.2
         };
+        this.targetFPS(60);
 
         this.memory = new Memory(memoryLayout);
         this.memory.init();
@@ -68,6 +70,10 @@ export default class Computer {
                 this.tickOutsideBrowser(f);
             }
         }
+    }
+    targetFPS(f) {
+        this.performance.throttlePoint = Math.floor(850 / f);
+        this.performance.maxTimeToDevoteToCPU = Math.floor(725 / f);
     }
     tickInBrowser(f) {
         let startTime = performance.now();
@@ -247,7 +253,7 @@ export default class Computer {
 
     hardReset() {
         this.cpu.stepping = false;
-        this.cpu.running = false;
+        //this.cpu.running = false;
         this.cpu.init();
         this.memory.init();
         this.screen.init();
