@@ -97,6 +97,49 @@ describe ("#exec", () => {
         ], { A: 0x0000, C: 0x0008}, 
            { V: 1, C: 1, N: 0, Z: 1 }],
 
+        ["Simple divide", [
+            "LDI A, 0x0002",
+            "MOV B, A",
+            "LDI A, 0x0010",
+            "XOR C, C",
+            "IDIV C*A, B",
+        ], { A: 0x0008, B: 0x0002, C: 0x0000 }, 
+           { V: 0, C: 0, N: 0, Z: 0 }],
+
+        ["Simple modulus", [
+            "LDI A, 0x0006",
+            "MOV B, A",
+            "LDI A, 0x0010",
+            "XOR C, C",
+            "IMOD C*A, B",
+        ], { A: 0x0004, B: 0x0006, C: 0x0000 }, 
+           { V: 0, C: 0, N: 0, Z: 0 }],
+
+
+        ["Shift left, simple", [
+            "LDI A, 0b00000010",
+            "MOV B, A",
+            "LDI A, 0x0001",
+            "CLR M",
+            "SHL B, A",
+        ], { A: 0x0001, B: 0b00000100}, 
+           { V: 0, C: 0, N: 0, Z: 0 }],
+
+        ["Rotate left, simple", [
+            "LDI A, 0b1000001000000001",
+            "MOV B, A",
+            "LDI A, 0x0001",
+            "SET M",
+            "SHL B, A",
+        ], { B: 0b0000010000000011, A: 0x0001}, 
+           { M: 1, V: 0, C: 0, N: 0, Z: 0 }],
+
+        ["Clear bits, simple", [
+            "LDI A,   0b11000011",
+            "CLRR AL, 0b11000000",
+        ], { A: 0x0003, }, 
+           { V: 0, C: 0, N: 0, Z: 0 }],
+
     ].forEach((test) => {
         let name = test[0];
         let instructions = test[1];
