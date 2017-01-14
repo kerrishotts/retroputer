@@ -26,12 +26,12 @@
       window.log(JSON.stringify(args));
     }
     System.import ("index.js").
-      then( App => console.log(App) ).
+      then( App => console.log("loaded") ).
       catch( err => { window.log(JSON.stringify(err)); console.error(err); });
   </script>
   <div id="ui" class="horizontal panel">
     <div class="main vertical panel">
-      <div class="screen-panel vertical panel">
+      <div class="screen-panel vertical panel" id="screen-border">
         <div class="title">Screen</div>
         <canvas id="screen"></canvas>
         <div id="stats"></div>
@@ -39,7 +39,7 @@
       <div class="bottom-panel collapsible horizontal panel">
         <div class="collapsible log-panel vertical panel">
           <div class="title">Log</div>
-          <div id="log"></div>
+          <div id="log" class="scrollingpre"></div>
         </div>
         <div class="callapsible cpu-panel vertical panel">
           <div class="title">CPU</div>
@@ -108,8 +108,7 @@
               <button data-cmd="dump-mem">Dump memory</button>
             </div>
           </div>
-          <div id="memory-dump">
-          </div>
+          <div id="memory-dump" class="scrollingpre"></div>
         </div>
       </div>
       <div class="collapsible vertical panel">

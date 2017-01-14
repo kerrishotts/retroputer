@@ -1,3 +1,9 @@
+/*
+ *
+ * CSS for retroputer terminal
+ *
+ */
+
 html * {
   box-sizing: border-box;
   font-size: 100%;
@@ -11,7 +17,17 @@ body {
   color: white;
 }
 
+#ui {
+  position: absolute;
+  top: 0; left: 0;
+  bottom: 0; right: 0;
+  display: flex;
+  overflow: hidden;
+}
 
+/*
+ * Panels
+ ********************************************************************/
 .panel {
   display: flex;
   outline: 1px solid #C8CBCD;
@@ -55,59 +71,36 @@ body {
   flex-direction: column;
 }
 
-.screen-panel {
-  min-height: calc(200px + 2em);
-  flex: 3 3 auto;
-}
-
-.bottom-panel {
-  min-height: calc(100px + 2em);
-  flex: 0 0 200px;
-}
-
 .main {
   flex: 3 3 auto;
+}
+
+#ui.wide-sidebar .main {
+  flex: 1 1 320px;
 }
 
 .secondary {
   flex: 1 1 200px;
 }
 
-#ui {
-  position: absolute;
-  top: 0; left: 0;
-  bottom: 0; right: 0;
-  display: flex;
-  overflow: hidden;
+#ui.no-sidebar .secondary {
+  display: none;
 }
 
-
-#screen {
-  flex: none;
-  min-width: 320px;
-  min-height: 200px;
-  margin: auto auto;
-  background-color: black;
-
-  image-rendering: optimizeSpeed;             /* Older versions of FF          */
-  image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
-  image-rendering: -webkit-optimize-contrast; /* Safari                        */
-  image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
-  image-rendering: pixelated;                 /* Awesome future-browsers       */
-  -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+#ui.wide-sidebar .secondary {
+  flex: 3 3 auto;
 }
 
-#log, #memory-dump {
+.scrollingpre {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   white-space: pre-line;
   font-size: 0.625rem;
 }
 
-#log {
-  flex: 1 1 auto;
-  min-height: 100px;
-}
+/*
+ * Toolbars
+ ********************************************************************/
 
 .toolbar {
   flex: 0 0 auto;
@@ -166,11 +159,73 @@ textarea {
   background-color: white;
 }
 
+/*
+ * bottom panel 
+ ********************************************************************/
+
+.bottom-panel {
+  flex: 0 0 auto;
+}
+
+/*
+ * log panel 
+ ********************************************************************/
+
+#log {
+  flex: 1 1 auto;
+  min-height: 100px;
+  max-height: calc(200px - 2em);
+}
+
+/*
+ * cpu panel 
+ ********************************************************************/
+
+#cpu table {
+  width: 100%;
+}
+#instructions {
+  width: 16em;
+}
+#cpu table td:nth-child(even) {
+  text-align: left;
+}
+#cpu table td:nth-child(odd) {
+  text-align: right;
+}
+
+/*
+ * control panel 
+ ********************************************************************/
+
 #cpu-speed {
   width: 6em;
   display: inline-block;
   text-align: right;
 }
+/*
+
+ * keyboard panel 
+ ********************************************************************/
+
+/*
+ * memory panel 
+ ********************************************************************/
+
+#memory {
+  font-size: 0.875rem;
+  color: white;
+  max-height: 30em;
+  min-height: 10em;
+}
+
+/*
+ * code panel 
+ ********************************************************************/
+
+/*
+ * floating statistics panel 
+ ********************************************************************/
 
 #stats {
   position: absolute;
@@ -182,28 +237,28 @@ textarea {
   text-shadow: 1px 1px 0 #000000;
 }
 
-#cpu table {
-  width: 100%;
+/*
+ * screen panel 
+ ********************************************************************/
+
+
+.screen-panel {
+  min-height: calc(200px + 2em);
+  flex: 3 3 auto;
 }
 
-#instructions {
-  width: 16em;
+#screen {
+  flex: none;
+  min-width: 320px;
+  min-height: 200px;
+  margin: auto auto;
+  background-color: black;
+
+  image-rendering: optimizeSpeed;             /* Older versions of FF          */
+  image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+  image-rendering: -webkit-optimize-contrast; /* Safari                        */
+  image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+  image-rendering: pixelated;                 /* Awesome future-browsers       */
+  -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
 }
 
-#cpu table td:nth-child(even) {
-  text-align: left;
-}
-#cpu table td:nth-child(odd) {
-  text-align: right;
-}
-
-#memory {
-  font-size: 0.875rem;
-  color: white;
-  max-height: 30em;
-  min-height: 10em;
-}
-
-#memory {
-
-}

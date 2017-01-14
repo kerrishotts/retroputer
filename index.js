@@ -13,6 +13,7 @@ import hexUtils from "js/hexUtils.js";
 import Keyboard from "js/devices/Keyboard.js";
 
 import font from "../design/font0.js";
+import bootstrap from "../asm/bootstrap.js";
 
 export default class App {
   constructor() {
@@ -116,11 +117,11 @@ export default class App {
     containerHeight -= titleHeight;
 
     let w, h;
-    w = Math.floor(maxWidth);
+    w = Math.floor(containerWidth);
     h = Math.floor(w * (200 / 320));
 
-    if (h > maxHeight) {
-      h = Math.floor(maxHeight);
+    if (h > containerHeight) {
+      h = Math.floor(containerHeight);
       w = Math.floor(h / (200 / 320));
     }
 
@@ -239,10 +240,10 @@ export default class App {
         this.sizeScreen()
       }, 50);
     });
-    setTimeout( () => this.sizeScreen(), 50);
+    setInterval( () => this.sizeScreen(), 1000);
     let computer = new Computer({
       devices: [Keyboard],
-      roms: [font],
+      roms: [...bootstrap, font],
       screenId: "screen",
       debug: false
     });
@@ -318,7 +319,6 @@ export default class App {
           case "reset":
             computer.reset();
             this.updatePanels();
-            computer.dumpAll();
             break;
           case "hard-reset":
             cold = true;
