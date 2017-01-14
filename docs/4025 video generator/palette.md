@@ -13,4 +13,18 @@ The palette is located at 0x1FC00 and continues to 0x1FFFF. There are 256 entrie
 
 An initial palette is configured upon cold boot, however this palette can be overridden at any time.
 
+## The initial palette
+
+![Initial Palette](./palette.png)
+
+The initial palette is configured by the `RESET` routine located at `0xFF00` and triggered on every cold and warm reset. 
+
+The palette consists of the following:
+
+* 24 RGBI color entries (indices 0–23)
+* 16 shades of gray (indices 24–39)
+* 216 6-level RGB colors (indicies 40–255)
+    * These can be accessed by using `40 + ((R/51)*36) + ((G/51)*6) + (B/51)`, where `R`, `G`, and `B` are between `0` and `255` inclusive.
+
+In the initial palette some colors are duplicated, meaning that there aren't 256 distinct colors available for use, but the palette can be redefined to whatever values are needed. Keep in mind that if you do redefine the palette, the palette will be lost after `RESET`.
 
