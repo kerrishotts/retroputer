@@ -69,8 +69,9 @@ const ENABLE_WEBGL = false;
   }
 
   init() {
-    this.initPalette();
-    this.initScreenConfiguration();
+    // we expect the bootstrap in ROM to set up the screen
+    //this.initPalette();
+    //this.initScreenConfiguration();
   }
 
   setPaletteEntry(idx, r, g, b) {
@@ -92,13 +93,13 @@ const ENABLE_WEBGL = false;
 
   initPalette() {
     var r, g, b, a, m, 
-        ma = [0, 127, 191, 255];
+        ma = [0, 128, 192, 255];
 
     for (var i = 0; i < 256; i++) {
       m = ma[(((i & 0xC0) >> 6))];
-      r = ma[((i & 0x30) >> 4)];// || m;
-      g = ma[((i & 0x0C) >> 2)];// || m;
-      b = ma[((i & 0x03) >> 0)];// || m;
+      r = ma[((i & 0x30) >> 4)] || m;
+      g = ma[((i & 0x0C) >> 2)] || m;
+      b = ma[((i & 0x03) >> 0)] || m;
       this.setPaletteEntry (i, r, g, b);
     }
   }
