@@ -238,10 +238,12 @@ export default class CPU {
       this.execute();
       if (!this.getFlag(this.flagMap.X)) {
         this.step();  // go ahead and skip the next instruction
+        this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
       }
-    } else {
+   }
+    /* else {
       this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
-    }
+    }*/
   }
 
   /**
