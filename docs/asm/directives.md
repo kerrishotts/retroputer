@@ -19,14 +19,27 @@ Specifying a segment without adding a plus-sign will reset any data or code with
 ## Define value (.def)
 
 > .def <symbol-name> <symbol-value>
+> sigil: `#`
 
 Defines a text replacement symbol. Whenever the assembler sees `#<sybmol-name>`, it will replace it with the specified value.
 
 ## Variable (.var)
 
 > .var <variable-name>
+> sigil: `&`
 
 Defines a variable at the current data or code location. Whenever the assembler sees `&<symbol-name>` the address will be substitued instead.
+
+## Rename register (.rename)
+
+> .rename <new-name> <register>
+> sigil: `@`
+
+Allows you to assign a friendly name to a register, without colliding with other symbols. Whenever the assembler sees `@<symbol-name>`, the register assigned to the name will be used instead.
+
+```
+    .rename score A
+```
 
 ## Data directives (.db, .dw, .ds)
 

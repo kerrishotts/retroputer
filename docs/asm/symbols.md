@@ -19,11 +19,23 @@ another-label>
 
 Labels can consist only of alphanumeric characters, dashes, or underscores. 
 
-To referencing a label, the `:` or `>` type sentinel is prepended to the label name, like so:
+To referencing a label, the `:` or `>` type sigil is prepended to the label name, like so:
 
 ```asm
 loop:
     BR :loop
+```
+
+Should you need to reference the address of a label when building a vector table, you can use the `@` type sigil, like so:
+
+```asm
+.var vRESET
+    .dw @RESET
+
+...
+
+.code 0x0FF00
+RESET:
 ```
 
 ## Defined values
@@ -38,7 +50,7 @@ Defined values are defined by using the `.def` directive, like so:
 
 Defined value symbols can consist only of alphanumeric characters, dashes, or underscores.
 
-To reference a defined value, use the `#` type sentinel:
+To reference a defined value, use the `#` type sigil:
 
 ```asm
 .def seconds-in-a-minute 60
@@ -65,7 +77,7 @@ Variable symbols refer to an address within a segment. Variables are defined usi
 
 Variable names can consist only of alphanumeric characters, dashes, or underscores.
 
-When referencing variable names, use the `&` type sentinel (read "address of"), as such:
+When referencing variable names, use the `&` type sigil (read "address of"), as such:
 
 ```asm
 .data 0x02000
@@ -78,3 +90,6 @@ When referencing variable names, use the `&` type sentinel (read "address of"), 
     LDS A, [addr(&score)]
 ```
 
+## Register renaming
+
+TODO

@@ -343,7 +343,7 @@ Sets the low eight bits in `reg` identified by `u8`. Equivalent to `OR reg8, u8`
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `SHL dst, reg`             | `0x05 0b00dstsrc`                  | C, N, Z                |
 
-Shifts the contents of `dst` left by the number of times specified by `reg`.
+Shifts the contents of `dst` left by the number of times specified by `reg`. If `M` is set, the operation rotates the bits instead of shifting them out.
 
 * Carry (`C`) is set if a bit is shifted out of the register; and clear if not.
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
@@ -353,10 +353,11 @@ Shifts the contents of `dst` left by the number of times specified by `reg`.
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `SHR dst, reg`             | `0x05 0b01dstsrc`                  | N, Z,                  |
+| `SHR dst, reg`             | `0x05 0b01dstsrc`                  | C, N, Z                |
 
-Shifts the contents of `dst` right by the number of times specified by `reg`.
+Shifts the contents of `dst` right by the number of times specified by `reg`. If `M` is set, the operation rotates the bits instead of shifting them out.
 
+* Carry (`C`) is set if a bit is shifted out of the register; and clear if not.
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
