@@ -181,10 +181,10 @@ export class UnknownDirectiveError extends Error {
     }
 }
 
-export class UnknownTypeSentinelError extends Error {
+export class UnknownTypeSigilError extends Error {
     constructor(extra) {
         super();
-        this.message = (`Unknown type sentinel: ${extra}`);
+        this.message = (`Unknown type sigil: ${extra}`);
         this.code = 0x8200;
     }
 }
@@ -471,6 +471,7 @@ export default class Asm {
     constructor() {
         this.basepath = "";
         this.importCallback = undefined;
+        this.registerMaps = {};
         this.vars = {};
         this.defs = {};
         this.labels = {};
@@ -487,17 +488,24 @@ export default class Asm {
 
     rewriteLineSymbols(line, stage) {
         // if stage is symbols, be permissive
-        // rewrite symbols; symbols start with type sentinels:
+        // rewrite symbols; symbols start with type sigils:
         //      # = item defined with .def
         //      & = item defined with .var
         //      : = label
         //      > = label
+        //      @ = (address of) label (used when building vector tables)
         // use values if we know them when permissive. if not permissive, throw that the symbol couldn't be found
-        line = line.replace(/(\#[A-Za-z0-9\-\_]+)|(\>[A-Za-z0-9\-\_]+)|(\&[A-Za-z0-9\-\_]+)|(\:[A-Za-z0-9\-\_]+)/g, (match) => {
+        line = line.replace(/([\#\>\&\@\%\:][A-Za-z0-9\-\_]+)/g, (match) => {
             let typeOfSymbol = match[0];
             let symbolName = match.substr(1,255).toLowerCase();
             let data = undefined;
             switch (typeOfSymbol) {
+                case "%":
+                    data = this.registerMap[symbolName];
+                    if (data === undefined) {
+                        throw new UndefinedSymbolError (match);
+                    }
+                    break;
                 case "&": 
                     data = this.vars[symbolName];
                     break;
@@ -512,8 +520,11 @@ export default class Asm {
                         data = data - (pc + 4);
                     }
                     break;
+                case "@":
+                    data = this.labels[symbolName];
+                    break;
                 default:
-                    throw new UnknownTypeSentinelError (match);
+                    throw new UnknownTypeSigilError (match);
             }
             if (data === undefined) {
                 if (stage === "symbols") {
@@ -582,6 +593,11 @@ export default class Asm {
                 }
                 this.segments[segmentName].current = addr;
                 break;
+            case "rename":
+                let [regName, regMap] = parseResults.directiveData.split(/\s/);
+                this.registerMap[regName] = regMap;
+                // TODO: throw error if not a valid register
+                break;
             case "var":
                 addr = this.segments.data.current + this.segments.data[this.segments.data.current].length;
                 this.vars[parseResults.directiveData] = addr;
@@ -598,6 +614,7 @@ export default class Asm {
                 for (let i = 0; i<parm1; i++) {
                     this.segments.data[this.segments.data.current].push(0);
                 }
+                break;
             case "dw":
                 let words = parseResults.directiveData.split(" ").map(w => Number(w).valueOf() & 0xFFFF);
                 this.segments.data[this.segments.data.current].push(...words.reduce((p, c) => {
@@ -611,6 +628,7 @@ export default class Asm {
                 for (let i = 0; i<parm1; i++) {
                     this.segments.data[this.segments.data.current].push(0);
                 }
+                break;
             case "ds":
                 this.segments.data[this.segments.data.current].push(...Array.from(parseResults.directiveData).map(c => c.charCodeAt(0)));
                 break;
@@ -659,7 +677,13 @@ export default class Asm {
             for (let line of lines) {
                 lineNumber ++;
                 try {
-                    line = this.rewriteLineSymbols(line, stage);
+                    let semipos = line.indexOf(";");
+                    let lineWithoutComment = line;
+                    if (semipos > -1) {
+                        lineWithoutComment = line.substr(0, semipos);
+                    }
+
+                    line = this.rewriteLineSymbols(lineWithoutComment, stage);
                     line = this.handleFunctions(line, stage);
                     let parseResults = Asm.parseSingleInstruction(line);
                     if (parseResults.directive !== "") {
@@ -894,10 +918,11 @@ export default class Asm {
                 op2 = expectOperand(ops, {type: "r16"});
                 if (r.opcode !== "mfill") {
                     op3 = expectOperand(ops, {type:"br"}) - bankRegisterOffset;
+                    op4 = expectOperand(ops, {type: "r16"});
                 } else {
                     op3 = 0;
+                    op4 = expectOperand(ops, {type: "r8"});
                 }
-                op4 = expectOperand(ops, {type: "r16"});
                 op5 = expectOperand(ops, {type: "c16"});
                 instruction.push(0x06, translate[r.opcode], (op1 << 7) | (op3 << 6) | (op2 << 3) | op4);
                 break;
@@ -940,7 +965,7 @@ export default class Asm {
                     ifr:  0b00110000,
                     ifnr: 0b00111000,
                 }
-                op1 = expectOperand(ops, {type: "r16"});
+                op1 = expectOperand(ops, {type: "r8"});
                 op2 = expectOperand(ops, {type: "u8"});
                 instruction.push(0x06, translate[r.opcode] | op1, op2);
                 break;
