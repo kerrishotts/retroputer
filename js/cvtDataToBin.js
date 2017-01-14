@@ -31,7 +31,7 @@ module.exports =  function cvtDataToBin(data, addr, format="bin", newline, jspre
     }, []);
 
     if (format !== "bin") {
-        text.unshift(`${jsprefix}{{addr: ${addr}, data: [`);
+        text.unshift(`${jsprefix}{addr: ${addr}, data: [`);
         text.push(`]}${jspostfix}`)
     }
     text = text.join(newline);
