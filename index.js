@@ -313,6 +313,16 @@ export default class App {
               this.loadProgramToEditor(programName);
             }
             break;
+          case "load-asm-disk":
+            let filePicker = document.getElementById("program");
+            if (FileReader && filePicker.files && filePicker.files.length) {
+                let fileReader = new FileReader();
+                fileReader.onload = function () {
+                  document.querySelector("#code textarea").value = fileReader.result;
+                }
+                fileReader.readAsText(filePicker.files[0]);
+            }
+            break;
           case "save-asm":
             this.saveProgramFromEditor();
             break;

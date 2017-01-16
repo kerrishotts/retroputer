@@ -222,6 +222,9 @@ textarea {
 /*
  * code panel 
  ********************************************************************/
+#program {
+  width: 50%;
+}
 
 /*
  * floating statistics panel 

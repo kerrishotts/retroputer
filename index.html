@@ -117,12 +117,18 @@
           <div class="toolbar">
             <div class="row">
               <select id="asm-select">
-                <option>Select a saved assembly file</option>
+                <option>Select a file</option>
                 <optgroup id="saved-asms">
                   <option>None</option>
                 </optgroup>
               </select>
               <button data-cmd="load-asm">Load</button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <div class="row"> 
+              <input type="file" id="program" />
+              <button data-cmd="load-asm-disk">Load</button>
             </div>
           </div>
           <textarea></textarea>
