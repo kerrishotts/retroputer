@@ -259,7 +259,11 @@ export default class CPU {
     }
   }
 
-  pause() {
+  pause(imm8) {
+    if (imm8 === 0xFF) {
+      // Really, really halt!
+      this.running = false;
+    }
     this.paused = true;
   }
 }
