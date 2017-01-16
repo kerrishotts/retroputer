@@ -25,12 +25,10 @@ _loop:
     INC X
     CMP X, B
     IF Z
-        BR :_next-row
+        BRS >_next-row
 
-    DEC C
-    IF C
-        BR :_loop
+    LOOP C, >_loop
 
 _halt:
     HALT 0x00
-    BR :_halt
+    BRS >_halt
