@@ -14,6 +14,7 @@ let semantics = {
       IFFLAG:  0x68, IFNFLAG: 0x69,
       BR:      0x70, CALL:    0x71, ENTER:   0x72, EXIT:    0x73,
       TRAP:    0x74, BYTESWAP:0x78, RET:     0x7F, HALT:    0x80,
+      LOOP:    0x7A,
       BADOP:   0xFF
     };
 
@@ -23,15 +24,16 @@ let semanticAssemblyMap = {
       MEMCOPY: "mcopy DbS : DR, SbS : SR * C"             ,MEMSWAP: "mswap DbS : DR, SbS : SR * C",
       PUSH:    "push SR"        ,POP:     "pop DR",
       PUSHA:   "pusha"          ,POPA:    "popa"          ,
-      ADD:     "add SR, DR"     ,INC:     "inc SR"        ,SUB:     "sub SR, DR"    ,DEC:     "dec SR",
-      CMP:     "cmp SR, DR"     ,IMUL:    "mul OR : DR, SR"    ,IDIV:    "idiv OR : DR, SR"   ,IMOD:    "imod OR : DR, SR",
-      SHL:     "shl SR, DR"     ,SHR:     "shr SR, DR"    ,ROL:     "rol SR, DR"    ,ROR:     "ror SR, DR",
-      XOR:     "xor SR, DR"     ,AND:     "and SR, DR"    ,OR:      "or SR, DR"     ,NEG:     "neg DR",
+      ADD:     "add DR, SR"     ,INC:     "inc SR"        ,SUB:     "sub DR, SR"    ,DEC:     "dec SR",
+      CMP:     "cmp DR, SR"     ,IMUL:    "mul OR : DR, SR"    ,IDIV:    "idiv OR : DR, SR"   ,IMOD:    "imod OR : DR, SR",
+      SHL:     "shl DR, SR"     ,SHR:     "shr DR, SR"    ,ROL:     "rol DR, SR"    ,ROR:     "ror DR, SR",
+      XOR:     "xor DR, SR"     ,AND:     "and DR, SR"    ,OR:      "or DR, SR"     ,NEG:     "neg DR",
       SETFLAG: "set F"          ,CLRFLAG: "clr F"         ,
       IFR:     "ifr SR, U8"     ,IFNR:    "ifnr SR, U8"   ,SETR:    "setr SR, U8"   ,CLRR:    "clrr SR, U8",
       IFFLAG:  "if F"           ,IFNFLAG: "ifn F"         ,
       BR:      "br OP"          ,CALL:    "call OP"       ,ENTER:   "enter U8"      ,EXIT:    "exit U8",
       TRAP:    "trap OP"        ,BYTESWAP:"xcb SR"        ,RET:     "ret"           ,HALT:    "halt U8",
+      LOOP:    "loop LR, S8",
       BADOP:   "???"
     };
 
@@ -49,8 +51,10 @@ function mapStateToAsm(cpu) {
     asm = asm.replace("SbS", cpu.registerMap[cpu.state.destBank === 0 ? "SB" : "DB"]);
     asm = asm.replace("OR", cpu.registerMap[cpu.state.othRegister] || "BAD");
     asm = asm.replace("SR", cpu.registerMap[cpu.state.srcRegister] || "BAD");
+    asm = asm.replace("LR", cpu.registerMap[cpu.state.srcRegister] || "BAD");
     asm = asm.replace("DR", cpu.registerMap[cpu.state.destRegister] || "BAD");
     asm = asm.replace("U8", hexUtils.toHex2(cpu.state.imm8));
+    asm = asm.replace("S8", cpu.state.imm8 > 127 ? -(256 - cpu.state.imm8) : cpu.state.imm8);
 
 
     if (asm.indexOf("OP") > -1) {
@@ -447,8 +451,9 @@ let semanticsOps = {
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 | cpu.registers[cpu.state.srcRegister].U16, 16); },
     [semantics.XOR]:    function xor(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
                                             handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 ^ cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.NEG]:    function neg(cpu) { cpu.registers[cpu.state.destRegister].U16 =
-                                            handleFlags(cpu, 256 - cpu.registers[cpu.state.destRegister].U16); },
+    [semantics.NEG]:    function neg(cpu) { 
+        // if M is set, 1's complement (NOT)
+        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, (cpu.getFlag(cpu.flagMap.M) ? 255 : 256) - cpu.registers[cpu.state.destRegister].U16); },
     [semantics.SETFLAG]:function setflag(cpu) { cpu.setFlag(cpu.state.flag); },
     [semantics.CLRFLAG]:function clrflag(cpu) { cpu.clrFlag(cpu.state.flag); },
     [semantics.IFFLAG]: function ifflag(cpu)  { if (!cpu.getFlag(cpu.state.flag)) { cpu.clrFlag(cpu.flagMap.X); }},
@@ -470,6 +475,14 @@ let semanticsOps = {
     [semantics.CALL]:   function call(cpu) {
         cpu.push(cpu.registers[cpu.registerMap.PC]);
         semanticsOps[semantics.BR](cpu);
+    },
+    [semantics.LOOP]:   function loop(cpu) {
+        let reg = cpu.registers[cpu.state.srcRegister];
+        reg.U16 = handleFlags(cpu, subtractUpdatingFlags(cpu, reg.U16, 1, 16), 16); 
+        if (cpu.getFlag(cpu.flagMap.C)) {
+            let PC = cpu.registers[cpu.registerMap.PC];
+            PC.U16 += (cpu.state.imm8 > 127 ? cpu.state.imm8 - 256 : cpu.state.imm8);
+        }
     },
     [semantics.TRAP]:   function trap(cpu) {
         let PC = cpu.registers[cpu.registerMap.PC];
