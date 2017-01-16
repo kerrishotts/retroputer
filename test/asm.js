@@ -3,6 +3,7 @@ let fs = require("fs");
 let path = require("path");
 
 let expect = require("chai").expect;
+let hexUtils = require("../js/hexUtils");
 
 describe("#ASM", () => {
     let asm;
@@ -331,8 +332,10 @@ describe("#ASM", () => {
             fileContents = fileContents.split(/\n/g);
             try {
                 let asm = new Asm();
-                asm.assemble(fileContents);
+                asm.assemble(fileContents, {filename});
             } catch (err) {
+                console.log(`Error ${hexUtils.toHex4(err.code)} at ${err.file}:${err.lineNumber}: ${err.message}`);
+                console.log(`${err.line}`);
                 throw err;
             }
         }));
