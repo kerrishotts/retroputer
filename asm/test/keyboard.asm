@@ -20,32 +20,6 @@
 .var cursor-blink-toggle
 .db 30
 
-; 
-; Basic RESET handler
-;
-.code 0xFF00
-    ; pop garbage PC off stack
-    POP A
-
-    ; Reset flags
-    CLR Z
-    CLR N
-    CLR V 
-    CLR C 
-    CLR M
-    SET I
-    SET X
-
-    ; Set SP and BP appropriately
-    LDI A, 0x1000
-    MOV SP, A
-    MOV BP, A
-
-    ; code typically starts at 0x1000, so we'll pop there when we RET
-    LDI A, 0x1000
-    PUSH A
-    RET
-
 .code 0x1000
 start:
     NOP
@@ -108,7 +82,7 @@ render-cursor:
     LDI AL, 0x03
     MOV B, A
     LDS AL, [addr(&cursor-blink-enabled)]
-    IFNR A, 0b00000010
+    IFNR AL, 0b00000010
         BR :render-cursor-off
 
 render-cursor-on:
@@ -176,5 +150,5 @@ check-for-keypress:
     STS A, [addr(&cursor-pos)]
 
 FRAME-end:
-    POPA
+    POPA                                ; interrupts will be re-enabled
     RET
