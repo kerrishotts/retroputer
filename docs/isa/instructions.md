@@ -12,8 +12,12 @@ The following conventions are used:
 * `br` - bank register (`SB` or `DB`)
 * `dr` - data register (`A`–`D`)
 * `dst` - destination register (`A`–`D`, `X`, `Y`, `SP`, `BP`)
+* `ds8` - eight bit destination register (`AL`–`DL`, `XL`, `YL`)
 * `src` - source register (`A`–`D`, `X`, `Y`, `SP`, `BP`)
+* `sr8` - eight bit source register (`AL`–`DL`, `XL`, `YL`)
 * `reg` - register (when neither destination nor source make sense)
+* `rg8` - eight bit register (when neither destination nor source make sense)
+* `lrg` - loop register (`C`, `D`, `X`, `Y`)
 * `regs` - register (any register, including bank registers or `Flags`)
 * `addr` - address
 * `flg` - flag
@@ -46,28 +50,33 @@ ANDs the `dst` and `src` registers together, and then stores the result in the `
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
-## BR
+## BR(S), Branch (short)
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `BR addr`                  | `0x07 0b00mmmxys addr`             | -                      |
+| `BRS s8`                   | `0x07 0b00000000 s8`               | -                      |
 
 Assigns the address to the `PC` register, transferring control to the desired address. The address is always based in bank zero, which means that code execution is limited to bank zero.
 
+`BRS` is a form used when branching to addresses within +127/-128 bytes of `PC`. If referring to a label, the assembler requires a `>` type sigil. (`:` will return the wrong address.)
+
 > Note: immediate values are _relative_, meaning you can jump up to 32768 bytes back and 32767 bytes forward.
 
-## CALL
+## CALL(S), Call subroutine (short)
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `CALL addr`                | `0x07 0b01mmmxys addr`             | -                      |
+| `CALLS s8`                 | `0x07 0b01000000 s8`               | -                      |
 
 Pushes the current value of `PC` on to the stack, and then assigns the address to the `PC` register, transferring control to the desired address. The address is always based in bank zero, which means that code execution is limited to bank zero.
 
+`CALLS` is a form used when calling a routine within +127/-128 bytes of `PC`. If referring to a label, the assembler requires a `>` type sigil. (`:` will return the wrong address.)
+
 > Note: immediate values are _relative_, meaning you can jump up to 32768 bytes back and 32767 bytes forward.
 
-
-## CLR
+## CLR, Clear flag
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -75,15 +84,15 @@ Pushes the current value of `PC` on to the stack, and then assigns the address t
 
 Clears the specified flag.
 
-## CLRR 
+## CLRR, Clear Register
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `CLRR reg, u8`             | `0x06 0b00100reg u8`               | -                      |
+| `CLRR rg8, u8`             | `0x06 0b00100rg8 u8`               | -                      |
 
-Clears the low eight bits in `reg` identified by `u8`. 
+Clears the low eight bits in `rg8` identified by `u8`. 
 
-## CMP
+## CMP, Compare
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -97,7 +106,7 @@ Compares the `dst` register with `src` and sets the flags accordingly:
 
 > Note: Overflow (`V`) will be set according to the rules of subtraction and overflow; the result can be ignored, however.
 
-## DEC
+## DEC, Decrement
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -128,7 +137,15 @@ Pops a stack frame of `u8` bytes from the stack.
 
 ## HALT
 
-## IDIV
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `HALT u8`                  | `0x06 0x14 u8`                     | -                      |
+
+Halts the processor until an interrupt occurs, at which point the processor will wake up and begin execution at the immediately following instruction.
+
+> Note: If `u8` is `0xFF`, the processor is placed into _single-step execution mode_. This is useful when working inside of a debugger, but not a good idea in production code.
+
+## IDIV, Integer Divide
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -140,7 +157,7 @@ Both Negative (`N`) and Zero (`Z`) are changed by the operation, but their resul
 
 > Important: division by zero will set the Exception (`E`) flag. If the division occurs normally, the flag is clear.
 
-## IMOD
+## IMOD, Integer Modulo
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -152,7 +169,7 @@ Both Negative (`N`) and Zero (`Z`) are changed by the operation, but their resul
 
 > Important: modulus by zero will set the Exception (`E`) flag. If the modulus occurs normally, the flag is clear.
 
-# IF 
+# IF, If flag
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -160,7 +177,7 @@ Both Negative (`N`) and Zero (`Z`) are changed by the operation, but their resul
 
 Tests the flag in question and sets X if the flag is set, and clears X if the flag is unset. This has the effect of executing the next instruction only if the flag in question is set.
 
-# IFN 
+# IFN, If Not flag
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -168,33 +185,33 @@ Tests the flag in question and sets X if the flag is set, and clears X if the fl
 
 Tests the flag in question and sets X if the flag is NOT set, and clears X if the flag is set. This has the effect of executing the next instruction only if the flag in question is clear.
 
-# IFNR
+# IFNR, If Not Register
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `IFNR reg, u8`             | `0x06 0b00111reg u8`               | X                      |
+| `IFNR rg8, u8`             | `0x06 0b00111rg8 u8`               | X                      |
 
-Tests the bits in `reg` specified by `u8` in question and sets X if the bits are NOT set, and clears X if the bits aren't clear. This has the effect of executing the next instruction only if the bits in specified register are clear.
+Tests the bits in `rg8` specified by `u8` in question and sets X if the bits are NOT set, and clears X if the bits aren't clear. This has the effect of executing the next instruction only if the bits in specified register are clear.
 
-# IFR 
+# IFR, If Register
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `IFR reg, u8`              | `0x06 0b00110reg u8`               | X                      |
+| `IFR rg8, u8`              | `0x06 0b00110rg8 u8`               | X                      |
 
-Tests the bits in `reg` specified by `u8` in question and sets X if the bits are set, and clears X if the bits are clear. This has the effect of executing the next instruction only if the bits in specified register are set.
+Tests the bits in `rg8` specified by `u8` in question and sets X if the bits are set, and clears X if the bits are clear. This has the effect of executing the next instruction only if the bits in specified register are set.
 
 ## IN
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `IN src, u8`               | `0x06 0b01110src`                  | N, Z                   |
+| `IN sr8, u8`               | `0x06 0b01110sr8`                  | N, Z                   |
 
-Reads an eight-bit value from the specified port and stores it in the low eight bits of `src`. 
+Reads an eight-bit value from the specified port and stores it in the low eight bits of `sr8`. 
 
 The Negative (`N`) and Zero (`Z`) flags are updated to reflect the value read from the port.
 
-## INC
+## INC, Increment
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -207,23 +224,78 @@ Increments `reg` by one. Carry (`C`) will be set if the operation exceeds 16 bit
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
-## LDI
+## LDI, Load Immediate
 
-## LDS
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `LDI AL, u8`               | `0x40 u8`                          | N, Z                   |
+| `LDI A, u16`               | `0x49 u16`                         | N, Z                   |
 
-## LDD
+Loads the operand into the accumulator. 
 
-## MCOPY
+> Note: If loading an eight-bit value into `AL` it is important to remember that the upper eight bits are not changed. If you must be sure that the upper bits are zero, you should either execute an `LDI` into `A` or `XOR A, A`.
 
-TODO
+## LDS, Load from Source Bank
 
-## MFILL
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `LDS AL, addr`             | `0b01mmmxy0 u16`                   | N, Z                   |
+| `LDS A, addr`              | `0b01mmmxy1 u16`                   | N, Z                   |
 
-TODO
+Loads the value at `SB:addr` into the accumulator.
 
-## MOV
+> Note: If loading an eight-bit value into `AL` it is important to remember that the upper eight bits are not changed. If you must be sure that the upper bits are zero, you should either execute an `LDI` into `A` or `XOR A, A`.
 
-## MUL
+> Note: when using _BP-relative_ addressing, all addresses are constrained to the first bank (0).
+
+## LDD, Load from Destination Bank
+
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `LDD AL, addr`             | `0x07 0b10mmmxy0 u16`              | N, Z                   |
+| `LDD A, addr`              | `0x07 0b10mmmxy1 u16`              | N, Z                   |
+
+Loads the value at `DB:addr` into the accumulator.
+
+> Note: If loading an eight-bit value into `AL` it is important to remember that the upper eight bits are not changed. If you must be sure that the upper bits are zero, you should either execute an `LDI` into `A` or `XOR A, A`.
+
+> Note: when using _BP-relative_ addressing, all addresses are constrained to the first bank (0).
+
+## LOOP
+
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `LOOP lrg, s8`             | `0x06 0b001100lr s8`               | V, C, N, Z             |
+
+Decrements `lrg`, and if `C` is set, branches to the relative `s8` address. When referring to a label, you must use the `>` type sigil; `:` will return the wrong address.
+
+## MCOPY, Memory Copy
+
+| Assembly                     | Encoding                           | Flags                  |
+|:-----------------------------|:----------------------------------:|:----------------------:|
+| `MCOPY dbr:drg, sbr:srg * C` | `0x06 6F DSdrgsrg`                 | -                      |
+
+Copies a block of memory from one location to another. `dbr:drg` specifies the destination bank and register, while `sbr:srg` specifies the source bank and register. `C` specifies the amount of memory to copy.
+
+## MFILL, Memory Fill
+
+| Assembly                     | Encoding                           | Flags                  |
+|:-----------------------------|:----------------------------------:|:----------------------:|
+| `MFILL dbr:drg, sr8 * C`     | `0x06 6D D.drgsrg`                 | -                      |
+
+Fills a block of memory with the value of `sr8`. The size of the block is specified by `C`, and the block is located at the combination of `dbr:drg`.
+
+## MOV, Move
+
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `MOV dst, dr`              | `0b110dstdr`                       | -                      |
+| `MOV dst, src`             | `0x06 0b10dstrc`                   | -                      |
+| `MOV br, dr`               | `0b00001bdr`                       | -                      |
+
+Copies the value from `dr` or `src` and stores it into `dst`. The first form can only copy data from the data registers (`A` - `D`), while the second form can copy data from any of the lower eight registers. The third form is provided only for moving data into the `SB` and `DB` registers from the data registers.
+
+## MUL, Integer multiplication
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -235,22 +307,28 @@ Both Negative (`N`) and Zero (`Z`) are changed by the operation, but their resul
 
 > Important: there is no way to identify a multiplication which exceeds 32 bits.
 
-## MSWAP
+## MSWAP, Memory Swap
 
-TODO
+| Assembly                     | Encoding                           | Flags                  |
+|:-----------------------------|:----------------------------------:|:----------------------:|
+| `MSWAP dbr:drg, sbr:srg * C` | `0x06 6E DSdrgsrg`                 | -                      |
 
-## NEG
+Swaps a block of memory from one location to another. `dbr:drg` specifies the destination bank and register, while `sbr:srg` specifies the source bank and register. `C` specifies the amount of memory to swap.
+
+> Note: this is useful for swapping code from higher banks into the first bank (0).
+
+## NEG, Negate
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `NEG reg`                  | `0x06 0x08 0b00000dst`             | N, Z                   |
 
-Calculates the two's complement of the register and stores it back in the register.
+If `M` is clear, calculates the two's complement of the register and stores it back in the register. If `M` is set, the one's complement (or `NOT`) is calculated instead.
 
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
-## NOP
+## NOP, No Operation
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -273,9 +351,9 @@ ORs the `dst` and `src` registers together, and then stores the result in the `d
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `OUT src, u8`              | `0x06 0b01111src`                  | -                      |
+| `OUT sr8, u8`              | `0x06 0b01111sr8`                  | -                      |
 
-Writes the low eight bits of `src` to the specified port.
+Writes the low eight bits of `sr8` to the specified port.
 
 ## POP 
 
@@ -289,7 +367,7 @@ Pops a value the size of `regs` off the stack at `SP` and loads it into `regs`. 
 
 > Note: It is not possible to `POP PC`; use `RET` instead, which accomplishes and encodes to the same thing.
 
-## POPA  
+## POPA, Pop All
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -305,7 +383,7 @@ Pops all the registers except `PC` from the stack.
 
 Decrements `SP` by the size of `regs` and then pushes `regs` onto the stack at `SP`. 
 
-## PUSHA 
+## PUSHA, Push All
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -313,7 +391,7 @@ Decrements `SP` by the size of `regs` and then pushes `regs` onto the stack at `
 
 Pushes all the registers except `PC` onto the stack.
 
-## RET
+## RET, Return from subroutine/trap
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -321,7 +399,7 @@ Pushes all the registers except `PC` onto the stack.
 
 Returns from a trap or subroutine by popping `PC` off the stack.
 
-## SET 
+## SET, Set flag
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -329,15 +407,15 @@ Returns from a trap or subroutine by popping `PC` off the stack.
 
 Sets the specified flag.
 
-## SETR 
+## SETR, Set Register
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
-| `SETR reg, u8`             | `0x06 0b00100reg u8`               | -                      |
+| `SETR rg8, u8`             | `0x06 0b00100rg8 u8`               | -                      |
 
-Sets the low eight bits in `reg` identified by `u8`. Equivalent to `OR reg8, u8`, except that the `OR` instruction doesn't accept an immediate value and operates on 16 bits.
+Sets the low eight bits in `rg8` identified by `u8`. Equivalent to `OR reg8, u8`, except that the `OR` instruction doesn't accept an immediate value and operates on 16 bits.
 
-## SHL
+## SHL, Shift Left
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -349,7 +427,7 @@ Shifts the contents of `dst` left by the number of times specified by `reg`. If 
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
-## SHR
+## SHR, Shift Right
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -361,11 +439,29 @@ Shifts the contents of `dst` right by the number of times specified by `reg`. If
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
-## STS
+## STS, Store to Source bank
 
-## STD
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `STS AL, addr`             | `0x07 0b11mmmxy0 u16`              | -                      |
+| `STS A, addr`              | `0x07 0b11mmmxy1 u16`              | -                      |
 
-## SUB
+Stores the value in the accumulator to `DB:addr`.
+
+> Note: when using _BP-relative_ addressing, all addresses are constrained to the first bank (0).
+
+## STD, Store to Destination bank
+
+| Assembly                   | Encoding                           | Flags                  |
+|:---------------------------|:----------------------------------:|:----------------------:|
+| `STD AL, addr`             | `0b10mmmxy0 u16`                   | -                      |
+| `STD A, addr`              | `0b10mmmxy1 u16`                   | -                      |
+
+Stores the value in the accumulator to `DB:addr`.
+
+> Note: when using _BP-relative_ addressing, all addresses are constrained to the first bank (0).
+
+## SUB, Subtract
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -395,7 +491,7 @@ Swaps the values of `dst` and `src`.
 
 Sends the specified trap. These traps are not affected by the Interrupt Enable (`I`) flag.
 
-## XCB
+## XCB, Exchange Bytes
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
@@ -406,7 +502,7 @@ Exchanges the high and low eight bits of the specified register.
 * Negative (`N`) is set if the signed result is negative. It is cleared if positive or zero.
 * Zero (`Z`) is set if the result is zero and cleared if otherwise.
 
-## XOR
+## XOR, Exclusive OR
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
