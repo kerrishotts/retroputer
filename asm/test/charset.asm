@@ -1,4 +1,4 @@
-.code 0xFF00
+.code 0x1000
 setup:
     LDI A, 0x03                     => 49 00 03
     MOV DB, A                       => 0c                                   ; db = bank 3
@@ -15,5 +15,3 @@ inner-loop:
         BR :inner-loop              => 07 09 ff f6                          ; branch back to STD AL...
     INC A                           => 10                                   ; A++
     BR :outer-loop                  => 07 09 ff f0                          ; branch back to MOV X, B
-.code 0xFE00
-    RET                             => ff                                   ; make sure FRAME trap has a return
