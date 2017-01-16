@@ -199,6 +199,14 @@
           this.state.srcRegister = (opparm & 0b00000111);
           break;
         }
+        if ((opcode >= 0x0650) && (opcode <= 0x0653)) {
+          let deltaAtoC = 2;
+          this.state.semantic = this.semantics.LOOP;
+          this.state.srcRegister = (opcode & 0x03) + deltaAtoC;
+          this.state.destRegister = this.state.srcRegister;
+          this.state.imm8 = opparm;
+          break;
+        }
         if ((opcode === 0x066D)) {
           this.state.semantic = this.semantics.MEMFILL;
           this.state.destBank =     (opparm & 0b10000000) >> 7;
