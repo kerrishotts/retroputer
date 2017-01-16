@@ -5,64 +5,55 @@ RetroScript was designed to be easy to understand both for beginners and experts
 ## Sample
 
 ```
-Int.add = function add(a) {
-    return (self.value() + b);
-}
+let pickNumberToGuess = function%(min%, max%)
+    let randomValue% = min% + int%(random#() * (max% - min%))
+    return randomValue%
+end function
 
-2.add(4)
+let getNumberFromPlayer = function%
+    let inputValue$, convertedNumber%, goodNumber?
+    repeat
+        inputValue$ = prompt$("Please enter your guess:")
+        try
+            convertedNumber% = int%(inputValue$)
+            goodNumber? = true
+        catch
+            goodNumber? = false
+        end try
+    until goodNumber? == true
+    return convertedNumber%
+end function
 
+let checkPlayerGuess = function%(theAnswer%, theGuess%)
+    if theGuess% < theAnswer% then return -1
+    if theGuess% > theAnswer% then return 1
+    return 0
+end function
 
+let startGame = sub
+    let theAnswer%, theGuess%, theGuessDirectionFromAnswer%
+    theAnswer% = pickNumberToGuess%(1, 10)
+    repeat
+        theGuess% = getNumberFromPlayer%
+        theGuessDirectionFromAnswer% = checkPlayerGuess%(theAnswer%, theGuess%)
+        case theGuessDirectionFromAnswer%
+            when <  0 then alert("Your guess was too low! Try again.")
+            when >  0 then alert("Your guess was too high! Try again.")
+            when == 0 then alert("You guessed correctly!")
+        end case
+    until theGuessDirectionFromAnswer% == 0
+end sub
 
+let anotherRound = function?
+    let theAnswer$
+    repeat
+        let theAnswer$ = prompt$("Do you want to play another round? [Y] or [N]")
+    until theAnswer in ["Y", "N", "y", "n"]
+    return theAnswer in ["Y", "y"]
 
-
-
-
-
-
-DECLARE add(a#, b#) RETURNING r#
-BEGIN
-    r = a + b
-END
-
-DECLARE [].find
-
-
-DECLARE sort(a[#], direction.[DESC = 0, ASC]) RETURNING b[#]
-BEGIN
-    DECLARE item[#] = [0, 0], idx# = 0, putat# = 0
-    b = []
-    FOR EACH item[0] IN a
-        FOR EACH item[1], idx IN b
-            SWITCH
-                WHEN item[0] >= item[1] THEN
-                    putat = idx
-                    BREAK
-            END
-        END
-
-        b = b[0...(putat)] + item[0] + b[putat+1...]
-    END
-END
-
-DECLARE askForName() RETURNING name$
-BEGIN 
-    name = PROMPT("What is your name?")
-END
-
-DECLARE startGame() RETURNING NOTHING
-BEGIN
-    DECLARE score# = 0, guess# = 0,  mynum# = 0
-
-    mynum = RANDOM(100)
-    LOOP WHILE mynum != guess
-        guess = INT(PROMPT("{$}, What's your guess?", name))
-        SWITCH
-            WHEN guess < mynum THEN PRINT("Your guess is too low. Try again!")
-            WHEN guess > mynum THEN PRINT("Your guess is too high. Try again!")
-            OTHERWISE               PRINT("You guessed it, {$}! Score: {#}", name, score)
-        END
-        score = score + 1
-    END
-END
-
-startGame(askForName())
+let tryAgain?
+repeat
+    startGame
+    tryAgain? = anotherRound?
+until tryAgain? == false
+```
