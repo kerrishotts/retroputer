@@ -237,15 +237,19 @@ const ENABLE_WEBGL = false;
   }
 
   setPixel (x, y, c) {
-      let addr = (((y*this._width) + x) & 0xFFFF) << 2;
+      let addr = (((y*this._width) + x) & 0xFFFF);
+      let color = this._palette[c];
+       this._frame[addr] = color | 0xFF000000;
+  }
+  setPixel_s (x, y, c) {
+      let addr = (((y*this._width) + x) & 0xFFFF)  << 2;
       let paddr = this._layout.paletteStart + (c <<2 )
-      //let color = this._palette[c];
-      // this._frame[addr] = color
       let b;
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < 3; i++) {
         b = this._memory.peek(paddr+i);
-        this._frame8[addr+i] = (i===3 ? 0xFF : b);
+        this._frame8[addr+i] = b;
       }
+      this._frame8[addr+3] = 0xFF;
   }
   
   setTile (page, row, col, tile, bgColor = 0x00, fgColor = 0xFF) {
