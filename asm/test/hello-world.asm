@@ -35,14 +35,14 @@
     MOV X, A                            => d0                           ; ... and store to X
     LDI AL, 41                          => 40 29                        ; Load the offset from top left (1 line down, 1 over)
     MOV Y, A                            => d4                           ; ... and store to Y
-loop>
+loop:
     LDS AL, [addr(&hello)+X]            => 54 20 00                     ; Get the Xth character from our string and put into AL
     DEC X                               => 1c                           ; decrement X
     STD AL, [addr(&tile-page-0)+X+Y]    => 96 00 00                     ; Store the character into the X+Y position on screen
     IFN Z                               => 28                           ; If X is not zero,
-        BR >loop                        => 07 09 ff f4                  ; ... branch to loop
-halt>                                                                   ; otherwise:
+        BR :loop                        => 07 09 ff f4                  ; ... branch to loop
+halt:                                                                   ; otherwise:
     HALT 0x00                           => 06 14 00                     ; HALT! (until next trap)
-    BR >halt                            => 07 09 ff f9                  ; loop forever
+    BR :halt                            => 07 09 ff f9                  ; loop forever
     RET                                 => ff
         
