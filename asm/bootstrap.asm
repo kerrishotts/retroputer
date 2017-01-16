@@ -41,8 +41,9 @@ FRAME:                                  ; does nothing ATM
 RESET:
     ;
     ; reset flags to expected state
-    LDI AL, 0xA0
-    POP Flags
+    LDI A, 0xA000
+    PUSH A
+    Pop Flags
 
     ;
     ; Set SP and BP to 0x01000
