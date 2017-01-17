@@ -33,7 +33,7 @@ Defines a variable at the current data or code location. Whenever the assembler 
 ## Rename register (.rename)
 
 > .rename <new-name> <register>
-> sigil: `@`
+> sigil: `%`
 
 Allows you to assign a friendly name to a register, without colliding with other symbols. Whenever the assembler sees `@<symbol-name>`, the register assigned to the name will be used instead.
 
