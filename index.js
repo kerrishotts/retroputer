@@ -22,7 +22,7 @@ export default class App {
 
   createSampleProgram() {
     let prog = [
-      ".code 0xFF00",
+      ".code 0x1000",
       "LDI A, 0x03",
       "MOV DB, A",
       "LDI A, 0x03E7",
