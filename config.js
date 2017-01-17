@@ -1,6 +1,17 @@
 System.config({
   defaultJSExtensions: true,
   transpiler: "typescript",
+  typescriptOptions: {
+    module: "System",
+    allowNonTsExtensions: true,
+    inlineSourceMap: false,
+    isolatedModules: true,
+    noLib: true,
+    noResolve: true,
+    sourceMap: false,
+    suppressOutputPathCheck: true,
+    target: 2
+  },
   babelOptions: {
     "optional": [
       "runtime",
@@ -11,7 +22,6 @@ System.config({
     "github:*": "jspm_packages/github/*",
     "npm:*": "jspm_packages/npm/*"
   },
-
   map: {
     "babel": "npm:babel-core@5.8.38",
     "babel-runtime": "npm:babel-runtime@5.8.38",
