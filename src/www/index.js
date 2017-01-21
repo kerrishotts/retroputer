@@ -4,16 +4,16 @@
  *
  *******************************************************************/
 
-import memoryLayout from "js/memoryLayout.js";
-import Computer from "js/Computer.js";
-import log from "js/log.js";
-import Asm from "js/Asm.js";
-import hexUtils from "js/hexUtils.js";
+import memoryLayout from "../core/memoryLayout.js";
+import Computer from "../core/Computer.js";
+import log from "../util/log.js";
+import Asm from "../asm/Asm.js";
+import hexUtils from "../util/hexUtils.js";
 
-import Keyboard from "js/devices/Keyboard.js";
+import Keyboard from "../core/devices/Keyboard.js";
 
-import font from "../design/font0.js";
-import bootstrap from "../asm/bootstrap.js";
+import font from "../roms/font0.js";
+import bootstrap from "../roms/bootstrap.js";
 
 export default class App {
   constructor() {

@@ -1,4 +1,4 @@
-import hexUtils from "./hexUtils.js";
+import hexUtils from "../util/hexUtils.js";
 
 let semantics = {
       NOP:     0x00, MOVE:    0x10, SWAP:    0x11, LOAD:    0x20,

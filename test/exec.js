@@ -1,8 +1,8 @@
-import Asm from "../js/Asm.js";
-import Cpu from "../js/Cpu.js";
-import IO from "../js/IO.js";
-import Memory from "../js/Memory.js";
-import memoryLayout from "../js/memoryLayout.js";
+import Asm from "../src/asm/Asm.js";
+import Cpu from "../src/core/Cpu.js";
+import IO from "../src/core/IO.js";
+import Memory from "../src/core/Memory.js";
+import memoryLayout from "../src/core/memoryLayout.js";
 
 let fs = require("fs");
 let path = require("path");

@@ -5,33 +5,29 @@ RetroScript was designed to be easy to understand both for beginners and experts
 ## Sample
 
 ```
-let pickNumberToGuess = function%(min%, max%)
-    let randomValue% = min% + int%(random#() * (max% - min%))
+var pickNumberToGuess = function%(min%, max%)
+    var randomValue% = min% + int%(random#() * (max% - min%))
     return randomValue%
 end function
 
-let getNumberFromPlayer = function%
-    let inputValue$, convertedNumber%, goodNumber?
+var getNumberFromPlayer = function%
+    var inputValue$, convertedNumber%, goodNumber?, error?
     repeat
         inputValue$ = prompt$("Please enter your guess:")
-        try
-            convertedNumber% = int%(inputValue$)
-            goodNumber? = true
-        catch
-            goodNumber? = false
-        end try
+        convertedNumber% = int%(inputValue$, error?) 
+        goodNumber? = not error?
     until goodNumber? == true
     return convertedNumber%
 end function
 
-let checkPlayerGuess = function%(theAnswer%, theGuess%)
+var checkPlayerGuess = function%(theAnswer%, theGuess%)
     if theGuess% < theAnswer% then return -1
     if theGuess% > theAnswer% then return 1
     return 0
 end function
 
-let startGame = sub
-    let theAnswer%, theGuess%, theGuessDirectionFromAnswer%
+var startGame = sub
+    var theAnswer%, theGuess%, theGuessDirectionFromAnswer%
     theAnswer% = pickNumberToGuess%(1, 10)
     repeat
         theGuess% = getNumberFromPlayer%
@@ -44,14 +40,14 @@ let startGame = sub
     until theGuessDirectionFromAnswer% == 0
 end sub
 
-let anotherRound = function?
-    let theAnswer$
+var anotherRound = function?
+    var theAnswer$
     repeat
-        let theAnswer$ = prompt$("Do you want to play another round? [Y] or [N]")
+        var theAnswer$ = prompt$("Do you want to play another round? [Y] or [N]")
     until theAnswer in ["Y", "N", "y", "n"]
     return theAnswer in ["Y", "y"]
 
-let tryAgain?
+var tryAgain?
 repeat
     startGame
     tryAgain? = anotherRound?

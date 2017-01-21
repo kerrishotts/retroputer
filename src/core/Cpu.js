@@ -1,6 +1,6 @@
 import Register from "./Register.js";
-import log from "./log.js";
-import hexUtils from "./hexUtils.js";
+import log from "../util/log.js";
+import hexUtils from "../util/hexUtils.js";
 import { exec } from "./semantics.js";
 import cpuSemantics from "./semantics.js";
 import decode from "./decoder.js";

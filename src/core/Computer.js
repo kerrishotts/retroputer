@@ -6,7 +6,7 @@ import Keyboard from "./devices/Keyboard.js";
 
 
 import memoryLayout from "./memoryLayout.js";
-import log from "./log.js";
+import log from "../util/log.js";
 
 
 const TRAPS = {

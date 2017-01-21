@@ -17,12 +17,14 @@
     "chai": "^3.5.0",
     "get-pixels": "^3.3.0",
     "http-server": "^0.9.0",
+    "jison": "^0.4.17",
     "jspm": "^0.16.47",
     "mocha": "^3.2.0"
   },
   "scripts": {
     "asm": "node bin/asm",
     "test": "mocha --compilers js:babel-core/register",
+    "jison": "jison",
     "serve": "http-server -p 8080 -c-1 -s ."
   },
   "repository": {

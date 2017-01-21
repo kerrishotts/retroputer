@@ -47,14 +47,14 @@ global.log = cli.debug;
 
 cli.debug("Using options: \n" + JSON.stringify(options, null, 2 ));
 
-SystemJS.import("js/Asm.js")
+SystemJS.import("src/asm/Asm.js")
 .then(function (module) {
     Asm = module.default;
-    return SystemJS.import("js/hexUtils.js");
+    return SystemJS.import("src/util/hexUtils.js");
 })
 .then(function (module) {
     hexUtils = module;
-    return SystemJS.import("js/cvtDataToBin.js");
+    return SystemJS.import("src/util/cvtDataToBin.js");
 })
 .then(function (module) {
     cvtDataToBin = module;

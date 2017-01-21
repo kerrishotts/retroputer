@@ -1,5 +1,5 @@
 import GenericDevice from "../GenericDevice.js";
-import log from "../log.js";
+import log from "../../util/log.js";
 
 let specialKeyMap = {
      33: 1,              /* page up*/

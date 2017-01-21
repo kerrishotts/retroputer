@@ -1,7 +1,7 @@
-import CPU from "../js/Cpu.js";
-import Memory from "../js/Memory.js";
-import Screen from "../js/Screen.js";
-import memoryLayout from "../js/memoryLayout.js";
+import CPU from "../src/core/Cpu.js";
+import Memory from "../src/core/Memory.js";
+import Screen from "../src/core/Screen.js";
+import memoryLayout from "../src/core/memoryLayout.js";
 
 let expect = require("chai").expect;
 

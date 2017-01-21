@@ -1,6 +1,6 @@
-import hexUtils from "./hexUtils.js";
-import log from "./log.js";
-import cvtDataToBin from "./cvtDataToBin.js";
+import hexUtils from "../util/hexUtils.js";
+import log from "../util/log.js";
+import cvtDataToBin from "../util/cvtDataToBin.js";
 
 /*
  * EXCEPTIONS

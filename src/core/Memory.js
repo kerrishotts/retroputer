@@ -1,5 +1,5 @@
-import log from "./log.js";
-import hexUtils from "./hexUtils.js";
+import log from "../util/log.js";
+import hexUtils from "../util/hexUtils.js";
 
 export default class Memory {
   constructor(layout) {

@@ -13,8 +13,8 @@
 //     ...
 
 let fs = require("fs");
-let cvtDataToBin = require("../js/cvtDataToBin");
-let hexUtils = require("../js/hexUtils");
+let cvtDataToBin = require("./cvtDataToBin");
+let hexUtils = require("./hexUtils");
 
 module.exports = function createbin(file, data, addr, format="bin") {
     let fileContents = cvtDataToBin(data, addr, format);

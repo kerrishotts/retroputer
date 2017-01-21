@@ -1,5 +1,5 @@
 //import hexUtils from "./hexUtils.js";
-let hexUtils = require("./hexUtils.js");
+let hexUtils = require("../util/hexUtils.js");
 
 /**
  * Converts a data array to a BIN or JSON format

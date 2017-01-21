@@ -1,5 +1,5 @@
-let createbin = require("../bootstrap-utils/createbin");
-let createbinFromFont = require("../bootstrap-utils/createbinFromFont");
+let createbin = require("../src/util/createbin");
+let createbinFromFont = require("../src/util/createbinFromFont");
 let fs = require("fs");
 let path = require("path");
 let tmpPath = path.join(__dirname, "tmp/");

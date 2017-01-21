@@ -1,9 +1,9 @@
-import Asm from "../js/Asm.js";
+import Asm from "../src/asm/Asm.js";
 let fs = require("fs");
 let path = require("path");
 
 let expect = require("chai").expect;
-let hexUtils = require("../js/hexUtils");
+let hexUtils = require("../src/util/hexUtils");
 
 describe("#ASM", () => {
     let asm;
