@@ -148,10 +148,12 @@ export default class App {
     let avgMIPS = Math.round(((computer.stats.totalInstructions / computer.stats.totalFrames) * 60 ) / 10000) / 100;
     let secondsElapsed = (computer.stats.performanceAtTime - computer.stats.startTime) / 1000;
     let expectedFrames = secondsElapsed * 60;
-    let actMIPS = Math.round(((computer.stats.totalInstructions / expectedFrames) * 60 ) / 10000) / 100;
     let fps = Math.round((computer.stats.totalFrames / secondsElapsed) * 100) / 100;
+    let actMIPS = Math.round(((computer.stats.totalInstructions / computer.stats.totalFrames) * fps ) / 10000) / 100;
+    let avgInstPerFrame = Math.round(computer.stats.totalInstructions / computer.stats.totalFrames);
+    let totalInstBillions = Math.round(computer.stats.totalInstructions / 1000000);
 
-    el.textContent = (`last frame: ${lastFrameTime} | avg: ${avgFrameTime} | fps: ${fps} | inst: ${computer.stats.totalInstructions}`)
+    el.textContent = (`last frame: ${lastFrameTime} (${avgFrameTime}avg) | fps: ${fps} | #inst: ${avgInstPerFrame}/${actMIPS} (${totalInstBillions}m)`)
 
     // update CPU stats
     for (let reg of computer.cpu.registers) {
