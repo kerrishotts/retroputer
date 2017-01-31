@@ -5,3 +5,4 @@ test/tmp/*.bin
 test/tmp/*.js
 coverage
 .nyc_output
+src/www/bundle.js

@@ -1,4 +1,6 @@
 SystemJS.config({
+  production: true,
+  baseURL: "/src/www",
   nodeConfig: {
     "paths": {
       "github:": "jspm_packages/github/",

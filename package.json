@@ -32,6 +32,7 @@
     "serve": "http-server --cors -p 8080 -c-1 -s .",
     "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
     "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
+    "jspm-bundle": "jspm build src/www/index.js src/www/bundle.js --skip-source-maps",
     "jspm-install": "jspm install"
   },
   "repository": {
