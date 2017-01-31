@@ -7,7 +7,10 @@
   "dependencies": {
     "cli": "^1.0.1",
     "plugin-typescript": "^5.3.1",
-    "typescript": "^1.8.10"
+    "typescript": "^2.1.5",
+    "ts-node": "^2.0.0",
+    "jspm": "^0.17.0-beta.37",
+    "http-server": "^0.9.0"
   },
   "devDependencies": {
     "babel-core": "^6.18.2",
@@ -19,18 +22,17 @@
     "coveralls": "^2.11.15",
     "cross-env": "^3.1.4",
     "get-pixels": "^3.3.0",
-    "http-server": "^0.9.0",
-    "jspm": "^0.16.47",
     "mocha": "^3.2.0",
     "nearley": "^2.7.11",
     "nyc": "^10.1.2"
   },
   "scripts": {
-    "asm": "node bin/asm",
+    "asm": "ts-node bin/asm",
     "test": "mocha --compilers js:babel-core/register",
-    "serve": "http-server -p 8080 -c-1 -s .",
+    "serve": "http-server --cors -p 8080 -c-1 -s .",
     "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
-    "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls"
+    "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
+    "jspm-install": "jspm install"
   },
   "repository": {
     "type": "git",
@@ -43,14 +45,84 @@
   },
   "homepage": "https://github.com/kerrishotts/retroputer#readme",
   "jspm": {
-    "dependencies": {
+    "dependencies": {},
+    "devDependencies": {},
+    "peerDependencies": {
+      "../../jspm_packages/npm/typescript@1.8.10": "npm:babel-core@^5.8.24",
+      "../../jspm_packages/npm/typescript@1.8.10-runtime": "npm:babel-runtime@^5.8.24",
+      "assert": "npm:jspm-nodelibs-assert@^0.2.0",
+      "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "buffer": "npm:jspm-nodelibs-buffer@^0.2.0",
+      "child_process": "npm:jspm-nodelibs-child_process@^0.2.0",
+      "constants": "npm:jspm-nodelibs-constants@^0.2.0",
+      "core-js": "npm:core-js@^1.1.4",
+      "crypto": "npm:jspm-nodelibs-crypto@^0.2.0",
+      "events": "npm:jspm-nodelibs-events@^0.2.0",
+      "fs": "npm:jspm-nodelibs-fs@^0.2.0",
+      "module": "npm:jspm-nodelibs-module@^0.2.0",
+      "net": "npm:jspm-nodelibs-net@^0.2.0",
+      "os": "npm:jspm-nodelibs-os@^0.2.0",
+      "path": "npm:jspm-nodelibs-path@^0.2.0",
+      "process": "npm:jspm-nodelibs-process@^0.2.0",
+      "stream": "npm:jspm-nodelibs-stream@^0.2.0",
+      "string_decoder": "npm:jspm-nodelibs-string_decoder@^0.2.0",
+      "ts": "github:frankwallis/plugin-typescript@^6.0.1",
+      "typescript": "npm:typescript@^1.6.2",
+      "util": "npm:jspm-nodelibs-util@^0.2.0",
+      "vm": "npm:jspm-nodelibs-vm@^0.2.0",
       "webgl-2d": "npm:webgl-2d@^0.0.2"
     },
-    "devDependencies": {
-      "babel": "npm:babel-core@^5.8.24",
-      "babel-runtime": "npm:babel-runtime@^5.8.24",
-      "core-js": "npm:core-js@^1.1.4",
-      "typescript": "npm:typescript@^1.6.2"
+    "overrides": {
+      "npm:babel-core@5.8.38": {
+        "main": "browser.js",
+        "dependencies": {},
+        "jspmNodeConversion": false,
+        "map": {
+          "regenerator/runtime": "babel-runtime/regenerator/runtime"
+        },
+        "meta": {
+          "browser.js": {
+            "exports": "babel"
+          }
+        }
+      },
+      "npm:babel-runtime@5.8.38": {
+        "main": false,
+        "dependencies": {},
+        "optionalDependencies": {
+          "core-js": "^1.2.0"
+        }
+      },
+      "npm:inherits@2.0.3": {
+        "ignore": [
+          "test.js"
+        ]
+      },
+      "npm:typescript@1.8.10": {
+        "browser": {},
+        "map": {
+          "buffer": "@empty",
+          "child_process": "@empty",
+          "fs": "@empty",
+          "path": "@empty",
+          "process": "@empty",
+          "readline": "@empty"
+        }
+      },
+      "npm:typescript@2.1.5": {
+        "browser": {},
+        "map": {
+          "buffer": "@empty",
+          "child_process": "@empty",
+          "fs": "@empty",
+          "path": "@empty",
+          "process": "@empty",
+          "readline": "@empty"
+        },
+        "dependencies": {
+          "source-map-support": "*"
+        }
+      }
     }
   },
   "nyc": {

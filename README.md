@@ -40,7 +40,8 @@ You can launch the browser interface executing:
 
 ```
 $ npm install
-$ npm serve run
+$ npm run jspm-install
+$ npm run serve
 ```
 
 Then navigate to http://localhost:8080.

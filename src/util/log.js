@@ -1,5 +1,5 @@
 let _log = [];
-function log(...args) {
+export default function log(...args) {
     if (typeof window !== "undefined") {
         _log.unshift(args.join(" "));
         if (_log.length > 24) {
@@ -16,4 +16,3 @@ if (typeof window !== "undefined") {
 if (typeof global !== "undefined") {
     global.log = log;
 }
-module.exports = log;

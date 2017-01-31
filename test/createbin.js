@@ -1,10 +1,11 @@
-let createbin = require("../src/util/createbin");
-let createbinFromFont = require("../src/util/createbinFromFont");
 let fs = require("fs");
 let path = require("path");
 let tmpPath = path.join(__dirname, "tmp/");
-
 let expect = require("chai").expect;
+
+import createbin from "../src/util/createbin";
+import createbinFromFont from "../src/util/createbinFromFont";
+
 describe("create bin file", () => {
     describe ("#A", () => {
         let filename = path.join(tmpPath, "a.bin");

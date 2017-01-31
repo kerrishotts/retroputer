@@ -8,13 +8,13 @@ Call the CLI assembler using `asm`, or `npm run asm`. Examples:
 
 ```
 $ asm < infile.asm > outfile.out
-$ npm run asm < infile.asm > outfile.out
+$ npm run -s asm < infile.asm > outfile.out
 ```
 
-Additional options can be specified. When using `npm run asm`, specify the options after a `--`, like sho:
+Additional options can be specified. When using `npm run -s asm`, specify the options after a `--`, like so:
 
 ```
-$ npm run asm -- --format bin < infile.asm > outfile.out
+$ npm run -s asm -- --format bin < infile.asm > outfile.out
 ```
 
 ### Options

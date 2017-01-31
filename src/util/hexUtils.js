@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     toHex(v, format="0000", prefix="0x") {
         let hexValue = (v === undefined ? "0" : v).toString(16);
         hexValue = format.substr(0, format.length - hexValue.length) + hexValue;

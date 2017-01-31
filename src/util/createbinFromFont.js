@@ -1,9 +1,10 @@
 let fs = require("fs");
 let path = require("path");
-let createbin = require("./createbin");
 let getPixels = require("get-pixels");
 
-module.exports = function createbinFromFont(pathToFont, file, start, format="bin") {
+import createbin from "./createbin";
+
+export default function createbinFromFont(pathToFont, file, start, format="bin") {
     return new Promise((resolve, reject) => {
         getPixels(pathToFont, (err, pixels) => {
             if (err) {
