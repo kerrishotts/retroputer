@@ -174,8 +174,8 @@ export default class App {
   }
 
   dumpMemory() {
-    let startAddr = Number(document.getElementById("mem-start").value).valueOf();
-    let endAddr = Number(document.getElementById("mem-end").value).valueOf();
+    let startAddr = Number(document.getElementById("mem-start").value);
+    let endAddr = Number(document.getElementById("mem-end").value);
     let el = document.getElementById("memory-dump");
     let div = 8;
     let brk = 8;

@@ -312,7 +312,7 @@ describe("#ASM", () => {
             } catch (err)  {
                 if (p.comment) {
                     // some instructions we want to fail -- make sure we fail in the expected manner
-                    expect(err.code).to.be.equal(Number(p.comment).valueOf());
+                    expect(err.code).to.be.equal(Number(p.comment));
                 } else {
                     throw err;
                 }

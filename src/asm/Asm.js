@@ -219,7 +219,7 @@ function mappedListItem(validList, mappingList, item, ErrorToThrow) {
  * @return {lnumber}                    number, if within range
  */
 function toNumberInRange(str, lo, hi, ErrorToThrow) {
-    let n = Number(str).valueOf();
+    let n = Number(str);
     if (n < lo || n > hi || Number.isNaN(n)) {
         throw new ErrorToThrow(str, lo, hi);
     }
@@ -668,7 +668,7 @@ export default class Asm {
                 case ">":
                 case ":":
                     {
-                        let pc = Number(this.segments.code.current).valueOf() + this.segments.code[this.segments.code.current].length;
+                        let pc = Number(this.segments.code.current) + this.segments.code[this.segments.code.current].length;
                         data = this.labels[symbolName];
                         if (data !== undefined) {
                             data -= (typeOfSymbol === ":" ? (pc + 4) : (pc + 3));
@@ -696,13 +696,13 @@ export default class Asm {
 
     handleFunctions(line) {
         let functions = {
-            bank: (m, n) => ((Number(n).valueOf() & 0x30000) >> 16),
-            addr: (m, n) => (Number(n).valueOf() & 0xFFFF),
-            word: (m, n) => (Number(n).valueOf() & 0xFFFF),
+            bank: (m, n) => ((Number(n) & 0x30000) >> 16),
+            addr: (m, n) => (Number(n) & 0xFFFF),
+            word: (m, n) => (Number(n) & 0xFFFF),
             ord: (m, n) => (n.charCodeAt(0)),
             chr: (m, n) => (String.fromCharCode(n)),
-            lo: (m, n) => (Number(n).valueOf() & 0x00FF),
-            hi: (m, n) => ((Number(n).valueOf() & 0xFF00) >> 8),
+            lo: (m, n) => (Number(n) & 0x00FF),
+            hi: (m, n) => ((Number(n) & 0xFF00) >> 8),
 
         }
         for (let name of Object.keys(functions)) {
@@ -732,7 +732,7 @@ export default class Asm {
             case "data+":
                 {
                     // create a segment for this directive
-                    addr = Number(parseResults.directiveData).valueOf();
+                    addr = Number(parseResults.directiveData);
                     let segmentName = parseResults.directive;
                     let isAppending = segmentName[segmentName.length - 1] === "+";
                     if (isAppending) {
@@ -768,11 +768,11 @@ export default class Asm {
                 }
                 break;
             case "db":
-                this.segments.data[this.segments.data.current].push(...parseResults.directiveData.split(" ").map(b => Number(b).valueOf() & 0xFF));
+                this.segments.data[this.segments.data.current].push(...parseResults.directiveData.split(" ").map(b => Number(b) & 0xFF));
                 break;
             case "db[]":
                 {
-                    let parm1 = Number(parseResults.directiveData).valueOf();
+                    let parm1 = Number(parseResults.directiveData);
                     for (let i = 0; i < parm1; i++) {
                         this.segments.data[this.segments.data.current].push(0);
                     }
@@ -780,7 +780,7 @@ export default class Asm {
                 break;
             case "dw":
                 {
-                    let words = parseResults.directiveData.split(" ").map(w => Number(w).valueOf() & 0xFFFF);
+                    let words = parseResults.directiveData.split(" ").map(w => Number(w) & 0xFFFF);
                     this.segments.data[this.segments.data.current].push(...words.reduce((p, c) => {
                         p.push((c & 0xFF00) >> 8);
                         p.push((c & 0x00FF));
@@ -790,7 +790,7 @@ export default class Asm {
                 break;
             case "dw[]":
                 {
-                    let parm1 = Number(parseResults.directiveData).valueOf() * 2;
+                    let parm1 = Number(parseResults.directiveData) * 2;
                     for (let i = 0; i < parm1; i++) {
                         this.segments.data[this.segments.data.current].push(0);
                     }
@@ -906,7 +906,7 @@ export default class Asm {
                     }
                     let s = "";
                     for (let i = 0; i < arr.length; i++) {
-                    memory.poke(i + Number(addr).valueOf(), arr[i]);
+                    memory.poke(i + Number(addr), arr[i]);
                     if (debug) {
                         s += hexUtils.toHex2(arr[i], "") + " ";
                         if (i % 16 === 15) {

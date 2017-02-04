@@ -10,7 +10,7 @@ import hexUtils from "./hexUtils.js";
  */
 //module.exports =  
 export default function cvtDataToBin(data, addr, format = "bin", newline, jsprefix = "module.exports = ", jspostfix = ";") {
-    addr = Number(addr).valueOf();
+    addr = Number(addr);
     if (!newline) {
         newline = String.fromCharCode(13) + String.fromCharCode(10);
     }
