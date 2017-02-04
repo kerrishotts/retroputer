@@ -1,3 +1,4 @@
+/* eslint-disable */
 export let memoryLayout = {
   size:                256
  ,memtop:          0x3FFFF

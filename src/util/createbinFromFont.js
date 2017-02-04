@@ -1,14 +1,12 @@
-let fs = require("fs");
-let path = require("path");
 let getPixels = require("get-pixels");
 
 import createbin from "./createbin";
 
-export default function createbinFromFont(pathToFont, file, start, format="bin") {
+export default function createbinFromFont(pathToFont, file, start, format = "bin") {
     return new Promise((resolve, reject) => {
         getPixels(pathToFont, (err, pixels) => {
             if (err) {
-                reject(`could not locate ${pathToFont}`);
+                reject(new Error(`could not locate ${pathToFont}`));
             }
             let [w, h, channels] = pixels.shape;
             // if we have more than one channel, thin it down to one
@@ -23,7 +21,7 @@ export default function createbinFromFont(pathToFont, file, start, format="bin")
                 if (idx % w === 0) {
                     p.push([]);
                 }
-                p[p.length-1].push(c);
+                p[p.length - 1].push(c);
                 return p;
             }, []);
             let numCharCols = Math.floor(w / 8);

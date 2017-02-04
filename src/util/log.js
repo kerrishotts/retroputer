@@ -1,4 +1,11 @@
 let _log = [];
+
+/**
+ * log information to the console -- works for the browser or in a node environment
+ * 
+ * @param {Array} args      data to log
+ * @return {void}
+ */
 export default function log(...args) {
     if (typeof window !== "undefined") {
         _log.unshift(args.join(" "));

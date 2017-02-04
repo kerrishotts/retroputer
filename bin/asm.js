@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* global process */
+/* eslint-disable no-var, vars-on-top */
 require("ts-node").register({
     compilerOptions: {
         allowJs: true,
@@ -15,8 +17,7 @@ var cli = require("cli").enable("status"),
         basepath: [ "-d", "Base directory (for imports)", "string", process.cwd()]
     });
 
-var Asm = require("../src/asm/Asm.js").default,
-    hexUtils = require("../src/util/hexUtils.js").default;
+var Asm = require("../src/asm/Asm.js").default
 
 global.log = cli.debug;
 

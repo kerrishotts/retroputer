@@ -1,5 +1,4 @@
 import GenericDevice from "../GenericDevice.js";
-import log from "../../util/log.js";
 
 let specialKeyMap = {
      33: 1,              /* page up*/
@@ -38,6 +37,7 @@ let stateKeyBitmap = {
 }
 
 let directionalBitmap = {
+
     /*    ....ULRD */
     33: 0b00001010,         /* page up */
     34: 0b00000011,         /* page down */

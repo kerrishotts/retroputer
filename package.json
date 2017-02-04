@@ -21,6 +21,7 @@
     "chai": "^3.5.0",
     "coveralls": "^2.11.15",
     "cross-env": "^3.1.4",
+    "eslint": "^3.15.0",
     "get-pixels": "^3.3.0",
     "mocha": "^3.2.0",
     "nearley": "^2.7.11",
@@ -33,7 +34,8 @@
     "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
     "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
     "jspm-bundle": "jspm build src/www/index.js src/www/bundle.js --skip-source-maps",
-    "jspm-install": "jspm install"
+    "jspm-install": "jspm install",
+    "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js"
   },
   "repository": {
     "type": "git",

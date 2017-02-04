@@ -1,8 +1,7 @@
 import Register from "./Register.js";
 import log from "../util/log.js";
 import hexUtils from "../util/hexUtils.js";
-import { exec } from "./semantics.js";
-import cpuSemantics from "./semantics.js";
+import cpuSemantics, { exec } from "./semantics.js";
 import decode from "./decoder.js";
 
 export default class CPU {
@@ -75,8 +74,8 @@ export default class CPU {
 
   /**
    * Returns the value of the requested flag
-   * @param {number} flag
-   * @returns {boolean}
+   * @param {number} flag     flag index
+   * @returns {boolean}       value of flag
    */
   getFlag(flag) {
     return (this.registers[this.registerMap.Flags].U8 & (0x01 << flag)) > 0;
@@ -84,7 +83,8 @@ export default class CPU {
 
   /**
    * Sets the requested flag to 1
-   * @param {number} flag
+   * @param {number} flag     flag to set
+   * @return {void}
    */
   setFlag(flag) {
     this.registers[this.registerMap.Flags].U8 |= (0x01 << flag);
@@ -92,7 +92,8 @@ export default class CPU {
 
   /**
    * clears the requested flag
-   * @param {number} flag
+   * @param {number} flag     flag to clear
+   * @return {void}
    */
   clrFlag(flag) {
     if (this.getFlag(flag)) {
@@ -105,10 +106,10 @@ export default class CPU {
    * are pushed onto the stack. If reg is udnefined, v is pushed. In the latter case,
    * dsize must be either 1 (byte) or 2 (word)
    * 
-   * @param {Register} reg
-   * @param {number} [v]
-   * @param {number} [dsize=2]
-   * 
+   * @param {Register} reg      register to push
+   * @param {number} [v]        or value
+   * @param {number} [dsize=2]  # bytes to push
+   * @return {void}
    */
   push(reg, v, dsize = 2) {
     let SP = this.registers[this.registerMap.SP];
@@ -126,9 +127,9 @@ export default class CPU {
    * regardless. If reg is undefined, dsize is used to determine how much to pop --
    * 1 = byte, 2 = word
    * 
-   * @param {Register} reg
-   * @param {number} [dsize=2]
-   * @return {number}
+   * @param {Register} reg        register to pop stack into
+   * @param {number} [dsize=2]    size of data
+   * @return {number}             value popped
    */
   pop (reg, dsize = 2) {
     let v;
@@ -147,36 +148,39 @@ export default class CPU {
 
   /**
    * Clears the CPU's decode/execute state
+   * 
+   * @return {void}
    */ 
   clearState() {
     if (this.state.instruction === undefined) {
       this.state.instruction = [];
     }
-    this.state.instruction.length=0;    // raw bytes
-    this.state.opcodeType= 0x00;   // type of opcode -- if extended, first byte of instruction
-    this.state.opcode= 0x00;       // instruction
-    this.state.semantic= 0x00;     // what should we actually do?
-    this.state.imm8= 0x00;         // imm8 of instruction, if it makes sense
-    this.state.imm16= 0x0000;      // imm16 of instruction, if it makes sense
-    this.state.srcRegister= 0x00; // source register
-    this.state.destRegister= 0x00; // destination register
+    this.state.instruction.length = 0;    // raw bytes
+    this.state.opcodeType = 0x00;   // type of opcode -- if extended, first byte of instruction
+    this.state.opcode = 0x00;       // instruction
+    this.state.semantic = 0x00;     // what should we actually do?
+    this.state.imm8 = 0x00;         // imm8 of instruction, if it makes sense
+    this.state.imm16 = 0x0000;      // imm16 of instruction, if it makes sense
+    this.state.srcRegister = 0x00; // source register
+    this.state.destRegister = 0x00; // destination register
     this.state.othRegister = 0x00; // other register
-    this.state.flag= 0x00;         // flag index
-    this.state.srcBank= 0x00;     // source bank select
-    this.state.destBank= 0x00;     // destination bank select
+    this.state.flag = 0x00;         // flag index
+    this.state.srcBank = 0x00;     // source bank select
+    this.state.destBank = 0x00;     // destination bank select
     this.state.whichBank = 0x00;   // 00 = SB, 01 = DB
-    this.state.addressingMode= 0x00;  // addressing mode
-    this.state.indexByX= false;
-    this.state.indexByY= false;
-    this.state.scale= 0;
+    this.state.addressingMode = 0x00;  // addressing mode
+    this.state.indexByX = false;
+    this.state.indexByY = false;
+    this.state.scale = 0;
   }
 
   /**
    * dumps the CPU's internal state
+   * @return {void}
    */  
   dump() {
     log( "---- REGISTERS" );
-    log( this.registers.map(r => r ? `${r ? r.name : ""}: ${r ? hexUtils.toHex4(r.U16) : ""} ` : ``).join("") );
+    log( this.registers.map(r => (r ? `${r ? r.name : ""}: ${r ? hexUtils.toHex4(r.U16) : ""} ` : "")).join("") );
     log( [7, 6, 5, 4, 3, 2, 1, 0].map(flag => `${this.flagMap[flag]}: ${this.getFlag(flag) ? 1 : 0}, `).join("") );
     log( "---- STATE" );
     log( "inst[]=", this.state.instruction.map(b => hexUtils.toHex2(b)),
@@ -198,6 +202,8 @@ export default class CPU {
 /**
  * fetches the desired byte (n) of the current instruction. If n is zero, the CPU's execution
  * and decode state is cleared first.
+ * @param {number} n     indicates fetch stage (0 = start of new instruction)
+ * @return {void}
  */
   fetch(n) {
     if (n === 0) {
@@ -209,6 +215,7 @@ export default class CPU {
 
   /**
    * Advance PC by the length of the current instruction
+   * @return {void}
    */
   advancePC() {
     this.registers[this.registerMap.PC].U16 += this.state.instruction.length;
@@ -218,6 +225,9 @@ export default class CPU {
    * Steps the CPU by a single instruction. If skipFetch is TRUE, then the expectation is that an
    * instruction is already present in this.state.instruction and that it needs decoded and executed.
    * This is typical of hardware interrupts.
+   * 
+   * @param {boolean} [skipFetch=false]     if true, skip fetch phase (an instruction is already in the pipeline)
+   * @return {void}
    */
   step(skipFetch = false) {
     if (!skipFetch) {
@@ -241,15 +251,14 @@ export default class CPU {
         this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
       }
    }
-    /* else {
-      this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
-    }*/
   }
 
   /**
    * Send a trap to the CPU; actually injects a TRAP instruction and executes it
    * All traps are maskable EXCEPT 0x00 (RESET). If the CPU was previously HALTed,
    * it resumes execution.
+   * @param {number} trap       trap to send
+   * @return {void}
    */
   sendTrap(trap) {
     if (trap === 0x00 || (trap > 0x00 && this.getFlag(this.flagMap.I))) {

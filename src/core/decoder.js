@@ -22,6 +22,7 @@
           this.fetch(2);
           this.fetch(3);
           break;
+        default:
       }
       if (opcode >= 0x40 && opcode <= 0xBF) {
           this.fetch(1);
@@ -32,7 +33,7 @@
     this.state.opcodeType = opcodeType;
     this.state.opcode = opcode;
     
-    switch(this.state.instruction.length) {
+    switch (this.state.instruction.length) {
       case 1:
         if (opcode === 0b11111111) {
           this.state.semantic = this.semantics.RET;
@@ -308,8 +309,7 @@
             this.state.imm16 = 0;
             this.state.instruction.pop();
             this.state.instruction.pop();
-          }
-          else {
+          } else {
             this.state.imm16 = (this.state.instruction[2] << 8) | this.state.instruction[3];
           }
           break;
@@ -317,6 +317,6 @@
 
         this.state.semantic = this.semantics.BADOP;
         break;
+    default:
     }
-    
-  };
+  }

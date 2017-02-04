@@ -9,7 +9,7 @@ import hexUtils from "./hexUtils.js";
  * @return {string}
  */
 //module.exports =  
-export default function cvtDataToBin(data, addr, format="bin", newline, jsprefix = "module.exports = ", jspostfix = ";") {
+export default function cvtDataToBin(data, addr, format = "bin", newline, jsprefix = "module.exports = ", jspostfix = ";") {
     addr = Number(addr).valueOf();
     if (!newline) {
         newline = String.fromCharCode(13) + String.fromCharCode(10);
@@ -17,15 +17,15 @@ export default function cvtDataToBin(data, addr, format="bin", newline, jsprefix
     let text = data.reduce((p, c, idx) => {
         if (idx % 16 === 0) {
             if (format === "bin") {
-                p.push(`${hexUtils.toHex(addr+idx, "00000", "")}:`);
+                p.push(`${hexUtils.toHex(addr + idx, "00000", "")}:`);
             } else {
-                p.push(` /*${hexUtils.toHex(addr+idx, "00000", "")}*/ `);
+                p.push(` /*${hexUtils.toHex(addr + idx, "00000", "")}*/ `);
             }
         }
         if (format === "bin") {
-            p[p.length-1] += `${((idx % 8 === 0) && (idx % 16 !== 0)) ? " -" : ""} ${hexUtils.toHex2(c, "")}`;
+            p[p.length - 1] += `${((idx % 8 === 0) && (idx % 16 !== 0)) ? " -" : ""} ${hexUtils.toHex2(c, "")}`;
         } else {
-            p[p.length-1] += `${hexUtils.toHex2(c, "0x")},`;
+            p[p.length - 1] += `${hexUtils.toHex2(c, "0x")},`;
         }
         return p;
     }, []);

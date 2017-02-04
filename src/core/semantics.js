@@ -42,6 +42,12 @@ let semanticsMap = Object.keys(semantics).reduce((p, c) => {
       return p;
     }, {});
 
+/**
+ * Given a `cpu` state, return the assembly instruction that best matches
+ * 
+ * @param {Cpu} cpu     the cpu with state to decode
+ * @return {string}     the matching assembly statement
+ */
 function mapStateToAsm(cpu) {
     let asm = semanticAssemblyMap[semanticsMap[cpu.state.semantic]] || "";
 
@@ -63,30 +69,34 @@ function mapStateToAsm(cpu) {
             case semantics.LOAD:
             case semantics.STORE:
             case semantics.BR:
-            case semantics.CALL:
-                asm = asm.replace(/\(L\)/g, cpu.state.scale === 0 ? "L" : "");
-                let relative = false;
-                let brackets = (cpu.state.addressingMode & 1) === 0 ? "[]" : "()";
-                let indexByX = cpu.state.indexByX ? "+X" : "";
-                let indexByY = cpu.state.indexByY ? "+Y" : "";
-                if (cpu.state.semantic === cpu.semantics.BR ||
-                    cpu.state.semantic === cpu.semantics.CALL) {
-                    relative = true;
-                }
-                switch (cpu.state.addressingMode) {
-                    case 0: asm = asm.replace("OP", relative ? (cpu.state.imm8 > 127 ? -(256 - cpu.state.imm8) : hexUtils.toHex2(cpu.state.imm8)) : hexUtils.toHex2(cpu.state.imm8) ); break;
-                    case 1: asm = asm.replace("OP", relative ? (cpu.state.imm16 > 32767 ? -(65536 - cpu.state.imm16) : hexUtils.toHex4(cpu.state.imm16)) : hexUtils.toHex4(cpu.state.imm16) ); break;
-                    case 2: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
-                    case 3: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
-                    case 4: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
-                    case 5: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
-                    case 6: asm = asm.replace("OP", brackets[0] + "D" + indexByX + indexByY + brackets[1]); break;
-                    case 7: asm = asm.replace("OP", brackets[0] + "D" + indexByX + brackets[1] + indexByY); break;
+            case semantics.CALL: 
+                {
+                    asm = asm.replace(/\(L\)/g, cpu.state.scale === 0 ? "L" : "");
+                    let relative = false;
+                    let brackets = (cpu.state.addressingMode & 1) === 0 ? "[]" : "()";
+                    let indexByX = cpu.state.indexByX ? "+X" : "";
+                    let indexByY = cpu.state.indexByY ? "+Y" : "";
+                    if (cpu.state.semantic === cpu.semantics.BR ||
+                        cpu.state.semantic === cpu.semantics.CALL) {
+                        relative = true;
+                    }
+                    switch (cpu.state.addressingMode) {
+                        case 0: asm = asm.replace("OP", relative ? (cpu.state.imm8 > 127 ? -(256 - cpu.state.imm8) : hexUtils.toHex2(cpu.state.imm8)) : hexUtils.toHex2(cpu.state.imm8) ); break;
+                        case 1: asm = asm.replace("OP", relative ? (cpu.state.imm16 > 32767 ? -(65536 - cpu.state.imm16) : hexUtils.toHex4(cpu.state.imm16)) : hexUtils.toHex4(cpu.state.imm16) ); break;
+                        case 2: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
+                        case 3: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
+                        case 4: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
+                        case 5: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
+                        case 6: asm = asm.replace("OP", brackets[0] + "D" + indexByX + indexByY + brackets[1]); break;
+                        case 7: asm = asm.replace("OP", brackets[0] + "D" + indexByX + brackets[1] + indexByY); break;
+                        default:
+                    }
                 }
                 break;
             case semantics.TRAP:
                 asm = asm.replace("OP",  (cpu.state.opcode === 0x03 ? "AL" : hexUtils.toHex2(cpu.state.imm8)));
                 break;
+            default:
         }
     } else {
         asm = asm.replace(/\(L\)/g, "");
@@ -95,7 +105,7 @@ function mapStateToAsm(cpu) {
     return asm;
 }
 
-function addUpdatingFlags(cpu, a, b, size=16) {
+function addUpdatingFlags(cpu, a, b, size = 16) {
     let unsignedSize = (size === 16 ? 65536 : 256);
     let unsignedMax = unsignedSize - 1;
     let signedSize = (size === 16 ? 32768 : 128);
@@ -122,12 +132,12 @@ function addUpdatingFlags(cpu, a, b, size=16) {
         }
     }
 
-    v = v & unsignedMax;
+    v &= unsignedMax;
 
     return v;
 }
 
-function subtractUpdatingFlags (cpu, a, b, size=16) {
+function subtractUpdatingFlags (cpu, a, b, size = 16) {
     return addUpdatingFlags(cpu, a, (-b) & (size === 16 ? 0xFFFF : 0xFF), size);
 }
 
@@ -135,24 +145,25 @@ function subtractUpdatingFlags (cpu, a, b, size=16) {
  * shifts a by b times in the direction specified by `dir`; rotation is determined
  * by mode
  * 
- * @param {Cpu} cpu
- * @param {integer} a
- * @param {integer} b
+ * @param {Cpu} cpu                 the cpu
+ * @param {integer} a               value to shift
+ * @param {integer} b               times to shift
  * @param {integer} [size]          size of value we're shifting
  * @param {integer} [dir]           direction; -1 is left, 1 is right
  * @param {integer} [mode]          mode; 0 = shift; 1 = rotate
+ * @return {integer}                result
  */
-function shiftUpdatingFlags(cpu, a, b, size=16, dir=-1, mode=0) {
+function shiftUpdatingFlags(cpu, a, b, size = 16, dir = -1, mode = 0) {
     let msbmask = (size === 16) ? 0x8000 : 0x80;
     let maxint =  (size === 16) ? 0xFFFF : 0xFF;
     let lsbmask = 0x01;
     let r = a;
     cpu.clrFlag(cpu.flagMap.V);
     cpu.clrFlag(cpu.flagMap.C);
-    for (let i = 0; i<b; i++) {
+    for (let i = 0; i < b; i++) {
         let bitShiftingOut = r & ((dir < 0) ? msbmask : lsbmask);
         r = ((dir < 0) ? r << 1 : r >> 1) & maxint;
-        if (mode>0) {
+        if (mode > 0) {
             // rotating!
             if (bitShiftingOut > 0) {
                 r |= (dir < 0) ? lsbmask : msbmask;
@@ -169,7 +180,7 @@ function shiftUpdatingFlags(cpu, a, b, size=16, dir=-1, mode=0) {
 }
 
 
-function handleFlags(cpu, v, size=16) {
+function handleFlags(cpu, v, size = 16) {
     let unsignedSize = (size === 16 ? 65536 : 256);
     let unsignedMax = unsignedSize - 1;
     let signedSize = (size === 16 ? 32768 : 128);
@@ -191,8 +202,8 @@ function handleFlags(cpu, v, size=16) {
 }
 
 function getAddr(cpu, bankSelect) {
-    var addr;
-    var indirect = !!(cpu.state.addressingMode & 1);
+    let addr;
+    let indirect = Boolean(cpu.state.addressingMode & 1);
     switch (cpu.state.addressingMode) {
         case 2:
         case 3:
@@ -210,6 +221,7 @@ function getAddr(cpu, bankSelect) {
         case 7:
             addr = cpu.registers[cpu.registerMap.D].U16;
             break;
+        default:
     }
     // make sure bank is added in 
     if ((cpu.state.addressingMode < 4) || (cpu.state.addressingMode > 5)) {
@@ -236,10 +248,12 @@ function getAddr(cpu, bankSelect) {
 }
 
 let semanticsOps = {
-    [semantics.NOP]:    function nop(cpu) { return; },
+    [semantics.NOP]:    function nop() { },
     [semantics.MOVE]:   function move(cpu) { cpu.registers[cpu.state.destRegister].U16 = cpu.registers[cpu.state.srcRegister].U16; },
-    [semantics.SWAP]:   function swap(cpu) { [ cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16 ] =
-                                             [ cpu.registers[cpu.state.srcRegister].U16,  cpu.registers[cpu.state.destRegister].U16 ]; },
+    [semantics.SWAP]:   function swap(cpu) { 
+        [ cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16 ] =
+        [ cpu.registers[cpu.state.srcRegister].U16,  cpu.registers[cpu.state.destRegister].U16 ]; 
+    },
     [semantics.LOAD]:   function load(cpu) {
         let dreg = cpu.registers[cpu.state.destRegister];
         if (cpu.state.addressingMode === 0) {
@@ -286,7 +300,7 @@ let semanticsOps = {
         }
         cpu.registers[cpu.state.destRegister].U8 = handleFlags(cpu, data, 8);
     },
-    [semantics.OUT]:    function _out(cpu){ cpu.io.write(cpu.state.imm8, cpu.registers[cpu.state.srcRegister].U8); },
+    [semantics.OUT]:    function _out(cpu) { cpu.io.write(cpu.state.imm8, cpu.registers[cpu.state.srcRegister].U8); },
     [semantics.MEMFILL]:function memfill(cpu) {
         let c = cpu.registers[cpu.registerMap.C].U16;
         let sr = cpu.registers[cpu.state.srcRegister].U8;
@@ -340,7 +354,7 @@ let semanticsOps = {
     },
     [semantics.PUSHA]:  function pusha(cpu) {
         let sreg;
-        for (let i=0; i<cpu.registers.length; i++) {
+        for (let i = 0; i < cpu.registers.length; i++) {
             sreg = cpu.registers[i];
             if (sreg && sreg.name !== "PC") {
                 cpu.push(sreg);
@@ -354,7 +368,7 @@ let semanticsOps = {
     },
     [semantics.POPA]:   function popa(cpu) {
         let sreg;
-        for (let i=cpu.registers.length-1; i>=0; i--) {
+        for (let i = cpu.registers.length - 1; i >= 0; i--) {
             sreg = cpu.registers[i];
             if (sreg && sreg.name !== "PC") {
                 cpu.pop(sreg);
@@ -422,7 +436,7 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.IMOD]:   function imod(cpu){
+    [semantics.IMOD]:   function imod(cpu) {
         let [a, b] = [(cpu.registers[cpu.state.othRegister].U16 << 16) | cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16];
         cpu.clrFlag(cpu.flagMap.E);
         if (b === 0) {
@@ -439,29 +453,40 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.SHL]:    function shl(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, -1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16,); },
-    [semantics.SHR]:    function shr(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, +1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16,); },
+    [semantics.SHL]:    function shl(cpu) { 
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, -1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16); 
+    },
+    [semantics.SHR]:    function shr(cpu) { 
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, +1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16); 
+    },
     [semantics.ROL]:    undefined,   // subsumed into SHL
     [semantics.ROR]:    undefined,  // subsumed into SHR
-    [semantics.AND]:    function and(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 & cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.OR ]:    function or (cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 | cpu.registers[cpu.state.srcRegister].U16, 16); },
-    [semantics.XOR]:    function xor(cpu) { cpu.registers[cpu.state.destRegister].U16 = 
-                                            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 ^ cpu.registers[cpu.state.srcRegister].U16, 16); },
+    [semantics.AND]:    function and(cpu) { 
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 & cpu.registers[cpu.state.srcRegister].U16, 16); 
+    },
+    [semantics.OR]:     function or (cpu) { 
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 | cpu.registers[cpu.state.srcRegister].U16, 16); 
+    },
+    [semantics.XOR]:    function xor(cpu) { 
+        cpu.registers[cpu.state.destRegister].U16 = 
+            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 ^ cpu.registers[cpu.state.srcRegister].U16, 16); 
+    },
     [semantics.NEG]:    function neg(cpu) { 
         // if M is set, 1's complement (NOT)
-        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, (cpu.getFlag(cpu.flagMap.M) ? 255 : 256) - cpu.registers[cpu.state.destRegister].U16); },
+        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, (cpu.getFlag(cpu.flagMap.M) ? 255 : 256) - cpu.registers[cpu.state.destRegister].U16); 
+    },
     [semantics.SETFLAG]:function setflag(cpu) { cpu.setFlag(cpu.state.flag); },
     [semantics.CLRFLAG]:function clrflag(cpu) { cpu.clrFlag(cpu.state.flag); },
-    [semantics.IFFLAG]: function ifflag(cpu)  { if (!cpu.getFlag(cpu.state.flag)) { cpu.clrFlag(cpu.flagMap.X); }},
-    [semantics.IFNFLAG]:function ifnflag(cpu) { if (cpu.getFlag(cpu.state.flag))  { cpu.clrFlag(cpu.flagMap.X); }},
+    [semantics.IFFLAG]: function ifflag(cpu)  { if (!cpu.getFlag(cpu.state.flag)) { cpu.clrFlag(cpu.flagMap.X); } },
+    [semantics.IFNFLAG]:function ifnflag(cpu) { if (cpu.getFlag(cpu.state.flag))  { cpu.clrFlag(cpu.flagMap.X); } },
     [semantics.SETR]:   function setr(cpu)    { cpu.registers[cpu.state.srcRegister].U8 |= cpu.state.imm8; },
     [semantics.CLRR]:   function clrr(cpu)    { cpu.registers[cpu.state.srcRegister].U8 &= (0xFF - cpu.state.imm8); },
-    [semantics.IFR]:    function ifr(cpu)     { if (!(((cpu.registers[cpu.state.srcRegister].U8 & cpu.state.imm8)) > 0)) { cpu.clrFlag(cpu.flagMap.X); }},
-    [semantics.IFNR]:   function ifnr(cpu)    { if ( ((cpu.registers[cpu.state.srcRegister].U8 & cpu.state.imm8)) > 0) { cpu.clrFlag(cpu.flagMap.X); }},
+    [semantics.IFR]:    function ifr(cpu)     { if (!(((cpu.registers[cpu.state.srcRegister].U8 & cpu.state.imm8)) > 0)) { cpu.clrFlag(cpu.flagMap.X); } },
+    [semantics.IFNR]:   function ifnr(cpu)    { if ( ((cpu.registers[cpu.state.srcRegister].U8 & cpu.state.imm8)) > 0) { cpu.clrFlag(cpu.flagMap.X); } },
     [semantics.BR]:     function br(cpu) {
         let PC = cpu.registers[cpu.registerMap.PC];
         if (cpu.state.addressingMode === 0) {

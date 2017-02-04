@@ -4,7 +4,6 @@
  *
  *******************************************************************/
 
-import memoryLayout from "../core/memoryLayout.js";
 import Computer from "../core/Computer.js";
 import log from "../util/log.js";
 import Asm from "../asm/Asm.js";
@@ -105,14 +104,10 @@ export default class App {
 
   sizeScreen() {
     let el = document.getElementById("screen");
-    let ui = document.getElementById("ui");
-    let uiStyle = window.getComputedStyle(ui);
-    let maxWidth = parseInt(uiStyle.width, 10) - 200;
     let containerStyle = window.getComputedStyle(el.parentElement);
     let containerWidth = parseInt(containerStyle.width, 10);
     let containerHeight = parseInt(containerStyle.height, 10);
-    let titleHeight= parseInt(window.getComputedStyle(el.previousElementSibling).height, 10);
-    let maxHeight = parseInt(uiStyle.height, 10) - ((titleHeight * 2) + 200);
+    let titleHeight = parseInt(window.getComputedStyle(el.previousElementSibling).height, 10);
 
     containerHeight -= titleHeight;
 
@@ -125,8 +120,8 @@ export default class App {
       w = Math.floor(h / (200 / 320));
     }
 
-    w = Math.floor(w / 320 ) * 320 ;
-    h = Math.floor(h / 200 ) * 200 ;
+    w = Math.floor(w / 320 ) * 320;
+    h = Math.floor(h / 200 ) * 200;
 
     if (w < 320 || h < 200) {
       w = 320;
@@ -145,9 +140,7 @@ export default class App {
 
     let lastFrameTime = Math.round(computer.stats.lastFrameTime * 100) / 100;
     let avgFrameTime = Math.round((computer.stats.totalTime / computer.stats.totalFrames) * 100) / 100;
-    let avgMIPS = Math.round(((computer.stats.totalInstructions / computer.stats.totalFrames) * 60 ) / 10000) / 100;
     let secondsElapsed = (computer.stats.performanceAtTime - computer.stats.startTime) / 1000;
-    let expectedFrames = secondsElapsed * 60;
     let fps = Math.round((computer.stats.totalFrames / secondsElapsed) * 100) / 100;
     let actMIPS = Math.round(((computer.stats.totalInstructions / computer.stats.totalFrames) * fps ) / 10000) / 100;
     let avgInstPerFrame = Math.round(computer.stats.totalInstructions / computer.stats.totalFrames);
@@ -168,14 +161,14 @@ export default class App {
       let el = document.getElementById(`flag-${flag}`);
       el.textContent = (computer.cpu.getFlag(flag)) ? "X" : "-";
     }
-    el = document.getElementById(`instructions`);
+    el = document.getElementById("instructions");
     el.textContent = computer.cpu.state.instruction.map(i => hexUtils.toHex2(i,"").toUpperCase()).join(" ");
 
-    el = document.getElementById(`disassembly`);
+    el = document.getElementById("disassembly");
     el.textContent = computer.cpu.mapStateToAsm();
 
     // update speed
-    el = document.getElementById(`cpu-speed`);
+    el = document.getElementById("cpu-speed");
     el.textContent = `${computer.performance.timeToDevoteToCPU}/${computer.performance.maxTimeToDevoteToCPU}`;
 
   }
@@ -204,15 +197,19 @@ export default class App {
           str += String.fromCharCode(13) + String.fromCharCode(10);
           p.push(str);
         }
-        str = p[p.length-1];
+        str = p[p.length - 1];
         pos = 7 + ((idx % div) * 3);
+
+        /* eslint-disable prefer-template */
         str = str.substr(0, pos) + (hexUtils.toHex2(c, "").toUpperCase() + " ") + str.substr(pos + 3, 255);
+
+        /* eslint-enable prefer-template */
         if (((c >= 33) && (c <= 127)) || (c === 255)) {
           pos = 7 + (div * 3) + (idx % div);
-          if (c===255) { c = 0x2588; }
-          str = str.substr(0, pos) + String.fromCharCode(c) + str.substr(pos+1, 255);
+          if (c === 255) { c = 0x2588; }
+          str = str.substr(0, pos) + String.fromCharCode(c) + str.substr(pos + 1, 255);
         }
-        p[p.length-1] = str;
+        p[p.length - 1] = str;
         return p;
       }, []).join("");
 
@@ -225,7 +222,6 @@ export default class App {
       let el = document.querySelector("#code textarea");
       let code = el.value.split(String.fromCharCode(10));
       let asm = new Asm();
-      let c = 0;
       asm.assemble(code);
 
       log ("Assembled; writing...");
@@ -255,8 +251,6 @@ export default class App {
     this.panelTimer = setInterval( () => this.updatePanels(), 125);
 
     this.updateListOfStoredPrograms();
-
-
 
     let cold = true;
     document.body.addEventListener("click", (e) => {
@@ -310,19 +304,23 @@ export default class App {
             this.assemble();
             break;
           case "load-asm":
-            let programName = document.getElementById("asm-select").value;
-            if (confirm(`Load ${programName} into editor?`)) {
-              this.loadProgramToEditor(programName);
+            {
+              let programName = document.getElementById("asm-select").value;
+              if (confirm(`Load ${programName} into editor?`)) {
+                this.loadProgramToEditor(programName);
+              }
             }
             break;
           case "load-asm-disk":
-            let filePicker = document.getElementById("program");
-            if (FileReader && filePicker.files && filePicker.files.length) {
-                let fileReader = new FileReader();
-                fileReader.onload = function () {
-                  document.querySelector("#code textarea").value = fileReader.result;
-                }
-                fileReader.readAsText(filePicker.files[0]);
+            {
+              let filePicker = document.getElementById("program");
+              if (FileReader && filePicker.files && filePicker.files.length) {
+                  let fileReader = new FileReader();
+                  fileReader.onload = function () {
+                    document.querySelector("#code textarea").value = fileReader.result;
+                  }
+                  fileReader.readAsText(filePicker.files[0]);
+              }
             }
             break;
           case "save-asm":
@@ -361,7 +359,7 @@ export default class App {
             computer.performance.iterationsBetweenTimeCheck = (computer.performance.maxTimeToDevoteToCPU < 0.3) ? 1 : 100;
             this.updatePanels();
             break;
-
+          default:
         }
       }
     });

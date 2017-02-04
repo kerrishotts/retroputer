@@ -1,3 +1,4 @@
+/* global describe, it, beforeEach, __dirname */
 let fs = require("fs");
 let path = require("path");
 

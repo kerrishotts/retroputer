@@ -2,7 +2,6 @@ import CPU from "./Cpu.js";
 import Memory from "./Memory.js";
 import Screen from "./Screen.js";
 import IO from "./IO.js";
-import Keyboard from "./devices/Keyboard.js";
 
 
 import memoryLayout from "./memoryLayout.js";
@@ -39,7 +38,7 @@ export default class Computer {
 
         // load ROMS
         this.roms = roms;
-        this.roms.forEach(rom => {
+        this.roms.forEach((rom) => {
             this.memory.loadFromJS(rom);
         });
 
@@ -48,7 +47,7 @@ export default class Computer {
 
         this.devices = {};
 
-        devices.forEach(Device => {
+        devices.forEach((Device) => {
             let device = new Device({ io: this.io, cpu: this.cpu, memory: this.memory});
             this.devices[device.name] = device;
         });
@@ -95,7 +94,6 @@ export default class Computer {
         // a safe amount of time to the processor
 
         let curTime = performance.now();
-        let deltaToNow = curTime - startTime;
         let stopTime = curTime + (this.performance.timeToDevoteToCPU);
         if (stopTime < performance.now()) {
             stopTime = performance.now() + this.performance.minTimeToDevoteToCPU;
@@ -165,7 +163,7 @@ export default class Computer {
         }
     }
 
-    tickOutsideBrowser(f) {
+    tickOutsideBrowser() {
         if (this.cpu.stepping) {
             this.cpu.step();
             this.stats.totalInstructions++;
@@ -259,7 +257,7 @@ export default class Computer {
         this.screen.init();
 
         // reload ROMs
-        this.roms.forEach(rom => {
+        this.roms.forEach((rom) => {
             this.memory.loadFromJS(rom);
         });
 

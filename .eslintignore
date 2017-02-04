@@ -1,0 +1,3 @@
+bundle.js
+src/grammars/**/*.js
+src/roms/**/*.js

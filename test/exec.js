@@ -1,11 +1,9 @@
+/* global beforeEach, describe, it, afterEach */
 import Asm from "../src/asm/Asm.js";
 import Cpu from "../src/core/Cpu.js";
 import IO from "../src/core/IO.js";
 import Memory from "../src/core/Memory.js";
 import memoryLayout from "../src/core/memoryLayout.js";
-
-let fs = require("fs");
-let path = require("path");
 
 let expect = require("chai").expect;
 

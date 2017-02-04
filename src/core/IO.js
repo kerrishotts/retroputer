@@ -30,7 +30,7 @@ export default class IO {
     }
 
     write(port, v) {
-        v = v & 0xFF;
+        v &= 0xFF;
         let fn = this.ports.write[port];
         if (fn) {
             fn(port, v);

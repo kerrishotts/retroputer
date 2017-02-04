@@ -22,7 +22,7 @@ export default class Register {
   }
   
   get U16() {
-    return (this.size > 1) ? (this._UINT8[0] << 8 | this._UINT8[1]) : this.U8;
+    return (this.size > 1) ? ((this._UINT8[0] << 8) | this._UINT8[1]) : this.U8;
   }
   
   set U16(value) {

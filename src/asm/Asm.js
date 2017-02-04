@@ -3,6 +3,55 @@ import log from "../util/log.js";
 import cvtDataToBin from "../util/cvtDataToBin.js";
 
 /*
+ * Valid registers (used in different assembly contexts)
+ */
+let validRegisters = ["a", "al", "b", "bl", "c", "cl", "d", "dl", "x", "xl", "y", "yl",
+                      "sp", "bp", "sb", "db", "flags", "pc"];
+let validByteRegisters = ["al", "bl", "cl", "dl", "xl", "yl"];
+let validByteDataRegisters = ["al", "bl", "cl", "dl"];
+let validWordRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp"];
+let validPushRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp", "sb", "db", "flags", "pc"];
+let validPopRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp", "sb", "db", "flags"];
+let validLoopRegisters = ["c", "d", "x", "y"];
+let validWordDataRegisters = ["a", "b", "c", "d"];
+let validBankRegisters = ["sb", "db"];
+//let validIndexRegisters = ["x", "y"];
+let validXRegister = "x";
+let validYRegister = "y";
+let validDataRegister = "d";
+let validAccumulatorWordRegister = "a";
+let validAccumulatorByteRegister = "al";
+let validAccumulatorRegisters = ["a", "al"];
+//let validFlagsRegister = "flags";
+let validBasePointerRegister = "bp";
+let validCounterWordRegister = "c";
+
+/*
+ * Register map
+ */
+let registerMap = {
+    a: 0, al: 0, b: 1, bl: 1,
+    c: 2, cl: 2, d: 3, dl: 3,
+    x: 4, xl: 4, y: 5, yl: 5,
+    sp: 6, bp: 7, sb: 12, db: 13,
+    flags: 14, pc: 15
+};
+
+let bankRegisterOffset = 12;
+
+/*
+ * flag map
+ */
+let validFlags = ["i", "m", "x", "e", "v", "c", "n", "z", 
+                  "eq", "lt", "o"];
+let flagMap = {
+    i: 7, m: 6, x: 5, e: 4,
+    o: 3, c: 2, n: 1, z: 0,
+    v: 3, lt: 2, eq: 0
+};
+
+
+/*
  * EXCEPTIONS
  */
 
@@ -130,19 +179,228 @@ export let UndefinedSymbolError = asmExceptions.UndefinedSymbol;
 export let UnexpectedAssemblyError = asmExceptions.UnexpectedAssembly;
 export let UnexpectedTokenError = asmExceptions.UnexpectedToken;
 
+/**
+ * 
+ * Removes undefined, null, or empty items from an array
+ * @param {Array} arr           array to shrink
+ * @returns {Array}             shrunk array
+ */
+function shrinkArray(arr) {
+    let newArr = [];
+    arr.forEach(i => (i !== undefined && i !== null && i !== "") ? newArr.push(i) : undefined);
+    return newArr;
+}
+
+/**
+ * Returns a mapped value from a mapping list if the original value is found in a valid list
+ * or throws the desired error.
+ * 
+ * @param {Array} validList             list of valid items
+ * @param {Array} mappingList           corresponding map items
+ * @param {string} item                 item to match
+ * @param {Error} ErrorToThrow          Error to throw if no match
+ * @return {Any}                        Mapped item
+ */
+function mappedListItem(validList, mappingList, item, ErrorToThrow) {
+    if (validList.findIndex(r => r === item) < 0) {
+        throw new ErrorToThrow(item);
+    }
+    return mappingList[item];
+}
+
+/**
+ * returns a string converted to a number, provided it is within the range lo to hi,
+ * and can be converted. Otherwise the desired error is thrown.
+ * 
+ * @param {string} str                  incoming data
+ * @param {number} lo                   low number
+ * @param {number} hi                   high number
+ * @param {Error} ErrorToThrow          exception to throw
+ * @return {lnumber}                    number, if within range
+ */
+function toNumberInRange(str, lo, hi, ErrorToThrow) {
+    let n = Number(str).valueOf();
+    if (n < lo || n > hi || Number.isNaN(n)) {
+        throw new ErrorToThrow(str, lo, hi);
+    }
+    return n;
+}
+
+
+/**
+ * Expect an operand matching type in the provided operands array. Return it if it exists, or throw an error if it doesn't.
+ * If throws is set to false, no error will be thrown; undefined is returned instead. If eats is true in this case, the
+ * token is pushed back on the operands array.
+ * 
+ * Eats can be false, in which case this method just looks at it rather than consuming a token.
+ * 
+ * @param {Array} operands         the opearnds to work with
+ * @param {string} [type="any"]    the required type of the next operand
+ * @param {Boolean} [throws=true]  If operand isn't matched, throw (unless false)
+ * @param {Boolean} [eats=true]    If operand is matched, eat.
+ * @return {Any}    value of operand if matched
+ */
+function expectOperand(operands = [], {type = "any", throws = true, eats = true} = {}) {
+    let operand = eats ? operands.shift() : operands[0];
+    try {
+        if (operand === undefined || operand === null) {
+            throw new OperandExpectedError();
+        }
+
+        switch (type) {
+            case "*":
+                return operand;
+            // flags
+            case "f":     return mappedListItem(validFlags,                     flagMap,     operand, FlagExpectedError);
+
+            // register types
+            case "r":     return mappedListItem(validRegisters,                 registerMap, operand, RegisterExpectedError);
+            case "pushr": return mappedListItem(validPushRegisters,             registerMap, operand, PushRegisterExpectedError);
+            case "popr":  return mappedListItem(validPopRegisters,              registerMap, operand, PopRegisterExpectedError);
+            case "r16":   return mappedListItem(validWordRegisters,             registerMap, operand, WordRegisterExpectedError);
+            case "r8":    return mappedListItem(validByteRegisters,             registerMap, operand, ByteRegisterExpectedError);
+            case "dr16":  return mappedListItem(validWordDataRegisters,         registerMap, operand, WordDataRegisterExpectedError);
+            case "dr8":   return mappedListItem(validByteDataRegisters,         registerMap, operand, ByteDataRegisterExpectedError);
+            case "c16":   return mappedListItem([validCounterWordRegister],     registerMap, operand, CExpectedError);
+            case "a16":   return mappedListItem([validAccumulatorWordRegister], registerMap, operand, AExpectedError);
+            case "a8":    return mappedListItem([validAccumulatorByteRegister], registerMap, operand, ALExpectedError);
+            case "a":     return mappedListItem(validAccumulatorRegisters,      registerMap, operand, AccumulatorExpectedError);
+            case "d16":   return mappedListItem([validDataRegister],            registerMap, operand, DExpectedError);
+            case "l16":   return mappedListItem(validLoopRegisters,             registerMap, operand, LoopRegisterExpectedError);
+            case "x16":   return mappedListItem([validXRegister],               registerMap, operand, XExpectedError);
+            case "y16":   return mappedListItem([validYRegister],               registerMap, operand, YExpectedError);
+            case "bp":    return mappedListItem([validBasePointerRegister],     registerMap, operand, BPExpectedError);
+            case "br":    return mappedListItem(validBankRegisters,             registerMap, operand, BankRegisterExpectedError);
+            // numbers
+            case "u2":    return toNumberInRange(operand, 0, 3, UnsignedValueOutOfRange);
+            case "u3":    return toNumberInRange(operand, 0, 7, UnsignedValueOutOfRange);
+            case "u4":    return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
+            case "u8":    return toNumberInRange(operand, 0, 255, UnsignedByteExpectedError);
+            case "s8":    return toNumberInRange(operand, -128, 127, SignedByteExpectedError);
+            case "n8":    return toNumberInRange(operand, -128, 255, WordExpectedError);
+            case "u16":   return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
+            case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
+            case "n16":   return toNumberInRange(operand, -32768, 65535, WordExpectedError);
+            case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
+            
+            // address
+            /* eslint-disable */
+            case "address": return dissectAddress(operand);
+
+            /* eslint-enable */
+            default:
+        }
+
+        throw new UnexpectedTokenError(operands);
+    } catch (err) {
+        if (throws) {
+            throw err;
+        } else {
+            if (eats) { 
+                if (operand !== undefined && operand !== null) {
+                    operands.unshift(operand);
+                }
+            }
+            return undefined;
+        }
+    }
+}
+
+/**
+ * Returns an address object including information about the addressing mode, indexes, and associated registers
+ * 
+ * @param {string} operand              operand that might be an address
+ * @return {Object}                     an address object, if operand matches
+ */
+function dissectAddress(operand) {
+
+    /*
+     * Addresses can take the following form:
+     * 
+     * [ or (, indicating Absolute or Indirect
+     * Either BP+number, D, or number
+     * Optionally +x
+     * Optionally +y if in absolute
+     * ] or ) (must match start)
+     * Optionally +y if in indirect
+     */
+    let address = {
+        direct: false,
+        indirect: false,
+        mode: undefined,
+        addr: undefined,
+        reg: undefined,
+        indexByX: false,
+        indexByY: false
+    };
+
+    // clear out some stuff we don't care about like brackets, parens and plusses
+    let operands = shrinkArray(operand.split(/[\s\+\[\]\(\)]+/));
+
+    // detect if the address reference is direct (absolute) or indirect
+    switch (operand.substr(0,1)) {
+        case "[":
+            address.direct = true;
+            if (operand[operand.length - 1] !== "]") {
+                throw new ExpectedSymbol("Bracket", operand);
+            }
+            break;
+        case "(":
+            address.indirect = true;
+            if (operand[operand.length - 3] !== ")" &&
+                operand[operand.length - 1] !== ")") {
+                throw new ExpectedSymbol("Parentheses", operand);
+            }
+            break;
+        default:
+            throw new ExpectedSymbol("Parentheses or Bracket", operand);
+    }
+
+    // try to detect if we have a register
+    address.reg = expectOperand(operands, {type: "bp", throws: false});
+    if (address.reg === undefined) {
+        address.reg = expectOperand(operands, {type: "d16", throws: false});
+    }
+
+    // BP is base-pointer-relative and expects a number
+    if (address.reg === registerMap.bp) {
+        address.addr = expectOperand(operands, {type: "s16", throws: false});
+    } else if (address.reg === undefined) { // otherwise we expect a number as well, but not for a D register
+        address.addr = expectOperand(operands, {type: "u16", throws: false});
+    }
+
+    // check for indexing by X and Y
+    address.indexByX = Boolean(expectOperand(operands, {type: "x16", throws: false}));
+    address.indexByY = Boolean(expectOperand(operands, {type: "y16", throws: false}));
+
+    // if there's still stuff left that we haven't parsed, ERROR!
+    if (operands.length !== 0) {
+        throw new UnexpectedTokenError(operands);
+    }
+
+    /// set the address mode
+    if (address.direct) {
+        address.mode = (address.reg === registerMap.bp ? 4 : (address.reg === registerMap.d ? 6 : 2));
+    } if (address.indirect) {
+        address.mode = (address.reg === registerMap.bp ? 5 : (address.reg === registerMap.d ? 7 : 3));
+    }
+
+    return address;
+}
+
 /*
  * ASSEMBLY ROUTINES
  * 
  * Each routine takes opcode and ops (all operands)
  ******************************************************************************/
-function _nop(opcode, ops) {
+function _nop() {
     return [0x00];
 }
-function _ret(opcode, ops) {
+function _ret() {
     return [0xFF];
 }
 function _enterOrExit(which, opcode, ops) {
-    return[which, expectOperand(ops, {type: "u8"})];
+    return [which, expectOperand(ops, {type: "u8"})];
 }
 function _trap(opcode, ops) {
     let op1;
@@ -151,6 +409,7 @@ function _trap(opcode, ops) {
     } else if (expectOperand(ops, {type: "a8"}) !== undefined) {
         return [0x03];
     }
+    return [];
 }
 function _binaryOp(whichClass, whichOp, opcode, ops) {
     let op1 = expectOperand(ops, {type: "r16"});
@@ -176,7 +435,7 @@ function _mfill (opcode, ops) {
     let op2 = expectOperand(ops, {type: "r16"});
     let op3 = 0;
     let op4 = expectOperand(ops, {type: "r8"});
-    let op5 = expectOperand(ops, {type: "c16"});
+    expectOperand(ops, {type: "c16"});
     return [0x06, 0x6D, (op1 << 7) | (op3 << 6) | (op2 << 3) | op4];
 }
 function _mCopyOrSwap (which, opcode, ops) {
@@ -184,7 +443,7 @@ function _mCopyOrSwap (which, opcode, ops) {
     let op2 = expectOperand(ops, {type: "r16"});
     let op3 = expectOperand(ops, {type:"br"}) - bankRegisterOffset;
     let op4 = expectOperand(ops, {type: "r16"});
-    let op5 = expectOperand(ops, {type: "c16"});
+    expectOperand(ops, {type: "c16"});
     return [0x06, which, (op1 << 7) | (op3 << 6) | (op2 << 3) | op4];
 }
 function _inOrOut(which, opcode, ops) {
@@ -209,7 +468,7 @@ function _pushOrPop(which, opcode, ops) {
     let op1 = expectOperand(ops, {type: (opcode === "push" ? "pushr" : "popr")});
     return [which | op1];
 }
-function _pushAOrPopA(which, opcode, ops) {
+function _pushAOrPopA(which) {
     return [0x06, which];
 }
 function _branchOrCallShort(which, opcode, ops) {
@@ -217,6 +476,7 @@ function _branchOrCallShort(which, opcode, ops) {
     if ((op1 = expectOperand(ops, {type: "s8"})) !== undefined) {
         return [0x07, which, (op1 & 0xFF)];
     }
+    return [];
 }
 function _branchOrCall(which, opcode, ops) {
     let op1;
@@ -235,19 +495,6 @@ function _loop(opcode, ops) {
     let op2 = expectOperand(ops, {type: "s8"});
     let deltaCtoA = 2;
     return [0x06, 0x50 | (op1 - deltaCtoA), (op2 & 0xFF)];
-}
-function _ldi(opcode, ops) {
-    // ldi can only take the accumulator and immediate value
-    let testOps = ops.map(i => i);
-    let op1 = expectOperand(testOps, {type: "a8", throws: false});
-    let scale = 1;
-    if (op1 === undefined) {
-        op1 = expectOperand(testOps, {type: "a16"});
-        scale = 2;
-    }
-    let op2 = expectOperand(testOps, {type: ["", "n8","n16"][scale]});
-    // if we get here, we're fine!
-    return _loadOrStore(undefined, 0b01000000, opcode, ops);
 }
 function _loadOrStore(whichClass, whichOp, opcode, ops) {
     let op1 = expectOperand(ops, {type: "a8", throws: false});
@@ -286,6 +533,19 @@ function _loadOrStore(whichClass, whichOp, opcode, ops) {
     }
     return instruction;
 }
+function _ldi(opcode, ops) {
+    // ldi can only take the accumulator and immediate value
+    let testOps = ops.map(i => i);
+    let op1 = expectOperand(testOps, {type: "a8", throws: false});
+    let scale = 1;
+    if (op1 === undefined) {
+        op1 = expectOperand(testOps, {type: "a16"});
+        scale = 2;
+    }
+    expectOperand(testOps, {type: ["", "n8","n16"][scale]});
+    // if we get here, we're fine!
+    return _loadOrStore(undefined, 0b01000000, opcode, ops);
+}
 function _mov(opcode, ops) {
     let op1, op2;
     if (op1 = expectOperand(ops, {type: "br", throws: false})) {
@@ -294,7 +554,7 @@ function _mov(opcode, ops) {
     } else {
         op1 = expectOperand(ops, {type: "r16"});
         op2 = expectOperand(ops, {type: "r16"});
-        if (op2>3) {
+        if (op2 > 3) {
             return [0x06, 0b10000000 | (op1 << 3) | op2];
         } else {
             return [0b11000000 | (op1 << 2) | op2];
@@ -359,252 +619,6 @@ let asmHandlers = {
     "halt":  _halt
 }
 
-/*
- * Valid registers (used in different assembly contexts)
- */
-let validRegisters = ["a", "al", "b", "bl", "c", "cl", "d", "dl", "x", "xl", "y", "yl",
-                      "sp", "bp", "sb", "db", "flags", "pc"];
-let validByteRegisters = ["al", "bl", "cl", "dl", "xl", "yl"];
-let validByteDataRegisters = ["al", "bl", "cl", "dl"];
-let validWordRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp"];
-let validPushRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp", "sb", "db", "flags", "pc"];
-let validPopRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp", "sb", "db", "flags"];
-let validLoopRegisters = ["c", "d", "x", "y"];
-let validWordDataRegisters = ["a", "b", "c", "d"];
-let validBankRegisters = ["sb", "db"];
-let validIndexRegisters = ["x", "y"];
-let validXRegister = "x";
-let validYRegister = "y";
-let validDataRegister = "d";
-let validAccumulatorWordRegister = "a";
-let validAccumulatorByteRegister = "al";
-let validAccumulatorRegisters = ["a", "al"];
-let validFlagsRegister = "flags";
-let validBasePointerRegister = "bp";
-let validCounterWordRegister = "c";
-
-/*
- * Register map
- */
-let registerMap = {
-    a: 0, al: 0, b: 1, bl: 1,
-    c: 2, cl: 2, d: 3, dl: 3,
-    x: 4, xl: 4, y: 5, yl: 5,
-    sp: 6, bp: 7, sb: 12, db: 13,
-    flags: 14, pc: 15
-};
-
-let bankRegisterOffset = 12;
-
-/*
- * flag map
- */
-let validFlags = ["i", "m", "x", "e", "v", "c", "n", "z", 
-                  "eq", "lt", "o"];
-let flagMap = {
-    i: 7, m: 6, x: 5, e: 4,
-    o: 3, c: 2, n: 1, z: 0,
-    v: 3, lt: 2, eq: 0
-};
-
-/**
- * 
- * Removes undefined, null, or empty items from an array
- * @param {Array} arr
- * @returns {Array}
- */
-function shrinkArray(arr) {
-    let newArr = [];
-    arr.forEach(i => (i !== undefined && i !== null && i !== "") ? newArr.push(i) : undefined);
-    return newArr;
-}
-
-/**
- * Returns a mapped value from a mapping list if the original value is found in a valid list
- * or throws the desired error.
- * 
- * @param {Array} validList
- * @param {Array} mappingList
- * @param {string} item
- * @param {Error} ErrorToThrow
- * @returns any
- */
-function mappedListItem(validList, mappingList, item, ErrorToThrow) {
-    if (validList.findIndex(r => r === item) < 0) {
-        throw new ErrorToThrow(item);
-    }
-    return mappingList[item];
-}
-
-/**
- * returns a string converted to a number, provided it is within the range lo to hi,
- * and can be converted. Otherwise the desired error is thrown.
- * 
- * @param {string} str
- * @param {number} lo
- * @param {number} hi
- * @param {Error} ErrorToThrow
- * @returns number
- */
-function toNumberInRange(str, lo, hi, ErrorToThrow) {
-    let n = Number(str).valueOf();
-    if (n<lo || n>hi || Number.isNaN(n)) {
-        throw new ErrorToThrow(str, lo, hi);
-    }
-    return n;
-}
-
-/**
- * Returns an address object including information about the addressing mode, indexes, and associated registers
- * 
- * @param {string} operand
- * @return {Object}
- */
-function dissectAddress(operand) {
-    /*
-     * Addresses can take the following form:
-     * 
-     * [ or (, indicating Absolute or Indirect
-     * Either BP+number, D, or number
-     * Optionally +x
-     * Optionally +y if in absolute
-     * ] or ) (must match start)
-     * Optionally +y if in indirect
-     */
-    let address = {
-        direct: false,
-        indirect: false,
-        mode: undefined,
-        addr: undefined,
-        reg: undefined,
-        indexByX: false,
-        indexByY: false
-    };
-
-    // clear out some stuff we don't care about like brackets, parens and plusses
-    let operands = shrinkArray(operand.split(/[\s\+\[\]\(\)]+/));
-
-    // detect if the address reference is direct (absolute) or indirect
-    switch (operand.substr(0,1)) {
-        case "[":
-            address.direct = true;
-            if (operand[operand.length-1] !== "]") {
-                throw new ExpectedSymbol("Bracket", operand);
-            }
-            break;
-        case "(":
-            address.indirect = true;
-            if (operand[operand.length-3] !== ")" &&
-                operand[operand.length-1] !== ")") {
-                throw new ExpectedSymbol("Parentheses", operand);
-            }
-            break;
-        default:
-            throw new ExpectedSymbol("Parentheses or Bracket", operand);
-    }
-
-    // try to detect if we have a register
-    address.reg = expectOperand(operands, {type: "bp", throws: false});
-    if (address.reg === undefined) {
-        address.reg = expectOperand(operands, {type: "d16", throws: false});
-    }
-
-    // BP is base-pointer-relative and expects a number
-    if (address.reg === registerMap.bp) {
-        address.addr = expectOperand(operands, {type: "s16", throws: false});
-    } else if (address.reg === undefined) { // otherwise we expect a number as well, but not for a D register
-        address.addr = expectOperand(operands, {type: "u16", throws: false});
-    }
-
-    // check for indexing by X and Y
-    address.indexByX = !!expectOperand(operands, {type: "x16", throws: false});
-    address.indexByY = !!expectOperand(operands, {type: "y16", throws: false});
-
-    // if there's still stuff left that we haven't parsed, ERROR!
-    if (operands.length !== 0) {
-        throw new UnexpectedTokenError(operands);
-    }
-
-    /// set the address mode
-    if (address.direct) {
-        address.mode = (address.reg === registerMap.bp ? 4 : (address.reg === registerMap.d ? 6 : 2));
-    } if (address.indirect) {
-        address.mode = (address.reg === registerMap.bp ? 5 : (address.reg === registerMap.d ? 7 : 3));
-    }
-
-    return address;
-}
-
-/**
- * Expect an operand matching type in the provided operands array. Return it if it exists, or throw an error if it doesn't.
- * If throws is set to false, no error will be thrown; undefined is returned instead. If eats is true in this case, the
- * token is pushed back on the operands array.
- * 
- * Eats can be false, in which case this method just looks at it rather than consuming a token.
- */
-function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
-    let operand = eats ? operands.shift() : operands[0];
-    let b, w;
-    try {
-        if (operand === undefined || operand === null) {
-            throw new OperandExpectedError();
-        }
-
-        switch (type) {
-            case "*":
-                return operand;
-            // flags
-            case "f":     return mappedListItem(validFlags,                     flagMap,     operand, FlagExpectedError);
-
-            // register types
-            case "r":     return mappedListItem(validRegisters,                 registerMap, operand, RegisterExpectedError);
-            case "pushr": return mappedListItem(validPushRegisters,             registerMap, operand, PushRegisterExpectedError);
-            case "popr":  return mappedListItem(validPopRegisters,              registerMap, operand, PopRegisterExpectedError);
-            case "r16":   return mappedListItem(validWordRegisters,             registerMap, operand, WordRegisterExpectedError);
-            case "r8":    return mappedListItem(validByteRegisters,             registerMap, operand, ByteRegisterExpectedError);
-            case "dr16":  return mappedListItem(validWordDataRegisters,         registerMap, operand, WordDataRegisterExpectedError);
-            case "dr8":   return mappedListItem(validByteDataRegisters,         registerMap, operand, ByteDataRegisterExpectedError);
-            case "c16":   return mappedListItem([validCounterWordRegister],     registerMap, operand, CExpectedError);
-            case "a16":   return mappedListItem([validAccumulatorWordRegister], registerMap, operand, AExpectedError);
-            case "a8":    return mappedListItem([validAccumulatorByteRegister], registerMap, operand, ALExpectedError);
-            case "a":     return mappedListItem(validAccumulatorRegisters,      registerMap, operand, AccumulatorRegisterExpectedError);
-            case "d16":   return mappedListItem([validDataRegister],            registerMap, operand, DExpectedError);
-            case "l16":   return mappedListItem(validLoopRegisters,             registerMap, operand, LoopRegisterExpectedError);
-            case "x16":   return mappedListItem([validXRegister],               registerMap, operand, XExpectedError);
-            case "y16":   return mappedListItem([validYRegister],               registerMap, operand, YExpectedError);
-            case "bp":    return mappedListItem([validBasePointerRegister],     registerMap, operand, BPExpectedError);
-            case "br":    return mappedListItem(validBankRegisters,             registerMap, operand, BankRegisterExpectedError);
-            // numbers
-            case "u2":    return toNumberInRange(operand, 0, 3, UnsignedValueOutOfRange);
-            case "u3":    return toNumberInRange(operand, 0, 7, UnsignedValueOutOfRange);
-            case "u4":    return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
-            case "u8":    return toNumberInRange(operand, 0, 255, UnsignedByteExpectedError);
-            case "s8":    return toNumberInRange(operand, -128, 127, SignedByteExpectedError);
-            case "n8":    return toNumberInRange(operand, -128, 255, WordExpectedError);
-            case "u16":   return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
-            case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
-            case "n16":   return toNumberInRange(operand, -32768, 65535, WordExpectedError);
-            case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
-            
-            // address
-            case "address": return dissectAddress(operand);
-        }
-
-        throw new UnexpectedTokenError(operands);
-    } catch (err) {
-        if (throws) {
-            throw err;
-        } else {
-            if (eats) { 
-                if (operand !== undefined && operand !== null) {
-                    operands.unshift(operand);
-                }
-            }
-            return undefined;
-        }
-    }
-}
-
 export default class Asm {
 
     constructor() {
@@ -637,7 +651,7 @@ export default class Asm {
         line = line.replace(/([\#\>\&\@\%\:][A-Za-z0-9\-\_]+)/g, (match) => {
             let typeOfSymbol = match[0];
             let symbolName = match.substr(1,255).toLowerCase();
-            let data = undefined;
+            let data;
             switch (typeOfSymbol) {
                 case "%":
                     data = this.registerMap[symbolName];
@@ -653,10 +667,12 @@ export default class Asm {
                     break;
                 case ">":
                 case ":":
-                    let pc = Number(this.segments.code.current).valueOf() + this.segments.code[this.segments.code.current].length;
-                    data = this.labels[symbolName];
-                    if (data !== undefined) {
-                        data = data - (typeOfSymbol === ":" ? (pc + 4) : (pc + 3));
+                    {
+                        let pc = Number(this.segments.code.current).valueOf() + this.segments.code[this.segments.code.current].length;
+                        data = this.labels[symbolName];
+                        if (data !== undefined) {
+                            data -= (typeOfSymbol === ":" ? (pc + 4) : (pc + 3));
+                        }
                     }
                     break;
                 case "@":
@@ -697,8 +713,8 @@ export default class Asm {
     }
 
     handleDirective(parseResults, stage) {
-        let addr, parm1, parm2;
-        switch(parseResults.directive) {
+        let addr;
+        switch (parseResults.directive) {
             case "import":
                 if (this.importCallback) {
                     this.assemble(this.importCallback(parseResults.directiveData), {
@@ -714,58 +730,70 @@ export default class Asm {
             case "code+":
             case "data":
             case "data+":
-                // create a segment for this directive
-                addr = Number(parseResults.directiveData).valueOf();
-                var segmentName = parseResults.directive;
-                var isAppending = segmentName[segmentName.length-1] === "+";
-                if (isAppending) {
-                    segmentName = segmentName.substr(0, segmentName.length-1);
+                {
+                    // create a segment for this directive
+                    addr = Number(parseResults.directiveData).valueOf();
+                    let segmentName = parseResults.directive;
+                    let isAppending = segmentName[segmentName.length - 1] === "+";
+                    if (isAppending) {
+                        segmentName = segmentName.substr(0, segmentName.length - 1);
+                    }
+                    if (!isAppending) {
+                        // if we're appending to a segment, don't clear it. But if we aren't appending,
+                        // clear away
+                        this.segments[segmentName][addr] = [];
+                    }
+                    if (this.segments[segmentName][addr] === undefined) {
+                        // if there's still no segment present, make sure it's initialized with an empty array
+                        this.segments[segmentName][addr] = [];
+                    }
+                    this.segments[segmentName].current = addr;
                 }
-                if (!isAppending) {
-                    // if we're appending to a segment, don't clear it. But if we aren't appending,
-                    // clear away
-                    this.segments[segmentName][addr] = [];
-                }
-                if (this.segments[segmentName][addr] === undefined) {
-                    // if there's still no segment present, make sure it's initialized with an empty array
-                    this.segments[segmentName][addr] = [];
-                }
-                this.segments[segmentName].current = addr;
                 break;
             case "rename":
-                let [regName, regMap] = parseResults.directiveData.split(/\s/);
-                this.registerMap[regName] = regMap;
-                // TODO: throw error if not a valid register
+                {
+                    let [regName, regMap] = parseResults.directiveData.split(/\s/);
+                    this.registerMap[regName] = regMap;
+                    // TODO: throw error if not a valid register
+                }
                 break;
             case "var":
                 addr = this.segments.data.current + this.segments.data[this.segments.data.current].length;
                 this.vars[parseResults.directiveData] = addr;
                 break;
             case "def":
-                let [parm1, parm2] = parseResults.directiveData.split(" ");
-                this.defs[parm1] = parm2;
+                {
+                    let [parm1, parm2] = parseResults.directiveData.split(" ");
+                    this.defs[parm1] = parm2;
+                }
                 break;
             case "db":
                 this.segments.data[this.segments.data.current].push(...parseResults.directiveData.split(" ").map(b => Number(b).valueOf() & 0xFF));
                 break;
             case "db[]":
-                parm1 = Number(parseResults.directiveData).valueOf();
-                for (let i = 0; i<parm1; i++) {
-                    this.segments.data[this.segments.data.current].push(0);
+                {
+                    let parm1 = Number(parseResults.directiveData).valueOf();
+                    for (let i = 0; i < parm1; i++) {
+                        this.segments.data[this.segments.data.current].push(0);
+                    }
                 }
                 break;
             case "dw":
-                let words = parseResults.directiveData.split(" ").map(w => Number(w).valueOf() & 0xFFFF);
-                this.segments.data[this.segments.data.current].push(...words.reduce((p, c) => {
-                    p.push((c & 0xFF00) >> 8);
-                    p.push((c & 0x00FF));
-                    return p;
-                }, []));
+                {
+                    let words = parseResults.directiveData.split(" ").map(w => Number(w).valueOf() & 0xFFFF);
+                    this.segments.data[this.segments.data.current].push(...words.reduce((p, c) => {
+                        p.push((c & 0xFF00) >> 8);
+                        p.push((c & 0x00FF));
+                        return p;
+                    }, []));
+                }
                 break;
             case "dw[]":
-                parm1 = Number(parseResults.directiveData).valueOf() * 2;
-                for (let i = 0; i<parm1; i++) {
-                    this.segments.data[this.segments.data.current].push(0);
+                {
+                    let parm1 = Number(parseResults.directiveData).valueOf() * 2;
+                    for (let i = 0; i < parm1; i++) {
+                        this.segments.data[this.segments.data.current].push(0);
+                    }
                 }
                 break;
             case "ds":
@@ -778,7 +806,7 @@ export default class Asm {
         }
     }
 
-    handleLabel(parseResults, stage) {
+    handleLabel(parseResults) {
         let addr = this.segments.code.current + this.segments.code[this.segments.code.current].length;
         this.labels[parseResults.label] = addr;
     }
@@ -793,13 +821,16 @@ export default class Asm {
         for (let stage of ["symbols", "assembly"]) {
             if (stageOverride !== "") {
                 if (stage !== stageOverride) {
+                    /* eslint-disable */
                     continue;
+
+                    /* eslint-enable */
                 }
             }
 
             // reset segments
             if (!isImport) {
-                [this.segments.code, this.segments.data].forEach(segments => {
+                [this.segments.code, this.segments.data].forEach((segments) => {
                     for (let segmentKey of Object.keys(segments)) {
                         let segment = segments[segmentKey];
                         if (segment instanceof Array) {
@@ -814,7 +845,7 @@ export default class Asm {
 
             lineNumber = 0;
             for (let line of lines) {
-                lineNumber ++;
+                lineNumber++;
                 try {
                     let semipos = line.indexOf(";");
                     let lineWithoutComment = line;
@@ -844,7 +875,6 @@ export default class Asm {
     }
 
     writeToString(format = "js", newline) {
-        let c = 0;
         if (!newline) {
             newline = String.fromCharCode(13) + String.fromCharCode(10);
         }
@@ -900,8 +930,8 @@ export default class Asm {
     /**
      * Parses a single assembly instruction and returns a dictionary containing the various components.
      * 
-     * @param {string} text
-     * @return {Object}
+     * @param {string} text     the text to parse
+     * @return {Object}         an object representing a single instruction
      */
     static parseSingleInstruction(text = "") {
         let results = {
@@ -966,8 +996,8 @@ export default class Asm {
      * Assemble a single instruction, returning an array of bytes representing the machine code for the instruction
      * Doesn't parse directives, respond to labels or anything like that -- just regular instructions
      * 
-     * @param {string} text
-     * @returns {Array}
+     * @param {string} text             the text to parse
+     * @returns {Array}                 the bytes representing the instruction
      */
     static assembleSingleInstruction(text = "", {throwIfUnexpectedAssembly = true} = {}) {
         let r = Asm.parseSingleInstruction(text);

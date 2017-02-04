@@ -36,21 +36,23 @@ export default class Memory {
       addr = addrOverride;
     }
     data.data.forEach((v, i) => {
-        this.poke(i+addr, v);
+        this.poke(i + addr, v);
     });
   }
 
+/*
   loadFromBIN(bin) {
     // TODO
   }
+*/
 
   poke(addr, val) {
     if (val === undefined) {
       throw new Error("can't write undefined to memory!");
     }
-    addr = addr & 0x3FFFF;
+    addr &= 0x3FFFF;
     if (val < 0) { val += 256; }
-    var v = (val & 0xFF);
+    let v = (val & 0xFF);
     this._mem[addr] = v;
     this.stats.lastValueWritten = v;
     this.stats.writesTotal++;
@@ -63,11 +65,11 @@ export default class Memory {
     if (val === undefined) {
       throw new Error("can't write undefined to memory!");
     }
-    addr = addr & 0x3FFFF;
+    addr &= 0x3FFFF;
     if (val < 0) { val += 65536; }
-    var v = (val & 0xFFFF);
+    let v = (val & 0xFFFF);
     this._mem[addr] = (v & 0xFF00) >> 8;
-    this._mem[addr+1] = (v & 0x00FF);
+    this._mem[addr + 1] = (v & 0x00FF);
     this.stats.writesTotal++;
     this.stats.wordWritesTotal++;
     this.stats.lastValueWritten = v;
@@ -78,13 +80,13 @@ export default class Memory {
     if (val === undefined) {
       throw new Error("can't write undefined to memory!");
     }
-    addr = addr & 0x3FFFF;
+    addr &= 0x3FFFF;
     if (val < 0) { val += 4294967296; }
-    var v = (val & 0xFFFFFFFF);
+    let v = (val & 0xFFFFFFFF);
     this._mem[addr] = (v & 0xFF000000) >> 24;
-    this._mem[addr+1] = (v & 0x00FF0000) >> 16;
-    this._mem[addr+2] = (v & 0x0000FF00) >> 8;
-    this._mem[addr+3] = (v & 0x000000FF);
+    this._mem[addr + 1] = (v & 0x00FF0000) >> 16;
+    this._mem[addr + 2] = (v & 0x0000FF00) >> 8;
+    this._mem[addr + 3] = (v & 0x000000FF);
     this.stats.writesTotal++;
     this.stats.lastValueWritten = v;
     this.stats.lastWriteAddr = addr;
@@ -92,8 +94,8 @@ export default class Memory {
 
 
   peek(addr) {
-    addr = addr & 0x3FFFF;
-    var v = this._mem[addr];
+    addr &= 0x3FFFF;
+    let v = this._mem[addr];
     this.stats.readsTotal++;
     this.stats.byteReadsTotal++;
     this.stats.lastValueRead = v;
@@ -102,8 +104,8 @@ export default class Memory {
   }
 
   peek16(addr) {
-    addr = addr & 0x3FFFF;
-    var v = (this._mem[addr] << 8) | this._mem[addr+1];
+    addr &= 0x3FFFF;
+    let v = (this._mem[addr] << 8) | this._mem[addr + 1];
     this.stats.readsTotal++;
     this.stats.wordReadsTotal++;
     this.stats.lastValueRead = v;
@@ -112,8 +114,8 @@ export default class Memory {
   }
 
   peek32(addr) {
-    addr = addr & 0x3FFFF;
-    var v = (this._mem[addr] << 24) | (this._mem[addr+1] << 16) | (this._mem[addr+2] << 8) | (this._mem[addr+3]);
+    addr &= 0x3FFFF;
+    let v = (this._mem[addr] << 24) | (this._mem[addr + 1] << 16) | (this._mem[addr + 2] << 8) | (this._mem[addr + 3]);
     this.stats.readsTotal++;
     this.stats.wordReadsTotal++;
     this.stats.lastValueRead = v;
@@ -130,18 +132,18 @@ export default class Memory {
   }
 
   init() {
-    for (let i=0; i<(this.layout.size*1024); i++) {
+    for (let i = 0; i < (this.layout.size * 1024); i++) {
       // simulate old-style memory being random at boot
-      this.poke(i, Math.floor(Math.random()*256));
-    };
+      this.poke(i, Math.floor(Math.random() * 256));
+    }
 
     // we need three RETs at known important vectors
-    [0x0FE00, 0x0FF00, 0x0FFFF].forEach(addr => {
+    [0x0FE00, 0x0FF00, 0x0FFFF].forEach((addr) => {
       this.poke(addr, 0xFF);
     });
 
     // All trap vectors initially point at 0xFFFF
-    for (let addr=0; addr<512; addr++) {
+    for (let addr = 0; addr < 512; addr++) {
       this.poke(addr, 0xFF);
     }
 

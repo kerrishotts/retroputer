@@ -15,9 +15,8 @@
 let fs = require("fs");
 
 import cvtDataToBin from "./cvtDataToBin.js";
-import hexUtils from "./hexUtils.js";
 
-export default function createbin(file, data, addr, format="bin") {
+export default function createbin(file, data, addr, format = "bin") {
     let fileContents = cvtDataToBin(data, addr, format);
     fs.writeFileSync(file, fileContents);
 }

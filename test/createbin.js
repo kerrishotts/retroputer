@@ -1,3 +1,4 @@
+/* global describe, it, __dirname */
 let fs = require("fs");
 let path = require("path");
 let tmpPath = path.join(__dirname, "tmp/");
