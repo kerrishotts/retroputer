@@ -30,7 +30,7 @@ cursor-render:
     PUSHA
     XOR A, A
     LDI AL, bank(&cursor-visible)
-    MOV DB, A
+    MOV SB, A
     LDI A, [addr(&cursor-visible)]
     IF Z
         BR :cursor-render-exit
