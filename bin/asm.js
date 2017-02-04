@@ -38,8 +38,6 @@ cli.withStdinLines(function(lines, newline) {
         // once assembled, let's write the file in the desired format
         this.output(asm.writeToString(options.format, newline));
     } catch (err) {
-        cli.error((err.file ? err.file : "stdin") + ":" + err.lineNumber + ", " + err.message + " (" + hexUtils.toHex4(err.code) + ") " );
-        cli.error("line: " + err.line)
         cli.error(err.stack);
     }
 });

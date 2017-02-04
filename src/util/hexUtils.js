@@ -10,7 +10,10 @@ export default {
     toHex4(v, prefix="0x") {
         return this.toHex(v, "0000", prefix);
     },
-    tohex8(v, prefix="0x") {
+    toHex5(v, prefix="0x") {
+        return this.toHex(v, "00000", prefix);
+    },
+    toHex8(v, prefix="0x") {
         return this.toHex(v, "00000000", prefix);
     },
     byteArrayToHex(arr, prefix="") {

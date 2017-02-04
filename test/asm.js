@@ -336,7 +336,7 @@ describe("#ASM", () => {
                 asm.assemble(fileContents, {filename});
             } catch (err) {
                 console.log(`Error ${hexUtils.toHex4(err.code)} at ${err.file}:${err.lineNumber}: ${err.message}`);
-                console.log(`${err.line}`);
+                console.log(`${err.input}`);
                 throw err;
             }
         }));

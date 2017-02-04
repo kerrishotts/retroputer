@@ -5,268 +5,130 @@ import cvtDataToBin from "../util/cvtDataToBin.js";
 /*
  * EXCEPTIONS
  */
-export class OperandExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Operand expected`);
-        this.code = 0x8001;
+
+function prettify(extra) {
+    if (extra === undefined || extra === null) {
+        return "(blank)";
+    }
+    if (typeof extra === "number") {
+        return `"${extra}" (${hexUtils.toHex5(extra)})`;
+    }
+    return `"${extra}"`;
+}
+
+export class AssemblerError extends Error {
+    constructor({triggeringError = null, line = "", lineNumber = 0, filename = "stdin"} = {}) {
+        super("Exception in assembler");
+        let msg = `Assembler failed to parse "${filename}":${lineNumber ? lineNumber : ""} | ${line}`;
+        this.input = line;
+        this.lineNumber = lineNumber;
+        this.filename = filename;
+        this.file = filename;
+        this.code = 0x8000;
+        if (triggeringError) {
+            msg += String.fromCharCode(13) + String.fromCharCode(10);
+            msg += `... error ${hexUtils.toHex4(triggeringError.code)}: ${triggeringError.message}`;
+        }
+        this.name = this.constructor.name;
+        this.message = msg;
+        if (typeof Error.captureStackTrace === "function") {
+            Error.captureStackTrace(this, this.constructor);
+        } else {
+            this.stack = (new Error(msg)).stack;
+        }
     }
 }
 
-export class RegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Register expected; got ${extra}`);
-        this.code = 0x8030;
-    }
-}
+let exceptions = [
+    { code: 0x8001, name: "OperandExpected",                 message: extra => `Operand expected; got ${prettify(extra[0])}` },
+    { code: 0x8010, name: "UnsignedByteExpected",            message: extra => `Unsigned byte value expected; got ${prettify(extra[0])}`},
+    { code: 0x8011, name: "SignedByteExpected",              message: extra => `Signed byte value expected; got ${prettify(extra[0])}`},
+    { code: 0x8012, name: "UnsignedWordExpected",            message: extra => `Unsigned word value expected; got ${prettify(extra[0])}`},
+    { code: 0x8013, name: "SignedWordExpected",              message: extra => `Signed word value expected; got ${prettify(extra[0])}`},
+    { code: 0x8014, name: "BankExpected",                    message: extra => `Bank value expected; got ${prettify(extra[0])}`},
+    { code: 0x8015, name: "UnsignedValueOutOfRange",         message: extra => `Unsigned value out of range; got ${prettify(extra[0])}, but expected ${extra[1]} to ${extra[2]}`},
+    { code: 0x8016, name: "WordExpected",                    message: extra => `Word value expected; got ${prettify(extra[0])}`},
+    { code: 0x8020, name: "AddressExpected",                 message: extra => `Address expected; got ${prettify(extra[0])}`},
+    { code: 0x8030, name: "RegisterExpectedError",           message: extra => `Register expected; got ${prettify(extra[0])}` },
+    { code: 0x8031, name: "ALExpected",                      message: extra => `AL(8) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8032, name: "AExpected",                       message: extra => `A(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8033, name: "BankRegisterExpectedError",       message: extra => `Bank register expected; got ${prettify(extra[0])}` },
+    { code: 0x8034, name: "CExpected",                       message: extra => `C(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8036, name: "PushRegisterExpected",            message: extra => `Push register expected; got ${prettify(extra[0])}` },
+    { code: 0x8037, name: "PopRegisterExpected",             message: extra => `Pop register expected; got ${prettify(extra[0])}` },
+    { code: 0x8038, name: "XExpected",                       message: extra => `X(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8039, name: "YExpected",                       message: extra => `Y(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x803A, name: "BPExpected",                      message: extra => `BP register expected; got ${prettify(extra[0])}` },
+    { code: 0x803B, name: "DExpected",                       message: extra => `D(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x803C, name: "AccumulatorExpected",             message: extra => `A or AL register expected; got ${prettify(extra[0])}` },
+    { code: 0x803D, name: "LoopRegisterExpected",            message: extra => `Loop register expected; got ${prettify(extra[0])}` },
+    { code: 0x803E, name: "WordRegisterExpected",            message: extra => `Word register expected; got ${prettify(extra[0])}` },
+    { code: 0x803F, name: "ByteRegisterExpected",            message: extra => `Byte register expected; got ${prettify(extra[0])}` },
+    { code: 0x803E, name: "WordDataRegisterExpected",        message: extra => `General purpose word-sized register expected; got ${prettify(extra[0])}` },
+    { code: 0x803F, name: "ByteDataRegisterExpected",        message: extra => `General purpose byte-sized register expected; got ${prettify(extra[0])}` },
+    { code: 0x8040, name: "FlagExpected",                    message: extra => `Flag expected; got ${prettify(extra[0])}` },
+    { code: 0x8050, name: "ExpectedSymbol",                  message: extra => `Expected ${extra[0]}, got ${prettify(extra[1])}` },
+    { code: 0x8100, name: "UnknownDirective",                message: extra => `Unknown directive; got ${prettify(extra[0])}` },
+    { code: 0x8200, name: "UnknownTypeSigil",                message: extra => `Unknown type sigil; got ${prettify(extra[0])}` },
+    { code: 0x8300, name: "UnexpectedOpcode",                message: extra => `Unexpected opcode; got ${prettify(extra[0])}` },
+    { code: 0x8400, name: "UndefinedSymbol",                 message: extra => `Undefined symbol; got ${prettify(extra[0])}` },
+    { code: 0xFF00, name: "UnexpectedAssembly",              message: extra => `Unexpected assembly; expected ${hexUtils.byteArrayToHex(extra[0])}; got ${hexUtils.byteArrayToHex(extra[1])}` },
+    { code: 0xFFFF, name: "UnexpectedToken",                 message: extra => `Got an unexpected token: ${JSON.stringify(extra)}`}
+];
 
-export class BankRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Bank register expected; got ${extra}`);
-        this.code = 0x8033;
+// error extension based on http://stackoverflow.com/a/39929058/741043
+let asmExceptions = exceptions.reduce((acc,e) => {
+    acc[e.name] = class AsmError extends Error {
+        constructor(...extra) {
+            super(e.name);
+            let msg = typeof e.message === "function" ? e.message(extra) : e.message;
+            this.name = e.name;
+            this.code = e.code;
+            this.message = msg;
+            if (typeof Error.captureStackTrace === "function") {
+                Error.captureStackTrace(this, this.constructor);
+            } else {
+                this.stack = (new Error(msg)).stack;
+            }
+        }
     }
-}
+    return acc;
+}, {});
 
-export class UnsignedByteExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Unsigned byte value expected; got ${extra}`);
-        this.code = 0x8010;
-    }
-}
-
-export class SignedByteExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Signed byte value expected; got ${extra}`);
-        this.code = 0x8011;
-    }
-}
-
-export class UnsignedWordExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Unsigned word value expected; got ${extra}`);
-        this.code = 0x8012;
-    }
-}
-
-export class UnsignedValueOutOfRange extends Error {
-    constructor(extra, lo, hi) {
-        super();
-        this.message = (`Unsigned value out of range; got ${extra}, expected ${lo} to ${hi}`);
-        this.code = 0x8015;
-    }
-}
-
-export class SignedWordExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Signed word value expected; got ${extra}`);
-        this.code = 0x8013;
-    }
-}
-
-export class BankExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Bank value expected; got ${extra}`);
-        this.code = 0x8014;
-    }
-}
-
-export class AddressExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Address expected; got ${extra}`);
-        this.code = 0x8020;
-    }
-}
-
-export class ALExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`AL(8) register expected; got ${extra}`);
-        this.code = 0x8031;
-    }
-}
-
-export class AExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`A(16) register expected; got ${extra}`);
-        this.code = 0x8032;
-    }
-}
-
-export class CExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`C(16) register expected; got ${extra}`);
-        this.code = 0x8034;
-    }
-}
-
-export class XExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`X(16) register expected; got ${extra}`);
-        this.code = 0x8038;
-    }
-}
-
-export class YExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Y(16) register expected; got ${extra}`);
-        this.code = 0x8039;
-    }
-}
-
-export class BPExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`BP register expected; got ${extra}`);
-        this.code = 0x803A;
-    }
-}
-
-export class DExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`D(16) register expected; got ${extra}`);
-        this.code = 0x803B;
-    }
-}
-
-export class AccumulatorExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`A or AL register expected; got ${extra}`);
-        this.code = 0x803C;
-    }
-}
-
-export class LoopRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Loop register expected; got ${extra}`);
-        this.code = 0x803D;
-    }
-}
-
-export class WordRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Word-sized register expected; got ${extra}`);
-        this.code = 0x803E;
-    }
-}
-
-export class ByteRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Byte-sized register expected; got ${extra}`);
-        this.code = 0x803F;
-    }
-}
-
-export class WordDataRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`General Purpose Word-sized register expected; got ${extra}`);
-        this.code = 0x803E;
-    }
-}
-
-export class ByteDataRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`General Purpose Byte-sized register expected; got ${extra}`);
-        this.code = 0x803F;
-    }
-}
-export class PushRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Valid PUSH register expected; got ${extra}`);
-        this.code = 0x8036;
-    }
-}
-
-export class PopRegisterExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Valid POP register expected; got ${extra}`);
-        this.code = 0x8037;
-    }
-}
-
-export class FlagExpectedError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Flag expected; got ${extra}`);
-        this.code = 0x8040;
-    }
-}
-
-export class ExpectedSymbol extends Error {
-    constructor(whichSymbol, got) {
-        super();
-        this.message = (`Expected ${whichSymbol}, got ${got}`);
-        this.code = 0x8050;
-    }
-}
-
-export class UnknownDirectiveError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Unexpected directive: ${extra}`);
-        this.code = 0x8100;
-    }
-}
-
-export class UnknownTypeSigilError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Unknown type sigil: ${extra}`);
-        this.code = 0x8200;
-    }
-}
-
-export class UnexpectedOpcodeError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Unexpected opcode: ${extra}`);
-        this.code = 0x8300;
-    }
-}
-
-export class UndefinedSymbolError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Undefined symbol: ${extra}`);
-        this.code = 0x8400;
-    }
-}
-
-export class UnexpectedAssemblyError extends Error {
-    constructor(expected, got) {
-        super();
-        this.message = (`Unexpected assembly; expected ${hexUtils.byteArrayToHex(expected)}; got ${hexUtils.byteArrayToHex(got)}`);
-        this.code = 0xFF00;
-    }
-}
-
-export class UnexpectedTokenError extends Error {
-    constructor(extra) {
-        super();
-        this.message = (`Got an unexpected token: ${JSON.stringify(extra)}`);
-        this.code = 0xFFFF;
-    }
-}
+export let OperandExpectedError = asmExceptions.OperandExpected;
+export let RegisterExpectedError = asmExceptions.RegisterExpected;
+export let BankRegisterExpectedError = asmExceptions.BankRegisterExpected;
+export let UnsignedByteExpectedError = asmExceptions.UnsignedByteExpected;
+export let SignedByteExpectedError = asmExceptions.SignedByteExpected;
+export let UnsignedWordExpectedError = asmExceptions.UnsignedWordExpected;
+export let UnsignedValueOutOfRange = asmExceptions.UnsignedValueOutOfRange;
+export let SignedWordExpectedError = asmExceptions.SignedWordExpected;
+export let BankExpectedError = asmExceptions.BankExpected;
+export let WordExpectedError = asmExceptions.WordExpected;
+export let AddressExpectedError = asmExceptions.AddressExpected;
+export let ALExpectedError = asmExceptions.ALExpected;
+export let AExpectedError = asmExceptions.AExpected;
+export let CExpectedError = asmExceptions.CExpected;
+export let XExpectedError = asmExceptions.XExpected;
+export let YExpectedError = asmExceptions.YExpected;
+export let BPExpectedError = asmExceptions.BPExpected;
+export let DExpectedError = asmExceptions.DExpected;
+export let AccumulatorExpectedError = asmExceptions.AccumulatorExpected;
+export let LoopRegisterExpectedError = asmExceptions.LoopRegisterExpected;
+export let WordRegisterExpectedError = asmExceptions.WordRegisterExpected;
+export let ByteRegisterExpectedError = asmExceptions.ByteRegisterExpected;
+export let WordDataRegisterExpectedError = asmExceptions.WordDataRegisterExpected;
+export let ByteDataRegisterExpectedError = asmExceptions.ByteDataRegisterExpected;
+export let PushRegisterExpectedError = asmExceptions.PushRegisterExpected;
+export let PopRegisterExpectedError = asmExceptions.PopRegisterExpected;
+export let FlagExpectedError = asmExceptions.FlagExpected;
+export let ExpectedSymbol = asmExceptions.ExpectedSymbol;
+export let UnknownDirectiveError = asmExceptions.UnknownDirective;
+export let UnknownTypeSigilError = asmExceptions.UnknownTypeSigil;
+export let UnexpectedOpcodeError = asmExceptions.UnexpectedOpcode;
+export let UndefinedSymbolError = asmExceptions.UndefinedSymbol;
+export let UnexpectedAssemblyError = asmExceptions.UnexpectedAssembly;
+export let UnexpectedTokenError = asmExceptions.UnexpectedToken;
 
 /*
  * ASSEMBLY ROUTINES
@@ -718,10 +580,10 @@ function expectOperand(operands=[], {type="any", throws=true, eats=true} = {}) {
             case "u4":    return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
             case "u8":    return toNumberInRange(operand, 0, 255, UnsignedByteExpectedError);
             case "s8":    return toNumberInRange(operand, -128, 127, SignedByteExpectedError);
-            case "n8":    return toNumberInRange(operand, -128, 255, SignedWordExpectedError);
+            case "n8":    return toNumberInRange(operand, -128, 255, WordExpectedError);
             case "u16":   return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
             case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
-            case "n16":   return toNumberInRange(operand, -32768, 65535, SignedWordExpectedError);
+            case "n16":   return toNumberInRange(operand, -32768, 65535, WordExpectedError);
             case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
             
             // address
@@ -975,10 +837,7 @@ export default class Asm {
                         this.handleAssembly(line, stage);
                     }
                 } catch (err) {
-                    err.file = filename;
-                    err.line = line;
-                    err.lineNumber = lineNumber;
-                    throw err;
+                    throw new AssemblerError({triggeringError: err, line, lineNumber, filename});
                 }
             }
         }
