@@ -124,7 +124,7 @@ export default class Memory {
   }
 
   range(addr,len) {
-    return new Uint8ClampedArray(this._buf, addr, len);
+    return new Uint8Array(this._buf, addr, len);
   }
 
   range32(addr,len) {

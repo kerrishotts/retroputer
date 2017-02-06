@@ -5,7 +5,7 @@ export default class Register {
     this.size = size;
     this._max = size - 1;
     this._data = new ArrayBuffer(size);
-    this._UINT8 = new Uint8ClampedArray(this._data);
+    this._UINT8 = new Uint8Array(this._data);
   }
   
   get U2() {
