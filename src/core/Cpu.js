@@ -152,10 +152,10 @@ export default class CPU {
    * @return {void}
    */ 
   clearState() {
-    if (this.state.instruction === undefined) {
+    //if (this.state.instruction === undefined) {
       this.state.instruction = [];
-    }
-    this.state.instruction.length = 0;    // raw bytes
+    //}
+    //this.state.instruction.length = 0;    // raw bytes
     this.state.opcodeType = 0x00;   // type of opcode -- if extended, first byte of instruction
     this.state.opcode = 0x00;       // instruction
     this.state.semantic = 0x00;     // what should we actually do?
