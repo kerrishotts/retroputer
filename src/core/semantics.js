@@ -116,7 +116,13 @@ function addUpdatingFlags(cpu, a, b, size = 16) {
     cpu.clrFlag(cpu.flagMap.V);
     cpu.clrFlag(cpu.flagMap.C);
 
-    let v = (a & unsignedMax) + (b & unsignedMax);
+    /*eslint-disable no-var, vars-on-top*/
+
+    // Chrome deopts this because v is modified later ...
+
+    var v = (a & unsignedMax) + (b & unsignedMax);
+
+    /*eslint-enable no-var, vars-on-top*/
 
     // carry is easy -- use the MSB of the operation
     if (v > unsignedMax) {
@@ -157,7 +163,12 @@ function shiftUpdatingFlags(cpu, a, b, size = 16, dir = -1, mode = 0) {
     let msbmask = (size === 16) ? 0x8000 : 0x80;
     let maxint =  (size === 16) ? 0xFFFF : 0xFF;
     let lsbmask = 0x01;
-    let r = a;
+
+    /*eslint-disable no-var, vars-on-top*/
+    var r = a;
+
+    /*eslint-enable no-var, vars-on-top*/
+    
     cpu.clrFlag(cpu.flagMap.V);
     cpu.clrFlag(cpu.flagMap.C);
     for (let i = 0; i < b; i++) {
@@ -202,7 +213,11 @@ function handleFlags(cpu, v, size = 16) {
 }
 
 function getAddr(cpu, bankSelect) {
-    let addr;
+
+    /*eslint-disable no-var, vars-on-top*/
+    var addr;
+
+    /*eslint-enable no-var, vars-on-top*/
     let indirect = Boolean(cpu.state.addressingMode & 1);
     switch (cpu.state.addressingMode) {
         case 2:

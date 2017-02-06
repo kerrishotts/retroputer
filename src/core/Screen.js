@@ -265,11 +265,15 @@ const ENABLE_WEBGL = false;
 
   renderBackgroundColorToCanvas() {
     let c = this.getBackgroundColor();
-    for (let y = 0; y < this._height; y++) {
-      for (let x = 0; x < this._width; x++) {
+
+    /*eslint-disable no-var, vars-on-top*/
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
         this.setPixel(x, y, c);
       }
     }
+
+    /*eslint-enable no-var, vars-on-top*/
   }
 
   renderTilePageToCanvas(page) {
@@ -286,15 +290,15 @@ const ENABLE_WEBGL = false;
         tilePageBase = page * 0x1000,
         tileForegroundColor, tileBackgroundColor,
         addr, tile, tileSetAddr, tpix,
-        newx, newy;
-     
-    let shift = 3 + scale;
+        newx, newy,
+        shift = 3 + scale;
 
     offsetX = (offsetX > 127) ? -256 + offsetX : offsetX;
     offsetY = (offsetY > 127) ? -256 + offsetY : offsetY;
 
-    for (let y = 0; y < this._height; y++) {
-      for (let x = 0; x < this._width; x++) {
+    /*eslint-disable no-var, vars-on-top*/
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
 
         // get the tile index
         addr = ((y >> shift) * this._tileColumns) + (x >> shift);
@@ -324,13 +328,17 @@ const ENABLE_WEBGL = false;
         }
       }
     }
+
+    /*eslint-enable no-var, vars-on-top*/
   }
 
   renderGraphicsToCanvas() {
-    let addr, gpix;
-    addr = this._layout.graphicsStart;
-    for (let y = 0; y < this._height; y++) {
-      for (let x = 0; x < this._width; x++) {
+    let gpix,
+        addr = this._layout.graphicsStart;
+
+    /*eslint-disable no-var, vars-on-top*/
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
         addr++;
         gpix = this._memory.peek(addr);
         if (gpix > 0) {
@@ -338,6 +346,8 @@ const ENABLE_WEBGL = false;
         }
       }
     }
+
+    /*eslint-enable no-var, vars-on-top*/
   }
 
 /*
@@ -348,20 +358,24 @@ const ENABLE_WEBGL = false;
 */
 
   renderBorderToCanvas() {
-    let borderColor = this.getBorderColor();
-    let [borderSizeX, borderSizeY] = this.getBorderSize(),
+    let borderColor = this.getBorderColor(),
+        [borderSizeX, borderSizeY] = this.getBorderSize(),
         leftBorder = borderSizeX,
         rightBorder = this._width - borderSizeX,
         topBorder = borderSizeY,
         bottomBorder = this._height - borderSizeY;
-    for (let y = 0; y < this._height; y++) {
-      for (let x = 0; x < this._width; x++) {
+    
+    /*eslint-disable no-var, vars-on-top*/
+    for (var y = 0; y < this._height; y++) {
+      for (var x = 0; x < this._width; x++) {
         if (((x < leftBorder) || (x >= rightBorder)) ||
             ((y < topBorder) || (y >= bottomBorder))) {
           this.setPixel (x, y, borderColor);
         }
       }
     }
+
+    /*eslint-enable no-var, vars-on-top*/
   }
 
   update() {

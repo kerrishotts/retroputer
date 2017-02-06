@@ -75,8 +75,13 @@ export default class Computer {
         this.performance.maxTimeToDevoteToCPU = Math.floor(725 / f);
     }
     tickInBrowser(f) {
-        let startTime = performance.now();
-        let deltaf = f - this.stats.oldf;
+
+        /*eslint-disable no-var*/
+        var startTime = performance.now();
+        var deltaf = f - this.stats.oldf;
+        var curTime, stopTime, endTime, totalTime;
+
+        /*eslint-enable no-var*/
         this.stats.oldf = f;
         
         // is there a beforeFrameUpdate callback? If so, call it
@@ -93,8 +98,8 @@ export default class Computer {
         // we need to know how long that took so we can devote
         // a safe amount of time to the processor
 
-        let curTime = performance.now();
-        let stopTime = curTime + (this.performance.timeToDevoteToCPU);
+        curTime = performance.now();
+        stopTime = curTime + (this.performance.timeToDevoteToCPU);
         if (stopTime < performance.now()) {
             stopTime = performance.now() + this.performance.minTimeToDevoteToCPU;
         }
@@ -124,8 +129,8 @@ export default class Computer {
         }
 
         // compute final stats and vary performance
-        let endTime = performance.now();
-        let totalTime = endTime - startTime;
+        endTime = performance.now();
+        totalTime = endTime - startTime;
         this.stats.lastFrameTime = totalTime;
         this.stats.totalTime += totalTime;
         this.stats.totalFrames ++;
