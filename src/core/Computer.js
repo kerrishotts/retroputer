@@ -46,10 +46,14 @@ export default class Computer {
         this.cpu = new CPU(this.memory, this.io);
 
         this.devices = {};
+        this.deviceTickFns = [];
 
         devices.forEach((Device) => {
             let device = new Device({ io: this.io, cpu: this.cpu, memory: this.memory});
             this.devices[device.name] = device;
+            if (typeof device.tick === "function") {
+                this.deviceTickFns.push(device.tick.bind(device));
+            }
         });
 
 
@@ -74,16 +78,26 @@ export default class Computer {
         this.performance.throttlePoint = Math.floor(850 / f);
         this.performance.maxTimeToDevoteToCPU = Math.floor(725 / f);
     }
+
+    now() {
+        return performance.now();
+    }
+
+    nodeNow() {
+        // TODO
+        // return a performance.now-like value
+    }
+
     tickInBrowser(f) {
 
         /*eslint-disable no-var*/
-        var startTime = performance.now();
+        var startTime = this.now();
         var deltaf = f - this.stats.oldf;
         var curTime, stopTime, endTime, totalTime;
 
         /*eslint-enable no-var*/
         this.stats.oldf = f;
-        
+
         // is there a beforeFrameUpdate callback? If so, call it
         if (this.beforeFrameUpdate) {
             this.beforeFrameUpdate(this, deltaf);
@@ -98,25 +112,29 @@ export default class Computer {
         // we need to know how long that took so we can devote
         // a safe amount of time to the processor
 
-        curTime = performance.now();
+        curTime = this.now();
         stopTime = curTime + (this.performance.timeToDevoteToCPU);
-        if (stopTime < performance.now()) {
-            stopTime = performance.now() + this.performance.minTimeToDevoteToCPU;
+
+        // if the time to devote to the CPU is so small that we've already passed
+        // stop time, give it some more time
+        if (stopTime < this.now()) {
+            stopTime = this.now() + this.performance.minTimeToDevoteToCPU;
         }
 
         // send a frame interrupt to the CPU
         this.cpu.sendTrap(TRAPS.FRAME);
 
-        // run the processor for awhile
+        // run the processor for a while
         if (this.cpu.stepping) {
             this.stats.lastFrameInstructions = 0;
             this.cpu.step();
+            this.tickDevices();
             this.stats.lastFrameInstructions++;
             this.stats.totalInstructions++;
         } else {
             this.stats.lastFrameInstructions = 0;
             if (this.cpu.running && !this.cpu.paused) {
-                while (performance.now() < stopTime) {
+                while (this.now() < stopTime) {
                     for (let i = this.performance.iterationsBetweenTimeCheck; i > 0; i--) {
                         if (this.cpu.running && !this.cpu.paused) {
                             this.cpu.step();
@@ -124,16 +142,17 @@ export default class Computer {
                             this.stats.totalInstructions++;
                         }
                     }
+                    this.tickDevices();
                 }
             }
         }
 
-        // compute final stats and vary performance
-        endTime = performance.now();
+        // compute final stats and adjust performance
+        endTime = this.now();
         totalTime = endTime - startTime;
         this.stats.lastFrameTime = totalTime;
         this.stats.totalTime += totalTime;
-        this.stats.totalFrames ++;
+        this.stats.totalFrames++;
         this.stats.performanceAtTime = endTime;
 
         if (!this.cpu.stepping) {
@@ -142,7 +161,7 @@ export default class Computer {
                 // we need to limit processing time
                 this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - 25) / 100;
                 if (this.performance.timeToDevoteToCPU < this.performance.minTimeToDevoteToCPU) {
-                    this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU 
+                    this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU
                 }
             } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
                 // but we need to increase processing to use the most of the
@@ -178,6 +197,7 @@ export default class Computer {
                 this.stats.totalInstructions++;
             }
         }
+        this.tickDevices();
         if (this.debug) {
             this.cpu.dump();
             this.memory.dump();
@@ -187,6 +207,11 @@ export default class Computer {
             this.cpu.stepping = false;
             this.cpu.running = false;
         }
+    }
+
+    tickDevices() {
+        let now = this.now();
+        this.deviceTickFns.forEach( fn => fn(now) );
     }
 
     resetStats() {
