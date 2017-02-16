@@ -1,4 +1,5 @@
 import hexUtils from "../util/hexUtils.js";
+import twosComplement from "../util/twosComplement.js";
 
 let semantics = {
       NOP:     0x00, MOVE:    0x10, SWAP:    0x11, LOAD:    0x20,
@@ -9,7 +10,7 @@ let semantics = {
       CMP:     0x4F, IMUL:    0x50, IDIV:    0x51, IMOD:    0x52,
       SHL:     0x58, SHR:     0x59, ROL:     0x5A, ROR:     0x5B,
       XOR:     0x5C, AND:     0x5D, OR:      0x5E, NEG:     0x5F,
-      SETFLAG: 0x60, CLRFLAG: 0x61, 
+      SETFLAG: 0x60, CLRFLAG: 0x61,
       IFR:     0x64, IFNR:    0x65, SETR:    0x66, CLRR:    0x67,
       IFFLAG:  0x68, IFNFLAG: 0x69,
       BR:      0x70, CALL:    0x71, ENTER:   0x72, EXIT:    0x73,
@@ -44,7 +45,7 @@ let semanticsMap = Object.keys(semantics).reduce((p, c) => {
 
 /**
  * Given a `cpu` state, return the assembly instruction that best matches
- * 
+ *
  * @param {Cpu} cpu     the cpu with state to decode
  * @return {string}     the matching assembly statement
  */
@@ -60,7 +61,7 @@ function mapStateToAsm(cpu) {
     asm = asm.replace("LR", cpu.registerMap[cpu.state.srcRegister] || "BAD");
     asm = asm.replace("DR", cpu.registerMap[cpu.state.destRegister] || "BAD");
     asm = asm.replace("U8", hexUtils.toHex2(cpu.state.imm8));
-    asm = asm.replace("S8", cpu.state.imm8 > 127 ? -(256 - cpu.state.imm8) : cpu.state.imm8);
+    asm = asm.replace("S8", twosComplement.from8(cpu.state.imm8));
 
 
     if (asm.indexOf("OP") > -1) {
@@ -69,7 +70,7 @@ function mapStateToAsm(cpu) {
             case semantics.LOAD:
             case semantics.STORE:
             case semantics.BR:
-            case semantics.CALL: 
+            case semantics.CALL:
                 {
                     asm = asm.replace(/\(L\)/g, cpu.state.scale === 0 ? "L" : "");
                     let relative = false;
@@ -81,8 +82,8 @@ function mapStateToAsm(cpu) {
                         relative = true;
                     }
                     switch (cpu.state.addressingMode) {
-                        case 0: asm = asm.replace("OP", relative ? (cpu.state.imm8 > 127 ? -(256 - cpu.state.imm8) : hexUtils.toHex2(cpu.state.imm8)) : hexUtils.toHex2(cpu.state.imm8) ); break;
-                        case 1: asm = asm.replace("OP", relative ? (cpu.state.imm16 > 32767 ? -(65536 - cpu.state.imm16) : hexUtils.toHex4(cpu.state.imm16)) : hexUtils.toHex4(cpu.state.imm16) ); break;
+                        case 0: asm = asm.replace("OP", relative ? twosComplement.from8(cpu.state.imm8) : hexUtils.toHex2(cpu.state.imm8) ); break;
+                        case 1: asm = asm.replace("OP", relative ? twosComplement.from16(cpu.state.imm16) : hexUtils.toHex4(cpu.state.imm16) ); break;
                         case 2: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
                         case 3: asm = asm.replace("OP", brackets[0] + hexUtils.toHex4(cpu.state.imm16) + indexByX + brackets[1] + indexByY); break;
                         case 4: asm = asm.replace("OP", brackets[0] + "BP+" + hexUtils.toHex4(cpu.state.imm16) + indexByX + indexByY + brackets[1]); break;
@@ -150,7 +151,7 @@ function subtractUpdatingFlags (cpu, a, b, size = 16) {
 /**
  * shifts a by b times in the direction specified by `dir`; rotation is determined
  * by mode
- * 
+ *
  * @param {Cpu} cpu                 the cpu
  * @param {integer} a               value to shift
  * @param {integer} b               times to shift
@@ -168,7 +169,7 @@ function shiftUpdatingFlags(cpu, a, b, size = 16, dir = -1, mode = 0) {
     var r = a;
 
     /*eslint-enable no-var, vars-on-top*/
-    
+
     cpu.clrFlag(cpu.flagMap.V);
     cpu.clrFlag(cpu.flagMap.C);
     for (let i = 0; i < b; i++) {
@@ -196,7 +197,7 @@ function handleFlags(cpu, v, size = 16) {
     let unsignedMax = unsignedSize - 1;
     let signedSize = (size === 16 ? 32768 : 128);
     let signedMax = signedSize - 1;
-    
+
 
     // handle Zero flag
     (v !== 0) ? cpu.clrFlag(cpu.flagMap.Z) : cpu.setFlag(cpu.flagMap.Z);
@@ -226,10 +227,7 @@ function getAddr(cpu, bankSelect) {
             break;
         case 4:
         case 5:
-            addr = cpu.state.imm16;
-            if (addr > 32767) {
-                addr = -(65536 - addr);
-            }
+            addr = twosComplement.from16(cpu.state.imm16);
             addr = cpu.registers[cpu.registerMap.BP].U16 + addr;
             break;
         case 6:
@@ -238,7 +236,7 @@ function getAddr(cpu, bankSelect) {
             break;
         default:
     }
-    // make sure bank is added in 
+    // make sure bank is added in
     if ((cpu.state.addressingMode < 4) || (cpu.state.addressingMode > 5)) {
         // BP can only be from bank 0x00
         addr |= (cpu.registers[cpu.registerMap.SB + bankSelect].U2) << 16;
@@ -265,9 +263,9 @@ function getAddr(cpu, bankSelect) {
 let semanticsOps = {
     [semantics.NOP]:    function nop() { },
     [semantics.MOVE]:   function move(cpu) { cpu.registers[cpu.state.destRegister].U16 = cpu.registers[cpu.state.srcRegister].U16; },
-    [semantics.SWAP]:   function swap(cpu) { 
+    [semantics.SWAP]:   function swap(cpu) {
         [ cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16 ] =
-        [ cpu.registers[cpu.state.srcRegister].U16,  cpu.registers[cpu.state.destRegister].U16 ]; 
+        [ cpu.registers[cpu.state.srcRegister].U16,  cpu.registers[cpu.state.destRegister].U16 ];
     },
     [semantics.LOAD]:   function load(cpu) {
         let dreg = cpu.registers[cpu.state.destRegister];
@@ -305,7 +303,7 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.IN]:     function _in(cpu) { 
+    [semantics.IN]:     function _in(cpu) {
         let data = cpu.io.read(cpu.state.imm8);
         if (data !== undefined) {
             cpu.clrFlag(cpu.flagMap.E);
@@ -390,40 +388,40 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.ADD]:    function add(cpu) { 
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, 
-                addUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 
-                                      cpu.registers[cpu.state.srcRegister].U16, 16), 
-            16); 
+    [semantics.ADD]:    function add(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu,
+                addUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16,
+                                      cpu.registers[cpu.state.srcRegister].U16, 16),
+            16);
     },
     [semantics.SUB]:    function sub(cpu) {
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, 
-                subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 
-                                           cpu.registers[cpu.state.srcRegister].U16, 16), 
-            16); 
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu,
+                subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16,
+                                           cpu.registers[cpu.state.srcRegister].U16, 16),
+            16);
     },
     [semantics.INC]:    function inc(cpu) {
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, 
-                addUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 1, 16), 
-            16); 
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu,
+                addUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 1, 16),
+            16);
     },
     [semantics.DEC]:    function dec(cpu) {
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, 
-                subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 1, 16), 
-            16); 
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu,
+                subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 1, 16),
+            16);
     },
     [semantics.CMP]:    function cmp(cpu) {
         // compare is just subraction without storing the result -- just flags!
-        handleFlags(cpu, 
-            subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, 
-                                       cpu.registers[cpu.state.srcRegister].U16, 16), 
-        16); 
+        handleFlags(cpu,
+            subtractUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16,
+                                       cpu.registers[cpu.state.srcRegister].U16, 16),
+        16);
     },
-    [semantics.IMUL]:   function imul(cpu) { 
+    [semantics.IMUL]:   function imul(cpu) {
         let result = ((cpu.registers[cpu.state.othRegister].U16 << 16) | cpu.registers[cpu.state.destRegister].U16) * cpu.registers[cpu.state.srcRegister].U16;
         cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, result & 0x0000FFFF, 16);
         cpu.clrFlag(cpu.flagMap.C);
@@ -434,7 +432,7 @@ let semanticsOps = {
             cpu.setFlag(cpu.flagMap.V);
         }
     },
-    [semantics.IDIV]:   function idiv(cpu) { 
+    [semantics.IDIV]:   function idiv(cpu) {
         let [a, b] = [(cpu.registers[cpu.state.othRegister].U16 << 16) | cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16];
         cpu.clrFlag(cpu.flagMap.E);
         if (b === 0) {
@@ -468,31 +466,31 @@ let semanticsOps = {
             }
         }
     },
-    [semantics.SHL]:    function shl(cpu) { 
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, -1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16); 
+    [semantics.SHL]:    function shl(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, -1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16);
     },
-    [semantics.SHR]:    function shr(cpu) { 
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, +1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16); 
+    [semantics.SHR]:    function shr(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu, shiftUpdatingFlags(cpu, cpu.registers[cpu.state.destRegister].U16, cpu.registers[cpu.state.srcRegister].U16, 16, +1, (cpu.getFlag(cpu.flagMap.M) ? 1 : 0)), 16);
     },
     [semantics.ROL]:    undefined,   // subsumed into SHL
     [semantics.ROR]:    undefined,  // subsumed into SHR
-    [semantics.AND]:    function and(cpu) { 
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 & cpu.registers[cpu.state.srcRegister].U16, 16); 
+    [semantics.AND]:    function and(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 & cpu.registers[cpu.state.srcRegister].U16, 16);
     },
-    [semantics.OR]:     function or (cpu) { 
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 | cpu.registers[cpu.state.srcRegister].U16, 16); 
+    [semantics.OR]:     function or (cpu) {
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 | cpu.registers[cpu.state.srcRegister].U16, 16);
     },
-    [semantics.XOR]:    function xor(cpu) { 
-        cpu.registers[cpu.state.destRegister].U16 = 
-            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 ^ cpu.registers[cpu.state.srcRegister].U16, 16); 
+    [semantics.XOR]:    function xor(cpu) {
+        cpu.registers[cpu.state.destRegister].U16 =
+            handleFlags(cpu, cpu.registers[cpu.state.destRegister].U16 ^ cpu.registers[cpu.state.srcRegister].U16, 16);
     },
-    [semantics.NEG]:    function neg(cpu) { 
+    [semantics.NEG]:    function neg(cpu) {
         // if M is set, 1's complement (NOT)
-        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, (cpu.getFlag(cpu.flagMap.M) ? 255 : 256) - cpu.registers[cpu.state.destRegister].U16); 
+        cpu.registers[cpu.state.destRegister].U16 = handleFlags(cpu, (cpu.getFlag(cpu.flagMap.M) ? 255 : 256) - cpu.registers[cpu.state.destRegister].U16);
     },
     [semantics.SETFLAG]:function setflag(cpu) { cpu.setFlag(cpu.state.flag); },
     [semantics.CLRFLAG]:function clrflag(cpu) { cpu.clrFlag(cpu.state.flag); },
@@ -505,9 +503,9 @@ let semanticsOps = {
     [semantics.BR]:     function br(cpu) {
         let PC = cpu.registers[cpu.registerMap.PC];
         if (cpu.state.addressingMode === 0) {
-            PC.U16 += (cpu.state.imm8 > 127 ? cpu.state.imm8 - 256 : cpu.state.imm8);
+            PC.U16 += twosComplement.from8(cpu.state.imm8);
         } else if (cpu.state.addressingMode === 1) {
-            PC.U16 += (cpu.state.imm8 > 32767 ? cpu.state.imm16 - 65536 : cpu.state.imm16);
+            PC.U16 += twosComplement.from16(cpu.state.imm16);
         } else {
             PC.U16 = getAddr(cpu, cpu.state.whichBank) & 0xFFFF;
         }
@@ -518,10 +516,10 @@ let semanticsOps = {
     },
     [semantics.LOOP]:   function loop(cpu) {
         let reg = cpu.registers[cpu.state.srcRegister];
-        reg.U16 = handleFlags(cpu, subtractUpdatingFlags(cpu, reg.U16, 1, 16), 16); 
+        reg.U16 = handleFlags(cpu, subtractUpdatingFlags(cpu, reg.U16, 1, 16), 16);
         if (cpu.getFlag(cpu.flagMap.C)) {
             let PC = cpu.registers[cpu.registerMap.PC];
-            PC.U16 += (cpu.state.imm8 > 127 ? cpu.state.imm8 - 256 : cpu.state.imm8);
+            PC.U16 += twosComplement.from8(cpu.state.imm8);
         }
     },
     [semantics.TRAP]:   function trap(cpu) {
@@ -537,7 +535,7 @@ let semanticsOps = {
         v = cpu.memory.peek16(i << 1); // get vector
         PC.U16 = v;
     },
-    [semantics.RET]:    function ret(cpu) { 
+    [semantics.RET]:    function ret(cpu) {
         cpu.pop(cpu.registers[cpu.registerMap.PC]);
     },
     [semantics.BYTESWAP]:function byteswap(cpu) {
@@ -562,7 +560,7 @@ let semanticsOps = {
         cpu.pop(BP);
         cpu.pop(SP);
     },
-    [semantics.HALT]:   function halt(cpu) { 
+    [semantics.HALT]:   function halt(cpu) {
         cpu.pause(cpu.state.imm8);
     }
 }
