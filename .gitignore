@@ -1,6 +1,6 @@
 jspm_packages
 node_modules
-.vscode
+.vscode/**/*
 test/tmp/*.bin
 test/tmp/*.js
 coverage

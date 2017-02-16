@@ -2,5 +2,6 @@
 {
     "mix.rootPath": "/",
     "mix.port": 8181,
-    "typescript.check.workspaceVersion": false
+    "typescript.check.workspaceVersion": false,
+    "vsicons.presets.angular": false
 }
