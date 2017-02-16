@@ -3,35 +3,27 @@ export default class Register {
   constructor (name, size) {
     this.name = name;
     this.size = size;
-    this._max = size - 1;
-    this._data = new ArrayBuffer(size);
-    this._UINT8 = new Uint8Array(this._data);
+    this._mask = [0x03, 0xFF, 0xFFFF][size];
+    this._data = 0;
   }
-  
+
   get U2() {
-    return this.U8 & 0x03;
+    return this._data & 0x03;
   }
 
   get U8() {
-    return this._UINT8[this._max];
+    return this._data & 0xFF;
   }
-  
+
   set U8(value) {
-    if (value < 0) { value += 256; }
-    this._UINT8[this._max] = value & 0xFF;
+    this._data = (this._data & 0xFF00) | (value & 0xFF);
   }
-  
+
   get U16() {
-    return (this.size > 1) ? ((this._UINT8[0] << 8) | this._UINT8[1]) : this.U8;
+    return this._data & this._mask;
   }
-  
+
   set U16(value) {
-    if (value < 0) { value += 65536; }
-    if (this.size > 1) {
-      this._UINT8[0] = (value & 0xFF00) >> 8;
-      this._UINT8[1] = (value & 0x00FF);
-    } else {
-      this.U8 = value & 0x00FF;
-    }
+    this._data = value & this._mask;
   }
 }
