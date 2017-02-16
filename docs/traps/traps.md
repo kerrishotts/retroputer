@@ -4,12 +4,16 @@ The 6516 CPU is capable of generating and responding to 256 traps or interrupts.
 
 All traps except RESET \(0x00\) can be suppressed by clearing the Interrupt Enable \(**I**\) flag. This can be important when writing non-reentrant trap handlers than cannot be interrupted.
 
-| Trap Name | Trap Number | Software/Hardware | Event | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| FRAME | 0xF0 | Hardware | A frame has been displayed | Occurs sixty times a second and should complete quickly. A long-running FRAME handler will slow the rest of the machine down. |
-| SECOND | 0xF1 | Hardware | A second has passed | Occurs each second |
-| MINUTE | 0xF2 | Hardware | A minute has passed | Occurs each minute |
-| HOUR | 0xF3 | Hardware | An hour has passed | Occurs each hour |
-| RESET | 0x00 | Hardware | Reset button pressed | Performs steps necessary to initialize memory, the screen, and other subsystems needed in order to boot the machine. |
+| Trap Name |   #  | Class    | Event                      | Description |
+| :-------- | :--- | :------- | :------------------------- | :--------------------------------------- |
+| KEYDOWN   | 0x10 | Device   | A key has been pressed     | Occurs whenever a normal key is pressed |
+| KEYUP     | 0x11 | Device   | A key has been released    | Occurs whenever any key is released |
+| TIMER-0   | 0x80 | Device   | Timer 0 has been triggered | Occurs whenever timer zero reaches or exceeds zero |
+| TIMER-1   | 0x81 | Device   | Timer 1 has been triggered | Occurs whenever timer one reaches or exceeds zero |
+| TIMER-2   | 0x82 | Device   | Timer 2 has been triggered | Occurs whenever timer two reaches or exceeds zero |
+| TIMER-3   | 0x83 | Device   | Timer 3 has been triggered | Occurs whenever timer three reaches or exceeds zero |
+| TIMER-4   | 0x84 | Device   | Timer 4 has been triggered | Occurs whenever timer four reaches or exceeds zero |
+| FRAME     | 0xF0 | Hardware | A frame has been displayed | Occurs sixty times a second and should complete quickly. A long-running FRAME handler will slow the rest of the machine down. |
+| RESET     | 0x00 | Hardware | Reset button pressed | Performs steps necessary to initialize memory, the screen, and other subsystems needed in order to boot the machine. |
 
 
