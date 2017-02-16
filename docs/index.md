@@ -23,4 +23,5 @@ Retroputer is an emulator for a computer system that resembles machines in the 8
 * [I/O](./io)
 * [Instruction Set Architecture](./isa)
 * [Traps](./traps)
+* [Kernel](./kernel)
 
