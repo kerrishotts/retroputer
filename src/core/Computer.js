@@ -26,7 +26,7 @@ export default class Computer {
 
         this.performance = {
             iterationsBetweenTimeCheck: 100,
-            timeToDevoteToCPU: 1,
+            timeToDevoteToCPU: 12,
             throttlePoint: 14,          // floor((850/60))
             maxTimeToDevoteToCPU: 12,   // floor((725/60))
             minTimeToDevoteToCPU: 0.2
