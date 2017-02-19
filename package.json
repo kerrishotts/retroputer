@@ -17,6 +17,7 @@
     "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
     "babel-polyfill": "^6.16.0",
     "babel-preset-es2015": "^6.18.0",
+    "babel-preset-es2015-loose": "^8.0.0",
     "chai": "^3.5.0",
     "coveralls": "^2.11.15",
     "cross-env": "^3.1.4",
@@ -27,11 +28,12 @@
     "nyc": "^10.1.2",
     "ts-loader": "^2.0.0",
     "typescript": "^2.1.6",
+    "uglify-js": "git://github.com/mishoo/UglifyJS2.git#harmony",
     "webpack": "^2.2.1"
   },
   "scripts": {
     "asm": "ts-node bin/asm",
-    "test": "mocha --compilers js:ts-node/register ",
+    "test": "mocha",
     "serve": "http-server --cors -p 8080 -c-1 -s .",
     "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
     "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
