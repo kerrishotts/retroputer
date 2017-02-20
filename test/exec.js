@@ -24,25 +24,25 @@ describe ("#exec", () => {
         ["Increment, no carry", [
             "XOR A, A",
             "INC A",
-        ], { A: 0x0001, }, 
+        ], { A: 0x0001, },
            { V: 0, C: 0, N: 0, Z: 0 }],
 
         ["Increment, carry", [
             "LDI A, 0xFFFF",
             "INC A",
-        ], { A: 0x0000, }, 
+        ], { A: 0x0000, },
            { V: 0, C: 1, N: 0, Z: 1 }],
 
         ["Decrement, no carry (indicating borrow)", [
             "XOR A, A",
             "DEC A",
-        ], { A: 0xFFFF, }, 
+        ], { A: 0xFFFF, },
            { V: 0, C: 0, N: 1, Z: 0 }],
 
         ["Decrement, carry (indicating no borrow)", [
             "LDI A, 0xFFFF",
             "DEC A",
-        ], { A: 0xFFFE, }, 
+        ], { A: 0xFFFE, },
            { V: 0, C: 1, N: 1, Z: 0 }],
 
         ["Simple addition", [
@@ -50,7 +50,7 @@ describe ("#exec", () => {
             "MOV B, A",
             "LDI A, 0x0002",
             "ADD A, B",
-        ], { A: 0x0012, }, 
+        ], { A: 0x0012, },
            { V: 0, C: 0, N: 0, Z: 0 }],
 
         ["Addition expecting carry", [
@@ -58,7 +58,7 @@ describe ("#exec", () => {
             "MOV B, A",
             "LDI A, 0xFFFF",
             "ADD A, B",
-        ], { A: 0xFFFE, }, 
+        ], { A: 0xFFFE, },
            { V: 0, C: 1, N: 1, Z: 0 }],
 
         ["Addition expecting overflow, not zero", [
@@ -66,7 +66,7 @@ describe ("#exec", () => {
             "MOV B, A",
             "LDI A, 0x0001",
             "ADD A, B",
-        ], { A: 0x8000, }, 
+        ], { A: 0x8000, },
            { V: 1, C: 0, N: 1, Z: 0 }],
 
         ["Addition expecting carry and zero", [
@@ -74,7 +74,7 @@ describe ("#exec", () => {
             "MOV B, A",
             "LDI A, 0x0001",
             "ADD A, B",
-        ], { A: 0x0000, }, 
+        ], { A: 0x0000, },
            { V: 0, C: 1, N: 0, Z: 1 }],
 
         ["Simple multiply", [
@@ -83,7 +83,7 @@ describe ("#exec", () => {
             "LDI A, 0x0002",
             "XOR C, C",
             "MUL C*A, B",
-        ], { A: 0x0020, }, 
+        ], { A: 0x0020, },
            { V: 0, C: 0, N: 0, Z: 0 }],
 
         ["Multiply, 64-bits", [
@@ -92,7 +92,7 @@ describe ("#exec", () => {
             "XOR C, C",
             "LDI A, 0x8000",
             "MUL C*A, B",
-        ], { A: 0x0000, C: 0x0008}, 
+        ], { A: 0x0000, C: 0x0008},
            { V: 1, C: 1, N: 0, Z: 1 }],
 
         ["Simple divide", [
@@ -101,7 +101,7 @@ describe ("#exec", () => {
             "LDI A, 0x0010",
             "XOR C, C",
             "IDIV C*A, B",
-        ], { A: 0x0008, B: 0x0002, C: 0x0000 }, 
+        ], { A: 0x0008, B: 0x0002, C: 0x0000 },
            { V: 0, C: 0, N: 0, Z: 0 }],
 
         ["Simple modulus", [
@@ -110,7 +110,7 @@ describe ("#exec", () => {
             "LDI A, 0x0010",
             "XOR C, C",
             "IMOD C*A, B",
-        ], { A: 0x0004, B: 0x0006, C: 0x0000 }, 
+        ], { A: 0x0004, B: 0x0006, C: 0x0000 },
            { V: 0, C: 0, N: 0, Z: 0 }],
 
 
@@ -120,8 +120,16 @@ describe ("#exec", () => {
             "LDI A, 0x0001",
             "CLR M",
             "SHL B, A",
-        ], { A: 0x0001, B: 0b00000100}, 
+        ], { A: 0x0001, B: 0b00000100},
            { V: 0, C: 0, N: 0, Z: 0 }],
+        ["Shift left out", [
+            "LDI A, 0b00000010",
+            "MOV B, A",
+            "LDI A, 0x0010",
+            "CLR M",
+            "SHL B, A",
+        ], { A: 0x0010, B: 0x0000 },
+           { V: 0, C: 1, N: 0, Z: 1 }],
 
         ["Rotate left, simple", [
             "LDI A, 0b1000001000000001",
@@ -129,13 +137,21 @@ describe ("#exec", () => {
             "LDI A, 0x0001",
             "SET M",
             "SHL B, A",
-        ], { B: 0b0000010000000011, A: 0x0001}, 
+        ], { B: 0b0000010000000011, A: 0x0001},
+           { M: 1, V: 0, C: 0, N: 0, Z: 0 }],
+        ["Rotate left, modulus", [
+            "LDI A, 0b1000001000000001",
+            "MOV B, A",
+            "LDI A, 0x0011",
+            "SET M",
+            "SHL B, A",
+        ], { B: 0b0000010000000011, A: 0x0011},
            { M: 1, V: 0, C: 0, N: 0, Z: 0 }],
 
         ["Clear bits, simple", [
             "LDI A,   0b11000011",
             "CLRR AL, 0b11000000",
-        ], { A: 0x0003, }, 
+        ], { A: 0x0003, },
            { V: 0, C: 0, N: 0, Z: 0 }],
 
     ].forEach((test) => {

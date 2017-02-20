@@ -172,6 +172,10 @@ function shiftUpdatingFlags(cpu, a, b, size = 16, dir = -1, mode = 0) {
 
     cpu.clrFlag(cpu.flagMap.V);
     cpu.clrFlag(cpu.flagMap.C);
+
+    if (mode === 0 && b >= 16) { b = 16; }
+    if (mode === 1) { b &= 0x0F; }
+
     for (let i = 0; i < b; i++) {
         let bitShiftingOut = r & ((dir < 0) ? msbmask : lsbmask);
         r = ((dir < 0) ? r << 1 : r >> 1) & maxint;
