@@ -1,7 +1,7 @@
 import twosComplement from "../util/twosComplement.js";
 
 export default class Screen {
-    constructor(id, memory) {
+    constructor(id, borderId, memory) {
         let width = 320, height = 200, layout = memory.layout;
 
         this._width = width;
@@ -19,6 +19,8 @@ export default class Screen {
         this._canvas.setAttribute("width", width);
         this._canvas.setAttribute("height", height);
         this._canvasCtx = this._canvas.getContext("2d");
+
+        this._screenBorderEl = document.getElementById(borderId);
 
         this._memory = memory;
         this._layout = layout;
@@ -345,6 +347,17 @@ export default class Screen {
     }
     */
 
+    renderBorderToScreenBorder() {
+        let borderColor = this.getBorderColor();
+        let color = this._palette[borderColor];
+        let b = (color & 0x00FF0000) >> 16;
+        let g = (color & 0x0000FF00) >> 8;
+        let r = (color & 0x000000FF);
+        let css = `rgb(${r}, ${g}, ${b})`;
+        this._screenBorderEl.style.backgroundColor = css;
+        this._screen.style.backgroundColor = css;
+    }
+
     renderBorderToCanvas() {
         let borderColor = this.getBorderColor(),
             [borderSizeX, borderSizeY] = this.getBorderSize(),
@@ -409,6 +422,7 @@ export default class Screen {
                 actions[actionIdx]();
             }
         }
+        this.renderBorderToScreenBorder();
     }
 
     draw() {

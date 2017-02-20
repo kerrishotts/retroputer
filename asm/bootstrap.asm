@@ -49,7 +49,7 @@ RESET:
     ; Set SP and BP to 0x01000
     LDI A, 0x1000
     MOV SP, A
-    MOV BP, A 
+    MOV BP, A
 
     ;
     ; set up the tile page and clear it
@@ -76,7 +76,7 @@ RESET:
     MOV D, A
     MFILL DB : D, AL * C                ; fill with zeros; A is already zero
     ADD D, C                            ; move to background color (also 0x00)
-    MFILL DB : D, AL * C 
+    MFILL DB : D, AL * C
     ADD D, C                            ; move to foreground color
     LDI AL, 0xFF                        ; and fill with 0xFF
     MFILL DB : D, AL * C
@@ -86,7 +86,7 @@ RESET:
     MOV DB, A
     LDI AL, 0x09                        ; Set background color
     STD AL, [0xFA0B]
-    LDI A, 0x0101                       ; set border size (1px x 1px)
+    LDI A, 0x0000                       ; set border size (0px x 0px)
     STD A, [0xFA05]
     LDI AL, 0x3F                        ; set border color
     STD AL, [0xFA04]

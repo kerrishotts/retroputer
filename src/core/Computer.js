@@ -17,6 +17,7 @@ export default class Computer {
 
     constructor({
         screenId = "screen",
+        borderId = "screen-border",
         devices = [],
         roms = [],
         beforeFrameUpdate,
@@ -58,7 +59,7 @@ export default class Computer {
 
 
         if (screenId) {
-            this.screen = new Screen(screenId, this.memory);
+            this.screen = new Screen(screenId, borderId, this.memory);
         } else {
             this.screen = null;
         }
