@@ -42,6 +42,7 @@ export default class Computer {
         this.roms.forEach((rom) => {
             this.memory.loadFromJS(rom);
         });
+        this.memory.protected = true;
 
         this.io = new IO();
         this.cpu = new CPU(this.memory, this.io);
@@ -291,6 +292,7 @@ export default class Computer {
         this.roms.forEach((rom) => {
             this.memory.loadFromJS(rom);
         });
+        this.memory.protected = true;
 
         //this.reset();
     }

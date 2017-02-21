@@ -1,6 +1,7 @@
 /* eslint-disable */
 export let memoryLayout = {
   size:                256
+ ,memlen:          0x40000
  ,memtop:          0x3FFFF
  ,spriteCount:          16
  ,sprite0Height:   0x340A0
@@ -62,7 +63,7 @@ export let memoryLayout = {
  ,tileSet3:        0x2C000  // tileset 3
  ,tileSet2:        0x28000  // tileset 2
  ,tileSet1:        0x24000  // tileset 1
- ,tileSet0:        0x20000  // 16K 256 8x8 tileset 0  
+ ,tileSet0:        0x20000  // 16K 256 8x8 tileset 0
  ,tileSetsStart:   0x20000
  ,paletteLength:      1024
  ,paletteLength32:     256
@@ -86,6 +87,7 @@ export let memoryLayout = {
  ,screenConfigStart:0x1FA00
  ,graphicsLength:    64000
  ,graphicsStart:   0x10000  // 320 x 200 (64000) bytes
+ ,romLength:       0x04000  // length of rom
  ,romEnd:          0x0FFFF  // End of ROM
  ,romStart:        0x0C000  // Start of ROM
  ,codeStart:       0x01000  // Start of code execution

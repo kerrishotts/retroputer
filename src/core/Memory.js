@@ -3,10 +3,23 @@ import hexUtils from "../util/hexUtils.js";
 
 export default class Memory {
   constructor(layout) {
+    this._protected = false;
     this.layout = layout;
     this._buf = new ArrayBuffer(layout.size * 1024);
     this._mem = new Uint8Array(this._buf);
+    this._rom = new Uint8Array(this._buf, layout.romStart, layout.romLength);
     this.resetStats();
+  }
+
+  get protected() {
+    return this._protected;
+  }
+
+  set protected(v) {
+    this._protected = v;
+    if (v) {
+      this._rom = this.copyFromRange(this.layout.romStart, this.layout.romLength);
+    }
   }
 
   resetStats() {
@@ -47,11 +60,7 @@ export default class Memory {
 */
 
   poke(addr, val) {
-    if (val === undefined) {
-      throw new Error("can't write undefined to memory!");
-    }
     addr &= 0x3FFFF;
-    if (val < 0) { val += 256; }
     let v = (val & 0xFF);
     this._mem[addr] = v;
     this.stats.lastValueWritten = v;
@@ -62,11 +71,7 @@ export default class Memory {
   }
 
   poke16(addr, val) {
-    if (val === undefined) {
-      throw new Error("can't write undefined to memory!");
-    }
     addr &= 0x3FFFF;
-    if (val < 0) { val += 65536; }
     let v = (val & 0xFFFF);
     this._mem[addr] = (v & 0xFF00) >> 8;
     this._mem[addr + 1] = (v & 0x00FF);
@@ -77,11 +82,7 @@ export default class Memory {
   }
 
   poke32(addr, val) {
-    if (val === undefined) {
-      throw new Error("can't write undefined to memory!");
-    }
     addr &= 0x3FFFF;
-    if (val < 0) { val += 4294967296; }
     let v = (val & 0xFFFFFFFF);
     this._mem[addr] = (v & 0xFF000000) >> 24;
     this._mem[addr + 1] = (v & 0x00FF0000) >> 16;
@@ -96,6 +97,11 @@ export default class Memory {
   peek(addr) {
     addr &= 0x3FFFF;
     let v = this._mem[addr];
+    if (this._protected) {
+      if (addr >= this.layout.romStart && addr <= this.layout.romEnd) {
+        v = this._rom[addr - this.layout.romStart];
+      }
+    }
     this.stats.readsTotal++;
     this.stats.byteReadsTotal++;
     this.stats.lastValueRead = v;
@@ -105,7 +111,7 @@ export default class Memory {
 
   peek16(addr) {
     addr &= 0x3FFFF;
-    let v = (this._mem[addr] << 8) | this._mem[addr + 1];
+    let v = (this.peek(addr) << 8) | this.peek(addr + 1);
     this.stats.readsTotal++;
     this.stats.wordReadsTotal++;
     this.stats.lastValueRead = v;
@@ -115,7 +121,7 @@ export default class Memory {
 
   peek32(addr) {
     addr &= 0x3FFFF;
-    let v = (this._mem[addr] << 24) | (this._mem[addr + 1] << 16) | (this._mem[addr + 2] << 8) | (this._mem[addr + 3]);
+    let v = (this.peek(addr) << 24) | (this.peek(addr + 1) << 16) | (this.peek(addr + 2) << 8) | (this.peek(addr + 3));
     this.stats.readsTotal++;
     this.stats.wordReadsTotal++;
     this.stats.lastValueRead = v;
@@ -124,7 +130,40 @@ export default class Memory {
   }
 
   range(addr,len) {
-    return new Uint8Array(this._buf, addr, len);
+    if (addr + len <= this.layout.memtop) {
+      return new Uint8Array(this._buf, addr, len);
+    } else {
+      let overflow = (addr + len) - this.layout.memtop;
+      len -= overflow;
+      if (len < 0) { len = 0; }
+      return new Uint8Array(this._buf, addr, len); //.concat(this.copyFromRange(0, overflow));
+    }
+  }
+
+  copyFromRange(addr,len) {
+    return Uint8Array.from(this.range(addr, len));
+  }
+
+  copyWithin({src, dest, len} = {}) {
+    if (src + len > this.layout.memtop ||
+        dest + len > this.layout.memtop) {
+          return;
+    }
+    this._mem.copyWithin(dest, src, src + len);
+  }
+
+  fillWithin({value, addr, len} = {}) {
+    if (len + addr > this.layout.memtop) {
+      return;
+    }
+    this._mem.fill(value & 0xFF, addr, addr + len);
+  }
+
+  setWithin({data, addr} = {}) {
+    if (addr + (data.length) > this.layout.memtop) {
+      return;
+    }
+    this._mem.set(data, addr);
   }
 
   range32(addr,len) {
@@ -132,6 +171,7 @@ export default class Memory {
   }
 
   init() {
+    this.protected = false;
     for (let i = 0; i < (this.layout.size * 1024); i++) {
       // simulate old-style memory being random at boot
       this.poke(i, Math.floor(Math.random() * 256));
@@ -155,6 +195,7 @@ export default class Memory {
 
   }
 
+/*
   static poke(buffer, addr, val)  {
     buffer[addr] = val;
   }
@@ -170,5 +211,5 @@ export default class Memory {
   static range32(buffer, addr, len) {
     return new Uint32Array(buffer, addr, len);
   }
-
+*/
 }
