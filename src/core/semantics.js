@@ -294,16 +294,16 @@ let semanticsOps = {
         } else {
             if (cpu.state.scale) {
                 addr = getAddr(cpu, cpu.state.whichBank);
-                if ((addr & 0x3C000) !== 0xC000) {
+                //if ((addr & 0x3C000) !== 0xC000) {
                     // avoid ROM
                     cpu.memory.poke16(addr, sreg.U16 );
-                }
+                //}
             } else {
                 addr = getAddr(cpu, cpu.state.whichBank);
-                if ((addr & 0x3C000) !== 0xC000) {
+                //if ((addr & 0x3C000) !== 0xC000) {
                     // avoid ROM
                     cpu.memory.poke(addr, sreg.U8 );
-                }
+                //}
             }
         }
     },
@@ -321,48 +321,36 @@ let semanticsOps = {
     [semantics.MEMFILL]:function memfill(cpu) {
         let c = cpu.registers[cpu.registerMap.C].U16;
         let sr = cpu.registers[cpu.state.srcRegister].U8;
-        let db = cpu.registers[cpu.state.destBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2;
+        let db = (cpu.registers[cpu.state.destBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2) << 16;
         let da = cpu.registers[cpu.state.destRegister].U16;
-        let daddr = ((db << 16) | da);
-        for (let i = 0; i < c; i++) {
-            if (((daddr + i) & 0x3C000) !== 0xC000) {
-                cpu.memory.poke(daddr + i, sr);
-            }
-        }
+        let daddr = (db | da);
+        cpu.memory.fillWithin({value: sr, addr: daddr, len: c});
     },
     [semantics.MEMCOPY]:function memcopy(cpu) {
         let c = cpu.registers[cpu.registerMap.C].U16;
-        let sb = cpu.registers[cpu.state.srcBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2;
+        let sb = (cpu.registers[cpu.state.srcBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2) << 16;
         let sa = cpu.registers[cpu.state.srcRegister].U16;
-        let db = cpu.registers[cpu.state.destBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2;
+        let db = (cpu.registers[cpu.state.destBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2) << 16;
         let da = cpu.registers[cpu.state.destRegister].U16;
-        let daddr = ((db << 16) | da);
-        let saddr = ((sb << 16) | sa);
-        for (let i = 0; i < c; i++) {
-            if (((daddr + i) & 0x3C000) !== 0xC000) {
-                cpu.memory.poke(daddr + i, cpu.memory.peek(saddr + i));
-            }
-        }
+        let daddr = (db | da);
+        let saddr = (sb | sa);
+
+        cpu.memory.copyWithin({src: saddr, dest: daddr, len: c});
     },
     [semantics.MEMSWAP]:function memswap(cpu) {
         let c = cpu.registers[cpu.registerMap.C].U16;
-        let sb = cpu.registers[cpu.state.srcBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2;
+        let sb = (cpu.registers[cpu.state.srcBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2) << 16;
         let sa = cpu.registers[cpu.state.srcRegister].U16;
-        let db = cpu.registers[cpu.state.destBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2;
+        let db = (cpu.registers[cpu.state.destBank === 0 ? cpu.registerMap.SB : cpu.registerMap.DB].U2) << 16;
         let da = cpu.registers[cpu.state.destRegister].U16;
-        let daddr = ((db << 16) | da);
-        let saddr = ((sb << 16) | sa);
-        let s, d;
-        for (let i = 0; i < c; i++) {
-            s = cpu.memory.peek(saddr + i);
-            d = cpu.memory.peek(daddr + i);
-            if (((saddr + i) & 0x3C000) !== 0xC000) {
-                cpu.memory.poke(saddr + i, d);
-            }
-            if (((daddr + i) & 0x3C000) !== 0xC000) {
-                cpu.memory.poke(daddr + i, s);
-            }
-        }
+        let daddr = (db | da);
+        let saddr = (sb | sa);
+
+        let sbuf = cpu.memory.copyFromRange(saddr, c);
+        let dbuf = cpu.memory.copyFromRange(daddr, c);
+
+        cpu.memory.setWithin({data: dbuf, addr: saddr});
+        cpu.memory.setWithin({data: sbuf, addr: daddr});
     },
     [semantics.PUSH]:   function push(cpu) {
         let sreg = cpu.registers[cpu.state.srcRegister];
