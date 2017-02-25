@@ -40,7 +40,7 @@ You can launch the browser interface executing:
 
 ```
 $ npm install
-$ npm run jspm-install
+$ npm run webpack
 $ npm run serve
 ```
 
