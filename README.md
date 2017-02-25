@@ -44,7 +44,7 @@ $ npm run webpack
 $ npm run serve
 ```
 
-Then navigate to http://localhost:8080.
+Then navigate to http://localhost:8080/src/www.
 
 ## Tests
 
