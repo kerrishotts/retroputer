@@ -1,6 +1,6 @@
 # Retroputer
 
-The Retroputer is intended as both a plaything and educational tool. It is intended to simulate what programming and using a computer from the late 1980s was like. Some liberties, however, are taken, including the following:
+Retroputer is intended as both a plaything and educational tool. It is intended to simulate what programming and using a computer from the late 1980s was like. Some liberties, however, are taken, including the following:
 
 * 256KiB is addressable; 256KiB is present -- in the 80s, this would have been pretty expensive
 * 64KiB devoted to 320x200 graphics
@@ -30,7 +30,7 @@ In Progress:
 
 TODO:
 
-* Sprites 
+* Sprites
 * Sound
 * Other devices
 
@@ -52,7 +52,7 @@ You can run tests by executing `npm test`.
 
 ## Docs
 
-Documentation is available in the [docs](./docs) directory. 
+Documentation is available in the [docs](./docs) directory.
 
 ## License
 
