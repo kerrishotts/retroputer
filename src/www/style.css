@@ -41,6 +41,19 @@ body {
   flex: 1 1 auto;
 }
 
+.panel.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99;
+}
+
+.panel.minimize {
+  max-height: 2em;
+}
+
 .panel.no-shrink {
   flex-shrink: 0;
 }
@@ -61,6 +74,32 @@ body {
   height: 2em;
   line-height: 1;
   padding: 0.5em;
+  z-index: 9;
+}
+.panel > button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2em;
+  height: 2em;
+  z-index: 10;
+  background-color: transparent;
+  color: white;
+  border: 0;
+}
+
+.panel > button.maximize {
+  right: 4em;
+}
+.panel > button.minimize {
+  right: 2em;
+}
+
+.panel.fullscreen .title {
+  display: none;
+}
+.panel.fullscreen #stats {
+  display: none;
 }
 
 .horizontal {
@@ -98,6 +137,10 @@ body {
   font-size: 0.625rem;
 }
 
+.panel.fullscreen .scrollingpre {
+  font-size: 1rem;
+}
+
 /*
  * Toolbars
  ********************************************************************/
@@ -126,7 +169,7 @@ body {
   font-size: 87.5%;
 }
 
-.toolbar button, 
+.toolbar button,
 .toolbar input[type=text],
 textarea {
   font-family: Menlo, Consolas, "Courier New", Courier, monospace;
@@ -160,7 +203,7 @@ textarea {
 }
 
 /*
- * bottom panel 
+ * bottom panel
  ********************************************************************/
 
 .bottom-panel {
@@ -168,7 +211,7 @@ textarea {
 }
 
 /*
- * log panel 
+ * log panel
  ********************************************************************/
 
 #log {
@@ -178,7 +221,7 @@ textarea {
 }
 
 /*
- * cpu panel 
+ * cpu panel
  ********************************************************************/
 
 #cpu table {
@@ -195,7 +238,7 @@ textarea {
 }
 
 /*
- * control panel 
+ * control panel
  ********************************************************************/
 
 #cpu-speed {
@@ -205,11 +248,11 @@ textarea {
 }
 /*
 
- * keyboard panel 
+ * keyboard panel
  ********************************************************************/
 
 /*
- * memory panel 
+ * memory panel
  ********************************************************************/
 
 #memory {
@@ -219,15 +262,19 @@ textarea {
   min-height: 10em;
 }
 
+.panel.fullscreen #memory {
+  max-height: inherit;
+}
+
 /*
- * code panel 
+ * code panel
  ********************************************************************/
 #program {
   width: 50%;
 }
 
 /*
- * floating statistics panel 
+ * floating statistics panel
  ********************************************************************/
 
 #stats {
@@ -241,7 +288,7 @@ textarea {
 }
 
 /*
- * screen panel 
+ * screen panel
  ********************************************************************/
 
 

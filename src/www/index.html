@@ -6,9 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,minimum-scale=1">
   <title>Retroputer</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
-  <!--<script src="../../jspm_packages/system.js"></script>
-  <script src="../../jspm.browser.js"></script>
-  <script src="../../jspm.config.js"></script>-->
   <script src="bundle.js" defer></script>
 </head>
 <body>
@@ -16,25 +13,29 @@
     window.onerror = function (...args) {
       window.log(JSON.stringify(args));
     }
-    /*
-    System.import ("index.js").
-      then( App => console.log("loaded") ).
-      catch( err => { window.log(JSON.stringify(err)); console.error(err); });
-    */
   </script>
   <div id="ui" class="horizontal panel">
     <div class="main vertical panel">
       <div class="screen-panel vertical panel" id="screen-border">
+        <button class="maximize" data-cmd="panel-cmd" data-parm="maximize">^</button>
+        <button class="minimize" data-cmd="panel-cmd" data-parm="minimize">v</button>
+        <button class="normalize" data-cmd="panel-cmd" data-parm="normalize">=</button>
         <div class="title">Screen</div>
         <canvas id="screen"></canvas>
         <div id="stats"></div>
       </div>
       <div class="bottom-panel collapsible horizontal panel">
         <div class="collapsible log-panel vertical panel">
+          <button class="maximize" data-cmd="panel-cmd" data-parm="maximize">^</button>
+          <button class="minimize" data-cmd="panel-cmd" data-parm="minimize">v</button>
+          <button class="normalize" data-cmd="panel-cmd" data-parm="normalize">=</button>
           <div class="title">Log</div>
           <div id="log" class="scrollingpre"></div>
         </div>
         <div class="callapsible cpu-panel vertical panel">
+          <button class="maximize" data-cmd="panel-cmd" data-parm="maximize">^</button>
+          <button class="minimize" data-cmd="panel-cmd" data-parm="minimize">v</button>
+          <button class="normalize" data-cmd="panel-cmd" data-parm="normalize">=</button>
           <div class="title">CPU</div>
           <div id="cpu">
             <table>
@@ -69,10 +70,10 @@
             Speed: <span id="cpu-speed"></span>
           </div>
           <div class="row">
-            <button data-cmd="slowest">|&lt;</button>
-            <button data-cmd="slow">&lt;</button>
-            <button data-cmd="fast">&gt;</button>
-            <button data-cmd="fastest">&gt;|</button>
+            <button data-cmd="speed-adjust" data-parm="slowest">|&lt;</button>
+            <button data-cmd="speed-adjust" data-parm="slow">&lt;</button>
+            <button data-cmd="speed-adjust" data-parm="fast">&gt;</button>
+            <button data-cmd="speed-adjust" data-parm="fastest">&gt;|</button>
           </div>
           <div class="row">
             <button data-cmd="step">Step</button>
@@ -90,6 +91,9 @@
         </div>
       </div>
       <div class="collapsible vertical panel fixed">
+        <button class="maximize" data-cmd="panel-cmd" data-parm="maximize">^</button>
+        <button class="minimize" data-cmd="panel-cmd" data-parm="minimize">v</button>
+        <button class="normalize" data-cmd="panel-cmd" data-parm="normalize">=</button>
         <div class="title">Memory</div>
         <div id="memory" class="vertical panel">
           <div class="toolbar">
@@ -105,6 +109,9 @@
         </div>
       </div>
       <div class="collapsible vertical panel">
+        <button class="maximize" data-cmd="panel-cmd" data-parm="maximize">^</button>
+        <button class="minimize" data-cmd="panel-cmd" data-parm="minimize">v</button>
+        <button class="normalize" data-cmd="panel-cmd" data-parm="normalize">=</button>
         <div class="title">Code</div>
         <div id="code" class="vertical panel">
           <div class="toolbar">
@@ -119,7 +126,7 @@
             </div>
           </div>
           <div class="toolbar">
-            <div class="row"> 
+            <div class="row">
               <input type="file" id="program" />
               <button data-cmd="load-asm-disk">Load</button>
             </div>
