@@ -30,7 +30,8 @@ export default class Computer {
             timeToDevoteToCPU: 12,
             throttlePoint: 14,          // floor((850/60))
             maxTimeToDevoteToCPU: 12,   // floor((725/60))
-            minTimeToDevoteToCPU: 0.2
+            minTimeToDevoteToCPU: 0.2,
+            finetuning: 1 // percent to adjust 25 = faster adjustments
         };
         this.targetFPS(60);
 
@@ -99,6 +100,7 @@ export default class Computer {
 
         /*eslint-enable no-var*/
         this.stats.oldf = f;
+        this.stats.deltaf = deltaf;
 
         // is there a beforeFrameUpdate callback? If so, call it
         if (this.beforeFrameUpdate) {
@@ -161,14 +163,14 @@ export default class Computer {
             // only throttle when stepping
             if (totalTime > this.performance.throttlePoint) {
                 // we need to limit processing time
-                this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - 25) / 100;
+                this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - this.performance.finetuning) / 100;
                 if (this.performance.timeToDevoteToCPU < this.performance.minTimeToDevoteToCPU) {
                     this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU
                 }
             } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
                 // but we need to increase processing to use the most of the
                 // available time as possible
-                this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) + 25) / 100;
+                this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) + this.performance.finetuning) / 100;
                 if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
                     this.performance.timeToDevoteToCPU = this.performance.maxTimeToDevoteToCPU;
                 }
