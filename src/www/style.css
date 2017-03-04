@@ -86,6 +86,7 @@ body {
   background-color: transparent;
   color: white;
   border: 0;
+  text-shadow:1px 1px 1px rgba(0,0,0,0.5);
 }
 
 .panel > button.maximize {
@@ -185,6 +186,11 @@ textarea {
   vertical-align: middle;
   background-color: transparent;
   outline: none;
+}
+
+.toolbar button {
+  background-color: rgba(255,255,255,0.25);
+  color: #46B;
 }
 
 .toolbar button:hover, .toolbar button:focus {
