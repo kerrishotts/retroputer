@@ -10,6 +10,7 @@ import Asm from "../asm/Asm.js";
 import hexUtils from "../util/hexUtils.js";
 
 import Keyboard from "../core/devices/Keyboard.js";
+import Timers from "../core/devices/Timers.js";
 
 import font from "../roms/font0.js";
 import bootstrap from "../roms/bootstrap.js";
@@ -381,7 +382,7 @@ export default class App {
         });
         setInterval(() => this.sizeScreen(), 1000);
         let computer = new Computer({
-            devices: [Keyboard],
+            devices: [Keyboard, Timers],
             roms: [...bootstrap, font],
             screenId: "screen",
             debug: false

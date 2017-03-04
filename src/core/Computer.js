@@ -215,7 +215,9 @@ export default class Computer {
 
     tickDevices() {
         let now = this.now();
-        this.deviceTickFns.forEach( fn => fn(now) );
+        for (let i = this.deviceTickFns.length - 1; i >= 0; i--) {
+            this.deviceTickFns[i](now);
+        }
     }
 
     resetStats() {
@@ -295,6 +297,9 @@ export default class Computer {
             this.memory.loadFromJS(rom);
         });
         this.memory.protected = true;
+
+        // reset devices, if allowed
+        Object.keys(this.devices).forEach(deviceName => (typeof this.devices[deviceName].reset === "function" ? this.devices[deviceName].reset() : 0));
 
         //this.reset();
     }
