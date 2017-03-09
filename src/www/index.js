@@ -13,7 +13,7 @@ import Keyboard from "../core/devices/Keyboard.js";
 import Timers from "../core/devices/Timers.js";
 
 import font from "../roms/font0.js";
-import bootstrap from "../roms/bootstrap.js";
+import kernel from "../roms/kernel.js";
 
 export default class App {
     constructor() {
@@ -383,7 +383,7 @@ export default class App {
         setInterval(() => this.sizeScreen(), 1000);
         let computer = new Computer({
             devices: [Keyboard, Timers],
-            roms: [...bootstrap, font],
+            roms: [...kernel, font],
             screenId: "screen",
             debug: false
         });
