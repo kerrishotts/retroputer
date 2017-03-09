@@ -46,8 +46,7 @@ export default class Screen {
             layout.tilePagesLength);
 
         // we also need the 32-bit array that the canvas will use
-        this._frameData = this._canvasCtx.getImageData(0, 0,
-            width, height);
+        this._frameData = this._canvasCtx.createImageData(width, height);
         this._frameBuf = new ArrayBuffer(this._frameData.data.length);
         this._frame = new Uint32Array(this._frameBuf);
         this._frame8 = new Uint8Array(this._frameBuf);
@@ -224,22 +223,24 @@ export default class Screen {
         }
     }
 
+
     setPixel(x, y, c) {
-        let addr = (((y * this._width) + x) & 0xFFFF);
-        let color = this._palette[c];
-        this._frame[addr] = color | 0xFF000000;
+        // let addr = (((y * this._width) + x) & 0xFFFF);
+        // let addr = ((y * this._width) + x);
+        // let addr = (((y << 8) + (y << 6) + x) & 0xFFFF);
+        let addr = ((y << 8) + (y << 6) + x);
+        this._frame[addr] = this._palette[c] | 0xFF000000;
     }
 
+
     /*
-    setPixel_s (x, y, c) {
-      let addr = (((y*this._width) + x) & 0xFFFF)  << 2;
-      let paddr = this._layout.paletteStart + (c <<2 )
-      let b;
-      for (var i = 0; i < 3; i++) {
-        b = this._memory.peek(paddr+i);
-        this._frame8[addr+i] = b;
-      }
-      this._frame8[addr+3] = 0xFF;
+    setPixel (x, y, c) {
+      let addr = ((y << 8) + (y << 6) + x) << 2;
+      let color = this._palette[c];
+      this._frameBuf[addr++] = color & 0xFF; color >>= 8;
+      this._frameBuf[addr++] = color & 0xFF; color >>= 8;
+      this._frameBuf[addr++] = color & 0xFF;
+      this._frameBuf[addr]   = 0xFF;
     }
     */
 
@@ -257,18 +258,22 @@ export default class Screen {
     renderBackgroundColorToCanvas() {
         let c = this.getBackgroundColor();
 
+        this._frame.fill(this._palette[c] | 0xFF000000);
+
         /*eslint-disable no-var, vars-on-top*/
-        for (var y = 0; y < this._height; y++) {
-            for (var x = 0; x < this._width; x++) {
-                this.setPixel(x, y, c);
-            }
-        }
+//        for (var y = this._height - 1; y !== 0; y--) {
+//            for (var x = this._width - 1; x !== 0; x--) {
+//                this.setPixel(x, y, c);
+//            }
+//        }
 
         /*eslint-enable no-var, vars-on-top*/
     }
 
     renderTilePageToCanvas(page) {
-        let [cropX, cropY] = this.getTilePageCrops(page),
+
+        /*eslint-disable no-var, vars-on-top*/
+        var [cropX, cropY] = this.getTilePageCrops(page),
             cropLeft = cropX,
             cropRight = this._width - cropX,
             cropTop = cropY,
@@ -281,34 +286,36 @@ export default class Screen {
             tileForegroundColor, tileBackgroundColor,
             addr, tile, tileSetAddr, tpix,
             newx, newy,
-            shift = 3 + scale;
+            shift = 3 + scale, shiftedY, scaledY;
 
         offsetX = twosComplement.from8(offsetX);
         offsetY = twosComplement.from8(offsetY);
 
-        /*eslint-disable no-var, vars-on-top*/
-        for (var y = 0; y < this._height; y++) {
-            for (var x = 0; x < this._width; x++) {
+        for (var y = this._height - 1; y > -1; y--) {
+            shiftedY = y >> shift;
+            scaledY = y >> scale;
+            newy = y + offsetY;
+
+            for (var x = this._width - 1; x > -1; x--) {
 
                 // get the tile index
-                addr = ((y >> shift) * this._tileColumns) + (x >> shift);
-                tile = this._tiles[tilePageBase + addr];
+                //addr = ((y >> shift) * this._tileColumns) + (x >> shift);
+                addr = (shiftedY << 5) + (shiftedY << 3) + (x >> shift) + tilePageBase;
+                tile = this._tiles[addr];
 
                 // get corresponding colors
-                tileForegroundColor = this._tiles[tilePageBase + addr + 0x0800];
-                tileBackgroundColor = this._tiles[tilePageBase + addr + 0x0400];
+                tileBackgroundColor = this._tiles[addr + 0x0400];
+                tileForegroundColor = this._tiles[addr + 0x0800];
 
                 // get the tile pixel
-                tileSetAddr = (((y >> scale) & 0x07) << 3) + ((x >> scale) & 0x07) + (tile << 6);
-                tpix = this._tilesets[tileSetBase + tileSetAddr];
+                tileSetAddr = ((scaledY & 0x07) << 3) + ((x >> scale) & 0x07) + (tile << 6) + tileSetBase;
+                tpix = this._tilesets[tileSetAddr];
 
                 if (tpix === 0x00 || tpix === 0xFF) {
-                    tpix = (tpix & 0x01) === 1 ? tileForegroundColor
-                        : tileBackgroundColor;
+                    tpix = (tpix === 0xFF ? tileForegroundColor : tileBackgroundColor);
                 }
 
                 newx = x + offsetX;
-                newy = y + offsetY;
 
                 if (tpix > 0) {
                     if (((newx >= cropLeft) && (newx < cropRight)) &&
@@ -327,8 +334,8 @@ export default class Screen {
             addr = this._layout.graphicsStart;
 
         /*eslint-disable no-var, vars-on-top*/
-        for (var y = 0; y < this._height; y++) {
-            for (var x = 0; x < this._width; x++) {
+        for (var y = this._height - 1; y > -1; y--) {
+            for (var x = this._width - 1; x > -1; x--) {
                 addr++;
                 gpix = this._memory.peek(addr);
                 if (gpix > 0) {
@@ -367,8 +374,8 @@ export default class Screen {
             bottomBorder = this._height - borderSizeY;
 
         /*eslint-disable no-var, vars-on-top*/
-        for (var y = 0; y < this._height; y++) {
-            for (var x = 0; x < this._width; x++) {
+        for (var y = this._height - 1; y > -1; y--) {
+            for (var x = this._width - 1; x > -1; x--) {
                 if (((x < leftBorder) || (x >= rightBorder)) ||
                     ((y < topBorder) || (y >= bottomBorder))) {
                     this.setPixel(x, y, borderColor);
