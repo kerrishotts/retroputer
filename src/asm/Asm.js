@@ -42,7 +42,7 @@ let bankRegisterOffset = 12;
 /*
  * flag map
  */
-let validFlags = ["i", "m", "x", "e", "v", "c", "n", "z", 
+let validFlags = ["i", "m", "x", "e", "v", "c", "n", "z",
                   "eq", "lt", "o"];
 let flagMap = {
     i: 7, m: 6, x: 5, e: 4,
@@ -180,7 +180,7 @@ export let UnexpectedAssemblyError = asmExceptions.UnexpectedAssembly;
 export let UnexpectedTokenError = asmExceptions.UnexpectedToken;
 
 /**
- * 
+ *
  * Removes undefined, null, or empty items from an array
  * @param {Array} arr           array to shrink
  * @returns {Array}             shrunk array
@@ -194,7 +194,7 @@ function shrinkArray(arr) {
 /**
  * Returns a mapped value from a mapping list if the original value is found in a valid list
  * or throws the desired error.
- * 
+ *
  * @param {Array} validList             list of valid items
  * @param {Array} mappingList           corresponding map items
  * @param {string} item                 item to match
@@ -211,7 +211,7 @@ function mappedListItem(validList, mappingList, item, ErrorToThrow) {
 /**
  * returns a string converted to a number, provided it is within the range lo to hi,
  * and can be converted. Otherwise the desired error is thrown.
- * 
+ *
  * @param {string} str                  incoming data
  * @param {number} lo                   low number
  * @param {number} hi                   high number
@@ -231,9 +231,9 @@ function toNumberInRange(str, lo, hi, ErrorToThrow) {
  * Expect an operand matching type in the provided operands array. Return it if it exists, or throw an error if it doesn't.
  * If throws is set to false, no error will be thrown; undefined is returned instead. If eats is true in this case, the
  * token is pushed back on the operands array.
- * 
+ *
  * Eats can be false, in which case this method just looks at it rather than consuming a token.
- * 
+ *
  * @param {Array} operands         the opearnds to work with
  * @param {string} [type="any"]    the required type of the next operand
  * @param {Boolean} [throws=true]  If operand isn't matched, throw (unless false)
@@ -282,7 +282,7 @@ function expectOperand(operands = [], {type = "any", throws = true, eats = true}
             case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
             case "n16":   return toNumberInRange(operand, -32768, 65535, WordExpectedError);
             case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
-            
+
             // address
             /* eslint-disable */
             case "address": return dissectAddress(operand);
@@ -296,7 +296,7 @@ function expectOperand(operands = [], {type = "any", throws = true, eats = true}
         if (throws) {
             throw err;
         } else {
-            if (eats) { 
+            if (eats) {
                 if (operand !== undefined && operand !== null) {
                     operands.unshift(operand);
                 }
@@ -308,7 +308,7 @@ function expectOperand(operands = [], {type = "any", throws = true, eats = true}
 
 /**
  * Returns an address object including information about the addressing mode, indexes, and associated registers
- * 
+ *
  * @param {string} operand              operand that might be an address
  * @return {Object}                     an address object, if operand matches
  */
@@ -316,7 +316,7 @@ function dissectAddress(operand) {
 
     /*
      * Addresses can take the following form:
-     * 
+     *
      * [ or (, indicating Absolute or Indirect
      * Either BP+number, D, or number
      * Optionally +x
@@ -390,7 +390,7 @@ function dissectAddress(operand) {
 
 /*
  * ASSEMBLY ROUTINES
- * 
+ *
  * Each routine takes opcode and ops (all operands)
  ******************************************************************************/
 function _nop() {
@@ -485,7 +485,7 @@ function _branchOrCall(which, opcode, ops) {
     } else {
         op1 = expectOperand(ops, {type: "address"});
         return [0x07, which |
-                (op1.mode << 3) | 
+                (op1.mode << 3) |
                 (op1.indexByX ? 0b00000100 : 0) |
                 (op1.indexByY ? 0b00000010 : 0), (op1.addr & 0xFF00) >> 8, (op1.addr & 0xFF)];
     }
@@ -510,7 +510,7 @@ function _loadOrStore(whichClass, whichOp, opcode, ops) {
             instruction.push(whichClass);
         }
         instruction.push(whichOp |
-                         (scale === 2 ? 0b00001000 : 0) | 
+                         (scale === 2 ? 0b00001000 : 0) |
                          (scale === 2 ? 0b00000001 : 0));
         if (scale === 1) {
             instruction.push ((op2 & 0xFF));
@@ -523,9 +523,9 @@ function _loadOrStore(whichClass, whichOp, opcode, ops) {
             instruction.push(whichClass);
         }
         instruction.push(whichOp |
-                         (op2.mode << 3) | 
+                         (op2.mode << 3) |
                          (op2.indexByX ? 0b00000100 : 0) |
-                         (op2.indexByY ? 0b00000010 : 0) | 
+                         (op2.indexByY ? 0b00000010 : 0) |
                          (scale === 2 ?  0b00000001 : 0));
         if (op2.mode < 6) {
             instruction.push((op2.addr & 0xFF00) >> 8, (op2.addr & 0xFF));
@@ -650,7 +650,7 @@ export default class Asm {
         // use values if we know them when permissive. if not permissive, throw that the symbol couldn't be found
         line = line.replace(/([\#\>\&\@\%\:][A-Za-z0-9\-\_]+)/g, (match) => {
             let typeOfSymbol = match[0];
-            let symbolName = match.substr(1,255).toLowerCase();
+            let symbolName = match.substr(1).toLowerCase();
             let data;
             switch (typeOfSymbol) {
                 case "%":
@@ -659,7 +659,7 @@ export default class Asm {
                         throw new UndefinedSymbolError (match);
                     }
                     break;
-                case "&": 
+                case "&":
                     data = this.vars[symbolName];
                     break;
                 case "#":
@@ -726,7 +726,7 @@ export default class Asm {
                     throw new Error("No import functionality available.");
                 }
                 break;
-            case "code": 
+            case "code":
             case "code+":
             case "data":
             case "data+":
@@ -759,12 +759,12 @@ export default class Asm {
                 break;
             case "var":
                 addr = this.segments.data.current + this.segments.data[this.segments.data.current].length;
-                this.vars[parseResults.directiveData] = addr;
+                this.vars[parseResults.directiveData.toLowerCase()] = addr;
                 break;
             case "def":
                 {
                     let [parm1, parm2] = parseResults.directiveData.split(" ");
-                    this.defs[parm1] = parm2;
+                    this.defs[parm1.toLowerCase()] = parm2;
                 }
                 break;
             case "db":
@@ -929,7 +929,7 @@ export default class Asm {
 
     /**
      * Parses a single assembly instruction and returns a dictionary containing the various components.
-     * 
+     *
      * @param {string} text     the text to parse
      * @return {Object}         an object representing a single instruction
      */
@@ -995,7 +995,7 @@ export default class Asm {
     /**
      * Assemble a single instruction, returning an array of bytes representing the machine code for the instruction
      * Doesn't parse directives, respond to labels or anything like that -- just regular instructions
-     * 
+     *
      * @param {string} text             the text to parse
      * @returns {Array}                 the bytes representing the instruction
      */

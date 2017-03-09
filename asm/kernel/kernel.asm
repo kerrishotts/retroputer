@@ -142,4 +142,9 @@
 
 .import cursor/cursor.asm
 
+.import traps/vectors.asm
+.import traps/FRAME.asm
+.import traps/RESET.asm
+.import traps/BADOP.asm
+
 
