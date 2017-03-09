@@ -1,5 +1,5 @@
 /* global __dirname */
-
+/* eslint-disable */
 var path = require("path");
 
 module.exports = {

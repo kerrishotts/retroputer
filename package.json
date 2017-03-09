@@ -38,7 +38,10 @@
     "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
     "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
-    "webpack": "webpack --config src/www/webpack.config.js"
+    "webpack": "webpack --config src/www/webpack.config.js",
+    "build:asm:kernel": "ts-node bin/asm --basepath ./asm/kernel < ./asm/kernel/kernel.asm > ./src/roms/kernel.js",
+    "build:asm:bootstrap": "ts-node bin/asm --basepath ./asm < ./asm/bootstrap.asm > ./src/roms/bootstrap.js",
+    "build": "npm run build:asm:kernel && npm run lint && npm run webpack"
   },
   "repository": {
     "type": "git",
