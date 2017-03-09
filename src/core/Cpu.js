@@ -60,13 +60,13 @@ export default class CPU {
 
   init() {
 
-    // give defaults for registers and flags 
+    // give defaults for registers and flags
     this.registers[this.registerMap.SP].U16 = 0x1000;
     this.registers[this.registerMap.BP].U16 = 0x1000;
 
     this.setFlag(this.flagMap.X);
     this.setFlag(this.flagMap.I);
-    
+
     // instruction decoding and execution state
     this.state = { };
     this.clearState();
@@ -105,7 +105,7 @@ export default class CPU {
    * Pushes a register or value onto the stack. If reg is supplied, that contents
    * are pushed onto the stack. If reg is udnefined, v is pushed. In the latter case,
    * dsize must be either 1 (byte) or 2 (word)
-   * 
+   *
    * @param {Register} reg      register to push
    * @param {number} [v]        or value
    * @param {number} [dsize=2]  # bytes to push
@@ -126,7 +126,7 @@ export default class CPU {
    * Pops a value from the stack and stores it in reg, if provided. Returns the value
    * regardless. If reg is undefined, dsize is used to determine how much to pop --
    * 1 = byte, 2 = word
-   * 
+   *
    * @param {Register} reg        register to pop stack into
    * @param {number} [dsize=2]    size of data
    * @return {number}             value popped
@@ -148,36 +148,34 @@ export default class CPU {
 
   /**
    * Clears the CPU's decode/execute state
-   * 
+   *
    * @return {void}
-   */ 
+   */
   clearState() {
-    //if (this.state.instruction === undefined) {
-      this.state.instruction = [];
-    //}
-    //this.state.instruction.length = 0;    // raw bytes
-    this.state.opcodeType = 0x00;   // type of opcode -- if extended, first byte of instruction
-    this.state.opcode = 0x00;       // instruction
-    this.state.semantic = 0x00;     // what should we actually do?
-    this.state.imm8 = 0x00;         // imm8 of instruction, if it makes sense
-    this.state.imm16 = 0x0000;      // imm16 of instruction, if it makes sense
-    this.state.srcRegister = 0x00; // source register
-    this.state.destRegister = 0x00; // destination register
-    this.state.othRegister = 0x00; // other register
-    this.state.flag = 0x00;         // flag index
-    this.state.srcBank = 0x00;     // source bank select
-    this.state.destBank = 0x00;     // destination bank select
-    this.state.whichBank = 0x00;   // 00 = SB, 01 = DB
-    this.state.addressingMode = 0x00;  // addressing mode
-    this.state.indexByX = false;
-    this.state.indexByY = false;
-    this.state.scale = 0;
+    let state = this.state;
+    state.instruction = [];
+    state.opcodeType = 0x00;   // type of opcode -- if extended, first byte of instruction
+    state.opcode = 0x00;       // instruction
+    state.semantic = 0x00;     // what should we actually do?
+    state.imm8 = 0x00;         // imm8 of instruction, if it makes sense
+    state.imm16 = 0x0000;      // imm16 of instruction, if it makes sense
+    state.srcRegister = 0x00; // source register
+    state.destRegister = 0x00; // destination register
+    state.othRegister = 0x00; // other register
+    state.flag = 0x00;         // flag index
+    state.srcBank = 0x00;     // source bank select
+    state.destBank = 0x00;     // destination bank select
+    state.whichBank = 0x00;   // 00 = SB, 01 = DB
+    state.addressingMode = 0x00;  // addressing mode
+    state.indexByX = false;
+    state.indexByY = false;
+    state.scale = 0;
   }
 
   /**
    * dumps the CPU's internal state
    * @return {void}
-   */  
+   */
   dump() {
     log( "---- REGISTERS" );
     log( this.registers.map(r => (r ? `${r ? r.name : ""}: ${r ? hexUtils.toHex4(r.U16) : ""} ` : "")).join("") );
@@ -207,7 +205,8 @@ export default class CPU {
  */
   fetch(n) {
     if (n === 0) {
-      this.clearState();
+      //this.clearState();
+      this.state.instruction = [];
     }
     let rPC = this.registers[this.registerMap.PC].U16;
     this.state.instruction.push( this.memory.peek(rPC + n) );
@@ -225,7 +224,7 @@ export default class CPU {
    * Steps the CPU by a single instruction. If skipFetch is TRUE, then the expectation is that an
    * instruction is already present in this.state.instruction and that it needs decoded and executed.
    * This is typical of hardware interrupts.
-   * 
+   *
    * @param {boolean} [skipFetch=false]     if true, skip fetch phase (an instruction is already in the pipeline)
    * @return {void}
    */
@@ -238,7 +237,7 @@ export default class CPU {
     this.decode(!skipFetch);
 
     // and advance PC, unless we've not fetched an instruction, in which case we shouldn't advance
-    if (!skipFetch) { 
+    if (!skipFetch) {
       this.advancePC();
     }
 
