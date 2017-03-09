@@ -229,7 +229,7 @@ export default class Screen {
         // let addr = ((y * this._width) + x);
         // let addr = (((y << 8) + (y << 6) + x) & 0xFFFF);
         let addr = ((y << 8) + (y << 6) + x);
-        this._frame[addr] = this._palette[c] | 0xFF000000;
+        this._frame[addr] = c; //this._palette[c] | 0xFF000000;
     }
 
 
@@ -255,10 +255,10 @@ export default class Screen {
         this._memory.poke(fgAddr, fgColor);
     }
 
-    renderBackgroundColorToCanvas() {
+    renderBackgroundColorToCanvas(palette) {
         let c = this.getBackgroundColor();
 
-        this._frame.fill(this._palette[c] | 0xFF000000);
+        this._frame.fill(palette[c]);
 
         /*eslint-disable no-var, vars-on-top*/
 //        for (var y = this._height - 1; y !== 0; y--) {
@@ -270,27 +270,75 @@ export default class Screen {
         /*eslint-enable no-var, vars-on-top*/
     }
 
-    renderTilePageToCanvas(page) {
+    renderTilePageToCanvas(page, palette) {
 
         /*eslint-disable no-var, vars-on-top*/
         var [cropX, cropY] = this.getTilePageCrops(page),
-            cropLeft = cropX,
-            cropRight = this._width - cropX,
-            cropTop = cropY,
-            cropBottom = this._height - cropY,
+            cropLeft = cropX, cropLeftMasked = cropLeft & 0xFF8,
+            cropRight = this._width - cropX, cropRightMasked = (cropRight & 0xFF8) + 1,
+            cropTop = cropY, cropTopMasked = cropTop & 0xFF8,
+            cropBottom = this._height - cropY, cropBottomMasked = (cropBottom & 0xFF8) + 1,
             [offsetX, offsetY] = this.getTilePageOffsets(page),
-            scale = this.getTilePageScale(page),
+            scale = this.getTilePageScale(page) & 0x07,
             tileSet = this.getTilePageSet(page),
             tileSetBase = tileSet * 16384,
             tilePageBase = page * 0x1000,
             tileForegroundColor, tileBackgroundColor,
             addr, tile, tileSetAddr, tpix,
-            newx, newy,
+            newx, newy, baseX, baseY,
             shift = 3 + scale, shiftedY, scaledY;
 
         offsetX = twosComplement.from8(offsetX);
         offsetY = twosComplement.from8(offsetY);
+/* */
+        // iterate row ---> col over the tile page
+        for (var row = this._tileRows - 1; row > -1; row--) {
+            // baseY should be the topmost Y position of the tile
+            baseY = (row << shift) + offsetY;
 
+            // only paint tiles that have visible portions on screen
+            if (baseY >= cropTopMasked  && baseY <= cropBottomMasked) {
+                for (var col = this._tileColumns - 1; col > -1; col--) {
+                    // baseX should indicate the leftmost X position of the tile
+                    baseX = (col << shift) + offsetX;
+
+                    // only draw if the tile is visible
+                    if (baseX >= cropLeftMasked && baseX <= cropRightMasked) {
+
+                        // addr should indicate the tile page address of the tile
+                        addr = (row << 5) + (row << 3) + col + tilePageBase;
+
+                        // get the tile
+                        tile = this._tiles[addr];
+                        tileSetAddr = tileSetBase + (tile << 6);
+
+                        // get corresponding colors
+                        tileBackgroundColor = this._tiles[addr + 0x0400];
+                        tileForegroundColor = this._tiles[addr + 0x0800];
+
+                        // next, draw each pixel of the tile
+                        for (var y = (8 << scale) - 1; y > -1; y--) {
+                            newy = y + baseY;
+                            for (var x = (8 << scale) - 1; x > -1; x--) {
+                                tpix = this._tilesets[tileSetAddr + (((y >> scale) << 3) + (x >> scale))];
+                                if (tpix === 0x00 || tpix === 0xFF) {
+                                    tpix = (tpix === 0xFF ? tileForegroundColor : tileBackgroundColor);
+                                }
+                                if (tpix > 0) {
+                                    newx = x + baseX;
+                                    if (((newx >= cropLeft) && (newx < cropRight)) &&
+                                        ((newy >= cropTop) && (newy < cropBottom))) {
+                                        this.setPixel(newx, newy, palette[tpix]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+/*
         for (var y = this._height - 1; y > -1; y--) {
             shiftedY = y >> shift;
             scaledY = y >> scale;
@@ -320,16 +368,17 @@ export default class Screen {
                 if (tpix > 0) {
                     if (((newx >= cropLeft) && (newx < cropRight)) &&
                         ((newy >= cropTop) && (newy < cropBottom))) {
-                        this.setPixel(newx, newy, tpix);
+                        this.setPixel(newx, newy, palette[tpix]);
                     }
                 }
             }
         }
+ */
 
         /*eslint-enable no-var, vars-on-top*/
     }
 
-    renderGraphicsToCanvas() {
+    renderGraphicsToCanvas(palette) {
         let gpix,
             addr = this._layout.graphicsStart;
 
@@ -339,7 +388,7 @@ export default class Screen {
                 addr++;
                 gpix = this._memory.peek(addr);
                 if (gpix > 0) {
-                    this.setPixel(x, y, gpix);
+                    this.setPixel(x, y, palette[gpix]);
                 }
             }
         }
@@ -354,9 +403,9 @@ export default class Screen {
     }
     */
 
-    renderBorderToScreenBorder() {
+    renderBorderToScreenBorder(palette) {
         let borderColor = this.getBorderColor();
-        let color = this._palette[borderColor];
+        let color = palette[borderColor];
         let b = (color & 0x00FF0000) >> 16;
         let g = (color & 0x0000FF00) >> 8;
         let r = (color & 0x000000FF);
@@ -365,7 +414,7 @@ export default class Screen {
         this._screen.style.backgroundColor = css;
     }
 
-    renderBorderToCanvas() {
+    renderBorderToCanvas(palette) {
         let borderColor = this.getBorderColor(),
             [borderSizeX, borderSizeY] = this.getBorderSize(),
             leftBorder = borderSizeX,
@@ -378,7 +427,7 @@ export default class Screen {
             for (var x = this._width - 1; x > -1; x--) {
                 if (((x < leftBorder) || (x >= rightBorder)) ||
                     ((y < topBorder) || (y >= bottomBorder))) {
-                    this.setPixel(x, y, borderColor);
+                    this.setPixel(x, y, palette[borderColor]);
                 }
             }
         }
@@ -387,7 +436,7 @@ export default class Screen {
     }
 
     update() {
-        let layer;
+        let layer, palette = [];
         let layers = [
             [],
             [],
@@ -422,14 +471,22 @@ export default class Screen {
         // then the border
         layers[7].push(this.renderBorderToCanvas.bind(this));
 
+        // generate the current palette
+
+        /* eslint-disable */
+        for (var i = 0; i < 256; i++) {
+            palette.push(this._palette[i] | 0xFF000000);
+        }
+
+        /* eslint-enable */
         // and now composite!
         for (let layerIdx = 0; layerIdx < 8; layerIdx++) {
             let actions = layers[layerIdx];
             for (let actionIdx = 0; actionIdx < actions.length; actionIdx++) {
-                actions[actionIdx]();
+                actions[actionIdx](palette);
             }
         }
-        this.renderBorderToScreenBorder();
+        this.renderBorderToScreenBorder(palette);
     }
 
     draw() {
