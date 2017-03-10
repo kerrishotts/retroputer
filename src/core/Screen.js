@@ -51,6 +51,14 @@ export default class Screen {
         this._frame = new Uint32Array(this._frameBuf);
         this._frame8 = new Uint8Array(this._frameBuf);
 
+        // some things depend upon our browser
+        this.renderTilePageToCanvas = this.renderTilePageToCanvas_safari;
+        if (typeof navigator !== "undefined") {
+            if (navigator.userAgent.toLowerCase().indexOf("chrome") > -1) {
+                this.renderTilePageToCanvas = this.renderTilePageToCanvas_chrome;
+            }
+        }
+
         // set up our initial values
         this.init();
     }
@@ -270,7 +278,7 @@ export default class Screen {
         /*eslint-enable no-var, vars-on-top*/
     }
 
-    renderTilePageToCanvas(page, palette) {
+    renderTilePageToCanvas_chrome(page, palette) {
 
         /*eslint-disable no-var, vars-on-top*/
         var [cropX, cropY] = this.getTilePageCrops(page),
@@ -286,11 +294,11 @@ export default class Screen {
             tileForegroundColor, tileBackgroundColor,
             addr, tile, tileSetAddr, tpix,
             newx, newy, baseX, baseY,
-            shift = 3 + scale, shiftedY, scaledY;
+            shift = 3 + scale;
 
         offsetX = twosComplement.from8(offsetX);
         offsetY = twosComplement.from8(offsetY);
-/* */
+
         // iterate row ---> col over the tile page
         for (var row = this._tileRows - 1; row > -1; row--) {
             // baseY should be the topmost Y position of the tile
@@ -337,8 +345,29 @@ export default class Screen {
                 }
             }
         }
+    }
 
-/*
+    renderTilePageToCanvas_safari(page, palette) {
+
+        /*eslint-disable no-var, vars-on-top*/
+        var [cropX, cropY] = this.getTilePageCrops(page),
+            cropLeft = cropX,
+            cropRight = this._width - cropX,
+            cropTop = cropY,
+            cropBottom = this._height - cropY,
+            [offsetX, offsetY] = this.getTilePageOffsets(page),
+            scale = this.getTilePageScale(page) & 0x07,
+            tileSet = this.getTilePageSet(page),
+            tileSetBase = tileSet * 16384,
+            tilePageBase = page * 0x1000,
+            tileForegroundColor, tileBackgroundColor,
+            addr, tile, tileSetAddr, tpix,
+            newx, newy,
+            shift = 3 + scale, shiftedY, scaledY;
+
+        offsetX = twosComplement.from8(offsetX);
+        offsetY = twosComplement.from8(offsetY);
+
         for (var y = this._height - 1; y > -1; y--) {
             shiftedY = y >> shift;
             scaledY = y >> scale;
@@ -373,7 +402,6 @@ export default class Screen {
                 }
             }
         }
- */
 
         /*eslint-enable no-var, vars-on-top*/
     }
