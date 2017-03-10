@@ -288,9 +288,8 @@ textarea {
   right: 0;
   bottom: 0;
   padding: 0.5em;
-  background-color: rgba(0,0,0,0.75);
+  background-color: black;
   color: white;
-  text-shadow: 1px 1px 0 #000000;
 }
 
 /*

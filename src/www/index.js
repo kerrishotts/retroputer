@@ -152,7 +152,7 @@ export default class App {
         let avgInstPerFrame = Math.round(computer.stats.totalInstructions / computer.stats.totalFrames);
         let totalInstBillions = Math.round(computer.stats.totalInstructions / 1000000);
 
-        el.textContent = (`last frame: ${lastFrameDelta}d cpu ${lastFrameTime} (${avgFrameTime}avg) | fps: ${fps} | #inst: ${avgInstPerFrame}/${actMIPS} (${totalInstBillions}m)`)
+        el.textContent = (`last frame: ${lastFrameDelta}d; ${lastFrameTime} (${avgFrameTime}avg) | fps: ${fps}/${computer.performance.FPSTargets[computer.performance.targetFPSIdx]} | #inst: ${avgInstPerFrame}/${actMIPS} (${totalInstBillions}m)`)
 
         // update CPU stats
         for (let reg of computer.cpu.registers) {
@@ -329,6 +329,16 @@ export default class App {
         }
     }
 
+    onReportingPressed(el, p) {
+        switch (p) {
+            case "always":
+                this.updatePanelContinuously();
+                break;
+            default:
+                this.stopUpdatingPanelContinuously();
+        }
+    }
+
 
     onSpeedAdjustPressed(_, r) {
         const computer = this.computer;
@@ -350,15 +360,15 @@ export default class App {
                 incr = 0;
             case "slow":
                 computer.performance.maxTimeToDevoteToCPU = Math.round((computer.performance.maxTimeToDevoteToCPU - incr) * 100) / 100;
-                if (computer.performance.maxTimeToDevoteToCPU < 0.01) {
-                    computer.performance.maxTimeToDevoteToCPU = 0.01;
+                if (computer.performance.maxTimeToDevoteToCPU < 0.2) {
+                    computer.performance.maxTimeToDevoteToCPU = 0.2;
                 }
                 computer.performance.timeToDevoteToCPU = computer.performance.maxTimeToDevoteToCPU;
                 computer.performance.iterationsBetweenTimeCheck = (computer.performance.maxTimeToDevoteToCPU < 0.3) ? 1 : 100;
                 this.updatePanels();
                 break;
             case "fastest":
-                computer.performance.maxTimeToDevoteToCPU = 12;
+                computer.performance.maxTimeToDevoteToCPU = 16;
                 incr = 0;
             case "fast":
                 computer.performance.maxTimeToDevoteToCPU = Math.round((computer.performance.maxTimeToDevoteToCPU + incr) * 100) / 100;
@@ -372,6 +382,13 @@ export default class App {
             default:
         }
 
+    }
+
+    updatePanelContinuously() {
+        this.panelTimer = setInterval(() => this.updatePanels(), 125);
+    }
+    stopUpdatingPanelContinuously() {
+        clearInterval(this.panelTimer);
     }
 
     start() {
@@ -391,7 +408,7 @@ export default class App {
         this.computer = computer;
         this.cold = true;
 
-        this.panelTimer = setInterval(() => this.updatePanels(), 125);
+        this.updatePanelContinuously();
 
         this.updateListOfStoredPrograms();
 
