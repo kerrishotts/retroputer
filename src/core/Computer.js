@@ -31,7 +31,9 @@ export default class Computer {
             throttlePoint: 14,          // floor((850/60))
             maxTimeToDevoteToCPU: 12,   // floor((725/60))
             minTimeToDevoteToCPU: 0.2,
-            finetuning: 1 // percent to adjust 25 = faster adjustments
+            finetuning: 1, // percent to adjust 25 = faster adjustments
+            FPSTargets: [60, 30, 15, 7.5],
+            targetFPSIdx: 0
         };
         this.targetFPS(60);
 
@@ -78,7 +80,11 @@ export default class Computer {
         }
     }
     targetFPS(f) {
-        this.performance.throttlePoint = Math.floor(850 / f);
+        this.performance.targetFPSIdx = this.performance.FPSTargets.indexOf(f);
+        if (this.performance.targetFPSIdx === -1) {
+            this.performance.targetFPSIdx = 0;
+        }
+        this.performance.throttlePoint = Math.floor(1000 / f); // 850
         this.performance.maxTimeToDevoteToCPU = Math.floor(725 / f);
     }
 
@@ -92,13 +98,23 @@ export default class Computer {
     }
 
     tickInBrowser(f) {
+        if (!this.cpu.running) {
+            return;
+        }
 
-        /*eslint-disable no-var*/
+        if (this.cpu.running && !this.cpu.stepping) {
+            window.requestAnimationFrame(this.tick);
+        }
+
+        /*eslint-disable no-var, vars-on-top*/
+        var fudge = 1;
+        var msPerFrame = Math.floor(1000 / this.performance.FPSTargets[this.performance.targetFPSIdx]);
+
         var startTime = this.now();
         var deltaf = f - this.stats.oldf;
         var curTime, stopTime, endTime, totalTime;
 
-        /*eslint-enable no-var*/
+        /*eslint-enable no-var, vars-on-top*/
         this.stats.oldf = f;
         this.stats.deltaf = deltaf;
 
@@ -113,11 +129,23 @@ export default class Computer {
             this.screen.draw();
         }
 
+
         // we need to know how long that took so we can devote
         // a safe amount of time to the processor
-
+        // and if we need to reduce our targetFPS
         curTime = this.now();
-        stopTime = curTime + (this.performance.timeToDevoteToCPU);
+        if ((curTime - startTime) > msPerFrame + fudge) {
+            if (this.performance.targetFPSIdx < (this.performance.FPSTargets.length - 1)) {
+                this.performance.targetFPSIdx++;
+            }
+        } else if ((curTime - startTime) < (msPerFrame / 2) + fudge) {
+            if (this.performance.targetFPSIdx > 0) {
+                this.performance.targetFPSIdx--;
+            }
+        }
+
+        //stopTime = curTime + (this.performance.timeToDevoteToCPU);
+        stopTime = Math.min(startTime + (msPerFrame - fudge), curTime + this.performance.timeToDevoteToCPU);
 
         // if the time to devote to the CPU is so small that we've already passed
         // stop time, give it some more time
@@ -159,6 +187,7 @@ export default class Computer {
         this.stats.totalFrames++;
         this.stats.performanceAtTime = endTime;
 
+/*
         if (!this.cpu.stepping) {
             // only throttle when stepping
             if (totalTime > this.performance.throttlePoint) {
@@ -176,14 +205,11 @@ export default class Computer {
                 }
             }
         }
-
+*/
         if (this.debug) {
             this.cpu.dump();
             this.memory.dump();
             this.dump();
-        }
-        if (this.cpu.running && !this.cpu.stepping) {
-            window.requestAnimationFrame(this.tick);
         }
         if (this.cpu.stepping) {
             this.cpu.stepping = false;

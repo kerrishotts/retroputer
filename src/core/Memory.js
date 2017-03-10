@@ -63,11 +63,14 @@ export default class Memory {
     addr &= 0x3FFFF;
     let v = (val & 0xFF);
     this._mem[addr] = v;
+
+    /*
     this.stats.lastValueWritten = v;
     this.stats.writesTotal++;
     this.stats.byteWritesTotal++;
     this.stats.lastValueWritten = (val & 0xFF);
     this.stats.lastWriteAddr = addr;
+    */
   }
 
   poke16(addr, val) {
@@ -75,10 +78,13 @@ export default class Memory {
     let v = (val & 0xFFFF);
     this._mem[addr] = (v & 0xFF00) >> 8;
     this._mem[addr + 1] = (v & 0x00FF);
+
+    /*
     this.stats.writesTotal++;
     this.stats.wordWritesTotal++;
     this.stats.lastValueWritten = v;
     this.stats.lastWriteAddr = addr;
+    */
   }
 
   poke32(addr, val) {
@@ -88,9 +94,12 @@ export default class Memory {
     this._mem[addr + 1] = (v & 0x00FF0000) >> 16;
     this._mem[addr + 2] = (v & 0x0000FF00) >> 8;
     this._mem[addr + 3] = (v & 0x000000FF);
+
+    /*
     this.stats.writesTotal++;
     this.stats.lastValueWritten = v;
     this.stats.lastWriteAddr = addr;
+    */
   }
 
 
@@ -102,30 +111,42 @@ export default class Memory {
         v = this._rom[addr - this.layout.romStart];
       }
     }
+
+    /*
     this.stats.readsTotal++;
     this.stats.byteReadsTotal++;
     this.stats.lastValueRead = v;
     this.stats.lastReadAddr = addr;
+    */
+
     return v;
   }
 
   peek16(addr) {
     addr &= 0x3FFFF;
     let v = (this.peek(addr) << 8) | this.peek(addr + 1);
+
+    /*
     this.stats.readsTotal++;
     this.stats.wordReadsTotal++;
     this.stats.lastValueRead = v;
     this.stats.lastReadAddr = addr;
+    */
+
     return v;
   }
 
   peek32(addr) {
     addr &= 0x3FFFF;
     let v = (this.peek(addr) << 24) | (this.peek(addr + 1) << 16) | (this.peek(addr + 2) << 8) | (this.peek(addr + 3));
+
+    /*
     this.stats.readsTotal++;
     this.stats.wordReadsTotal++;
     this.stats.lastValueRead = v;
     this.stats.lastReadAddr = addr;
+    */
+
     return v;
   }
 
