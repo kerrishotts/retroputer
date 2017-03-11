@@ -25,6 +25,7 @@ Currently works:
 
 In Progress:
 
+* Timers (prep for sound)
 * ROM and KERNEL
 * Tests
 
