@@ -34,6 +34,7 @@ TODO:
 * Sprites
 * Sound
 * Other devices
+* Optimizations!
 
 ## Launching
 
