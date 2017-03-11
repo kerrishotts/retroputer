@@ -12,6 +12,12 @@ Retroputer is an emulator for a computer system that resembles machines in the 8
 
 * Have a completely understandable architecture from low-level "hardware" to high-level software
 
+# Try it!
+
+You can try the [online version](https://kerrishotts.com/supporting/git/retroputer/src/www/).
+
+> Note: the current project is INCOMPLETE! You'll have to provide your own program unless you like to look at pretty crashes.
+
 # Documentation
 
 * [Memory Layout](./memory-layout)
