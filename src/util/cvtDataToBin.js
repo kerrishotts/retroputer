@@ -2,14 +2,14 @@ import hexUtils from "./hexUtils.js";
 
 /**
  * Converts a data array to a BIN or JSON format
- * 
+ *
  * @param {Array} data
  * @param {number} addr
  * @param {string} [format="bin"]
  * @return {string}
  */
-//module.exports =  
-export default function cvtDataToBin(data, addr, format = "bin", newline, jsprefix = "module.exports = ", jspostfix = ";") {
+//module.exports =
+export default function cvtDataToBin(data, addr, format = "bin", newline, jsprefix = "export default ", jspostfix = ";") {
     addr = Number(addr);
     if (!newline) {
         newline = String.fromCharCode(13) + String.fromCharCode(10);
@@ -36,5 +36,5 @@ export default function cvtDataToBin(data, addr, format = "bin", newline, jspref
     }
     text = text.join(newline);
 
-    return  text;
+    return text;
 }

@@ -6,7 +6,7 @@ import cvtDataToBin from "../util/cvtDataToBin.js";
  * Valid registers (used in different assembly contexts)
  */
 let validRegisters = ["a", "al", "b", "bl", "c", "cl", "d", "dl", "x", "xl", "y", "yl",
-                      "sp", "bp", "sb", "db", "flags", "pc"];
+    "sp", "bp", "sb", "db", "flags", "pc"];
 let validByteRegisters = ["al", "bl", "cl", "dl", "xl", "yl"];
 let validByteDataRegisters = ["al", "bl", "cl", "dl"];
 let validWordRegisters = ["a", "b", "c", "d", "x", "y", "sp", "bp"];
@@ -43,7 +43,7 @@ let bankRegisterOffset = 12;
  * flag map
  */
 let validFlags = ["i", "m", "x", "e", "v", "c", "n", "z",
-                  "eq", "lt", "o"];
+    "eq", "lt", "o"];
 let flagMap = {
     i: 7, m: 6, x: 5, e: 4,
     o: 3, c: 2, n: 1, z: 0,
@@ -66,7 +66,7 @@ function prettify(extra) {
 }
 
 export class AssemblerError extends Error {
-    constructor({triggeringError = null, line = "", lineNumber = 0, filename = "stdin"} = {}) {
+    constructor({ triggeringError = null, line = "", lineNumber = 0, filename = "stdin" } = {}) {
         super("Exception in assembler");
         let msg = `Assembler failed to parse "${filename}":${lineNumber ? lineNumber : ""} | ${line}`;
         this.input = line;
@@ -89,44 +89,44 @@ export class AssemblerError extends Error {
 }
 
 let exceptions = [
-    { code: 0x8001, name: "OperandExpected",                 message: extra => `Operand expected; got ${prettify(extra[0])}` },
-    { code: 0x8010, name: "UnsignedByteExpected",            message: extra => `Unsigned byte value expected; got ${prettify(extra[0])}`},
-    { code: 0x8011, name: "SignedByteExpected",              message: extra => `Signed byte value expected; got ${prettify(extra[0])}`},
-    { code: 0x8012, name: "UnsignedWordExpected",            message: extra => `Unsigned word value expected; got ${prettify(extra[0])}`},
-    { code: 0x8013, name: "SignedWordExpected",              message: extra => `Signed word value expected; got ${prettify(extra[0])}`},
-    { code: 0x8014, name: "BankExpected",                    message: extra => `Bank value expected; got ${prettify(extra[0])}`},
-    { code: 0x8015, name: "UnsignedValueOutOfRange",         message: extra => `Unsigned value out of range; got ${prettify(extra[0])}, but expected ${extra[1]} to ${extra[2]}`},
-    { code: 0x8016, name: "WordExpected",                    message: extra => `Word value expected; got ${prettify(extra[0])}`},
-    { code: 0x8020, name: "AddressExpected",                 message: extra => `Address expected; got ${prettify(extra[0])}`},
-    { code: 0x8030, name: "RegisterExpectedError",           message: extra => `Register expected; got ${prettify(extra[0])}` },
-    { code: 0x8031, name: "ALExpected",                      message: extra => `AL(8) register expected; got ${prettify(extra[0])}` },
-    { code: 0x8032, name: "AExpected",                       message: extra => `A(16) register expected; got ${prettify(extra[0])}` },
-    { code: 0x8033, name: "BankRegisterExpectedError",       message: extra => `Bank register expected; got ${prettify(extra[0])}` },
-    { code: 0x8034, name: "CExpected",                       message: extra => `C(16) register expected; got ${prettify(extra[0])}` },
-    { code: 0x8036, name: "PushRegisterExpected",            message: extra => `Push register expected; got ${prettify(extra[0])}` },
-    { code: 0x8037, name: "PopRegisterExpected",             message: extra => `Pop register expected; got ${prettify(extra[0])}` },
-    { code: 0x8038, name: "XExpected",                       message: extra => `X(16) register expected; got ${prettify(extra[0])}` },
-    { code: 0x8039, name: "YExpected",                       message: extra => `Y(16) register expected; got ${prettify(extra[0])}` },
-    { code: 0x803A, name: "BPExpected",                      message: extra => `BP register expected; got ${prettify(extra[0])}` },
-    { code: 0x803B, name: "DExpected",                       message: extra => `D(16) register expected; got ${prettify(extra[0])}` },
-    { code: 0x803C, name: "AccumulatorExpected",             message: extra => `A or AL register expected; got ${prettify(extra[0])}` },
-    { code: 0x803D, name: "LoopRegisterExpected",            message: extra => `Loop register expected; got ${prettify(extra[0])}` },
-    { code: 0x803E, name: "WordRegisterExpected",            message: extra => `Word register expected; got ${prettify(extra[0])}` },
-    { code: 0x803F, name: "ByteRegisterExpected",            message: extra => `Byte register expected; got ${prettify(extra[0])}` },
-    { code: 0x803E, name: "WordDataRegisterExpected",        message: extra => `General purpose word-sized register expected; got ${prettify(extra[0])}` },
-    { code: 0x803F, name: "ByteDataRegisterExpected",        message: extra => `General purpose byte-sized register expected; got ${prettify(extra[0])}` },
-    { code: 0x8040, name: "FlagExpected",                    message: extra => `Flag expected; got ${prettify(extra[0])}` },
-    { code: 0x8050, name: "ExpectedSymbol",                  message: extra => `Expected ${extra[0]}, got ${prettify(extra[1])}` },
-    { code: 0x8100, name: "UnknownDirective",                message: extra => `Unknown directive; got ${prettify(extra[0])}` },
-    { code: 0x8200, name: "UnknownTypeSigil",                message: extra => `Unknown type sigil; got ${prettify(extra[0])}` },
-    { code: 0x8300, name: "UnexpectedOpcode",                message: extra => `Unexpected opcode; got ${prettify(extra[0])}` },
-    { code: 0x8400, name: "UndefinedSymbol",                 message: extra => `Undefined symbol; got ${prettify(extra[0])}` },
-    { code: 0xFF00, name: "UnexpectedAssembly",              message: extra => `Unexpected assembly; expected ${hexUtils.byteArrayToHex(extra[0])}; got ${hexUtils.byteArrayToHex(extra[1])}` },
-    { code: 0xFFFF, name: "UnexpectedToken",                 message: extra => `Got an unexpected token: ${JSON.stringify(extra)}`}
+    { code: 0x8001, name: "OperandExpected", message: extra => `Operand expected; got ${prettify(extra[0])}` },
+    { code: 0x8010, name: "UnsignedByteExpected", message: extra => `Unsigned byte value expected; got ${prettify(extra[0])}` },
+    { code: 0x8011, name: "SignedByteExpected", message: extra => `Signed byte value expected; got ${prettify(extra[0])}` },
+    { code: 0x8012, name: "UnsignedWordExpected", message: extra => `Unsigned word value expected; got ${prettify(extra[0])}` },
+    { code: 0x8013, name: "SignedWordExpected", message: extra => `Signed word value expected; got ${prettify(extra[0])}` },
+    { code: 0x8014, name: "BankExpected", message: extra => `Bank value expected; got ${prettify(extra[0])}` },
+    { code: 0x8015, name: "UnsignedValueOutOfRange", message: extra => `Unsigned value out of range; got ${prettify(extra[0])}, but expected ${extra[1]} to ${extra[2]}` },
+    { code: 0x8016, name: "WordExpected", message: extra => `Word value expected; got ${prettify(extra[0])}` },
+    { code: 0x8020, name: "AddressExpected", message: extra => `Address expected; got ${prettify(extra[0])}` },
+    { code: 0x8030, name: "RegisterExpectedError", message: extra => `Register expected; got ${prettify(extra[0])}` },
+    { code: 0x8031, name: "ALExpected", message: extra => `AL(8) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8032, name: "AExpected", message: extra => `A(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8033, name: "BankRegisterExpectedError", message: extra => `Bank register expected; got ${prettify(extra[0])}` },
+    { code: 0x8034, name: "CExpected", message: extra => `C(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8036, name: "PushRegisterExpected", message: extra => `Push register expected; got ${prettify(extra[0])}` },
+    { code: 0x8037, name: "PopRegisterExpected", message: extra => `Pop register expected; got ${prettify(extra[0])}` },
+    { code: 0x8038, name: "XExpected", message: extra => `X(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x8039, name: "YExpected", message: extra => `Y(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x803A, name: "BPExpected", message: extra => `BP register expected; got ${prettify(extra[0])}` },
+    { code: 0x803B, name: "DExpected", message: extra => `D(16) register expected; got ${prettify(extra[0])}` },
+    { code: 0x803C, name: "AccumulatorExpected", message: extra => `A or AL register expected; got ${prettify(extra[0])}` },
+    { code: 0x803D, name: "LoopRegisterExpected", message: extra => `Loop register expected; got ${prettify(extra[0])}` },
+    { code: 0x803E, name: "WordRegisterExpected", message: extra => `Word register expected; got ${prettify(extra[0])}` },
+    { code: 0x803F, name: "ByteRegisterExpected", message: extra => `Byte register expected; got ${prettify(extra[0])}` },
+    { code: 0x803E, name: "WordDataRegisterExpected", message: extra => `General purpose word-sized register expected; got ${prettify(extra[0])}` },
+    { code: 0x803F, name: "ByteDataRegisterExpected", message: extra => `General purpose byte-sized register expected; got ${prettify(extra[0])}` },
+    { code: 0x8040, name: "FlagExpected", message: extra => `Flag expected; got ${prettify(extra[0])}` },
+    { code: 0x8050, name: "ExpectedSymbol", message: extra => `Expected ${extra[0]}, got ${prettify(extra[1])}` },
+    { code: 0x8100, name: "UnknownDirective", message: extra => `Unknown directive; got ${prettify(extra[0])}` },
+    { code: 0x8200, name: "UnknownTypeSigil", message: extra => `Unknown type sigil; got ${prettify(extra[0])}` },
+    { code: 0x8300, name: "UnexpectedOpcode", message: extra => `Unexpected opcode; got ${prettify(extra[0])}` },
+    { code: 0x8400, name: "UndefinedSymbol", message: extra => `Undefined symbol; got ${prettify(extra[0])}` },
+    { code: 0xFF00, name: "UnexpectedAssembly", message: extra => `Unexpected assembly; expected ${hexUtils.byteArrayToHex(extra[0])}; got ${hexUtils.byteArrayToHex(extra[1])}` },
+    { code: 0xFFFF, name: "UnexpectedToken", message: extra => `Got an unexpected token: ${JSON.stringify(extra)}` }
 ];
 
 // error extension based on http://stackoverflow.com/a/39929058/741043
-let asmExceptions = exceptions.reduce((acc,e) => {
+let asmExceptions = exceptions.reduce((acc, e) => {
     acc[e.name] = class AsmError extends Error {
         constructor(...extra) {
             super(e.name);
@@ -240,7 +240,7 @@ function toNumberInRange(str, lo, hi, ErrorToThrow) {
  * @param {Boolean} [eats=true]    If operand is matched, eat.
  * @return {Any}    value of operand if matched
  */
-function expectOperand(operands = [], {type = "any", throws = true, eats = true} = {}) {
+function expectOperand(operands = [], { type = "any", throws = true, eats = true } = {}) {
     let operand = eats ? operands.shift() : operands[0];
     try {
         if (operand === undefined || operand === null) {
@@ -251,36 +251,36 @@ function expectOperand(operands = [], {type = "any", throws = true, eats = true}
             case "*":
                 return operand;
             // flags
-            case "f":     return mappedListItem(validFlags,                     flagMap,     operand, FlagExpectedError);
+            case "f": return mappedListItem(validFlags, flagMap, operand, FlagExpectedError);
 
             // register types
-            case "r":     return mappedListItem(validRegisters,                 registerMap, operand, RegisterExpectedError);
-            case "pushr": return mappedListItem(validPushRegisters,             registerMap, operand, PushRegisterExpectedError);
-            case "popr":  return mappedListItem(validPopRegisters,              registerMap, operand, PopRegisterExpectedError);
-            case "r16":   return mappedListItem(validWordRegisters,             registerMap, operand, WordRegisterExpectedError);
-            case "r8":    return mappedListItem(validByteRegisters,             registerMap, operand, ByteRegisterExpectedError);
-            case "dr16":  return mappedListItem(validWordDataRegisters,         registerMap, operand, WordDataRegisterExpectedError);
-            case "dr8":   return mappedListItem(validByteDataRegisters,         registerMap, operand, ByteDataRegisterExpectedError);
-            case "c16":   return mappedListItem([validCounterWordRegister],     registerMap, operand, CExpectedError);
-            case "a16":   return mappedListItem([validAccumulatorWordRegister], registerMap, operand, AExpectedError);
-            case "a8":    return mappedListItem([validAccumulatorByteRegister], registerMap, operand, ALExpectedError);
-            case "a":     return mappedListItem(validAccumulatorRegisters,      registerMap, operand, AccumulatorExpectedError);
-            case "d16":   return mappedListItem([validDataRegister],            registerMap, operand, DExpectedError);
-            case "l16":   return mappedListItem(validLoopRegisters,             registerMap, operand, LoopRegisterExpectedError);
-            case "x16":   return mappedListItem([validXRegister],               registerMap, operand, XExpectedError);
-            case "y16":   return mappedListItem([validYRegister],               registerMap, operand, YExpectedError);
-            case "bp":    return mappedListItem([validBasePointerRegister],     registerMap, operand, BPExpectedError);
-            case "br":    return mappedListItem(validBankRegisters,             registerMap, operand, BankRegisterExpectedError);
+            case "r": return mappedListItem(validRegisters, registerMap, operand, RegisterExpectedError);
+            case "pushr": return mappedListItem(validPushRegisters, registerMap, operand, PushRegisterExpectedError);
+            case "popr": return mappedListItem(validPopRegisters, registerMap, operand, PopRegisterExpectedError);
+            case "r16": return mappedListItem(validWordRegisters, registerMap, operand, WordRegisterExpectedError);
+            case "r8": return mappedListItem(validByteRegisters, registerMap, operand, ByteRegisterExpectedError);
+            case "dr16": return mappedListItem(validWordDataRegisters, registerMap, operand, WordDataRegisterExpectedError);
+            case "dr8": return mappedListItem(validByteDataRegisters, registerMap, operand, ByteDataRegisterExpectedError);
+            case "c16": return mappedListItem([validCounterWordRegister], registerMap, operand, CExpectedError);
+            case "a16": return mappedListItem([validAccumulatorWordRegister], registerMap, operand, AExpectedError);
+            case "a8": return mappedListItem([validAccumulatorByteRegister], registerMap, operand, ALExpectedError);
+            case "a": return mappedListItem(validAccumulatorRegisters, registerMap, operand, AccumulatorExpectedError);
+            case "d16": return mappedListItem([validDataRegister], registerMap, operand, DExpectedError);
+            case "l16": return mappedListItem(validLoopRegisters, registerMap, operand, LoopRegisterExpectedError);
+            case "x16": return mappedListItem([validXRegister], registerMap, operand, XExpectedError);
+            case "y16": return mappedListItem([validYRegister], registerMap, operand, YExpectedError);
+            case "bp": return mappedListItem([validBasePointerRegister], registerMap, operand, BPExpectedError);
+            case "br": return mappedListItem(validBankRegisters, registerMap, operand, BankRegisterExpectedError);
             // numbers
-            case "u2":    return toNumberInRange(operand, 0, 3, UnsignedValueOutOfRange);
-            case "u3":    return toNumberInRange(operand, 0, 7, UnsignedValueOutOfRange);
-            case "u4":    return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
-            case "u8":    return toNumberInRange(operand, 0, 255, UnsignedByteExpectedError);
-            case "s8":    return toNumberInRange(operand, -128, 127, SignedByteExpectedError);
-            case "n8":    return toNumberInRange(operand, -128, 255, WordExpectedError);
-            case "u16":   return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
-            case "s16":   return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
-            case "n16":   return toNumberInRange(operand, -32768, 65535, WordExpectedError);
+            case "u2": return toNumberInRange(operand, 0, 3, UnsignedValueOutOfRange);
+            case "u3": return toNumberInRange(operand, 0, 7, UnsignedValueOutOfRange);
+            case "u4": return toNumberInRange(operand, 0, 15, UnsignedValueOutOfRange);
+            case "u8": return toNumberInRange(operand, 0, 255, UnsignedByteExpectedError);
+            case "s8": return toNumberInRange(operand, -128, 127, SignedByteExpectedError);
+            case "n8": return toNumberInRange(operand, -128, 255, WordExpectedError);
+            case "u16": return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
+            case "s16": return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
+            case "n16": return toNumberInRange(operand, -32768, 65535, WordExpectedError);
             case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
 
             // address
@@ -338,7 +338,7 @@ function dissectAddress(operand) {
     let operands = shrinkArray(operand.split(/[\s\+\[\]\(\)]+/));
 
     // detect if the address reference is direct (absolute) or indirect
-    switch (operand.substr(0,1)) {
+    switch (operand.substr(0, 1)) {
         case "[":
             address.direct = true;
             if (operand[operand.length - 1] !== "]") {
@@ -357,21 +357,21 @@ function dissectAddress(operand) {
     }
 
     // try to detect if we have a register
-    address.reg = expectOperand(operands, {type: "bp", throws: false});
+    address.reg = expectOperand(operands, { type: "bp", throws: false });
     if (address.reg === undefined) {
-        address.reg = expectOperand(operands, {type: "d16", throws: false});
+        address.reg = expectOperand(operands, { type: "d16", throws: false });
     }
 
     // BP is base-pointer-relative and expects a number
     if (address.reg === registerMap.bp) {
-        address.addr = expectOperand(operands, {type: "s16", throws: false});
+        address.addr = expectOperand(operands, { type: "s16", throws: false });
     } else if (address.reg === undefined) { // otherwise we expect a number as well, but not for a D register
-        address.addr = expectOperand(operands, {type: "u16", throws: false});
+        address.addr = expectOperand(operands, { type: "u16", throws: false });
     }
 
     // check for indexing by X and Y
-    address.indexByX = Boolean(expectOperand(operands, {type: "x16", throws: false}));
-    address.indexByY = Boolean(expectOperand(operands, {type: "y16", throws: false}));
+    address.indexByX = Boolean(expectOperand(operands, { type: "x16", throws: false }));
+    address.indexByY = Boolean(expectOperand(operands, { type: "y16", throws: false }));
 
     // if there's still stuff left that we haven't parsed, ERROR!
     if (operands.length !== 0) {
@@ -400,72 +400,72 @@ function _ret() {
     return [0xFF];
 }
 function _enterOrExit(which, opcode, ops) {
-    return [which, expectOperand(ops, {type: "u8"})];
+    return [which, expectOperand(ops, { type: "u8" })];
 }
 function _trap(opcode, ops) {
     let op1;
-    if ((op1 = expectOperand(ops, {type: "u8", throws: false})) !== undefined) {
+    if ((op1 = expectOperand(ops, { type: "u8", throws: false })) !== undefined) {
         return [0x06, 0x01, op1];
-    } else if (expectOperand(ops, {type: "a8"}) !== undefined) {
+    } else if (expectOperand(ops, { type: "a8" }) !== undefined) {
         return [0x03];
     }
     return [];
 }
 function _binaryOp(whichClass, whichOp, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "r16"});
-    let op2 = expectOperand(ops, {type: "r16"});
+    let op1 = expectOperand(ops, { type: "r16" });
+    let op2 = expectOperand(ops, { type: "r16" });
     return [whichClass, whichOp | (op1 << 3) | op2];
 }
 function _neg(opcode, ops) {
-    let op1 = expectOperand(ops, {type: "r16"});
+    let op1 = expectOperand(ops, { type: "r16" });
     return [0x06, 0x08, op1];
 }
 function _xcb(opcode, ops) {
-    let op1 = expectOperand(ops, {type: "r16"});
+    let op1 = expectOperand(ops, { type: "r16" });
     return [0x06, 0x10, op1];
 }
 function _mulOrDiv(which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "dr16"});
-    let op2 = expectOperand(ops, {type: "r16"});
-    let op3 = expectOperand(ops, {type: "r16"});
+    let op1 = expectOperand(ops, { type: "dr16" });
+    let op2 = expectOperand(ops, { type: "r16" });
+    let op3 = expectOperand(ops, { type: "r16" });
     return [0x06, which, (op1 << 6) | (op2 << 3) | op3];
 }
-function _mfill (opcode, ops) {
-    let op1 = expectOperand(ops, {type: "br"}) - bankRegisterOffset;
-    let op2 = expectOperand(ops, {type: "r16"});
+function _mfill(opcode, ops) {
+    let op1 = expectOperand(ops, { type: "br" }) - bankRegisterOffset;
+    let op2 = expectOperand(ops, { type: "r16" });
     let op3 = 0;
-    let op4 = expectOperand(ops, {type: "r8"});
-    expectOperand(ops, {type: "c16"});
+    let op4 = expectOperand(ops, { type: "r8" });
+    expectOperand(ops, { type: "c16" });
     return [0x06, 0x6D, (op1 << 7) | (op3 << 6) | (op2 << 3) | op4];
 }
-function _mCopyOrSwap (which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "br"}) - bankRegisterOffset;
-    let op2 = expectOperand(ops, {type: "r16"});
-    let op3 = expectOperand(ops, {type:"br"}) - bankRegisterOffset;
-    let op4 = expectOperand(ops, {type: "r16"});
-    expectOperand(ops, {type: "c16"});
+function _mCopyOrSwap(which, opcode, ops) {
+    let op1 = expectOperand(ops, { type: "br" }) - bankRegisterOffset;
+    let op2 = expectOperand(ops, { type: "r16" });
+    let op3 = expectOperand(ops, { type: "br" }) - bankRegisterOffset;
+    let op4 = expectOperand(ops, { type: "r16" });
+    expectOperand(ops, { type: "c16" });
     return [0x06, which, (op1 << 7) | (op3 << 6) | (op2 << 3) | op4];
 }
 function _inOrOut(which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "r8"});
-    let op2 = expectOperand(ops, {type: "u8"});
+    let op1 = expectOperand(ops, { type: "r8" });
+    let op2 = expectOperand(ops, { type: "u8" });
     return [0x06, which | op1, op2];
 }
 function _incOrDec(which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "r16"});
+    let op1 = expectOperand(ops, { type: "r16" });
     return [which | op1];
 }
 function _testFlag(which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "f"});
+    let op1 = expectOperand(ops, { type: "f" });
     return [which | op1];
 }
 function _testReg(which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "r8"});
-    let op2 = expectOperand(ops, {type: "u8"});
+    let op1 = expectOperand(ops, { type: "r8" });
+    let op2 = expectOperand(ops, { type: "u8" });
     return [0x06, which | op1, op2];
 }
 function _pushOrPop(which, opcode, ops) {
-    let op1 = expectOperand(ops, {type: (opcode === "push" ? "pushr" : "popr")});
+    let op1 = expectOperand(ops, { type: (opcode === "push" ? "pushr" : "popr") });
     return [which | op1];
 }
 function _pushAOrPopA(which) {
@@ -473,60 +473,60 @@ function _pushAOrPopA(which) {
 }
 function _branchOrCallShort(which, opcode, ops) {
     let op1;
-    if ((op1 = expectOperand(ops, {type: "s8"})) !== undefined) {
+    if ((op1 = expectOperand(ops, { type: "s8" })) !== undefined) {
         return [0x07, which, (op1 & 0xFF)];
     }
     return [];
 }
 function _branchOrCall(which, opcode, ops) {
     let op1;
-    if ((op1 = expectOperand(ops, {type: "s16", throws: false})) !== undefined) {
+    if ((op1 = expectOperand(ops, { type: "s16", throws: false })) !== undefined) {
         return [0x07, which | 0b00001000, (op1 & 0xFF00) >> 8, (op1 & 0xFF)];
     } else {
-        op1 = expectOperand(ops, {type: "address"});
+        op1 = expectOperand(ops, { type: "address" });
         return [0x07, which |
-                (op1.mode << 3) |
-                (op1.indexByX ? 0b00000100 : 0) |
-                (op1.indexByY ? 0b00000010 : 0), (op1.addr & 0xFF00) >> 8, (op1.addr & 0xFF)];
+            (op1.mode << 3) |
+            (op1.indexByX ? 0b00000100 : 0) |
+            (op1.indexByY ? 0b00000010 : 0), (op1.addr & 0xFF00) >> 8, (op1.addr & 0xFF)];
     }
 }
 function _loop(opcode, ops) {
-    let op1 = expectOperand(ops, {type: "l16"});
-    let op2 = expectOperand(ops, {type: "s8"});
+    let op1 = expectOperand(ops, { type: "l16" });
+    let op2 = expectOperand(ops, { type: "s8" });
     let deltaCtoA = 2;
     return [0x06, 0x50 | (op1 - deltaCtoA), (op2 & 0xFF)];
 }
 function _loadOrStore(whichClass, whichOp, opcode, ops) {
-    let op1 = expectOperand(ops, {type: "a8", throws: false});
+    let op1 = expectOperand(ops, { type: "a8", throws: false });
     let op2;
     let scale = 1;
     let instruction = [];
     if (op1 === undefined) {
-        op1 = expectOperand(ops, {type: "a16"});
+        op1 = expectOperand(ops, { type: "a16" });
         scale = 2;
     }
-    if ((op2 = expectOperand(ops, {type: (scale === 1 ? "n8" : "n16"), throws: false})) !== undefined) {
+    if ((op2 = expectOperand(ops, { type: (scale === 1 ? "n8" : "n16"), throws: false })) !== undefined) {
         if (whichClass) {
             instruction.push(whichClass);
         }
         instruction.push(whichOp |
-                         (scale === 2 ? 0b00001000 : 0) |
-                         (scale === 2 ? 0b00000001 : 0));
+            (scale === 2 ? 0b00001000 : 0) |
+            (scale === 2 ? 0b00000001 : 0));
         if (scale === 1) {
-            instruction.push ((op2 & 0xFF));
+            instruction.push((op2 & 0xFF));
         } else {
-            instruction.push ((op2 & 0xFF00) >> 8, (op2 & 0xFF));
+            instruction.push((op2 & 0xFF00) >> 8, (op2 & 0xFF));
         }
     } else {
-        op2 = expectOperand(ops, {type: "address"});
+        op2 = expectOperand(ops, { type: "address" });
         if (whichClass) {
             instruction.push(whichClass);
         }
         instruction.push(whichOp |
-                         (op2.mode << 3) |
-                         (op2.indexByX ? 0b00000100 : 0) |
-                         (op2.indexByY ? 0b00000010 : 0) |
-                         (scale === 2 ?  0b00000001 : 0));
+            (op2.mode << 3) |
+            (op2.indexByX ? 0b00000100 : 0) |
+            (op2.indexByY ? 0b00000010 : 0) |
+            (scale === 2 ? 0b00000001 : 0));
         if (op2.mode < 6) {
             instruction.push((op2.addr & 0xFF00) >> 8, (op2.addr & 0xFF));
         }
@@ -536,24 +536,24 @@ function _loadOrStore(whichClass, whichOp, opcode, ops) {
 function _ldi(opcode, ops) {
     // ldi can only take the accumulator and immediate value
     let testOps = ops.map(i => i);
-    let op1 = expectOperand(testOps, {type: "a8", throws: false});
+    let op1 = expectOperand(testOps, { type: "a8", throws: false });
     let scale = 1;
     if (op1 === undefined) {
-        op1 = expectOperand(testOps, {type: "a16"});
+        op1 = expectOperand(testOps, { type: "a16" });
         scale = 2;
     }
-    expectOperand(testOps, {type: ["", "n8","n16"][scale]});
+    expectOperand(testOps, { type: ["", "n8", "n16"][scale] });
     // if we get here, we're fine!
     return _loadOrStore(undefined, 0b01000000, opcode, ops);
 }
 function _mov(opcode, ops) {
     let op1, op2;
-    if (op1 = expectOperand(ops, {type: "br", throws: false})) {
-        op2 = expectOperand(ops, {type: "dr16"});
-        return [0b00001000 | ( op1 === registerMap.sb ? 0x0 : 0b00000100) | op2];
+    if (op1 = expectOperand(ops, { type: "br", throws: false })) {
+        op2 = expectOperand(ops, { type: "dr16" });
+        return [0b00001000 | (op1 === registerMap.sb ? 0x0 : 0b00000100) | op2];
     } else {
-        op1 = expectOperand(ops, {type: "r16"});
-        op2 = expectOperand(ops, {type: "r16"});
+        op1 = expectOperand(ops, { type: "r16" });
+        op2 = expectOperand(ops, { type: "r16" });
         if (op2 > 3) {
             return [0x06, 0b10000000 | (op1 << 3) | op2];
         } else {
@@ -562,61 +562,61 @@ function _mov(opcode, ops) {
     }
 }
 function _halt(opcode, ops) {
-    let op1 = expectOperand(ops, {type: "u8"});
+    let op1 = expectOperand(ops, { type: "u8" });
     return [0x06, 0x14, op1];
 }
 
 let asmHandlers = {
-    "nop":   _nop,
-    "ret":   _ret,
+    "nop": _nop,
+    "ret": _ret,
     "enter": _enterOrExit.bind(undefined, 0x01),
-    "exit":  _enterOrExit.bind(undefined, 0x02),
-    "trap":  _trap,
-    "add":   _binaryOp.bind(undefined, 0x04, 0b00000000),
-    "sub":   _binaryOp.bind(undefined, 0x04, 0b01000000),
-    "xor":   _binaryOp.bind(undefined, 0x04, 0b10000000),
-    "cmp":   _binaryOp.bind(undefined, 0x04, 0b11000000),
-    "shl":   _binaryOp.bind(undefined, 0x05, 0b00000000),
-    "shr":   _binaryOp.bind(undefined, 0x05, 0b01000000),
-    "and":   _binaryOp.bind(undefined, 0x05, 0b10000000),
-    "or" :   _binaryOp.bind(undefined, 0x05, 0b11000000),
-    "neg":   _neg,
-    "xcb":   _xcb,
-    "mul":   _mulOrDiv.bind(undefined, 0x40),
-    "idiv":  _mulOrDiv.bind(undefined, 0x41),
-    "imod":  _mulOrDiv.bind(undefined, 0x42),
+    "exit": _enterOrExit.bind(undefined, 0x02),
+    "trap": _trap,
+    "add": _binaryOp.bind(undefined, 0x04, 0b00000000),
+    "sub": _binaryOp.bind(undefined, 0x04, 0b01000000),
+    "xor": _binaryOp.bind(undefined, 0x04, 0b10000000),
+    "cmp": _binaryOp.bind(undefined, 0x04, 0b11000000),
+    "shl": _binaryOp.bind(undefined, 0x05, 0b00000000),
+    "shr": _binaryOp.bind(undefined, 0x05, 0b01000000),
+    "and": _binaryOp.bind(undefined, 0x05, 0b10000000),
+    "or": _binaryOp.bind(undefined, 0x05, 0b11000000),
+    "neg": _neg,
+    "xcb": _xcb,
+    "mul": _mulOrDiv.bind(undefined, 0x40),
+    "idiv": _mulOrDiv.bind(undefined, 0x41),
+    "imod": _mulOrDiv.bind(undefined, 0x42),
     "mfill": _mfill,
     "mcopy": _mCopyOrSwap.bind(undefined, 0x6F),
     "mswap": _mCopyOrSwap.bind(undefined, 0x6E),
-    "out":   _inOrOut.bind(undefined, 0b01111000),
-    "in":    _inOrOut.bind(undefined, 0b01110000),
-    "swap":  _binaryOp.bind(undefined, 0x06, 0b11000000),
-    "inc":   _incOrDec.bind(undefined, 0b00010000),
-    "dec":   _incOrDec.bind(undefined, 0b00011000),
-    "if":    _testFlag.bind(undefined, 0b00100000),
-    "ifn":   _testFlag.bind(undefined, 0b00101000),
-    "set":   _testFlag.bind(undefined, 0b00110000),
-    "clr":   _testFlag.bind(undefined, 0b00111000),
-    "ifr":   _testReg.bind(undefined, 0b00110000),
-    "ifnr":  _testReg.bind(undefined, 0b00111000),
-    "setr":  _testReg.bind(undefined, 0b00100000),
-    "clrr":  _testReg.bind(undefined, 0b00101000),
-    "push":  _pushOrPop.bind(undefined, 0b11100000),
-    "pop":   _pushOrPop.bind(undefined, 0b11110000),
+    "out": _inOrOut.bind(undefined, 0b01111000),
+    "in": _inOrOut.bind(undefined, 0b01110000),
+    "swap": _binaryOp.bind(undefined, 0x06, 0b11000000),
+    "inc": _incOrDec.bind(undefined, 0b00010000),
+    "dec": _incOrDec.bind(undefined, 0b00011000),
+    "if": _testFlag.bind(undefined, 0b00100000),
+    "ifn": _testFlag.bind(undefined, 0b00101000),
+    "set": _testFlag.bind(undefined, 0b00110000),
+    "clr": _testFlag.bind(undefined, 0b00111000),
+    "ifr": _testReg.bind(undefined, 0b00110000),
+    "ifnr": _testReg.bind(undefined, 0b00111000),
+    "setr": _testReg.bind(undefined, 0b00100000),
+    "clrr": _testReg.bind(undefined, 0b00101000),
+    "push": _pushOrPop.bind(undefined, 0b11100000),
+    "pop": _pushOrPop.bind(undefined, 0b11110000),
     "pusha": _pushAOrPopA.bind(undefined, 0x18),
-    "popa":  _pushAOrPopA.bind(undefined, 0x19),
-    "brs":   _branchOrCallShort.bind(undefined, 0b00000000),
+    "popa": _pushAOrPopA.bind(undefined, 0x19),
+    "brs": _branchOrCallShort.bind(undefined, 0b00000000),
     "calls": _branchOrCallShort.bind(undefined, 0b01000000),
-    "br":    _branchOrCall.bind(undefined, 0b00000001),
-    "call":  _branchOrCall.bind(undefined, 0b01000001),
-    "loop":  _loop,
-    "ldi":   _ldi,
-    "lds":   _loadOrStore.bind(undefined, undefined, 0b01000000),
-    "std":   _loadOrStore.bind(undefined, undefined, 0b10000000),
-    "ldd":   _loadOrStore.bind(undefined, 0x07     , 0b10000000),
-    "sts":   _loadOrStore.bind(undefined, 0x07     , 0b11000000),
-    "mov":   _mov,
-    "halt":  _halt
+    "br": _branchOrCall.bind(undefined, 0b00000001),
+    "call": _branchOrCall.bind(undefined, 0b01000001),
+    "loop": _loop,
+    "ldi": _ldi,
+    "lds": _loadOrStore.bind(undefined, undefined, 0b01000000),
+    "std": _loadOrStore.bind(undefined, undefined, 0b10000000),
+    "ldd": _loadOrStore.bind(undefined, 0x07, 0b10000000),
+    "sts": _loadOrStore.bind(undefined, 0x07, 0b11000000),
+    "mov": _mov,
+    "halt": _halt
 }
 
 export default class Asm {
@@ -656,7 +656,7 @@ export default class Asm {
                 case "%":
                     data = this.registerMap[symbolName];
                     if (data === undefined) {
-                        throw new UndefinedSymbolError (match);
+                        throw new UndefinedSymbolError(match);
                     }
                     break;
                 case "&":
@@ -679,13 +679,13 @@ export default class Asm {
                     data = this.labels[symbolName];
                     break;
                 default:
-                    throw new UnknownTypeSigilError (match);
+                    throw new UnknownTypeSigilError(match);
             }
             if (data === undefined) {
                 if (stage === "symbols") {
                     return "0x00000";
                 } else {
-                    throw new UndefinedSymbolError (match);
+                    throw new UndefinedSymbolError(match);
                 }
             } else {
                 return data;
@@ -812,11 +812,11 @@ export default class Asm {
     }
 
     handleAssembly(line, stage) {
-        let r = Asm.assembleSingleInstruction(line, {throwIfUnexpectedAssembly: (stage === "assembly")});
+        let r = Asm.assembleSingleInstruction(line, { throwIfUnexpectedAssembly: (stage === "assembly") });
         this.segments.code[this.segments.code.current].push(...r.instruction);
     }
 
-    assemble(lines = [], {stageOverride = "", filename = "stdin", isImport = false} = {}) {
+    assemble(lines = [], { stageOverride = "", filename = "stdin", isImport = false } = {}) {
         let lineNumber = 0;
         for (let stage of ["symbols", "assembly"]) {
             if (stageOverride !== "") {
@@ -868,7 +868,7 @@ export default class Asm {
                         this.handleAssembly(line, stage);
                     }
                 } catch (err) {
-                    throw new AssemblerError({triggeringError: err, line, lineNumber, filename});
+                    throw new AssemblerError({ triggeringError: err, line, lineNumber, filename });
                 }
             }
         }
@@ -878,7 +878,7 @@ export default class Asm {
         if (!newline) {
             newline = String.fromCharCode(13) + String.fromCharCode(10);
         }
-        let text = (format !== "bin") ? "module.exports = [" : "";
+        let text = (format !== "bin") ? "export default [" : "";
         for (let segmentName of Object.keys(this.segments)) {
             let segment = this.segments[segmentName];
             for (let addr of Object.keys(segment)) {
@@ -894,7 +894,7 @@ export default class Asm {
         return text;
     }
 
-    writeToMemory(memory, {debug = false} = {}) {
+    writeToMemory(memory, { debug = false } = {}) {
         let c = 0;
         for (let segmentName of Object.keys(this.segments)) {
             let segment = this.segments[segmentName];
@@ -902,22 +902,22 @@ export default class Asm {
                 let arr = segment[addr];
                 if (arr instanceof Array) {
                     if (debug) {
-                        log (`Writing ${segmentName}:${addr}`);
+                        log(`Writing ${segmentName}:${addr}`);
                     }
                     let s = "";
                     for (let i = 0; i < arr.length; i++) {
-                    memory.poke(i + Number(addr), arr[i]);
-                    if (debug) {
-                        s += hexUtils.toHex2(arr[i], "") + " ";
-                        if (i % 16 === 15) {
-                            log (`... ${s}`);
-                            s = "";
+                        memory.poke(i + Number(addr), arr[i]);
+                        if (debug) {
+                            s += hexUtils.toHex2(arr[i], "") + " ";
+                            if (i % 16 === 15) {
+                                log(`... ${s}`);
+                                s = "";
+                            }
                         }
-                    }
-                    c++;
+                        c++;
                     }
                     if (debug) {
-                        log (`... ${s}`);
+                        log(`... ${s}`);
                     }
                 }
             }
@@ -999,7 +999,7 @@ export default class Asm {
      * @param {string} text             the text to parse
      * @returns {Array}                 the bytes representing the instruction
      */
-    static assembleSingleInstruction(text = "", {throwIfUnexpectedAssembly = true} = {}) {
+    static assembleSingleInstruction(text = "", { throwIfUnexpectedAssembly = true } = {}) {
         let r = Asm.parseSingleInstruction(text);
         let instruction = [];
         if (r.opcode === "") {
