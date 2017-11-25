@@ -1,17 +1,17 @@
 import GenericDevice from "../GenericDevice.js";
 
 let specialKeyMap = {
-     33: 1,              /* page up*/
-     34: 2,              /* page down*/
-     35: 3,              /* end */
-     36: 4,              /* home */
-     37: 5,              /* left */
-     38: 6,              /* up */
-     39: 7,              /* right */
-     40: 10,              /* down */
-      9: 9,              /* tab */
-     45: 11,             /* insert */
-     46: 12,             /* delete */
+    33: 1,              /* page up*/
+    34: 2,              /* page down*/
+    35: 3,              /* end */
+    36: 4,              /* home */
+    37: 5,              /* left */
+    38: 6,              /* up */
+    39: 7,              /* right */
+    40: 10,              /* down */
+    9: 9,              /* tab */
+    45: 11,             /* insert */
+    46: 12,             /* delete */
     112: 16,             /* f1 */
     113: 17,
     114: 18,
@@ -31,8 +31,8 @@ let stateKeyBitmap = {
     17: 0b01000000,         /* ctrl */
     18: 0b00100000,         /* alt */
     19: 0b00010000,         /* pause/break */
-    144:0b00001000,         /* num lock */
-    145:0b00000100,         /* scroll lock */
+    144: 0b00001000,         /* num lock */
+    145: 0b00000100,         /* scroll lock */
     20: 0b00000010,         /* caps lock */
 }
 
@@ -59,8 +59,8 @@ function isInvalidTarget(evt) {
 }
 
 export default class Keyboard extends GenericDevice {
-    constructor({io, cpu, memory} = {}) {
-        super({io, cpu, memory, name: "keyboard", type: "buffered"});
+    constructor({ io, cpu, memory } = {}) {
+        super({ io, cpu, memory, name: "keyboard", type: "buffered" });
 
         this._cpu = cpu;
 
@@ -70,18 +70,18 @@ export default class Keyboard extends GenericDevice {
         this._maxBuffer = 32;           // no more than 32 keys can be stored
 
         io.registerDeviceWithPort({
-            device: this, 
-            port: 0x10, 
+            device: this,
+            port: 0x10,
             readHandler: this.readKey
         });
         io.registerDeviceWithPort({
-            device: this, 
-            port: 0x11, 
+            device: this,
+            port: 0x11,
             readHandler: this.readState
         });
         io.registerDeviceWithPort({
-            device: this, 
-            port: 0x12, 
+            device: this,
+            port: 0x12,
             readHandler: this.readDirections
         });
 
@@ -94,7 +94,7 @@ export default class Keyboard extends GenericDevice {
         let v = this._buffer.shift();
         return v;
     }
-    
+
     readState() {
         return this._state;
     }
@@ -116,10 +116,10 @@ export default class Keyboard extends GenericDevice {
 
         // also handle modifier and directional keys
         let bitmask = stateKeyBitmap[key] || 0x00;
-        this._state = this._state | bitmask;
+        this._state |= bitmask;
 
         bitmask = directionalBitmap[key] || 0x00;
-        this._directions = this._directions | bitmask;
+        this._directions |= bitmask;
 
     }
 
@@ -129,10 +129,10 @@ export default class Keyboard extends GenericDevice {
         let key = evt.which;
         // handle modifier and directional keys
         let bitmask = stateKeyBitmap[key] || 0x00;
-        this._state = this._state & (256 - bitmask);
+        this._state &= (!bitmask);
 
         bitmask = directionalBitmap[key] || 0x00;
-        this._directions = this._directions & (256 - bitmask);
+        this._directions &= (!bitmask);
 
         this._cpu.sendTrap(0x11);
 
