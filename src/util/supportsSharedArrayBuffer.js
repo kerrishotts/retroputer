@@ -1,0 +1,1 @@
+export default typeof SharedArrayBuffer !== "undefined";

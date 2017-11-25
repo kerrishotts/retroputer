@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta name="description" content="An 8-bit retro-emulator in JavaScript">
+  <meta name="description" content="An 8-bit retro-emulator in JavaScript">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,minimum-scale=1">
   <title>Retroputer</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
-  <script src="bundle.js" defer></script>
+  <script src="dist/bundle.js" defer></script>
 </head>
+
 <body>
   <script defer>
     window.onerror = function (...args) {
@@ -39,20 +41,72 @@
           <div class="title">CPU</div>
           <div id="cpu">
             <table>
-              <tr><td>A</td><td id="reg-A"></td><td>X</td><td id="reg-X"></td><td>SB</td><td id="reg-SB"></td></tr>
-              <tr><td>B</td><td id="reg-B"></td><td>Y</td><td id="reg-Y"></td><td>DB</td><td id="reg-DB"></td></tr>
-              <tr><td>C</td><td id="reg-C"></td><td>SP</td><td id="reg-SP"></td><td>Flags</td><td id="reg-F"></td></tr>
-              <tr><td>D</td><td id="reg-D"></td><td>BP</td><td id="reg-BP"></td><td>PC</td><td id="reg-PC"></td></tr>
+              <tr>
+                <td>A</td>
+                <td id="reg-A"></td>
+                <td>X</td>
+                <td id="reg-X"></td>
+                <td>SB</td>
+                <td id="reg-SB"></td>
+              </tr>
+              <tr>
+                <td>B</td>
+                <td id="reg-B"></td>
+                <td>Y</td>
+                <td id="reg-Y"></td>
+                <td>DB</td>
+                <td id="reg-DB"></td>
+              </tr>
+              <tr>
+                <td>C</td>
+                <td id="reg-C"></td>
+                <td>SP</td>
+                <td id="reg-SP"></td>
+                <td>Flags</td>
+                <td id="reg-F"></td>
+              </tr>
+              <tr>
+                <td>D</td>
+                <td id="reg-D"></td>
+                <td>BP</td>
+                <td id="reg-BP"></td>
+                <td>PC</td>
+                <td id="reg-PC"></td>
+              </tr>
             </table>
 
             <table>
-              <tr><td>Int.</td><td id="flag-7"></td><td>Mode</td><td id="flag-6"></td><td>eXec</td><td id="flag-5"></td><td>Error</td><td id="flag-4"></td></tr>
-              <tr><td>Over</td><td id="flag-3"></td><td>Carry</td><td id="flag-2"></td><td>Neg</td><td id="flag-1"></td><td>Zero</td><td id="flag-0"></td></tr>
+              <tr>
+                <td>Int.</td>
+                <td id="flag-7"></td>
+                <td>Mode</td>
+                <td id="flag-6"></td>
+                <td>eXec</td>
+                <td id="flag-5"></td>
+                <td>Error</td>
+                <td id="flag-4"></td>
+              </tr>
+              <tr>
+                <td>Over</td>
+                <td id="flag-3"></td>
+                <td>Carry</td>
+                <td id="flag-2"></td>
+                <td>Neg</td>
+                <td id="flag-1"></td>
+                <td>Zero</td>
+                <td id="flag-0"></td>
+              </tr>
             </table>
 
             <table>
-              <tr><td>Inst</td><td id="instructions"></td></tr>
-              <tr><td> => </td><td id="disassembly"></td></tr>
+              <tr>
+                <td>Inst</td>
+                <td id="instructions"></td>
+              </tr>
+              <tr>
+                <td> => </td>
+                <td id="disassembly"></td>
+              </tr>
             </table>
           </div>
         </div>
@@ -67,7 +121,8 @@
             <button data-cmd="stop">Stop</button>
           </div>
           <div class="row">
-            Speed: <span id="cpu-speed"></span>
+            Speed:
+            <span id="cpu-speed"></span>
           </div>
           <div class="row">
             <button data-cmd="speed-adjust" data-parm="slowest">|&lt;</button>
@@ -80,7 +135,8 @@
           <div class="row">
             <button data-cmd="step">Step</button>
             <button data-cmd="dump-cpu">Dump</button>
-            <button data-cmd="reset">Reset</button><button data-cmd="hard-reset">(hard)</button>
+            <button data-cmd="reset">Reset</button>
+            <button data-cmd="hard-reset">(hard)</button>
           </div>
         </div>
       </div>
@@ -88,7 +144,9 @@
         <div class="title">Keyboard</div>
         <div class="toolbar">
           <div class="row">
-            <label>Focus: <input id="kbd" type="text" size= 1 value="" /></label>
+            <label>Focus:
+              <input id="kbd" type="text" size=1 value="" />
+            </label>
           </div>
         </div>
       </div>
@@ -100,8 +158,12 @@
         <div id="memory" class="vertical panel">
           <div class="toolbar">
             <div class="row">
-              <label>Start: <input id="mem-start" type="text" size=7 value="0x00000" /></label>
-              <label>End:   <input id="mem-end" type="text" size=7 value="0x00007" /></label>
+              <label>Start:
+                <input id="mem-start" type="text" size=7 value="0x00000" />
+              </label>
+              <label>End:
+                <input id="mem-end" type="text" size=7 value="0x00007" />
+              </label>
             </div>
             <div class="row">
               <button data-cmd="dump-mem">Dump memory</button>
@@ -145,4 +207,5 @@
     </div>
   </div>
 </body>
+
 </html>

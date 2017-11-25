@@ -155,27 +155,36 @@ export default class App {
         el.textContent = (`last frame: ${lastFrameDelta}d; ${lastFrameTime} (${avgFrameTime}avg) | fps: ${fps}/${computer.performance.FPSTargets[computer.performance.targetFPSIdx]} | #inst: ${avgInstPerFrame}/${actMIPS} (${totalInstBillions}m)`)
 
         // update CPU stats
-        for (let reg of computer.cpu.registers) {
-            if (reg) {
-                let el = document.getElementById(`reg-${reg.name}`);
-                if (el) {
-                    el.textContent = (reg.size === 1 ? hexUtils.toHex2(reg.U8, "") : hexUtils.toHex4(reg.U16, "")).toUpperCase();
+        if (computer.cpu) {
+
+            for (let reg of computer.cpu.registers) {
+                if (reg) {
+                    let el = document.getElementById(`reg-${reg.name}`);
+                    if (el) {
+                        el.textContent = (reg.size === 1 ? hexUtils.toHex2(reg.U8, "") : hexUtils.toHex4(reg.U16, "")).toUpperCase();
+                    }
                 }
             }
-        }
-        for (let flag = 0; flag < 8; flag++) {
-            let el = document.getElementById(`flag-${flag}`);
-            el.textContent = (computer.cpu.getFlag(flag)) ? "X" : "-";
-        }
-        el = document.getElementById("instructions");
-        el.textContent = computer.cpu.state.instruction.map(i => hexUtils.toHex2(i, "").toUpperCase()).join(" ");
 
-        el = document.getElementById("disassembly");
-        el.textContent = computer.cpu.mapStateToAsm();
+            if (computer.cpu.state.instruction) {
+                el = document.getElementById("instructions");
+                el.textContent = computer.cpu.state.instruction.map(i => hexUtils.toHex2(i, "").toUpperCase()).join(" ");
+            }
 
-        // update speed
-        el = document.getElementById("cpu-speed");
-        el.textContent = `${computer.performance.timeToDevoteToCPU}/${computer.performance.maxTimeToDevoteToCPU}`;
+            if (!computer.cpu.worker) {
+                for (let flag = 0; flag < 8; flag++) {
+                    let el = document.getElementById(`flag-${flag}`);
+                    el.textContent = (computer.cpu.getFlag(flag)) ? "X" : "-";
+                }
+
+                el = document.getElementById("disassembly");
+                el.textContent = computer.cpu.mapStateToAsm();
+            }
+
+            // update speed
+            el = document.getElementById("cpu-speed");
+            el.textContent = `${computer.performance.timeToDevoteToCPU}/${computer.performance.maxTimeToDevoteToCPU}`;
+        }
 
     }
 

@@ -1,8 +1,12 @@
+/* global SharedArrayBuffer */
 import twosComplement from "../util/twosComplement.js";
 
 export default class Screen {
-    constructor(id, borderId, memory) {
-        let width = 320, height = 200, layout = memory.layout;
+    constructor(id, borderId, memory, { worker = false, shared = false, withSharedArrayBuffer = undefined } = {}) {
+        let width = 320, height = 200, layout = memory && memory.layout;
+
+        this._shared = Boolean(shared || withSharedArrayBuffer);
+        this._worker = worker;
 
         this._width = width;
         this._height = height;
@@ -10,52 +14,43 @@ export default class Screen {
         this._tileHeight = 8;
         this._tileColumns = width / this._tileWidth;
         this._tileRows = height / this._tileHeight;
-        this._screen = document.getElementById(id);
-        this._screen.setAttribute("width", width);
-        this._screen.setAttribute("height", height);
-        this._screenCtx = this._screen.getContext("2d");
 
-        this._canvas = document.createElement("canvas");
-        this._canvas.setAttribute("width", width);
-        this._canvas.setAttribute("height", height);
-        this._canvasCtx = this._canvas.getContext("2d");
+        if (!worker) {
+            this._screen = document.getElementById(id);
+            this._screen.setAttribute("width", width);
+            this._screen.setAttribute("height", height);
+            this._screenCtx = this._screen.getContext("2d");
 
-        this._screenBorderEl = document.getElementById(borderId);
+            this._canvas = document.createElement("canvas");
+            this._canvas.setAttribute("width", width);
+            this._canvas.setAttribute("height", height);
+            this._canvasCtx = this._canvas.getContext("2d");
+
+            this._screenBorderEl = document.getElementById(borderId);
+            this._frameData = this._canvasCtx.createImageData(width, height);
+        }
 
         this._memory = memory;
         this._layout = layout;
-        this._palette = memory.range32(layout.paletteStart,
-            layout.paletteLength32);
-
-        /*
-        // the screen occupies the second block of memory
-        this._memory = memory.range(layout.graphicsStart,
-        layout.graphicsLength);
-
-        // the palette is 256 entries of rgba bytes
-
-        // configuration settings
-        this._config = memory.range(layout.screenConfigStart,
-        layout.screenConfigLength);
-        */
-        // tilesets
-        this._tilesets = memory.range(layout.tileSetsStart,
-            layout.tileSetsLength);
-
-        this._tiles = memory.range(layout.tilePagesStart,
-            layout.tilePagesLength);
 
         // we also need the 32-bit array that the canvas will use
-        this._frameData = this._canvasCtx.createImageData(width, height);
-        this._frameBuf = new ArrayBuffer(this._frameData.data.length);
-        this._frame = new Uint32Array(this._frameBuf);
-        this._frame8 = new Uint8Array(this._frameBuf);
+        if (withSharedArrayBuffer) {
+            this._frameBuffer = withSharedArrayBuffer;
+        } else {
+            if (!worker) {
+                this._frameBuf = new (shared ? SharedArrayBuffer : ArrayBuffer)(this._frameData.data.length);
+                this._frame = new Uint32Array(this._frameBuf);
+                this._frame8 = new Uint8Array(this._frameBuf);
+            }
+        }
+
 
         // some things depend upon our browser
-        this.renderTilePageToCanvas = this.renderTilePageToCanvas_safari;
+        this.renderTilePageToCanvas = this.renderTilePageToCanvasSafari;
+
         if (typeof navigator !== "undefined") {
             if (navigator.userAgent.toLowerCase().indexOf("chrome") > -1) {
-                this.renderTilePageToCanvas = this.renderTilePageToCanvas_chrome;
+                this.renderTilePageToCanvas = this.renderTilePageToCanvasChrome;
             }
         }
 
@@ -64,13 +59,34 @@ export default class Screen {
     }
 
     init() {
-        // we expect the bootstrap in ROM to set up the screen
-        //this.initPalette();
-        //this.initScreenConfiguration();
+        const memory = this._memory;
+        const layout = this._layout;
+        if (memory) {
+            this._palette = memory.range32(layout.paletteStart, layout.paletteLength32);
+
+            // tilesets
+            this._tilesets = memory.range(layout.tileSetsStart, layout.tileSetsLength);
+            this._tiles = memory.range(layout.tilePagesStart, layout.tilePagesLength);
+        }
+    }
+
+    get shared() {
+        return this._shared;
+    }
+
+    get sharedArrayBuffer() {
+        return this.shared ? this._frameBuf : null;
+    }
+
+    setSharedArrayBuffer(sharedArrayBuffer) {
+        this._frameBuf = sharedArrayBuffer;
+        this._frame = new Uint32Array(this._frameBuf);
+        this._frame8 = new Uint8Array(this._frameBuf);
+
     }
 
     setPaletteEntry(idx, r, g, b) {
-        let addr = this._layout.paletteStart + (idx << 2)
+        let addr = this._layout.paletteStart + (idx << 2);
         this._memory.poke(addr + 3, 0xFF);
         this._memory.poke(addr + 2, b);
         this._memory.poke(addr + 1, g);
@@ -78,7 +94,7 @@ export default class Screen {
     }
 
     getPaletteEntry(idx) {
-        let addr = this._layout.paletteStart + (idx << 2)
+        let addr = this._layout.paletteStart + (idx << 2);
         return {
             r: this._memory.peek(addr),
             g: this._memory.peek(addr + 1),
@@ -269,16 +285,17 @@ export default class Screen {
         this._frame.fill(palette[c]);
 
         /*eslint-disable no-var, vars-on-top*/
-//        for (var y = this._height - 1; y !== 0; y--) {
-//            for (var x = this._width - 1; x !== 0; x--) {
-//                this.setPixel(x, y, c);
-//            }
-//        }
+        //        for (var y = this._height - 1; y !== 0; y--) {
+        //            for (var x = this._width - 1; x !== 0; x--) {
+        //                this.setPixel(x, y, c);
+        //            }
+        //        }
 
         /*eslint-enable no-var, vars-on-top*/
     }
 
-    renderTilePageToCanvas_chrome(page, palette) {
+    /*eslint-disable max-depth*/
+    renderTilePageToCanvasChrome(page, palette) {
 
         /*eslint-disable no-var, vars-on-top*/
         var [cropX, cropY] = this.getTilePageCrops(page),
@@ -305,7 +322,7 @@ export default class Screen {
             baseY = (row << shift) + offsetY;
 
             // only paint tiles that have visible portions on screen
-            if (baseY >= cropTopMasked  && baseY <= cropBottomMasked) {
+            if (baseY >= cropTopMasked && baseY <= cropBottomMasked) {
                 for (var col = this._tileColumns - 1; col > -1; col--) {
                     // baseX should indicate the leftmost X position of the tile
                     baseX = (col << shift) + offsetX;
@@ -347,7 +364,9 @@ export default class Screen {
         }
     }
 
-    renderTilePageToCanvas_safari(page, palette) {
+    /*eslint-enable max-depth*/
+
+    renderTilePageToCanvasSafari(page, palette) {
 
         /*eslint-disable no-var, vars-on-top*/
         var [cropX, cropY] = this.getTilePageCrops(page),
@@ -431,9 +450,9 @@ export default class Screen {
     }
     */
 
-    renderBorderToScreenBorder(palette) {
+    renderBorderToScreenBorder() {
         let borderColor = this.getBorderColor();
-        let color = palette[borderColor];
+        let color = (this._palette[borderColor] | 0xFF000000);
         let b = (color & 0x00FF0000) >> 16;
         let g = (color & 0x0000FF00) >> 8;
         let r = (color & 0x000000FF);
@@ -514,12 +533,12 @@ export default class Screen {
                 actions[actionIdx](palette);
             }
         }
-        this.renderBorderToScreenBorder(palette);
     }
 
     draw() {
         this._frameData.data.set(this._frame8);
         this._canvasCtx.putImageData(this._frameData, 0, 0);
         this._screenCtx.drawImage(this._canvas, 0, 0);
+        this.renderBorderToScreenBorder();
     }
 }

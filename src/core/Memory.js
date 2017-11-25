@@ -1,14 +1,25 @@
+/* globals SharedArrayBuffer */
+
 import log from "../util/log.js";
 import hexUtils from "../util/hexUtils.js";
 
 export default class Memory {
-  constructor(layout) {
+  constructor(layout, { shared = false, withSharedArrayBuffer = undefined } = {}) {
     this._protected = false;
+    this._shared = Boolean(shared || withSharedArrayBuffer);
     this.layout = layout;
-    this._buf = new ArrayBuffer(layout.size * 1024);
+    this._buf = withSharedArrayBuffer || new (shared ? SharedArrayBuffer : ArrayBuffer)(layout.size * 1024);
     this._mem = new Uint8Array(this._buf);
     this._rom = new Uint8Array(this._buf, layout.romStart, layout.romLength);
     this.resetStats();
+  }
+
+  get shared() {
+    return this._shared;
+  }
+
+  get sharedArrayBuffer() {
+    return this.shared ? this._buf : undefined;
   }
 
   get protected() {
@@ -49,15 +60,15 @@ export default class Memory {
       addr = addrOverride;
     }
     data.data.forEach((v, i) => {
-        this.poke(i + addr, v);
+      this.poke(i + addr, v);
     });
   }
 
-/*
-  loadFromBIN(bin) {
-    // TODO
-  }
-*/
+  /*
+    loadFromBIN(bin) {
+      // TODO
+    }
+  */
 
   poke(addr, val) {
     addr &= 0x3FFFF;
@@ -150,7 +161,7 @@ export default class Memory {
     return v;
   }
 
-  range(addr,len) {
+  range(addr, len) {
     if (addr + len <= this.layout.memtop) {
       return new Uint8Array(this._buf, addr, len);
     } else {
@@ -161,33 +172,33 @@ export default class Memory {
     }
   }
 
-  copyFromRange(addr,len) {
+  copyFromRange(addr, len) {
     return Uint8Array.from(this.range(addr, len));
   }
 
-  copyWithin({src, dest, len} = {}) {
+  copyWithin({ src, dest, len } = {}) {
     if (src + len > this.layout.memtop ||
-        dest + len > this.layout.memtop) {
-          return;
+      dest + len > this.layout.memtop) {
+      return;
     }
     this._mem.copyWithin(dest, src, src + len);
   }
 
-  fillWithin({value, addr, len} = {}) {
+  fillWithin({ value, addr, len } = {}) {
     if (len + addr > this.layout.memtop) {
       return;
     }
     this._mem.fill(value & 0xFF, addr, addr + len);
   }
 
-  setWithin({data, addr} = {}) {
+  setWithin({ data, addr } = {}) {
     if (addr + (data.length) > this.layout.memtop) {
       return;
     }
     this._mem.set(data, addr);
   }
 
-  range32(addr,len) {
+  range32(addr, len) {
     return new Uint32Array(this._buf, addr, len);
   }
 
@@ -216,21 +227,21 @@ export default class Memory {
 
   }
 
-/*
-  static poke(buffer, addr, val)  {
-    buffer[addr] = val;
-  }
+  /*
+    static poke(buffer, addr, val)  {
+      buffer[addr] = val;
+    }
 
-  static peek(buffer, addr) {
-    return buffer[addr];
-  }
+    static peek(buffer, addr) {
+      return buffer[addr];
+    }
 
-  static range(buffer, addr, len) {
-    return new Uint8Array(buffer, addr, len);
-  }
+    static range(buffer, addr, len) {
+      return new Uint8Array(buffer, addr, len);
+    }
 
-  static range32(buffer, addr, len) {
-    return new Uint32Array(buffer, addr, len);
-  }
-*/
+    static range32(buffer, addr, len) {
+      return new Uint32Array(buffer, addr, len);
+    }
+  */
 }

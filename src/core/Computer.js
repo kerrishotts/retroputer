@@ -3,15 +3,14 @@ import Memory from "./Memory.js";
 import Screen from "./Screen.js";
 import IO from "./IO.js";
 
-
+import TRAPS from "../core/traps.js";
 import memoryLayout from "./memoryLayout.js";
 import log from "../util/log.js";
 
+import supportsWorkers from "../util/supportsWorkers.js";
+import supportsSharedArrayBuffer from "../util/supportsSharedArrayBuffer.js";
 
-const TRAPS = {
-    FRAME: 0xF0,
-    RESET: 0x00
-}
+const useWorkers = supportsSharedArrayBuffer && supportsWorkers;
 
 export default class Computer {
 
@@ -37,7 +36,7 @@ export default class Computer {
         };
         this.targetFPS(60);
 
-        this.memory = new Memory(memoryLayout);
+        this.memory = new Memory(memoryLayout, { shared: useWorkers });
         this.memory.init();
 
         // load ROMS
@@ -48,13 +47,56 @@ export default class Computer {
         this.memory.protected = true;
 
         this.io = new IO();
-        this.cpu = new CPU(this.memory, this.io);
+
+        if (useWorkers) {
+            const cpuWorker = new Worker("./dist/CpuWorker.js");
+            let instSinceLastMessage = 0;
+            cpuWorker.addEventListener("message", (e) => {
+                const cmd = e.data.cmd;
+                const data = e.data.data;
+                switch (cmd) {
+                    case "stats":
+                        instSinceLastMessage = data.numInstructions - instSinceLastMessage;
+                        this.stats.lastFrameInstructions += instSinceLastMessage;
+                        this.stats.totalInstructions = data.numInstructions;
+                        break;
+                    case "status":
+                        this.cpu.stepping = data.stepping;
+                        this.cpu.running = data.running;
+                        this.cpu.paused = data.paused;
+                        break;
+                    case "state":
+                        this.cpu.state = data;
+                        break;
+                    case "registers":
+                        this.cpu.registers = data;
+                        break;
+                    case "flags":
+                        break;
+                    default:
+                }
+            });
+            cpuWorker.postMessage({ cmd: "setSharedMemory", data: this.memory.sharedArrayBuffer });
+            cpuWorker.postMessage({ cmd: "init" });
+            this.cpuWorker = cpuWorker;
+            this.cpu = {
+                stepping: false,
+                paused: false,
+                running: false,
+                registers: {},
+                state: {},
+                worker: true,
+                working: false
+            };
+        } else {
+            this.cpu = new CPU(this.memory, this.io);
+        }
 
         this.devices = {};
         this.deviceTickFns = [];
 
         devices.forEach((Device) => {
-            let device = new Device({ io: this.io, cpu: this.cpu, memory: this.memory});
+            let device = new Device({ io: this.io, cpu: this.cpu, memory: this.memory });
             this.devices[device.name] = device;
             if (typeof device.tick === "function") {
                 this.deviceTickFns.push(device.tick.bind(device));
@@ -62,10 +104,30 @@ export default class Computer {
         });
 
 
-        if (screenId) {
-            this.screen = new Screen(screenId, borderId, this.memory);
+        if (useWorkers) {
+            this.screen = new Screen(screenId, borderId, this.memory, { shared: true });
+            const screenWorker = new Worker("./dist/ScreenWorker.js");
+            screenWorker.postMessage({ cmd: "setSharedMemory", data: this.memory.sharedArrayBuffer });
+            screenWorker.postMessage({ cmd: "setSharedFrameBuffer", data: this.screen.sharedArrayBuffer });
+            screenWorker.postMessage({ cmd: "init" });
+            screenWorker.addEventListener("message", (e) => {
+                const cmd = e.data.cmd;
+                switch (cmd) {
+                    case "updated":
+                        this.screen.draw();
+                        // send a frame interrupt to the CPU
+                        this.cpuWorker.postMessage({ cmd: "trap", data: TRAPS.FRAME });
+                        break;
+                    default:
+                }
+            });
+            this.screenWorker = screenWorker;
         } else {
-            this.screen = null;
+            if (screenId) {
+                this.screen = new Screen(screenId, borderId, this.memory);
+            } else {
+                this.screen = null;
+            }
         }
         this.beforeFrameUpdate = beforeFrameUpdate;
 
@@ -73,7 +135,11 @@ export default class Computer {
 
         this.tick = (f) => {
             if (this.screen) {
-                this.tickInBrowser(f);
+                if (useWorkers) {
+                    this.tickInBrowserUsingWorkers(f);
+                } else {
+                    this.tickInBrowser(f);
+                }
             } else {
                 this.tickOutsideBrowser(f);
             }
@@ -95,6 +161,81 @@ export default class Computer {
     nodeNow() {
         // TODO
         // return a performance.now-like value
+    }
+
+    tickInBrowserUsingWorkers(f) {
+        if (this.cpu.working) {
+            window.requestAnimationFrame(this.tick);
+        }
+
+        this.stats.lastFrameInstructions = 0;
+
+        this.cpuWorker.postMessage({ cmd: "getStats" });
+        this.cpuWorker.postMessage({ cmd: "getStatus" });
+        this.cpuWorker.postMessage({ cmd: "getState" });
+        this.cpuWorker.postMessage({ cmd: "getRegisters" });
+
+        /*eslint-disable no-var, vars-on-top*/
+        var fudge = 1;
+        var msPerFrame = Math.floor(1000 / this.performance.FPSTargets[this.performance.targetFPSIdx]);
+
+        var startTime = this.now();
+        var deltaf = f - this.stats.oldf;
+        var curTime, stopTime, endTime, totalTime;
+
+        /*eslint-enable no-var, vars-on-top*/
+        this.stats.oldf = f;
+        this.stats.deltaf = deltaf;
+
+        // is there a beforeFrameUpdate callback? If so, call it
+        if (this.beforeFrameUpdate) {
+            this.beforeFrameUpdate(this, deltaf);
+        }
+
+        if (this.screen) {
+            // composite the screen
+            this.screenWorker.postMessage({ cmd: "update" });
+        }
+
+
+        // we need to know how long that took so we can devote
+        // a safe amount of time to the processor
+        // and if we need to reduce our targetFPS
+        curTime = this.now();
+        if ((curTime - startTime) > msPerFrame + fudge) {
+            if (this.performance.targetFPSIdx < (this.performance.FPSTargets.length - 1)) {
+                this.performance.targetFPSIdx++;
+            }
+        } else if ((curTime - startTime) < (msPerFrame / 2) + fudge) {
+            if (this.performance.targetFPSIdx > 0) {
+                this.performance.targetFPSIdx--;
+            }
+        }
+
+        //stopTime = curTime + (this.performance.timeToDevoteToCPU);
+        stopTime = Math.min(startTime + (msPerFrame - fudge), curTime + this.performance.timeToDevoteToCPU);
+
+        // if the time to devote to the CPU is so small that we've already passed
+        // stop time, give it some more time
+        if (stopTime < this.now()) {
+            stopTime = this.now() + this.performance.minTimeToDevoteToCPU;
+        }
+
+        this.tickDevices();
+
+        // compute final stats and adjust performance
+        endTime = this.now();
+        totalTime = endTime - startTime;
+        this.stats.lastFrameTime = totalTime;
+        this.stats.totalTime += totalTime;
+        this.stats.totalFrames++;
+        this.stats.performanceAtTime = endTime;
+
+        if (this.debug) {
+            //this.cpu.dump();
+            this.memory.dump();
+            this.dump();
+        }
     }
 
     tickInBrowser(f) {
@@ -187,25 +328,25 @@ export default class Computer {
         this.stats.totalFrames++;
         this.stats.performanceAtTime = endTime;
 
-/*
-        if (!this.cpu.stepping) {
-            // only throttle when stepping
-            if (totalTime > this.performance.throttlePoint) {
-                // we need to limit processing time
-                this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - this.performance.finetuning) / 100;
-                if (this.performance.timeToDevoteToCPU < this.performance.minTimeToDevoteToCPU) {
-                    this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU
+        /*
+                if (!this.cpu.stepping) {
+                    // only throttle when stepping
+                    if (totalTime > this.performance.throttlePoint) {
+                        // we need to limit processing time
+                        this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - this.performance.finetuning) / 100;
+                        if (this.performance.timeToDevoteToCPU < this.performance.minTimeToDevoteToCPU) {
+                            this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU
+                        }
+                    } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
+                        // but we need to increase processing to use the most of the
+                        // available time as possible
+                        this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) + this.performance.finetuning) / 100;
+                        if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
+                            this.performance.timeToDevoteToCPU = this.performance.maxTimeToDevoteToCPU;
+                        }
+                    }
                 }
-            } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
-                // but we need to increase processing to use the most of the
-                // available time as possible
-                this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) + this.performance.finetuning) / 100;
-                if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
-                    this.performance.timeToDevoteToCPU = this.performance.maxTimeToDevoteToCPU;
-                }
-            }
-        }
-*/
+        */
         if (this.debug) {
             this.cpu.dump();
             this.memory.dump();
@@ -271,27 +412,41 @@ export default class Computer {
 
         let lastFrameTime = Math.round(this.stats.lastFrameTime * 100) / 100;
         let avgFrameTime = Math.round((this.stats.totalTime / this.stats.totalFrames) * 100) / 100;
-        let avgMIPS = Math.round(((this.stats.totalInstructions / this.stats.totalFrames) * 60 ) / 10000) / 100;
+        let avgMIPS = Math.round(((this.stats.totalInstructions / this.stats.totalFrames) * 60) / 10000) / 100;
         let secondsElapsed = (performance.now() - this.stats.startTime) / 1000;
         let expectedFrames = secondsElapsed * 60;
-        let actMIPS = Math.round(((this.stats.totalInstructions / expectedFrames) * 60 ) / 10000) / 100;
+        let actMIPS = Math.round(((this.stats.totalInstructions / expectedFrames) * 60) / 10000) / 100;
 
         log(`last frame ms: ${lastFrameTime} | avg frame ms: ${avgFrameTime} | total frames: ${this.stats.totalFrames} | hope avg MIPS: ${avgMIPS} | act avg MIPS: ${actMIPS}`)
     }
 
     start() {
+        this.stats.startTime = performance.now();
+
+        if (this.cpuWorker) {
+            this.cpu.working = true;
+            this.cpuWorker.postMessage({ cmd: "start" });
+            window.requestAnimationFrame(this.tick);
+            return;
+        }
+
         if (this.cpu.stepping) {
             this.cpu.stepping = false;
         }
         if (this.cpu.running) {
             return;
         }
-        this.stats.startTime = performance.now();
         this.cpu.running = true;
         window.requestAnimationFrame(this.tick);
     }
 
     stop() {
+        if (this.cpuWorker) {
+            this.cpu.working = false;
+            this.cpuWorker.postMessage({ cmd: "stop" });
+            return;
+        }
+
         if (!this.cpu.running) {
             return;
         }
@@ -299,6 +454,11 @@ export default class Computer {
     }
 
     step() {
+        if (this.cpuWorker) {
+            this.cpuWorker.postMessage({ cmd: "step" });
+            return;
+        }
+
         if (!this.cpu.running) {
             this.start();
         }
@@ -307,16 +467,30 @@ export default class Computer {
     }
 
     reset() {
+        if (this.cpuWorker) {
+            this.cpuWorker.postMessage({ cmd: "softReset" });
+            return;
+        }
         // send reset trap
         this.cpu.sendTrap(TRAPS.RESET);
     }
 
     hardReset() {
-        this.cpu.stepping = false;
-        //this.cpu.running = false;
-        this.cpu.init();
-        this.memory.init();
-        this.screen.init();
+        if (this.cpuWorker) {
+            this.cpuWorker.postMessage({ cmd: "stop" });
+            this.memory.init();
+            this.screen.init();
+            this.cpuWorker.postMessage({ cmd: "hardReset" });
+            if (this.cpu.working) {
+                this.cpuWorker.postMessage({ cmd: "start" });
+            }
+        } else {
+            this.cpu.stepping = false;
+            //this.cpu.running = false;
+            this.cpu.init();
+            this.memory.init();
+            this.screen.init();
+        }
 
         // reload ROMs
         this.roms.forEach((rom) => {
