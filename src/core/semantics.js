@@ -308,6 +308,10 @@ let semanticsOps = {
         }
     },
     [semantics.IN]: function _in(cpu) {
+        let dreg = cpu.registers[cpu.state.destRegister];
+        dreg.U8 = handleFlags(cpu, cpu.memory.peek(cpu.memory.layout.iobot + cpu.state.imm8));
+
+        /* previous implementation used a separate IO
         if (!cpu.io) {
             cpu.setFlag(cpu.flagMap.E);
             cpu.registers[cpu.state.destRegister].U8 = handleFlags(cpu, 0x00, 8);
@@ -321,11 +325,17 @@ let semanticsOps = {
             cpu.setFlag(cpu.flagMap.E);
         }
         cpu.registers[cpu.state.destRegister].U8 = handleFlags(cpu, data, 8);
+        */
     },
     [semantics.OUT]: function _out(cpu) {
+        let sreg = cpu.registers[cpu.state.srcRegister];
+        cpu.memory.poke(cpu.memory.layout.iobot + cpu.state.imm8, sreg.U8);
+
+        /* previous implementation used separate IO
         if (cpu.io) {
             cpu.io.write(cpu.state.imm8, cpu.registers[cpu.state.srcRegister].U8);
         }
+        */
     },
     [semantics.MEMFILL]: function memfill(cpu) {
         let c = cpu.registers[cpu.registerMap.C].U16;

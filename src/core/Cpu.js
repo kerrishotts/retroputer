@@ -4,8 +4,10 @@ import hexUtils from "../util/hexUtils.js";
 import cpuSemantics, { exec } from "./semantics.js";
 import decode from "./decoder.js";
 
+import TRAPS from "./traps.js";
+
 export default class CPU {
-  constructor(memory, io) {
+  constructor(memory) {
     // status
     this.running = false;
     this.paused = false;
@@ -28,21 +30,18 @@ export default class CPU {
       SP: 6, BP: 7, SB: 12, DB: 13,
       F: 14, Flags: 14, PC: 15,
       0: "A(L)", 1: "B(L)", 2: "C(L)", 3: "D(L)",
-      4: "X(L)", 5: "Y(L)", 6: "SP",   7: "BP",
-      12:"SB",   13:"DB",   14:"Flags", 15: "PC"
+      4: "X(L)", 5: "Y(L)", 6: "SP", 7: "BP",
+      12: "SB", 13: "DB", 14: "Flags", 15: "PC"
     };
     this.flagMap = {
       0: "Z", 1: "N", 2: "C", 3: "V", 4: "E", 5: "X", 6: "M", 7: "I",
       "Z": 0, "N": 1, "C": 2, "V": 3, "E": 4, "X": 5, "M": 6, "I": 7,
-      "EQ":0,         "LT":2, "O": 3
+      "EQ": 0, "LT": 2, "O": 3
     };
-    this.addressingModeMap = [ "imm8/rel8", "imm16/rel16", "abs16", "ind16", "relBP", "indBP", "absD", "indD" ];
+    this.addressingModeMap = ["imm8/rel8", "imm16/rel16", "abs16", "ind16", "relBP", "indBP", "absD", "indD"];
 
     // need to keep track of memory
     this.memory = memory;
-
-    // and io
-    this.io = io;
 
     // semantics for execution
     this.semantics = cpuSemantics.semantics;
@@ -68,7 +67,7 @@ export default class CPU {
     this.setFlag(this.flagMap.I);
 
     // instruction decoding and execution state
-    this.state = { };
+    this.state = {};
     this.clearState();
   }
 
@@ -116,9 +115,9 @@ export default class CPU {
     let size = (reg ? reg.size : dsize);
     SP.U16 -= size;
     if (size === 1) {
-        this.memory.poke(SP.U16, (reg ? reg.U8 : v));
+      this.memory.poke(SP.U16, (reg ? reg.U8 : v));
     } else {
-        this.memory.poke16(SP.U16, (reg ? reg.U16 : v));
+      this.memory.poke16(SP.U16, (reg ? reg.U16 : v));
     }
   }
 
@@ -131,16 +130,16 @@ export default class CPU {
    * @param {number} [dsize=2]    size of data
    * @return {number}             value popped
    */
-  pop (reg, dsize = 2) {
+  pop(reg, dsize = 2) {
     let v;
     let SP = this.registers[this.registerMap.SP];
     let size = (reg ? reg.size : dsize);
     if (size === 1) {
-        v = this.memory.peek(SP.U16);
-        if (reg) { reg.U8 = v; }
+      v = this.memory.peek(SP.U16);
+      if (reg) { reg.U8 = v; }
     } else {
-        v = this.memory.peek16(SP.U16);
-        if (reg) { reg.U16 = v; }
+      v = this.memory.peek16(SP.U16);
+      if (reg) { reg.U16 = v; }
     }
     SP.U16 += size;
     return v;
@@ -177,39 +176,39 @@ export default class CPU {
    * @return {void}
    */
   dump() {
-    log( "---- REGISTERS" );
-    log( this.registers.map(r => (r ? `${r ? r.name : ""}: ${r ? hexUtils.toHex4(r.U16) : ""} ` : "")).join("") );
-    log( [7, 6, 5, 4, 3, 2, 1, 0].map(flag => `${this.flagMap[flag]}: ${this.getFlag(flag) ? 1 : 0}, `).join("") );
-    log( "---- STATE" );
-    log( "inst[]=", this.state.instruction.map(b => hexUtils.toHex2(b)),
-         "|", "opcode=", hexUtils.toHex2(this.state.opcode),
-         "|", "semantic=", hexUtils.toHex2(this.state.semantic), this.semanticsMap[this.state.semantic]);
-    log( "imm8=", hexUtils.toHex2(this.state.imm8), "|",
-         "imm16=", hexUtils.toHex2(this.state.imm16), "|",
-         "srcR=", this.registerMap[this.state.srcRegister], "|",
-         "dstR=", this.registerMap[this.state.destRegister], "|",
-         "flag=", this.flagMap[this.state.flag], "|");
-    log( "bank selects", "src=", this.state.srcBank, "dst=", this.state.destBank, "|",
-         "address mode=", this.addressingModeMap[this.state.addressingMode], "|",
-         "index by", "X?", this.state.indexByX ? "Y" : "N",
-                     "Y?", this.state.indexByY ? "Y" : "N", "|",
-         "scale=", this.state.scale ? "byte" : "word");
-    log( "" );
+    log("---- REGISTERS");
+    log(this.registers.map(r => (r ? `${r ? r.name : ""}: ${r ? hexUtils.toHex4(r.U16) : ""} ` : "")).join(""));
+    log([7, 6, 5, 4, 3, 2, 1, 0].map(flag => `${this.flagMap[flag]}: ${this.getFlag(flag) ? 1 : 0}, `).join(""));
+    log("---- STATE");
+    log("inst[]=", this.state.instruction.map(b => hexUtils.toHex2(b)),
+      "|", "opcode=", hexUtils.toHex2(this.state.opcode),
+      "|", "semantic=", hexUtils.toHex2(this.state.semantic), this.semanticsMap[this.state.semantic]);
+    log("imm8=", hexUtils.toHex2(this.state.imm8), "|",
+      "imm16=", hexUtils.toHex2(this.state.imm16), "|",
+      "srcR=", this.registerMap[this.state.srcRegister], "|",
+      "dstR=", this.registerMap[this.state.destRegister], "|",
+      "flag=", this.flagMap[this.state.flag], "|");
+    log("bank selects", "src=", this.state.srcBank, "dst=", this.state.destBank, "|",
+      "address mode=", this.addressingModeMap[this.state.addressingMode], "|",
+      "index by", "X?", this.state.indexByX ? "Y" : "N",
+      "Y?", this.state.indexByY ? "Y" : "N", "|",
+      "scale=", this.state.scale ? "byte" : "word");
+    log("");
   }
 
-/**
- * fetches the desired byte (n) of the current instruction. If n is zero, the CPU's execution
- * and decode state is cleared first.
- * @param {number} n     indicates fetch stage (0 = start of new instruction)
- * @return {void}
- */
+  /**
+   * fetches the desired byte (n) of the current instruction. If n is zero, the CPU's execution
+   * and decode state is cleared first.
+   * @param {number} n     indicates fetch stage (0 = start of new instruction)
+   * @return {void}
+   */
   fetch(n) {
     if (n === 0) {
       //this.clearState();
       this.state.instruction = [];
     }
     let rPC = this.registers[this.registerMap.PC].U16;
-    this.state.instruction.push( this.memory.peek(rPC + n) );
+    this.state.instruction.push(this.memory.peek(rPC + n));
   }
 
   /**
@@ -249,7 +248,7 @@ export default class CPU {
         this.step();  // go ahead and skip the next instruction
         this.setFlag(this.flagMap.X); // Flags.X can only skip one cycle
       }
-   }
+    }
   }
 
   /**
@@ -260,9 +259,9 @@ export default class CPU {
    * @return {void}
    */
   sendTrap(trap) {
-    if (trap === 0x00 || (trap > 0x00 && this.getFlag(this.flagMap.I))) {
+    if (trap === TRAPS.RESET || (trap > TRAPS.RESET && this.getFlag(this.flagMap.I))) {
       this.paused = false;
-      this.state.instruction = [ 0x06, 0x01, trap ];
+      this.state.instruction = [0x06, 0x01, trap];
       this.step(true); // don't fetch anything -- we want the above instruction
     }
   }

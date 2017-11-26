@@ -1,7 +1,7 @@
+/* globals Atomics, SharedArrayBuffer */
 import CPU from "./Cpu.js";
 import Memory from "./Memory.js";
 import Screen from "./Screen.js";
-import IO from "./IO.js";
 
 import TRAPS from "../core/traps.js";
 import memoryLayout from "./memoryLayout.js";
@@ -9,6 +9,7 @@ import log from "../util/log.js";
 
 import supportsWorkers from "../util/supportsWorkers.js";
 import supportsSharedArrayBuffer from "../util/supportsSharedArrayBuffer.js";
+import supportsAtomics from "../util/supportsAtomics.js";
 
 const useWorkers = supportsSharedArrayBuffer && supportsWorkers;
 
@@ -46,8 +47,6 @@ export default class Computer {
         });
         this.memory.protected = true;
 
-        this.io = new IO();
-
         if (useWorkers) {
             const cpuWorker = new Worker("./dist/CpuWorker.js");
             let instSinceLastMessage = 0;
@@ -76,6 +75,12 @@ export default class Computer {
                     default:
                 }
             });
+
+            if (supportsAtomics) {
+                this._sentinelSharedBuffer = new SharedArrayBuffer(1);
+                this._sentinel = new Uint8Array(this._sentinelSharedBuffer);
+                cpuWorker.postMessage({ cmd: "setSentinel", data: this._sentinelSharedBuffer });
+            }
             cpuWorker.postMessage({ cmd: "setSharedMemory", data: this.memory.sharedArrayBuffer });
             cpuWorker.postMessage({ cmd: "init" });
             this.cpuWorker = cpuWorker;
@@ -86,17 +91,21 @@ export default class Computer {
                 registers: {},
                 state: {},
                 worker: true,
-                working: false
+                working: false,
+                sendTrap: (trap) => {
+                    this.cpuWorker.postMessage({ cmd: "trap", data: trap });
+                    this.getCPUAttention();
+                }
             };
         } else {
-            this.cpu = new CPU(this.memory, this.io);
+            this.cpu = new CPU(this.memory);
         }
 
         this.devices = {};
         this.deviceTickFns = [];
 
         devices.forEach((Device) => {
-            let device = new Device({ io: this.io, cpu: this.cpu, memory: this.memory });
+            let device = new Device({ cpu: this.cpu, memory: this.memory });
             this.devices[device.name] = device;
             if (typeof device.tick === "function") {
                 this.deviceTickFns.push(device.tick.bind(device));
@@ -117,6 +126,7 @@ export default class Computer {
                         this.screen.draw();
                         // send a frame interrupt to the CPU
                         this.cpuWorker.postMessage({ cmd: "trap", data: TRAPS.FRAME });
+                        this.getCPUAttention();
                         break;
                     default:
                 }
@@ -163,9 +173,21 @@ export default class Computer {
         // return a performance.now-like value
     }
 
+    getCPUAttention() {
+        if (useWorkers && supportsAtomics && this.cpu.working) {
+            Atomics.store(this._sentinel, 0, 1);
+        }
+    }
+
     tickInBrowserUsingWorkers(f) {
         if (this.cpu.working) {
             window.requestAnimationFrame(this.tick);
+        }
+
+        if (this.debug) {
+            //this.cpu.dump();
+            this.memory.dump();
+            this.dump();
         }
 
         this.stats.lastFrameInstructions = 0;
@@ -231,11 +253,6 @@ export default class Computer {
         this.stats.totalFrames++;
         this.stats.performanceAtTime = endTime;
 
-        if (this.debug) {
-            //this.cpu.dump();
-            this.memory.dump();
-            this.dump();
-        }
     }
 
     tickInBrowser(f) {
@@ -402,7 +419,7 @@ export default class Computer {
     }
 
     dumpAll() {
-        this.cpu.dump();
+        if (!this.cpu.worker) { this.cpu.dump(); }
         this.memory.dump();
         this.dump();
     }
@@ -442,8 +459,9 @@ export default class Computer {
 
     stop() {
         if (this.cpuWorker) {
-            this.cpu.working = false;
             this.cpuWorker.postMessage({ cmd: "stop" });
+            this.getCPUAttention();
+            this.cpu.working = false;
             return;
         }
 
@@ -456,6 +474,7 @@ export default class Computer {
     step() {
         if (this.cpuWorker) {
             this.cpuWorker.postMessage({ cmd: "step" });
+            this.getCPUAttention();
             return;
         }
 
@@ -469,6 +488,7 @@ export default class Computer {
     reset() {
         if (this.cpuWorker) {
             this.cpuWorker.postMessage({ cmd: "softReset" });
+            this.getCPUAttention();
             return;
         }
         // send reset trap
@@ -476,14 +496,14 @@ export default class Computer {
     }
 
     hardReset() {
+        this.resetStats();
+        this.stats.startTime = performance.now();
         if (this.cpuWorker) {
             this.cpuWorker.postMessage({ cmd: "stop" });
+            this.getCPUAttention();
             this.memory.init();
             this.screen.init();
             this.cpuWorker.postMessage({ cmd: "hardReset" });
-            if (this.cpu.working) {
-                this.cpuWorker.postMessage({ cmd: "start" });
-            }
         } else {
             this.cpu.stepping = false;
             //this.cpu.running = false;
@@ -501,6 +521,13 @@ export default class Computer {
         // reset devices, if allowed
         Object.keys(this.devices).forEach(deviceName => (typeof this.devices[deviceName].reset === "function" ? this.devices[deviceName].reset() : 0));
 
+        if (this.cpuWorker) {
+            if (this.cpu.working) {
+                setTimeout(() => {
+                    this.cpuWorker.postMessage({ cmd: "start" });
+                }, 100);
+            }
+        }
         //this.reset();
     }
 

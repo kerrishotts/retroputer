@@ -1,3 +1,4 @@
+import ports from "../ports.js";
 import GenericDevice from "../GenericDevice.js";
 
 let specialKeyMap = {
@@ -59,48 +60,22 @@ function isInvalidTarget(evt) {
 }
 
 export default class Keyboard extends GenericDevice {
-    constructor({ io, cpu, memory } = {}) {
-        super({ io, cpu, memory, name: "keyboard", type: "buffered" });
+    constructor({ cpu, memory } = {}) {
+        super({ cpu, memory, name: "keyboard", type: "buffered" });
 
-        this._cpu = cpu;
-
-        this._buffer = [];
+        this._key = 0;
         this._state = 0b00000000;       // modifier keys like CTRL, ALT, etc.
         this._directions = 0b00000000;  // directional keys
-        this._maxBuffer = 32;           // no more than 32 keys can be stored
-
-        io.registerDeviceWithPort({
-            device: this,
-            port: 0x10,
-            readHandler: this.readKey
-        });
-        io.registerDeviceWithPort({
-            device: this,
-            port: 0x11,
-            readHandler: this.readState
-        });
-        io.registerDeviceWithPort({
-            device: this,
-            port: 0x12,
-            readHandler: this.readDirections
-        });
 
         if (typeof window !== "undefined") {
             this.registerWithDOM();
         }
     }
 
-    readKey() {
-        let v = this._buffer.shift();
-        return v;
-    }
-
-    readState() {
-        return this._state;
-    }
-
-    readDirections() {
-        return this._directions;
+    updateMemoryState() {
+        this.write(ports.ioKeyboardKeyPressed, this._key);
+        this.write(ports.ioKeyboardModifiers, this._state);
+        this.write(ports.ioKeyboardDirections, this._directions);
     }
 
     onKeyDown(evt) {
@@ -110,7 +85,7 @@ export default class Keyboard extends GenericDevice {
         let key = evt.which;
         let mappedKey = specialKeyMap[key];
         if (mappedKey) {
-            this._buffer.push(mappedKey);
+            this._key = key;
             evt.preventDefault();
         }
 
@@ -121,12 +96,14 @@ export default class Keyboard extends GenericDevice {
         bitmask = directionalBitmap[key] || 0x00;
         this._directions |= bitmask;
 
+        this.updateMemoryState();
     }
 
     onKeyUp(evt) {
         if (isInvalidTarget(evt)) { return; }
 
         let key = evt.which;
+        this._key = 0;
         // handle modifier and directional keys
         let bitmask = stateKeyBitmap[key] || 0x00;
         this._state &= (!bitmask);
@@ -134,7 +111,8 @@ export default class Keyboard extends GenericDevice {
         bitmask = directionalBitmap[key] || 0x00;
         this._directions &= (!bitmask);
 
-        this._cpu.sendTrap(0x11);
+        this.updateMemoryState();
+        this.cpu.sendTrap(0x11);
 
         evt.preventDefault();
     }
@@ -143,12 +121,10 @@ export default class Keyboard extends GenericDevice {
         if (isInvalidTarget(evt)) { return; }
 
         // handle normal keys
-        this._buffer.push(evt.which);
-        if (this._buffer.length > this._maxBuffer) {
-            this._buffer.shift();
-        }
+        this._key = evt.which;
 
-        this._cpu.sendTrap(0x10);
+        this.updateMemoryState();
+        this.cpu.sendTrap(0x10);
 
         evt.preventDefault();
     }
