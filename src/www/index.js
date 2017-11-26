@@ -41,6 +41,7 @@ export default class App {
             "RET"
         ];
         this.saveProgram(prog.join(String.fromCharCode(10)), "sample");
+
     }
 
     saveProgram(code, programName) {
@@ -83,6 +84,10 @@ export default class App {
     }
 
     updateListOfStoredPrograms() {
+        // save test examples
+        const programs = require.context("../../asm/test", true, /\.asm$/);
+        programs.keys().forEach(key => this.saveProgram(programs(key), `test-${key}`));
+
         let storedProgramKeys = localStorage.getItem("_stored-asm-keys");
         if (!storedProgramKeys) {
             this.createSampleProgram();
@@ -92,13 +97,16 @@ export default class App {
         storedProgramKeys = JSON.parse(storedProgramKeys);
         let targetOptGroup = document.getElementById("saved-asms");
 
-        let df = storedProgramKeys.reduce((p, c) => {
-            let opt = document.createElement("option");
-            opt.setAttribute("value", c);
-            opt.textContent = c;
-            p.appendChild(opt);
-            return p;
-        }, document.createDocumentFragment());
+        let df = storedProgramKeys
+            .filter(k => k)
+            .sort((a, b) => (a < b ? -1 : (a > b ? 1 : 0)))
+            .reduce((p, c) => {
+                let opt = document.createElement("option");
+                opt.setAttribute("value", c);
+                opt.textContent = c;
+                p.appendChild(opt);
+                return p;
+            }, document.createDocumentFragment());
         targetOptGroup.innerHTML = "";
         targetOptGroup.appendChild(df);
     }

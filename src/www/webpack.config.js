@@ -17,6 +17,11 @@ module.exports = {
     module: {
         loaders: [
             {
+                test: /\.(asm)$/,
+                loader: "raw-loader",
+                exclude: /node_modules/
+            },
+            {
                 test: /\.(ts|js)$/,
                 loader: "ts-loader",
                 exclude: /node_modules/,

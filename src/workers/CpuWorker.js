@@ -1,4 +1,4 @@
-/* globals self */
+/* globals self, Atomics */
 import CPU from "../core/Cpu.js";
 import Memory from "../core/Memory.js";
 
@@ -14,6 +14,10 @@ class CPUWorker {
         };
 
         this.tick = this.tick.bind(this);
+    }
+
+    setSentinel(sentinel) {
+        this.sentinel = new Uint8Array(sentinel);
     }
 
     setSharedMemory(sharedArrayBuffer) {
@@ -56,7 +60,18 @@ class CPUWorker {
     getRegisters(_, postMessage) {
         postMessage({
             cmd: "registers",
-            data: this.cpu.registers
+            data: this.cpu.registers.map((register) => {
+                if (register) {
+                    return {
+                        name: register.name,
+                        size: register.size,
+                        U8: register.U8,
+                        U16: register.U16
+                    };
+                } else {
+                    return undefined;
+                }
+            })
         });
     }
 
@@ -71,18 +86,31 @@ class CPUWorker {
     }
 
     tick() {
-        const now = performance.now();
-        const stopAt = now + 12;
-        while (performance.now() < stopAt && (this.cpu.running && !this.cpu.paused)) {
-            for (let i = 0; i < 100; i++) {
-                if (this.cpu.running && !this.cpu.paused) {
-                    this.cpu.step();
-                    this.stats.numInstructions++;
-                } else {
+        if (this.sentinel) {
+            while (this.cpu.running && !this.cpu.paused) {
+                this.cpu.step();
+                this.stats.numInstructions++;
+                if (Atomics.load(this.sentinel, 0) !== 0) {
+                    Atomics.store(this.sentinel, 0);
+                    //console.log("attention requested");
                     break;
                 }
             }
+        } else {
+            const now = performance.now();
+            const stopAt = now + 12;
+            while (performance.now() < stopAt && (this.cpu.running && !this.cpu.paused)) {
+                for (let i = 0; i < 100; i++) {
+                    if (this.cpu.running && !this.cpu.paused) {
+                        this.cpu.step();
+                        this.stats.numInstructions++;
+                    } else {
+                        break;
+                    }
+                }
+            }
         }
+
         if (this.cpu.running && !this.cpu.stepping) {
             setTimeout(this.tick, 0);
         }
@@ -117,6 +145,7 @@ class CPUWorker {
 
 const cpuWorker = new CPUWorker();
 self.addEventListener("message", (e) => {
+    //console.log(e);
     const cmd = e.data.cmd;
     const data = e.data.data;
     if (cpuWorker[cmd]) {
