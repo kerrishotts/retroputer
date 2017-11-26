@@ -51,22 +51,22 @@ line1:
     MOV D, A                            => cc                           ; D = line 1 of text
     LDI A, 40                           => 49 00 28
     MOV Y, A                            => d4                           ; Y = 40 (line 2 on screen)
-    CALLS >print                        => 07 40 1D                     ; print, please!
+    CALLS :print                        => 07 40 1D                     ; print, please!
 line2:
     LDI A, addr(&line2)                 => 49 20 29
     MOV D, A                            => cc
     LDI A, 120                          => 49 00 78
     MOV Y, A                            => d4
-    CALLS >print                        => 07 40 12
+    CALLS :print                        => 07 40 12
 line3:
     LDI A, addr(&line3)                 => 49 20 52
     MOV D, A                            => cc
     LDI A, 200                          => 49 00 c8
     MOV Y, A                            => d4
-    CALLS >print                        => 07 40 07
-halt:                                  
+    CALLS :print                        => 07 40 07
+halt:
     HALT 0x00                           => 06 14 00                     ; HALT! (until next trap)
-    BRS >halt                           => 07 00 fa                     ; loop forever
+    BRS :halt                           => 07 00 fa                     ; loop forever
     RET                                 => ff
 
     ; print requested string to screen
@@ -87,6 +87,6 @@ print:
 print-loop:
     LDS AL, [D+X]                       => 74                           ; Get the Xth character
     STD AL, [0x0000+X+Y]                => 96 00 00                     ; Put the character at the X+Y position
-    LOOP X, >print-loop                 => 06 52 F9                     ; keep going until we've printed everything
+    LOOP X, :print-loop                 => 06 52 F9                     ; keep going until we've printed everything
     POPA                                => 06 19                        ; clean up
     RET                                 => ff

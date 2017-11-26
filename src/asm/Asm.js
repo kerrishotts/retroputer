@@ -281,6 +281,7 @@ function expectOperand(operands = [], { type = "any", throws = true, eats = true
             case "u16": return toNumberInRange(operand, 0, 65535, UnsignedWordExpectedError);
             case "s16": return toNumberInRange(operand, -32768, 32767, SignedWordExpectedError);
             case "n16": return toNumberInRange(operand, -32768, 65535, WordExpectedError);
+            case "n": return Number(operand);
             case "bankvalue": return toNumberInRange(operand, 0, 3, BankExpectedError);
 
             // address
@@ -668,11 +669,7 @@ export default class Asm {
                 case ">":
                 case ":":
                     {
-                        let pc = Number(this.segments.code.current) + this.segments.code[this.segments.code.current].length;
                         data = this.labels[symbolName];
-                        if (data !== undefined) {
-                            data -= (typeOfSymbol === ":" ? (pc + 4) : (pc + 3));
-                        }
                     }
                     break;
                 case "@":
@@ -811,8 +808,8 @@ export default class Asm {
         this.labels[parseResults.label] = addr;
     }
 
-    handleAssembly(line, stage) {
-        let r = Asm.assembleSingleInstruction(line, { throwIfUnexpectedAssembly: (stage === "assembly") });
+    handleAssembly(parsing, stage) {
+        let r = Asm.assembleSingleInstruction("", { parsing, throwIfUnexpectedAssembly: (stage === "assembly") });
         this.segments.code[this.segments.code.current].push(...r.instruction);
     }
 
@@ -865,7 +862,24 @@ export default class Asm {
                     }
 
                     if (parseResults.opcode !== "") {
-                        this.handleAssembly(line, stage);
+                        // we need to fix up branch and calls
+                        if (["br", "call", "brs", "calls", "loop"].indexOf(parseResults.opcode) > -1) {
+                            const short = ["brs", "calls", "loop"].indexOf(parseResults.opcode) > -1;
+                            const op = parseResults.opcode === "loop" ? 1 : 0;
+                            const pc = Number(this.segments.code.current) + this.segments.code[this.segments.code.current].length;
+                            let addr = Number(parseResults.operands[op]);
+                            if (addr !== undefined && !Number.isNaN(addr)) {
+                                addr -= (pc + (short ? 3 : 4));
+                                parseResults.operands[op] = addr;
+                            }
+                            if (stage === "symbols") {
+                                // labels may be zero at this point, meaning
+                                // that short branches and calls can generate errors
+                                // so use zero for now
+                                parseResults.operands[op] = 0;
+                            }
+                        }
+                        this.handleAssembly(parseResults, stage);
                     }
                 } catch (err) {
                     throw new AssemblerError({ triggeringError: err, line, lineNumber, filename });
@@ -999,8 +1013,8 @@ export default class Asm {
      * @param {string} text             the text to parse
      * @returns {Array}                 the bytes representing the instruction
      */
-    static assembleSingleInstruction(text = "", { throwIfUnexpectedAssembly = true } = {}) {
-        let r = Asm.parseSingleInstruction(text);
+    static assembleSingleInstruction(text = "", { parsing = undefined, throwIfUnexpectedAssembly = true } = {}) {
+        let r = parsing || Asm.parseSingleInstruction(text);
         let instruction = [];
         if (r.opcode === "") {
             r.instruction = instruction;

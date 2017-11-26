@@ -59,7 +59,7 @@ ANDs the `dst` and `src` registers together, and then stores the result in the `
 
 Assigns the address to the `PC` register, transferring control to the desired address. The address is always based in bank zero, which means that code execution is limited to bank zero.
 
-`BRS` is a form used when branching to addresses within +127/-128 bytes of `PC`. If referring to a label, the assembler requires a `>` type sigil. (`:` will return the wrong address.)
+`BRS` is a form used when branching to addresses within +127/-128 bytes of `PC`.
 
 > Note: immediate values are _relative_, meaning you can jump up to 32768 bytes back and 32767 bytes forward.
 
@@ -72,7 +72,7 @@ Assigns the address to the `PC` register, transferring control to the desired ad
 
 Pushes the current value of `PC` on to the stack, and then assigns the address to the `PC` register, transferring control to the desired address. The address is always based in bank zero, which means that code execution is limited to bank zero.
 
-`CALLS` is a form used when calling a routine within +127/-128 bytes of `PC`. If referring to a label, the assembler requires a `>` type sigil. (`:` will return the wrong address.)
+`CALLS` is a form used when calling a routine within +127/-128 bytes of `PC`.
 
 > Note: immediate values are _relative_, meaning you can jump up to 32768 bytes back and 32767 bytes forward.
 
@@ -90,7 +90,7 @@ Clears the specified flag.
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `CLRR rg8, u8`             | `0x06 0b00100rg8 u8`               | -                      |
 
-Clears the low eight bits in `rg8` identified by `u8`. 
+Clears the low eight bits in `rg8` identified by `u8`.
 
 ## CMP, Compare
 
@@ -207,7 +207,7 @@ Tests the bits in `rg8` specified by `u8` in question and sets X if the bits are
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `IN sr8, u8`               | `0x06 0b01110sr8`                  | N, Z                   |
 
-Reads an eight-bit value from the specified port and stores it in the low eight bits of `sr8`. 
+Reads an eight-bit value from the specified port and stores it in the low eight bits of `sr8`.
 
 The Negative (`N`) and Zero (`Z`) flags are updated to reflect the value read from the port.
 
@@ -217,7 +217,7 @@ The Negative (`N`) and Zero (`Z`) flags are updated to reflect the value read fr
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `INC reg`                  | `0b00010reg`                       | C, V, N, Z             |
 
-Increments `reg` by one. Carry (`C`) will be set if the operation exceeds 16 bits. 
+Increments `reg` by one. Carry (`C`) will be set if the operation exceeds 16 bits.
 
 * Carry (`C`) is set if the unsigned result is larger than 16 bits. It is cleared otherwise.
 * Overflow (`V`) is set if the signed result is incorrect. It is cleared otherwise.
@@ -231,7 +231,7 @@ Increments `reg` by one. Carry (`C`) will be set if the operation exceeds 16 bit
 | `LDI AL, u8`               | `0x40 u8`                          | N, Z                   |
 | `LDI A, u16`               | `0x49 u16`                         | N, Z                   |
 
-Loads the operand into the accumulator. 
+Loads the operand into the accumulator.
 
 > Note: If loading an eight-bit value into `AL` it is important to remember that the upper eight bits are not changed. If you must be sure that the upper bits are zero, you should either execute an `LDI` into `A` or `XOR A, A`.
 
@@ -267,7 +267,7 @@ Loads the value at `DB:addr` into the accumulator.
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `LOOP lrg, s8`             | `0x06 0b001100lr s8`               | V, C, N, Z             |
 
-Decrements `lrg`, and if `C` is set, branches to the relative `s8` address. When referring to a label, you must use the `>` type sigil; `:` will return the wrong address.
+Decrements `lrg`, and if `C` is set, branches to the relative `s8` address.
 
 ## MCOPY, Memory Copy
 
@@ -355,13 +355,13 @@ ORs the `dst` and `src` registers together, and then stores the result in the `d
 
 Writes the low eight bits of `sr8` to the specified port.
 
-## POP 
+## POP
 
 | Assembly                   | Encoding                           | Flags                  |
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `POP regs`                 | `0b1111regs`                       | Potentially any or all |
 
-Pops a value the size of `regs` off the stack at `SP` and loads it into `regs`. If `regs` is the `Flags`, the flags will be adjusted as a result. 
+Pops a value the size of `regs` off the stack at `SP` and loads it into `regs`. If `regs` is the `Flags`, the flags will be adjusted as a result.
 
 `SP` is incremented by the size of `regs`.
 
@@ -381,7 +381,7 @@ Pops all the registers except `PC` from the stack.
 |:---------------------------|:----------------------------------:|:----------------------:|
 | `PUSH regs`                | `0b1110regs`                       | -                      |
 
-Decrements `SP` by the size of `regs` and then pushes `regs` onto the stack at `SP`. 
+Decrements `SP` by the size of `regs` and then pushes `regs` onto the stack at `SP`.
 
 ## PUSHA, Push All
 

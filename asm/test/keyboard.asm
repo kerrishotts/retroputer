@@ -28,7 +28,7 @@ end:
     BR :end
 
 ;
-; FRAME handler 
+; FRAME handler
 .code 0xFE00
 
 .def tile-page-0 0x30000
@@ -38,7 +38,7 @@ FRAME-start:
     ; we need to be good citizens; push what we muck about with
     PUSHA
 
-    ; disable interrupts for the duration of this frame 
+    ; disable interrupts for the duration of this frame
     CLR I
 
     ; set up destination bank (0x03)
@@ -114,19 +114,23 @@ render-cursor-off:
 render-cursor-end:
 check-for-keypress:
     ; zero B so that we can see if the user typed something
-    IN AL, 0x10
+    IN AL, 0x00
 
     ; If no key pressed, get out!
-    IF E
+    IF Z
         BR :FRAME-end
 
-    ; 
+    ;
     ; key pressed, let's store it, write it to the screen, and increment address
     ;
 
     ; Save key
     MOV C, A
     STS AL, [addr(&key)]
+
+    ; clear key
+    XOR A, A
+    OUT AL, 0x00
 
     ; get pos and write key to screen
     LDS A, [addr(&cursor-pos)]

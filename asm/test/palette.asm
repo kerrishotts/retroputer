@@ -10,7 +10,7 @@ main:
     MOV DB, A
     LDI A, 0x10
     MOV B, A
-    LDI A, 40 
+    LDI A, 40
     MOV D, A
     XOR A, A
     XOR Y, Y
@@ -25,10 +25,10 @@ _loop:
     INC X
     CMP X, B
     IF Z
-        BRS >_next-row
+        BRS :_next-row
 
-    LOOP C, >_loop
+    LOOP C, :_loop
 
 _halt:
     HALT 0x00
-    BRS >_halt
+    BRS :_halt

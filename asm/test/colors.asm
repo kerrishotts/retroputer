@@ -22,9 +22,9 @@ _init:
     XOR A, A                            ; zero A
 _outer-loop:
     MOV X, B                            ; reset X to size of graphics layer
-_inner-loop>
+_inner-loop:
     STD AL, [0x0000+X]                  ; write color value to graphics layer
     INC A
-    LOOP X, >_inner-loop                ; and loop until x<0
+    LOOP X, :_inner-loop                ; and loop until x<0
     DEC A                               ; will cause the screen to scroll left
     BR :_outer-loop
