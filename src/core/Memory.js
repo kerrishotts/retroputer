@@ -206,7 +206,8 @@ export default class Memory {
     this.protected = false;
     for (let i = 0; i < (this.layout.size * 1024); i++) {
       // simulate old-style memory being random at boot
-      this.poke(i, Math.floor(Math.random() * 256));
+      //this.poke(i, Math.floor(Math.random() * 256));
+      this.poke(i, 0);
     }
 
     // we need three RETs at known important vectors

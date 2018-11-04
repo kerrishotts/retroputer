@@ -5,6 +5,36 @@
 ;
 ; constants
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.def BP-RET-VAL                BP+0x06  ; return value is always BP+6
+.def BP-WARG-1                 BP+0x08  ; word arg 1
+.def BP-WARG-2                 BP+0x0A
+.def BP-WARG-3                 BP+0x0C
+.def BP-WARG-4                 BP+0x0E
+.def BP-WARG-5                 BP+0x10
+.def BP-WARG-6                 BP+0x12
+.def BP-WARG-7                 BP+0x14
+.def BP-WARG-8                 BP+0x16
+.def BP-WARG-9                 BP+0x18
+.def BP-BARG-1                 BP+0x08  ; byte arg 1
+.def BP-BARG-2                 BP+0x09
+.def BP-BARG-3                 BP+0x0A
+.def BP-BARG-4                 BP+0x0B
+.def BP-BARG-5                 BP+0x0C
+.def BP-BARG-6                 BP+0x0D
+.def BP-BARG-7                 BP+0x0E
+.def BP-BARG-8                 BP+0x0F
+.def BP-BARG-9                 BP+0x10
+
+.def BP-WVAR-1                 BP+-2    ; word var 1
+.def BP-WVAR-2                 BP+-4
+.def BP-WVAR-3                 BP+-6
+.def BP-WVAR-4                 BP+-8
+.def BP-WVAR-5                 BP+-10
+.def BP-WVAR-6                 BP+-12
+.def BP-WVAR-7                 BP+-14
+.def BP-WVAR-8                 BP+-16
+.def BP-WVAR-9                 BP+-18
+
 
 .def MEM-BOT                   0x00000  ; bottom of memory
 .def MEM-LEN                   0x40000
@@ -79,6 +109,7 @@
 .def TILE-PAGE-LEN             0x00400
 .def TILE-PAGE-BG-LEN          0x00400
 .def TILE-PAGE-FG-LEN          0x00400
+.def TILE-PAGE-OFFSET          0x01000
 .def TILE-PAGES-BOT            0x30000  ; bottom of tile pages
 .def TILE-PAGE-0-BOT           0x30000  ; bottom of tile page 0
 .def TILE-PAGE-0-BG-BOT        0x30400  ; bottom of tile page 0 background color
@@ -147,4 +178,12 @@
 .import traps/RESET.asm
 .import traps/BADOP.asm
 
+;
+; temporary -- set up a halt scenario
+.code 0x1000
+start:
+    NOP
+end:
+    HALT 0x00
+    BR :end
 
