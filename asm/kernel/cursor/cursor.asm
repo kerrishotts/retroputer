@@ -96,26 +96,26 @@ cursor-render:
 ; next, determine if the cursor is blinking or not. If cursor-blink-enable:1 is
 ; zero, then the cursor can't blink, so there's no point in doing any frame
 ; counting.
-    LDS AL, [addr(&cursor-blink-enable)] ; get the enable value
-    IFNR AL, 0b00000001                  ; if not set, no blinking, so jump
-        BRS >cursor-draw                ; straight to drawing the cursor
+    LDS AL, [addr(&cursor-blink-enable)]   ; get the enable value
+    IFNR AL, 0b00000001                    ; if not set, no blinking, so jump
+        BRS >cursor-draw                   ; straight to drawing the cursor
 
 ; we know the cursor can be blinking, so let's tweak our counters appropriately.
-    LDS AL, [addr(&cursor-blink-counter)]; get the curent frames remaining before blinking
-    DEC A                               ; Down by one
-    IF Z                                ; if zero, we need to trigger a blink!
-        CALLS >cursor-toggle            ; toggle the cursor
-    STS AL, [addr(&cursor-blink-counter)]; put the new value into the counter
-    BRS >cursor-draw                    ; and draw the cursor appropriately
+    LDS AL, [addr(&cursor-blink-counter)]  ; get the curent frames remaining before blinking
+    DEC A                                  ; Down by one
+    IF Z                                   ; if zero, we need to trigger a blink!
+        CALLS >cursor-toggle               ; toggle the cursor
+    STS AL, [addr(&cursor-blink-counter)]  ; put the new value into the counter
+    BRS >cursor-draw                       ; and draw the cursor appropriately
 
 cursor-toggle:
-    LDI A, 0b00000010                   ; the toggle value
-    MOV B, A                            ; B = 2
-    LDS AL, [addr(&cursor-blink-enable)] ; get the enable value
-    XOR A, B                            ; flip bit 1
-    STS AL, [addr(&cursor-blink-enable)] ; store the toggle back
+    LDI A, 0b00000010                      ; the toggle value
+    MOV B, A                               ; B = 2
+    LDS AL, [addr(&cursor-blink-enable)]   ; get the enable value
+    XOR A, B                               ; flip bit 1
+    STS AL, [addr(&cursor-blink-enable)]   ; store the toggle back
     LDS AL, [addr(&cursor-blink-duration)] ; get duration; this will get stored
-    RET                                 ; back into the counter on return
+    RET                                    ; back into the counter on return
 
 cursor-draw:
 
@@ -125,10 +125,9 @@ cursor-draw:
     LDS A, [addr(&cursor-pos)]
     MOV Y, A                            ; X + Y is now the address in memory
 
-    ; get the blink state
-    LDS AL, [addr(&cursor-blink-enable)]
+    LDS AL, [addr(&cursor-blink-enable)]; get the blink state
     MOV B, A
-    IFNR BL, 0b00000010
+    IFNR BL, 0b00000010                 ; and pick the colors based on the blink
         LDS A, [addr(&cursor-color-original)]
     IFR BL, 0b00000010
         LDS A, [addr(&cursor-color)]
