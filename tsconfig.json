@@ -1,8 +1,0 @@
-{
-    "compilerOptions": {
-        "allowJs": true,
-        "target": "es5",
-        "module": "commonjs",
-        "inlineSourceMap": true
-    }
-}

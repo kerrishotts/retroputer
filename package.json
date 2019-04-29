@@ -1,52 +1,33 @@
 {
   "name": "retroputer",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "retroputer",
+  "esm": {
+    "cjs": true,
+    "mode": "all"
+  },
   "main": "index.js",
   "browser": "index.js",
-  "dependencies": {
-    "cli": "^1.0.1",
-    "http-server": "^0.9.0",
-    "tone": "^0.9.0",
-    "ts-node": "^2.0.0",
-    "typescript": "^2.1.5"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "babel-core": "^6.18.2",
-    "babel-plugin-istanbul": "^3.1.2",
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
-    "babel-polyfill": "^6.16.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-preset-es2015-loose": "^8.0.0",
-    "chai": "^3.5.0",
-    "coveralls": "^2.11.15",
-    "cross-env": "^3.1.4",
-    "eslint": "^3.15.0",
-    "get-pixels": "^3.3.0",
-    "mocha": "^3.2.0",
-    "nearley": "^2.7.11",
-    "nyc": "^10.1.2",
-    "pegjs": "^0.10.0",
-    "raw-loader": "^0.5.1",
-    "ts-loader": "^2.0.0",
-    "typescript": "^2.1.6",
-    "uglify-js": "git://github.com/mishoo/UglifyJS2.git#harmony",
-    "webpack": "^2.2.1"
+    "ava": "^1.4.1",
+    "chai": "^4.2.0",
+    "coveralls": "^3.0.3",
+    "cross-env": "^5.2.0",
+    "eslint-plugin-ava": "^6.0.0",
+    "esm": "^3.2.22",
+    "mocha": "^6.1.4",
+    "nyc": "^14.0.0"
   },
   "scripts": {
-    "asm": "ts-node bin/asm",
-    "test": "mocha",
-    "serve": "http-server --cors -p 8080 -c-1 -s .",
-    "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
-    "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
+    "test": "ava",
+    "watch:test": "ava --watch",
+    "cover": "nyc --verbose ava; open ./coverage/index.html",
+    "coveralls": "nyc ava; nyc report --reporter=text-lcov | coveralls",
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
-    "webpack": "webpack --config src/www/webpack.config.js",
     "build:asm-grammar": "pegjs -o src/grammars/asm.js src/grammars/asm.pegjs",
     "build:kite-grammar": "pegjs -o src/grammars/kite.js src/grammars/kite.pegjs",
-    "build:grammars": "npm run build:asm-grammar && npm run build:kite-grammar",
-    "build:asm:kernel": "ts-node bin/asm --basepath ./asm/kernel < ./asm/kernel/kernel.asm > ./src/roms/kernel.js",
-    "build:asm:bootstrap": "ts-node bin/asm --basepath ./asm < ./asm/bootstrap.asm > ./src/roms/bootstrap.js",
-    "build": "npm run build:asm:kernel && npm run lint && npm run webpack"
+    "build:grammars": "npm run build:asm-grammar && npm run build:kite-grammar"
   },
   "repository": {
     "type": "git",
@@ -58,15 +39,30 @@
     "url": "https://github.com/kerrishotts/retroputer/issues"
   },
   "homepage": "https://github.com/kerrishotts/retroputer#readme",
+  "ava": {
+    "require": [
+      "esm"
+    ],
+    "verbose": false,
+    "files": [
+      "test/**/*.js",
+      "!test/tmp/**/*"
+    ]
+  },
   "nyc": {
     "require": [
-      "babel-register"
+    ],
+    "extension": [
+      ".js",
+      ".jsx",
+      ".mj"
     ],
     "reporter": [
       "text",
       "html"
     ],
     "sourceMap": false,
-    "instrument": false
+    "instrument": false,
+    "cache": false
   }
 }

@@ -288,6 +288,7 @@ export let memoryLayout = {
   , romLength: 0x04000  // length of rom
   , romEnd: 0x0FFFF  // End of ROM
   , romStart: 0x0C000  // Start of ROM
+  , romLength: 0x04000
   , romScratchStart: 0x0B000 // ROM scratch area
   , codeStart: 0x01000  // Start of code execution
   , stackTop: 0x00FFF  // top of stack (grows down)
@@ -296,6 +297,7 @@ export let memoryLayout = {
   // default: 0x01000
   , traps: 0x00000  // 256 2-byte long pointers; ends 0x001FF
   , membot: 0x00000
+  , bankLength: 0x10000
 };
 
 export default memoryLayout;
