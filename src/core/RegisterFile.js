@@ -1,3 +1,5 @@
+import { SIZES } from "./ALU";
+
 const _buffer = Symbol("_buffer");
 const _byteData = Symbol("_data");
 const _wordData = Symbol("_word");
@@ -8,15 +10,15 @@ export const REGISTER_INDEX = {
     A: 0,
     AL: 1,
     B: 2,
-    BL: 1,
+    BL: 3,
     C: 4,
-    CL: 1,
+    CL: 5,
     D: 6,
-    DL: 1,
+    DL: 7,
     X: 8,
-    XL: 1,
+    XL: 9,
     Y: 10,
-    YL: 1,
+    YL: 11,
     BP: 12,
     SP: 14,
     STATUS: 16,
@@ -51,7 +53,7 @@ export class RegisterFile {
     }
 
     getSizeOfRegister(index) {
-        return (index & 0b1); // 0 === 8, 1 === 16
+        return (index & 0b1) ? SIZES.BYTE : SIZES.WORD;
     }
 
     getRegisterMask(index) {

@@ -13,7 +13,7 @@ const { COMMANDS_MEMORY_READ_BYTE, COMMANDS_MEMORY_WRITE_BYTE,
         COMMANDS_MEMORY_READ_WORD, COMMANDS_MEMORY_WRITE_WORD } = require ("./SystemBus.js");
 
 export class MemoryBank {
-  constructor({ systemBus, address = 0x00000, size = 0, rom = false, shared = false, buffer } = {}) {
+  constructor({ systemBus, address = 0x00000, size = 0, rom = false, shared = false, buffer = undefined }) {
     this[_buffer] = buffer || new (shared ? SharedArrayBuffer : ArrayBuffer)(size);
     this[_data] = new Uint8Array(this[_buffer]);
     this[_size] = size;
@@ -153,7 +153,7 @@ export class Memory {
 
   readWord(address) {
     const bank = this.bankForAddress(address);
-    return bank.read(address) << 8 + bank.read(address + 1);
+    return (bank.read(address) << 8) + bank.read(address + 1);
   }
 
   writeByte(address, value) {

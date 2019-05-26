@@ -3,10 +3,13 @@ import { Memory } from "../core/Memory.js";
 import { ALU, COMMANDS, SIZES } from "../core/ALU.js";
 import { IOBus } from "../core/IOBus.js";
 
-const SIZE_BYTE = SIZES.BYTE;
-const SIZE_WORD = SIZES.WORD;
-const SIZE_ADDR = SIZES.ADDR;
+export const SIZE_BYTE = SIZES.BYTE;
+export const SIZE_WORD = SIZES.WORD;
+export const SIZE_ADDR = SIZES.ADDR;
 
+/**
+ * @type {Object.<string, number>}
+ */
 export const TASKS = {
     // get and push
     GET_REGISTER_AND_PUSH: 0x01,        // r -> s0
@@ -61,18 +64,40 @@ export const TASKS = {
     SMOD:                  0xB4,
     SMOD_WITH_FLAGS:       0xB5,
 };
+/**
+ * @typedef {Number} Task
+ * @name Task
+ */
 
+/**
+ * @typedef {Array.<number, number>} StackItem
+ * @name StackItem
+ */
+
+ /**
+  * @typedef {StackItem[]} Stack
+  * @name Stack
+  */
+
+/**
+ * @typedef {Function} TASK_FN({stack: Stack, registerFile: RegisterFile, alu: ALU, memory: Memory, args: Array})
+ * @name TASK_FN
+ */
+
+/**
+ * @type {Object.<Number, TASK_FN>}
+ */
 export const TASK_FNS = {
     [TASKS.GET_REGISTER_AND_PUSH]({stack /** : []*/, registerFile /** : RegisterFile */, args}) {
         const rIdx = args[0];
-        stack.push([registerFile.getRegister(rIdx), registerFile.sizeOfRegister(rIdx)]);
+        stack.push([registerFile.getRegister(rIdx), registerFile.getSizeOfRegister(rIdx)]);
     },
     [TASKS.POP_INTO_REGISTER]({stack, registerFile, args}) { registerFile.setRegister(args[0], stack.pop()[0]); },
     [TASKS.PUSH_BYTE]({stack, args}) { stack.push([args[0], SIZE_BYTE]); },
     [TASKS.PUSH_WORD]({stack, args}) { stack.push([args[0], SIZE_WORD]); },
     [TASKS.PUSH_ADDR]({stack, args}) { stack.push([args[0], SIZE_ADDR]); },
-    [TASKS.GET_BYTE_FROM_MEMORY]({stack, memory}) { stack.push(memory.readByte(stack.pop()[0]), SIZE_BYTE); },
-    [TASKS.GET_WORD_FROM_MEMORY]({stack, memory}) { stack.push(memory.readWord(stack.pop()[0]), SIZE_WORD); },
+    [TASKS.GET_BYTE_FROM_MEMORY]({stack, memory}) { stack.push([memory.readByte(stack.pop()[0]), SIZE_BYTE]); },
+    [TASKS.GET_WORD_FROM_MEMORY]({stack, memory}) { stack.push([memory.readWord(stack.pop()[0]), SIZE_WORD]); },
     [TASKS.POP_BYTE_INTO_MEMORY]({stack, memory}) {
         const byte = stack.pop()[0]; // s0
         const addr = stack.pop()[0]; // s1
@@ -110,9 +135,15 @@ export const TASK_FNS = {
 
 Object.entries(TASKS).forEach(([k, v]) => {
     if (v >= 0x80) {
+        let eatReturn = false;
         // this is an ALU op
+        if (k.startsWith("CMP")) {
+            k = k.replace("CMP", "SUB")
+            eatReturn = true;
+        }
         const op = k.split("_")[0];
-        TASK_FNS[v] = function({stack, alu, registerFile}) {
+        const command = COMMANDS[op];
+        TASK_FNS[v] = (function(command, eatReturn, {stack, alu, registerFile}) {
             const [s1, sz1] = stack.pop();                        // s1, op2, b
             const [s0, sz0] = stack.pop();                        // s0, op1, a
             const retSize = Math.max(sz0, sz1);
@@ -120,9 +151,9 @@ Object.entries(TASKS).forEach(([k, v]) => {
             alu.op2Bus.data = s1;
             // set the flags ONLY if this is a WITH_FLAGS operation
             alu.flagsBus.data = (v & 0b1) ? 0 : (registerFile.NEGATIVE << 3) | (registerFile.CARRY << 2) | (registerFile.OVERFLOW << 1) | (registerFile.ZERO);
-            alu.commandBus.data = (retSize << 8) | (sz0 << 6) | (sz1 << 4) | COMMANDS[op];
+            alu.commandBus.data = (retSize << 8) | (sz0 << 6) | (sz1 << 4) | command;
             alu.executeBus.signal();
-            stack.push([alu.retBus.data, retSize]);
+            if (!eatReturn) stack.push([alu.retBus.data, retSize]);
             if (v & 0b1) {
                 // pull back the flags
                 registerFile.NEGATIVE = (alu.flagsBus.data & 0b1000) >> 3;
@@ -130,6 +161,6 @@ Object.entries(TASKS).forEach(([k, v]) => {
                 registerFile.OVERFLOW = (alu.flagsBus.data & 0b0010) >> 1;
                 registerFile.ZERO     = (alu.flagsBus.data & 0b0001);
             }
-        };
+        }).bind(undefined, command, eatReturn);
     }
 });

@@ -7,34 +7,25 @@ import { IOBus } from "../core/IOBus.js";
 
 const taskCache = {};
 
-export function decodeToTask(bytes, {pattern, decode}) {
-    let instruction = 0;
-    bytes.forEach(byte => instruction = (instruction << 8) | byte);
-
-    if (taskCache[instruction]) { return taskCache[instruction]; }
-
-    const checkBits = pattern.split("_").join("").split(" ").join("");
+export function _constructArgs(instruction, operands) {
     const args = {};
-
-    for (let i = 0, b = checkBits.length - 1;
-         i < checkBits.length;
-         i++, b--)
-    {
-        const bitK = checkBits[i];
-        const bitV = (instruction & ( 1 << b )) ? 1 : 0;
-        if (bitK === "0") {
-            if (bitV !== 0) {
-                return false; // didn't match pattern; fail
-            }
-        } else if (bitK === "1") {
-            if (bitV === 0) {
-                return false;
-            }
-        } else {
-            if (args[bitK] === undefined) { args[bitK] = 0; }
-            args[bitK] = (args[bitK] << 1) | bitV;
+    const argLocations = Object.entries(operands);
+    for (let i = 0, l = argLocations.length; i < l; i++) {
+        const [arg, [msb, lsb]] = argLocations[i];
+        args[arg] = 0;
+        for (let x = msb; x >= lsb; x--) {
+            const bit = (instruction & ( 1 << x )) ? 1 : 0;
+            args[arg] = (args[arg] << 1) | bit;
         }
     }
+    return args;
+}
+
+export function decodeToTasks(bytes, {operands, decode}) {
+    let instruction = 0;
+    bytes.forEach(byte => instruction = (instruction << 8) | byte);
+    if (taskCache[instruction]) { return taskCache[instruction]; }
+    const args = _constructArgs(instruction, operands);
     const tasks = decode(args);
     taskCache[instruction] = tasks;
     return tasks;
@@ -44,12 +35,14 @@ export const OPCODES = { };
 OPCODES["nop"] = {
     asm: "nop",
     pattern: "0000_0000",
+    operands: {},
     decode: () => []
 };
 
 OPCODES["not"] = {
     asm: "not $r",
     pattern: "0000_1001 0000_rrrr",
+    operands: { r: [3, 0] },
     decode: ({r = 0} = {}) => [
         [TASKS.GET_REGISTER_AND_PUSH, r], // a, op1
         [(r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD, (r & 0x01) ? 0xFF : 0xFFFF], // b, op2
@@ -61,6 +54,7 @@ OPCODES["not"] = {
 OPCODES["neg"] = {
     asm: "neg $r",
     pattern: "0000_1001 0001_rrrr",
+    operands: { r: [3, 0] },
     decode: ({r = 0} = {}) => [
         [TASKS.GET_REGISTER_AND_PUSH, r], // a
         [(r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD, (r & 0x01) ? 0xFF : 0xFFFF], // b
@@ -74,6 +68,7 @@ OPCODES["neg"] = {
 OPCODES["exc"] = {
     asm: "exc $r",
     pattern: "0000_1001 0010_rrrr",
+    operands: { r: [3, 0] },
     decode: ({r = 0} = {}) => [
         [TASKS.GET_REGISTER_AND_PUSH, r],
         [(r & 0x01) ? TASKS.DECOMPOSE_BYTE_TO_NIBBLE : TASKS.DECOMPOSE_WORD_TO_BYTES],
@@ -87,6 +82,7 @@ OPCODES["exc"] = {
 OPCODES["swap_ds"] = {
     asm: "swap $d, $s",
     pattern: "0000_1110 dddd_ssss",
+    operands: { s: [3, 0], d: [7, 4] },
     decode: ({d = 0, s = 0} = {}) => [
         [TASKS.GET_REGISTER_AND_PUSH, d],
         [TASKS.GET_REGISTER_AND_PUSH, s],
@@ -98,6 +94,7 @@ OPCODES["swap_ds"] = {
 OPCODES["mov_ds"] = {
     asm: "mov $d, $s",
     pattern: "0000_1111 dddd_ssss",
+    operands: { s: [3, 0], d: [7, 4] },
     decode: ({d = 0, s = 0} = {}) => [
         [TASKS.GET_REGISTER_AND_PUSH, s],
         [TASKS.POP_INTO_REGISTER, d]
@@ -120,6 +117,7 @@ OPCODES["mov_ds"] = {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
         pattern: `${ds} dddd_ssss`,
+        operands: { s: [3, 0], d: [7, 4] },
         decode: ({d = 0, s = 0} = {}) => [
             [TASKS.GET_REGISTER_AND_PUSH, d], // a
             [TASKS.GET_REGISTER_AND_PUSH, s], // b
@@ -130,6 +128,7 @@ OPCODES["mov_ds"] = {
     OPCODES[`${opcode}_db`] = {
         asm: `${opcode} $d, $b`,
         pattern: `${db} bbbb_bbbb`,
+        operands: { d: [10, 9], b: [7, 0] },
         decode: ({d = 0, b = 0} = {}) => [
             [TASKS.GET_REGISTER_AND_PUSH, (d << 1) | 1], // a
             [TASKS.PUSH_BYTE, b], //b
@@ -140,6 +139,7 @@ OPCODES["mov_ds"] = {
     OPCODES[`${opcode}_dw`] = {
         asm: `${opcode} $d, $w`,
         pattern: `${dw} wwww_wwww wwww_wwww`,
+        operands: { d: [18, 17], w: [15, 0] },
         decode: ({d = 0, w = 0} = {}) => [
             [TASKS.GET_REGISTER_AND_PUSH, (d << 1)], // a
             [TASKS.PUSH_WORD, w], // b
@@ -153,6 +153,7 @@ OPCODES["mov_ds"] = {
 OPCODES["trap_b"] = {
     asm: "trap $b",
     pattern: "0000_1000 bbbb_bbbb",
+    operands: { b: [7, 0] },
     decode: ({b = 0} = {}) => [
         [TASKS.PUSH_BYTE, b],
         [TASKS.TRAP]
@@ -161,6 +162,7 @@ OPCODES["trap_b"] = {
 OPCODES["trap_r"] = {
     asm: "trap $r",
     pattern: "0100_0rrr",
+    operands: { r: [2, 0] },
     decode: ({r = 0} = {}) => [
         [TASKS.GET_REGISTER_AND_PUSH, r],
         [TASKS.TRAP]
@@ -181,6 +183,7 @@ OPCODES["trap_r"] = {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
         pattern,
+        operands: { s: [3, 0], d: [7, 4] },
         decode: ({d = 0, s = 0} = {}) => [
             [TASKS.GET_REGISTER_AND_PUSH, d], // a
             [TASKS.GET_REGISTER_AND_PUSH, s], // b
@@ -198,6 +201,7 @@ OPCODES["trap_r"] = {
     OPCODES[`${opcode}_rn`] = {
         asm: `${opcode} $r, $n`,
         pattern,
+        operands: { n: [3, 0], r: [7, 4] },
         decode: ({r = 0, n = 0} = {}) => [
             [TASKS.GET_REGISTER_AND_PUSH, r], // a
             [TASKS.PUSH_BYTE, n], // b
@@ -211,6 +215,7 @@ OPCODES["trap_r"] = {
 OPCODES["ld_dw"] = {
     asm: "ld $d, $w",
     pattern: "0001_ddd0 0000_0000 wwww_wwww wwww_wwww",
+    operands: { d: [27, 25], w: [15, 0] },
     decode: ({d = 0, w = 0} = {}) => [
         [TASKS.PUSH_WORD, w],
         [TASKS.POP_INTO_REGISTER, d << 1]
@@ -221,6 +226,7 @@ OPCODES["ld_dw"] = {
 OPCODES["ld_db"] = {
     asm: "ld $d, $b",
     pattern: "0001_ddd1 0000_0000 bbbb_bbbb",
+    operands: { d: [19, 17], b: [7, 0] },
     decode: ({d = 0, b = 0} = {}) => [
         [TASKS.PUSH_BYTE, b],
         [TASKS.POP_INTO_REGISTER, (d << 1) | 1]
@@ -231,6 +237,7 @@ OPCODES["ld_db"] = {
 OPCODES["ld"] = {
     asm: "ld $d, $a $x $y $m:$i",
     pattern: "0001_dddd .mmi_xyaa aaaa_aaaa aaaa_aaaa",
+    operands: { d: [ 27, 24 ], m: [ 22, 21 ], i: [ 20, 20 ], x: [ 19, 19 ], y: [ 18, 18], a: [17, 0] },
     decode: ({ d = 0, m = 0, i = 0,x = 0, y = 0, a = 0 } = {}) => [
         // m: 0b01 === address, 0b10 === BP, 0b11 ==== D
         // i: 0b0 === absolute; 0b1 === indirect
@@ -259,7 +266,7 @@ OPCODES["ld"] = {
             [TASKS.ADD]
         ]: []),
         // get the desired data from memory
-        [(d & 0x01) ? TASKS.GET_WORD_FROM_MEMORY : TASKS.GET_BYTE_FROM_MEMORY],
+        [(d & 0x01) ? TASKS.GET_BYTE_FROM_MEMORY : TASKS.GET_WORD_FROM_MEMORY],
         // and load it
         [TASKS.POP_INTO_REGISTER, d]
     ]
@@ -269,6 +276,7 @@ OPCODES["ld"] = {
 OPCODES["st"] = {
     asm: "st $a, $s $x $y $m:$i",
     pattern: "0010_ssss .mmi_xyaa aaaa_aaaa aaaa_aaaa",
+    operands: { s: [ 27, 24 ], m: [ 22, 21 ], i: [ 20, 20 ], x: [ 19, 19 ], y: [ 18, 18], a: [17, 0] },
     decode: ({ s = 0, m = 0, i = 0,x = 0, y = 0, a = 0 } = {}) => [
         // m: 0b01 === address, 0b10 === BP, 0b11 ==== D
         // i: 0b0 === absolute; 0b1 === indirect
@@ -299,6 +307,6 @@ OPCODES["st"] = {
         // get byte/word to push to memory
         [TASKS.GET_REGISTER_AND_PUSH, s],
         // get the desired data from memory
-        [(s & 0x01) ? TASKS.POP_WORD_INTO : TASKS.POP_BYTE_INTO_MEMORY],
+        [(s & 0x01) ? TASKS.POP_BYTE_INTO : TASKS.POP_WORD_INTO_MEMORY],
     ]
 }
