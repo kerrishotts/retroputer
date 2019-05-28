@@ -5,14 +5,17 @@
 
 .namespace app {
     .const NUL 0x00
-    .segment data 0x02000 .append {
+    .const SEGMENT-SIZE 0x00800
+    .const CODE-START 0x01000
+    .const DATA-START CODE-START + SEGMENT-SIZE
+    .segment data DATA-START .append {
         hello: .byte 12
                .string "Hello, World\n"
                .byte NUL
         scores: .word[2] 0, 0
     }
 
-    .segment code 0x01000 {
+    .segment code CODE-START {
     main:
         pushall                         # be a nice citizen...
         xor x, x                        # x = 0

@@ -9,7 +9,10 @@
   },
   "main": "index.js",
   "browser": "index.js",
-  "dependencies": {},
+  "dependencies": {
+    "cli": "^1.0.1",
+    "pegjs": "^0.10.0"
+  },
   "devDependencies": {
     "ava": "^1.4.1",
     "c8": "^4.1.4",

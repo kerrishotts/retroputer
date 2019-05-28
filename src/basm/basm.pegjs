@@ -131,14 +131,16 @@
     function tLiteral(value) {
         return {
             type: typeof value === "string" ? TOKENS.STRING: TOKENS.INTEGER,
-            value
+            value,
+            pos: location().start
         };
     }
 
     function tIdentifier(ident) {
         return {
             type: TOKENS.IDENTIFIER,
-            ident
+            ident,
+            pos: location().start
         };
     }
 
@@ -146,7 +148,8 @@
         return {
             type: TOKENS.REGISTER,
             idx,
-            size: 1 - (idx & 0b1)
+            size: 2 - (idx & 0b1),
+            pos: location().start
         };
     }
 
@@ -156,7 +159,8 @@
                 type: TOKENS.BINARY_EXPRESSION,
                 op: element[1],
                 l: result,
-                r: element[3]
+                r: element[3],
+            pos: location().start
             };
         }, head);
     }
@@ -165,7 +169,8 @@
         return {
             type: TOKENS.UNARY_EXPRESSION,
             op,
-            r: v
+            r: v,
+            pos: location().start
         };
     }
 
@@ -190,7 +195,8 @@
             imm,
             reg,
             addr,
-            flag
+            flag,
+            pos: location().start
         };
     }
 
@@ -198,7 +204,8 @@
         return {
             type: TOKENS.NAMESPACE_DIRECTIVE,
             name,
-            block
+            block,
+            pos: location().start
         };
     }
 
@@ -206,7 +213,8 @@
         return {
             type: TOKENS.CONST_DIRECTIVE,
             name,
-            value: expr
+            value: expr,
+            pos: location().start
         };
     }
 
@@ -216,14 +224,16 @@
             name,
             addr,
             append,
-            block
+            block,
+            pos: location().start
         };
     }
 
     function tImport(path) {
         return {
             type: TOKENS.IMPORT_DIRECTIVE,
-            path
+            path,
+            pos: location().start
         };
     }
 
@@ -231,21 +241,24 @@
         return {
             type: which,
             data,
-            size
+            size,
+            pos: location().start
         };
     }
 
     function tComment(comment) {
         return {
             type: TOKENS.COMMENT,
-            comment
+            comment,
+            pos: location().start
         };
     }
 
     function tLabel(name) {
         return {
             type: TOKENS.LABEL,
-            name
+            name,
+            pos: location().start
         };
     }
 
@@ -253,7 +266,8 @@
         return {
             type: TOKENS.FLAG,
             flag,
-            neg
+            neg,
+            pos: location().start
         };
     }
 
@@ -264,7 +278,8 @@
             m,
             x,
             y,
-            i
+            i,
+            pos: location().start
         });
     }
 }
@@ -388,43 +403,43 @@ iBR "Branch Instruction"
 iADD "Add Instruction"
 = op:ADD _ dest:Register _ COMMA _ source:Register
    { return tInstruction(op, {dest, source}); }
-/ op:ADD _ dest:Register _ COMMA _ imm:Expression
+/ op:ADD _ dest:GeneralRegister _ COMMA _ imm:Expression
    { return tInstruction(op, {dest, imm}); }
 
 iAND "And Instruction"
 = op:AND _ dest:Register _ COMMA _ source:Register
    { return tInstruction(op, {dest, source}); }
-/ op:AND _ dest:Register _ COMMA _ imm:Expression
+/ op:AND _ dest:GeneralRegister _ COMMA _ imm:Expression
    { return tInstruction(op, {dest, imm}); }
 
 iCMP "Compare Instruction"
 = op:CMP _ dest:Register _ COMMA _ source:Register
    { return tInstruction(op, {dest, source}); }
-/ op:CMP _ dest:Register _ COMMA _ imm:Expression
+/ op:CMP _ dest:GeneralRegister _ COMMA _ imm:Expression
    { return tInstruction(op, {dest, imm}); }
 
 iSUB "Subtract Instruction"
 = op:SUB _ dest:Register _ COMMA _ source:Register
    { return tInstruction(op, {dest, source}); }
-/ op:SUB _ dest:Register _ COMMA _ imm:Expression
+/ op:SUB _ dest:GeneralRegister _ COMMA _ imm:Expression
    { return tInstruction(op, {dest, imm}); }
 
 iOR "Or Instruction"
 = op:OR _ dest:Register _ COMMA _ source:Register
    { return tInstruction(op, {dest, source}); }
-/ op:OR _ dest:Register _ COMMA _ imm:Expression
+/ op:OR _ dest:GeneralRegister _ COMMA _ imm:Expression
    { return tInstruction(op, {dest, imm}); }
 
 iXOR "Exclusive Or Instruction"
 = op:XOR _ dest:Register _ COMMA _ source:Register
     { return tInstruction(op, {dest, source}); }
-/ op:XOR _ dest:Register _ COMMA _ imm:Expression
+/ op:XOR _ dest:GeneralRegister _ COMMA _ imm:Expression
     { return tInstruction(op, {dest, imm}); }
 
 iTEST "Test Instruction"
 = op:TEST _ dest:Register _ COMMA _ source:Register
    { return tInstruction(op, {dest, source}); }
-/ op:TEST _ dest:Register _ COMMA _ imm:Expression
+/ op:TEST _ dest:GeneralRegister _ COMMA _ imm:Expression
    { return tInstruction(op, {dest, imm}); }
 
 iSHL "Shift Left Instruction"
@@ -486,12 +501,12 @@ iTRAP "Trap Instruction"
    { return tInstruction(op, {imm}); }
 
 iIN "In Instruction"
-= op:IN _ dest:Register _ COMMA _ source:Immediate8
-   { return tInstruction(op, {dest, source}); }
+= op:IN _ reg:Register _ COMMA _ imm:Immediate8
+   { return tInstruction(op, {reg, imm}); }
 
 iOUT "OUT Instruction"
-= op:OUT _ dest:Immediate8 _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:OUT _ imm:Immediate8 _ COMMA _ reg:Register
+   { return tInstruction(op, {reg, imm}); }
 
 iENTER "Enter Instruction"
 = op:ENTER _ imm:Immediate8
@@ -602,6 +617,9 @@ Register16 "Word-sized Register"
 
 Register8 "Byte-sized Register"
 = rAL / rBL / rCL / rDL / rXL / rYL
+
+GeneralRegister "General Purpose Register"
+= rAL / rA / rBL / rB / rCL / rC / rDL / rD
 
 MemoryRegister "Memory Register"
 = rD / rBP
