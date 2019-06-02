@@ -1,7 +1,7 @@
 #
 # Hello World
 ########################################
-.import "system"  # import the system libs
+#.import "system"  # import the system libs
 
 .namespace app {
     .const NUL 0x00
@@ -16,19 +16,21 @@
     }
 
     .segment code CODE-START {
+        calls main            {$90 $07 $01}      # test forward resolution
+        ret                   {$a7}              # return to caller
     main:
-        pushall                         # be a nice citizen...
-        xor x, x                        # x = 0
-        ld d, app.data.hello            # address of hello, world
-        ld cl, [d]                      # size of our string
-        inc x                           # increment past length
+        pushall               {$a0}              # be a nice citizen...
+        xor x, x              {$07 $88}          # x = 0
+        ld d, data.hello      {$16 $00 $18 $00}  # address of hello, world
+        ld cl, [d]            {$15 $c0 $00 $00}  # size of our string
+        inc x                 {$c8}              # increment past length
     print-loop:
-        ld al, [d,x]                    # get character
-        out 0x10, al                    # print (for now)
-        inc x                           # next
-        loop print-loop, c              # keep going?
+        ld al, [d,x]          {$11 $d0 $00 $00}  # get character
+        out 0x10, al          {$31 $10 $10}      # print (for now)
+        inc x                 {$c8}              # next
+        loops print-loop, c   {$84 $01 $f5}      # keep going?
 
-        popall                          # clean up
-        ret                             # back whence we came
+        popall                {$a1}              # clean up
+        ret                   {$a7}              # back whence we came
     }
 }

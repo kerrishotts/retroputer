@@ -1,4 +1,8 @@
+import path from "path";
+import fs from "fs";
 import util, { types } from "util";
+
+import { parser } from "./parser.js";
 
 import { MODES, TOKENS, OPCODES, DIRECTIVES, REGISTERS, FLAGS } from "./constants.js";
 
@@ -12,9 +16,11 @@ const SCOPE = {
         SEGMENT: "segment",
     },
     NAME: Symbol("SCOPE.NAME"),
+    BASE: Symbol("SCOPE.BASE"),
     ADDR: Symbol("SCOPE.ADDR"),
     DATA: Symbol("SCOPE.DATA"),
     PARENT: Symbol("SCOPE.PARENT"),
+    SEGMENTS: Symbol("SCOPE.SEGMENTS")
 };
 
 let lastPos = {
@@ -42,10 +48,12 @@ function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, append = fal
     const scope = {
         [SCOPE.CONTENTS]: {},
         [SCOPE.TYPE]: type,
+        [SCOPE.BASE]: addr,
         [SCOPE.ADDR]: addr,
         [SCOPE.DATA]: [],
         [SCOPE.PARENT]: parent,
-        [SCOPE.NAME]: name
+        [SCOPE.NAME]: name,
+        [SCOPE.SEGMENTS]: []
     };
     if (parent) {
         if (!parent[name]) {
@@ -54,6 +62,9 @@ function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, append = fal
             if (parent[name][SCOPE.TYPE] !== type) {
                 // can't change the type of a scope!
                 err(`Scope ${name} already declared with type ${parent[name][SCOPE.TYPE]}, but tried to change to ${type}.`);
+            }
+            if (parent[name][SCOPE.BASE] !== addr) {
+                err(`Scope ${name} already declared with base address ${parent[name][SCOPE.BASE]}, but tried to change it to ${addr}`);
             }
             if (type === SCOPE.TYPES.SEGMENT) {
                 if (!append) {
@@ -167,9 +178,10 @@ function evaluate(node, context) {
  *
  * @param {*} node    an instruction to attempt to assemble
  * @param {*} context associated context
+ * @param {*} pc      the current location
  * @returns {{size: number, bytes: number[]}} Data
  */
-function tryToAssemble(node, context) {
+function tryToAssemble(node, context, pc) {
     if (node.type !== TOKENS.INSTRUCTION) {
         err(`Tried to assemble an unexpected token: ${node}`);
     }
@@ -242,7 +254,6 @@ function tryToAssemble(node, context) {
                     bytes.push(0x10 | dest.idx);
                     if (source.m === MODES.IMMEDIATE) {
                         const v = evaluate(source.addr, context);
-                        console.log(v);
                         bytes.push(0x00);
                         if (dest.size === 1) {
                             bytes.push(v & 0xFF);
@@ -278,11 +289,66 @@ function tryToAssemble(node, context) {
                 break;
             case OPCODES.LOOP:
             case OPCODES.LOOPS:
+                {
+                    size = op === OPCODES.LOOP ? 4 : 3;
+                    const a = evaluate(addr.addr, context) & 0x0FFFF;
+                    const npc = (pc + size) & 0x0FFFF;
+                    const r = a - npc;
+                    if (size === 3) {
+                        if (r > 127 || r < -128) {
+                            err(`Attempted to loop beyond short range`);
+                        }
+                    } else {
+                        if (r > 32767 || r < -32768) {
+                            err(`Attempted to loop beyond range`);
+                        }
+                    }
+                    bytes.push( 0x80 | reg.idx,
+                            ((addr.i ? 1 : 0) << 5) |
+                            ((addr.x ? 1 : 0) << 4) |
+                            ((addr.y ? 1 : 0) << 3) |
+                            ((size === 3 ? 1 : 0)));
+                    if (size === 3) {
+                        bytes.push( (r & 0x000FF));
+                    } else {
+                        bytes.push( (r & 0x0FF00) >> 8, (r & 0x000FF));
+                    }
+                }
                 break;
             case OPCODES.CALL:
             case OPCODES.CALLS:
             case OPCODES.BR:
             case OPCODES.BRS:
+                {
+                    size = (op === OPCODES.CALL || op === OPCODES.BR) ? 4 : 3;
+                    const isCall = (op === OPCODES.CALL || op === OPCODES.CALLS );
+                    const a = evaluate(addr.addr, context) & 0x0FFFF;
+                    const npc = (pc + size) & 0x0FFFF;
+                    const r = a - npc;
+                    if (size === 3) {
+                        if (r > 127 || r < -128) {
+                            err(`Attempted to ${isCall ? "call" : "branch"}  beyond short range`);
+                        }
+                    } else {
+                        if (r > 32767 || r < -32768) {
+                            err(`Attempted to  ${isCall ? "call" : "branch"} beyond range`);
+                        }
+                    }
+                    const neg = (flag && flag.neg);
+                    const flg = (flag && flag.flag) || 0;
+                    bytes.push( 0x90 | (neg ? 1 : 0) << 3 | flg,
+                            ((addr.i ? 1 : 0) << 5) |
+                            ((addr.x ? 1 : 0) << 4) |
+                            ((addr.y ? 1 : 0) << 3) |
+                            ((!flag  ? 1 : 0) << 2) | // unconditional
+                            ((isCall ? 1 : 0) << 1) | // BR | CALL
+                            ((size === 3 ? 1 : 0)));
+                    if (size === 3) {
+                        bytes.push( (r & 0x000FF));
+                    } else {
+                        bytes.push( (r & 0x0FF00) >> 8, (r & 0x000FF));
+                    }
+                }
                 break;
             case OPCODES.ADD:
             case OPCODES.SUB:
@@ -348,6 +414,14 @@ export function assemble(ast, global, context) {
                 // do nothing :-)
             }
             break;
+        case TOKENS.IMPORT_DIRECTIVE:
+            {
+                const filePath = path.resolve(node.path.value);
+                const fileContents = fs.readFileSync(filePath, {encoding: "utf8"});
+                const ast = parser.parse(fileContents);
+                assemble(ast, global, context);
+            }
+            break;
         case TOKENS.NAMESPACE_DIRECTIVE:
             {
                 const newContext = createScope(SCOPE.TYPES.NAMESPACE, context, node.name.ident);
@@ -357,6 +431,9 @@ export function assemble(ast, global, context) {
         case TOKENS.SEGMENT_DIRECTIVE:
             {
                 const newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, evaluate(node.addr, context), node.append);
+                if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
+                    global[SCOPE.SEGMENTS].push(newContext);
+                }
                 assemble(node.block, global, newContext);
             }
             break;
@@ -416,7 +493,9 @@ export function assemble(ast, global, context) {
                 const data = evaluate(node.data, context).split("").map(ch => ch.charCodeAt(0));
                 context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                     asm: node,
-                    bytes: data
+                    bytes: data,
+                    pc: context[SCOPE.ADDR],
+                    context
                 };
 
                 context[SCOPE.ADDR] += data.length;
@@ -427,10 +506,12 @@ export function assemble(ast, global, context) {
                 if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
                     err(`Unexpected code in ${context[SCOPE.NAME]} scope`);
                 }
-                const { size, bytes } = tryToAssemble(node, context);
+                const { size, bytes } = tryToAssemble(node, context, context[SCOPE.ADDR]);
                 context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                     asm: node,
-                    bytes
+                    bytes,
+                    pc: context[SCOPE.ADDR],
+                    context
                 };
                 context[SCOPE.ADDR] += size;
                 break;
@@ -438,8 +519,41 @@ export function assemble(ast, global, context) {
         }
     });
 
-    if (global === context) console.log(util.inspect(global, {depth: null, colors: true} ));
+    // retry any failed assembly instructions
+    const segments = global[SCOPE.SEGMENTS];
+    const code = segments.map(segment => {
+        const data = segment[SCOPE.DATA];
+        const bytes = data.map((datum, idx) => {
+            if (datum) {
+                const { asm, bytes, context, pc } = datum;
+                if (bytes === undefined) {
+                    const { bytes: newBytes } = tryToAssemble(asm, context, pc);
+                    if (newBytes) {
+                        datum.bytes = newBytes;
+                    } else {
+                        err(`Could not locate symbol`);
+                    }
+                }
+                // if the instruction has its own bytes specified, see if we match
+                if (asm.bytes) {
+                    const matchBytes = asm.bytes.map(byte => evaluate(byte, context));
+                    if (datum.bytes.join(",") !== matchBytes.join(",")) {
+                        err(`Bytes mismatched at ${asm.pos.line}:${asm.pos.column}. Expected ${matchBytes.map(b => b.toString(16).padStart(2,"0"))}; saw ${datum.bytes.map(b => b.toString(16).padStart(2, "0"))}`);
+                    }
+                }
+                return {idx, bytes: datum.bytes};
+            }
+        });
+        const arr = bytes.reduce((arr, item) => {
+            if (!item) {
+                err(`Non-contiguous code or data in segment ${segment[SCOPE.NAME]}`);
+            }
+            arr.push(...item.bytes);
+            return arr;
+        }, []);
+        return {name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr};
+    });
 
     // return the segments
-    return Object.entries(global[SCOPE.CONTENTS]).filter(scope => scope[SCOPE.TYPE] = SCOPE.TYPES.SEGMENT);
+    return code.sort((a, b) => a.addr < b.addr ? -1 : a.addr > b.addr ? 1 : 0);
 }

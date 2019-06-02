@@ -352,8 +352,13 @@ IMPORT "Import"         = ".import"i
 NAMESPACE "Namesspace"  = ".namespace"i
 ARRAY "Array" = LBRACKET _ size:Expression _ RBRACKET { return size; }
 
+ExpectedAssembly "Expected Assembly"
+= "{" bytes:(_ Integer)* "}" {
+    return bytes.map(([, byte]) => byte);
+}
+
 Instruction "Instruction"
-= iNOP / iADD / iAND / iCMP / iSUB / iOR
+= ins:(iNOP / iADD / iAND / iCMP / iSUB / iOR
 / iTEST / iXOR / iTRAP / iNOT / iNEG / iEXC
 / iSHL / iSHR / iSWAP / iMOV
 / iLOAD / iSTORE / iINC / iIN / iOUT
@@ -361,7 +366,12 @@ Instruction "Instruction"
 / iCALL / iPUSHALL / iPOPALL / iPUSHF
 / iPOPF / iPUSH / iPOP / iRET / iMUL
 / iMOD / iDIV / iSMUL / iSMOD / iSDIV
-/ iSET / iCLR / iDEC
+/ iSET / iCLR / iDEC) _ bytes:ExpectedAssembly? {
+    if (bytes) {
+        ins.bytes = bytes;
+    }
+    return ins;
+}
 
 //
 // Instruction Definitions
@@ -691,7 +701,7 @@ Absolute18 "Absolute Address"
 = LBRACKET _ addr:Expression _ x:IndexByX? _ y:IndexByY? _ RBRACKET { return addressingMode({addr, x: !!x, y: !!y, m:MODES.ABSOLUTE}); }
 
 Indirect18 "Indirect Address"
-= LPAREN _ addr:Expression _ x:IndexByX? _ RPAREN _ y:IndexByY? { return addressingMode({addr, x: !!x, y: !!y, i: true, m:MODES.ABSOLUTE}); }
+= LANGLE _ addr:Expression _ x:IndexByX? _ RANGLE _ y:IndexByY? { return addressingMode({addr, x: !!x, y: !!y, i: true, m:MODES.ABSOLUTE}); }
 
 AbsoluteRegister "Absolute BP or D"
 = LBRACKET _ reg:MemoryRegister _ imm:ImmediateOffset?
@@ -708,9 +718,9 @@ AbsoluteRegister "Absolute BP or D"
   }
 
 IndirectRegister "Indirect BP"
-= LPAREN _ reg:MemoryRegister _ imm:ImmediateOffset?
+= LANGLE _ reg:MemoryRegister _ imm:ImmediateOffset?
   _ x:IndexByX?
-  _ RPAREN
+  _ RANGLE
   _ y:IndexByY?
   {
     return addressingMode({
@@ -881,6 +891,8 @@ LBRACKET "Left Bracket"  = "[" { return "["; }
 RBRACKET "Right Bracket" = "]" { return "]"; }
 LPAREN   "Left Paren"    = "(" { return "("; }
 RPAREN   "Right Paren"   = ")" { return ")"; }
+LANGLE   "Left Angle"    = "<" { return "<"; }
+RANGLE   "Right Angle"   = ">" { return ">"; }
 DQUOTE   "Double Quote"  = '"' { return '"'; }
 PLUS "Plus"              = "+" { return "+"; }
 COMMA "Comma"            = "," { return ","; }
