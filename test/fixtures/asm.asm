@@ -2,6 +2,30 @@
     nop                                 {$00}
 }
 
+# test-cmp-dw-1.regs: A=0x0123 B=0x0123
+# test-cmp-dw-1.flags: C- Z+ N-
+.segment test-cmp-dw-1 0x0000 {
+    ld a, 0x0123                        {$10 $00 $01 $23}
+    ld b, 0x0123                        {$12 $00 $01 $23}
+    cmp a, b                            {$03 $02}
+}
+
+# test-cmp-dw-2.regs: A=0x0123 B=0x0124
+# test-cmp-dw-2.flags: C- Z- N+
+.segment test-cmp-dw-2 0x0000 {
+    ld a, 0x0123                        {$10 $00 $01 $23}
+    ld b, 0x0124                        {$12 $00 $01 $24}
+    cmp a, b                            {$03 $02}
+}
+
+# test-cmp-dw-3.regs: A=0x0123 B=0x0122
+# test-cmp-dw-3.flags: C- Z- N-
+.segment test-cmp-dw-3 0x0000 {
+    ld a, 0x0123                        {$10 $00 $01 $23}
+    ld b, 0x0122                        {$12 $00 $01 $22}
+    cmp a, b                            {$03 $02}
+}
+
 # test-load-and-add-dw-1.regs: A=0x0246 B=0x0123
 # test-load-and-add-dw-1.flags: C- Z- N- V-
 .segment test-load-and-add-dw-1 0x0000 {

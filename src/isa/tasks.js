@@ -11,6 +11,7 @@ export const SIZE_ADDR = SIZES.ADDR;
  * @type {Object.<string, number>}
  */
 export const TASKS = {
+    NOP:                   0x00,
     // get and push
     GET_REGISTER_AND_PUSH: 0x01,        // r -> s0
     POP_INTO_REGISTER:     0x02,        // r <- s0
@@ -88,6 +89,7 @@ export const TASKS = {
  * @type {Object.<Number, TASK_FN>}
  */
 export const TASK_FNS = {
+    [TASKS.NOP]() {},
     [TASKS.GET_REGISTER_AND_PUSH]({stack /** : []*/, registerFile /** : RegisterFile */, args}) {
         const rIdx = args[0];
         stack.push([registerFile.getRegister(rIdx), registerFile.getSizeOfRegister(rIdx)]);

@@ -122,7 +122,7 @@ OPCODES["mov_ds"] = {
             [TASKS.GET_REGISTER_AND_PUSH, d], // a
             [TASKS.GET_REGISTER_AND_PUSH, s], // b
             [task],
-            [TASKS.POP_INTO_REGISTER, d]
+            opcode==="cmp" ? [TASKS.NOP] : [TASKS.POP_INTO_REGISTER, d]
         ]
     };
     OPCODES[`${opcode}_db`] = {
@@ -133,7 +133,7 @@ OPCODES["mov_ds"] = {
             [TASKS.GET_REGISTER_AND_PUSH, (d << 1) | 1], // a
             [TASKS.PUSH_BYTE, b], //b
             [task],
-            [TASKS.POP_INTO_REGISTER, (d << 1) | 1 ]
+            opcode==="cmp" ? [TASKS.NOP] : [TASKS.POP_INTO_REGISTER, (d << 1) | 1 ]
         ]
     };
     OPCODES[`${opcode}_dw`] = {
@@ -144,7 +144,7 @@ OPCODES["mov_ds"] = {
             [TASKS.GET_REGISTER_AND_PUSH, (d << 1)], // a
             [TASKS.PUSH_WORD, w], // b
             [task],
-            [TASKS.POP_INTO_REGISTER, (d << 1) ]
+            opcode==="cmp" ? [TASKS.NOP] : [TASKS.POP_INTO_REGISTER, (d << 1) ]
         ]
     };
 });
