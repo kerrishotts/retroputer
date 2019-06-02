@@ -1,7 +1,9 @@
 import { Bus } from "./Bus.js";
 
+const MAP_SIZE = 2;
+const MAP_MASK = 0b1111111111111111; // 16-bit memory mask
 const ADDRESS_SIZE = 4;
-const ADDRESS_MASK = 0b111111111111111111;
+const ADDRESS_MASK = 0b1111111111111111111; // 19-bit address bus
 const DATA_SIZE = 2;
 const DATA_MASK = 0b1111111111111111;
 const COMMAND_SIZE = 1;
@@ -9,6 +11,7 @@ const COMMAND_MASK = 0b11;
 const EXECUTE_SIZE = 1;
 const EXECUTE_MASK = 0b1;
 
+const _mapBus = Symbol("_mapBus");
 const _addressBus = Symbol("_addressBus");
 const _dataBus = Symbol("_dataBus");
 const _commandBus = Symbol("_commandBus");
@@ -21,10 +24,15 @@ export const COMMANDS_MEMORY_WRITE_WORD = 0b11;
 
 export class SystemBus {
     constructor() {
+        this[_mapBus] = new Bus(MAP_SIZE, MAP_MASK);
         this[_addressBus] = new Bus(ADDRESS_SIZE, ADDRESS_MASK);
         this[_dataBus] = new Bus(DATA_SIZE, DATA_MASK);
         this[_commandBus] = new Bus(COMMAND_SIZE, COMMAND_MASK);
         this[_executeBus] = new Bus(EXECUTE_SIZE, EXECUTE_MASK);
+    }
+
+    get mapBus() {
+        return this[_mapBus];
     }
 
     get addressBus() {
@@ -41,6 +49,14 @@ export class SystemBus {
 
     get executeBus() {
         return this[_executeBus]
+    }
+
+    get map() {
+        return this[_mapBus].value;
+    }
+
+    set map(v) {
+        this[_mapBus].value = v & MAP_MASK;
     }
 
     get command() {

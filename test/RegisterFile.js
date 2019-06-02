@@ -7,7 +7,7 @@ test("Can create the register file", t => {
     t.notThrows(() => registers = new RegisterFile());
 });
 
-Array.from({length: 20}, (_, idx) => idx).forEach(idx => {
+Array.from({length: 24}, (_, idx) => idx).forEach(idx => {
     test(`Can assign and read the same value to r${idx}`, t => {
         const registers = new RegisterFile();
         registers.setRegister(idx, 123);
@@ -15,7 +15,7 @@ Array.from({length: 20}, (_, idx) => idx).forEach(idx => {
     });
 });
 
-Array.from({length: 10}, (_, idx) => idx).forEach(idx => {
+Array.from({length: 12}, (_, idx) => idx).forEach(idx => {
     const reg = idx * 2;
     test(`Can assign and read the same word value to r${reg}`, t => {
         const registers = new RegisterFile();

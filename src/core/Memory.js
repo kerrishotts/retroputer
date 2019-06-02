@@ -87,86 +87,83 @@ export class MemoryBank {
   }
 }
 
-const _banks = Symbol("_banks");
+const _pages = Symbol("_pages");
 
 export class Memory {
-  constructor({ systemBus, layout = {}, shared = false, buffer }) {
-    const banks = [];
+  constructor({ systemBus, pageCount = 32, pageSize = 0x4000, romPages=[28, 29, 30, 31], shared = false, buffer }) {
+    const pages = [];
 
-    // push the lower 48KB of writeable memory
-    banks.push(new MemoryBank({
-      systemBus,
-      address: 0x00000,
-      size: layout.romStart,
-      rom: false,
-      shared,
-      buffer: buffer ? buffer.slice(0, layout.romStart) : undefined
-    }));
+    for (let i = 0; i< pageCount; i++) {
+      pages.push(new MemoryBank({
+        systemBus,
+        address: i * pageSize,
+        size: pageSize,
+        rom: romPages.indexOf(i) > -1,
+        shared,
+        buffer: buffer ? buffer.slice(i*pageSize, pageSize) : undefined
+      }));
+    }
 
-    // next comes the ROM block
-    banks.push(new MemoryBank({
-      systemBus,
-      address: layout.romStart,
-      size: layout.romLength,
-      rom: false,                 // TODO: change to TRUE when we have a kernel
-      shared,
-      buffer: buffer ? buffer.slice(layout.romStart, layout.romLength) : undefined
-    }));
-
-    // and now banks 1, 2, and 3.
-    banks.push(...[1, 2, 3].map(bank => new MemoryBank({
-      systemBus,
-      address: layout.bankLength * bank,
-      size: layout.bankLength,
-      rom: false,
-      shared,
-      buffer: buffer ? buffer.slice(layout.bankLength * bank, layout.bankLength) : undefined
-    })));
-
-    this[_banks] = banks;
+    this[_pages] = pages;
+    this[_systemBus] = systemBus;
   }
 
-  get banks() {
-    return this[_banks];
+  get pages() {
+    return this[_pages];
   }
 
   get size() {
-    const banks = this[_banks];
+    const pages = this[_pages];
     let size = 0;
-    banks.forEach(bank => size += bank.size);
+    pages.forEach(page => size += page.size);
     return size;
   }
 
-  bankForAddress(address) {
-    const banks = this[_banks];
-    for (let i = banks.length - 1; i >= 0; i--) {
-      if (banks[i].startingAddress <= address && address <= banks[i].endingAddress) {
-        return banks[i];
+  pageForAddress(address) {
+    const pages = this[_pages];
+    const map = this[_systemBus].map;
+    const mappedPages = [
+      0,
+      map & 0b0000000000011111 ,
+      (map & 0b0000001111100000) >> 5,
+      (map * 0b0111110000000000) >> 10
+    ];
+    const page = (address & 0b1111100000000000000) >> 14;
+    if (page < 4) {
+      return pages[mappedPages[page]];
+    } else {
+      return pages[page];
+    }
+/*
+    for (let i = pages.length - 1; i >= 0; i--) {
+      if (pages[i].startingAddress <= address && address <= pages[i].endingAddress) {
+        return pages[i];
       }
     }
+*/
   }
 
   readByte(address) {
-    const bank = this.bankForAddress(address);
-    return bank.read(address);
+    const page = this.pageForAddress(address);
+    return page.read(address);
   }
 
   readWord(address) {
-    const bank = this.bankForAddress(address);
-    return (bank.read(address) << 8) + bank.read(address + 1);
+    const page = this.pageForAddress(address);
+    return (page.read(address) << 8) + page.read(address + 1);
   }
 
   writeByte(address, value) {
-    const bank = this.bankForAddress(address);
-    bank.write(address, value);
+    const page = this.pageForAddress(address);
+    page.write(address, value);
   }
 
   writeWord(address, value) {
-    const bank = this.bankForAddress(address);
+    const page = this.pageForAddress(address);
     const hi = (value & 0xFF00) >> 8;
     const lo = (value & 0x00FF);
-    bank.write(address, hi);
-    bank.write(address + 1, lo);
+    page.write(address, hi);
+    page.write(address + 1, lo);
   }
 
   loadFromJS(data, addrOverride) {

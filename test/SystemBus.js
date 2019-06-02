@@ -6,6 +6,7 @@ COMMANDS_MEMORY_WRITE_BYTE, COMMANDS_MEMORY_WRITE_WORD } from "../src/core/Syste
 test("Can create a new system bus", t => {
     let systemBus;
     t.notThrows(() => systemBus = new SystemBus());
+    t.is(systemBus.mapBus.size, 2);
     t.is(systemBus.addressBus.size, 4);
     t.is(systemBus.dataBus.size, 2);
     t.is(systemBus.commandBus.size, 1);

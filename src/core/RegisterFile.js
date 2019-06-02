@@ -4,7 +4,7 @@ const _buffer = Symbol("_buffer");
 const _byteData = Symbol("_data");
 const _wordData = Symbol("_word");
 
-const REGISTER_COUNT = 20;
+const REGISTER_COUNT = 24;
 
 export const REGISTER_INDEX = {
     A: 0,
@@ -23,17 +23,27 @@ export const REGISTER_INDEX = {
     SP: 14,
     STATUS: 16,
     FLAGS: 17,
-    PC: 18
+    PC: 18,
+    MM: 20,
+    CF: 22
 };
 
 export const FLAGS_INDEX = {
+    Z: 0,
     ZERO: 0,
+    C: 1,
     CARRY: 1,
+    SS: 2,
     SINGLE_STEP: 2,
+    IS: 3,
     INTERRUPT_SERVICE: 3,
+    ID: 4,
     INTERRUPT_DISABLE: 4,
+    EX: 5,
     EXCEPTION: 5,
+    V: 6,
     OVERFLOW: 6,
+    N: 7,
     NEGATIVE: 7
 };
 
@@ -90,6 +100,8 @@ export class RegisterFile {
     get STATUS() { return this.getRegister(REGISTER_INDEX.STATUS); }
     get FLAGS() { return this.getRegister(REGISTER_INDEX.FLAGS); }
     get PC() { return this.getRegister(REGISTER_INDEX.PC); }
+    get MM() { return this.getRegister(REGISTER_INDEX.MM); }
+    get CF() { return this.getRegister(REGISTER_INDEX.CF); }
 
     set A(v) { this.setRegister(REGISTER_INDEX.A, v); }
     set AL(v) { this.setRegister(REGISTER_INDEX.AL, v); }
@@ -108,6 +120,8 @@ export class RegisterFile {
     set STATUS(v) { this.setRegister(REGISTER_INDEX.STATUS, v); }
     set FLAGS(v) { this.setRegister(REGISTER_INDEX.FLAGS, v); }
     set PC(v) { this.setRegister(REGISTER_INDEX.PC, v); }
+    set MM(v) { this.setRegister(REGISTER_INDEX.MM, v); }
+    set CF(v) { this.setRegister(REGISTER_INDEX.CF, v); }
 
     // Flags
     get ZERO()              { return (this.FLAGS & 0b00000001); }
