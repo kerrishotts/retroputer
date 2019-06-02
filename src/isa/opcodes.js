@@ -236,8 +236,8 @@ OPCODES["ld_db"] = {
 // LD; 12 cycles worst case.  3 in the best.
 OPCODES["ld"] = {
     asm: "ld $d, $a $x $y $m:$i",
-    pattern: "0001_dddd .mmi_xyaa aaaa_aaaa aaaa_aaaa",
-    operands: { d: [ 27, 24 ], m: [ 22, 21 ], i: [ 20, 20 ], x: [ 19, 19 ], y: [ 18, 18], a: [17, 0] },
+    pattern: "0001_dddd mmix_yaaa aaaa_aaaa aaaa_aaaa",
+    operands: { d: [ 27, 24 ], m: [ 23, 22 ], i: [ 21, 21 ], x: [ 20, 20 ], y: [ 19, 19], a: [18, 0] },
     decode: ({ d = 0, m = 0, i = 0,x = 0, y = 0, a = 0 } = {}) => [
         // m: 0b01 === address, 0b10 === BP, 0b11 ==== D
         // i: 0b0 === absolute; 0b1 === indirect
@@ -256,7 +256,7 @@ OPCODES["ld"] = {
         // if indirect, we need memory at location
         ...(i === 1 ? [
             [TASKS.GET_WORD_FROM_MEMORY],
-            [TASKS.PUSH_ADDR, (a & 0x30000)],
+            [TASKS.PUSH_ADDR, (a & 0x70000)],
             [TASKS.OR]
         ]: []),
         // index by y
@@ -275,8 +275,8 @@ OPCODES["ld"] = {
 // ST; 12 cycles worst case.  3 in the best.
 OPCODES["st"] = {
     asm: "st $a, $s $x $y $m:$i",
-    pattern: "0010_ssss .mmi_xyaa aaaa_aaaa aaaa_aaaa",
-    operands: { s: [ 27, 24 ], m: [ 22, 21 ], i: [ 20, 20 ], x: [ 19, 19 ], y: [ 18, 18], a: [17, 0] },
+    pattern: "0010_ssss mmix_yaaa aaaa_aaaa aaaa_aaaa",
+    operands: { s: [ 27, 24 ], m: [ 23, 22 ], i: [ 21, 21 ], x: [ 20, 20 ], y: [ 19, 19], a: [18, 0] },
     decode: ({ s = 0, m = 0, i = 0,x = 0, y = 0, a = 0 } = {}) => [
         // m: 0b01 === address, 0b10 === BP, 0b11 ==== D
         // i: 0b0 === absolute; 0b1 === indirect
@@ -295,7 +295,7 @@ OPCODES["st"] = {
         // if indirect, we need memory at location
         ...(i === 1 ? [
             [TASKS.GET_WORD_FROM_MEMORY],
-            [TASKS.PUSH_ADDR, (a & 0x30000)],
+            [TASKS.PUSH_ADDR, (a & 0x70000)],
             [TASKS.OR]
         ]: []),
         // index by y
