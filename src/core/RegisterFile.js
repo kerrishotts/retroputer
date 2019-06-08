@@ -25,7 +25,7 @@ export const REGISTER_INDEX = {
     FLAGS: 17,
     PC: 18,
     MM: 20,
-    CF: 22
+    MP: 22
 };
 
 export const FLAGS_INDEX = {
@@ -101,7 +101,7 @@ export class RegisterFile {
     get FLAGS() { return this.getRegister(REGISTER_INDEX.FLAGS); }
     get PC() { return this.getRegister(REGISTER_INDEX.PC); }
     get MM() { return this.getRegister(REGISTER_INDEX.MM); }
-    get CF() { return this.getRegister(REGISTER_INDEX.CF); }
+    get MP() { return this.getRegister(REGISTER_INDEX.MP); }
 
     set A(v) { this.setRegister(REGISTER_INDEX.A, v); }
     set AL(v) { this.setRegister(REGISTER_INDEX.AL, v); }
@@ -121,7 +121,7 @@ export class RegisterFile {
     set FLAGS(v) { this.setRegister(REGISTER_INDEX.FLAGS, v); }
     set PC(v) { this.setRegister(REGISTER_INDEX.PC, v); }
     set MM(v) { this.setRegister(REGISTER_INDEX.MM, v); }
-    set CF(v) { this.setRegister(REGISTER_INDEX.CF, v); }
+    set MP(v) { this.setRegister(REGISTER_INDEX.MP, v); }
 
     // Flags
     get ZERO()              { return (this.FLAGS & 0b00000001); }

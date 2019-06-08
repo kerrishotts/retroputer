@@ -24,7 +24,7 @@ Array.from({length: 12}, (_, idx) => idx).forEach(idx => {
     });
 });
 
-const wordRegisters = ["A", "B", "C", "D", "X", "Y", "BP", "SP", "STATUS", "PC"];
+const wordRegisters = ["A", "B", "C", "D", "X", "Y", "BP", "SP", "STATUS", "PC", "MM", "MC"];
 const byteRegisters = ["AL", "BL", "CL", "DL", "XL", "YL", "FLAGS"];
 const flags = ["CARRY", "OVERFLOW", "NEGATIVE", "ZERO", "SINGLE_STEP", "INTERRUPT_DISABLE", "INTERRUPT_SERVICE", "EXCEPTION"];
 

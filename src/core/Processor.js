@@ -4,7 +4,8 @@ import { Bus } from "./Bus.js";
 import { SystemBus } from "./SystemBus.js";
 import { IOBus } from "./IOBus.js";
 import { RegisterFile } from "./RegisterFile.js";
-import { isDecodeableInstruction } from "../isa/isDecodeableInstruction.js";
+import { decodeInstruction } from "../isa/decodeInstruction.js";
+import { TASK_FNS } from "../isa/tasks.js";
 
 const _alu = Symbol("_alu");
 const _registerFile = Symbol("_registerFile");
@@ -99,27 +100,48 @@ export class Processor {
     }
 
     _fetch() {
-        const byte = this.memory.readByte(this.registers.PC);
+        const byte = this.memory.readByte(this.registers.MP++);
         this.inject([byte]);
     }
 
-    _decode(instructionSize = 1) {
-        const instruction = this[_cache].slice(0, instructionSize);
+    _decode() {
+        for (let i = 1; i <= 4; i++) {
+            const tasks = decodeInstruction(this[_cache].slice(0,i));
+            if (tasks) {
+                this[_cache] = this[_cache].slice(i+1);
+                this.registers.PC += i;
+                this[_taskQueue].push(...tasks);
+            }
+        }
     }
 
     _execute() {
-
+        if (this[_taskQueue].length > 0) {
+            const [task, operand] = this[_taskQueue].pop();
+            TASK_FNS[task]({
+                stack: this[_stack],
+                registerFile: this.registers,
+                alu: this.alu,
+                memory: this.memory,
+                args: [operand]
+            });
+        }
     }
 
     tick() {
-        this._fetch();
-        for (let i = 1; i <= 4; i++) {
-            if (isDecodeableInstruction(this[_cache].slice(0, i))) {
-                this._decode(i);
-            }
+        if (this[_cache].length < 256) {
+            this._fetch();
         }
+
         if (this[_taskQueue].length > 0) {
+            const curPC = this.registers.PC;
             this._execute();
+            if (this.registers.PC !== curPC) {
+                // we've jumped -- clear the cache
+                // and start fetching from the new location
+                this[_cache] = [];
+                this.registers.MP = this.registers.PC;
+            }
         }
     }
 }
