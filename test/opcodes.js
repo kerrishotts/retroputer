@@ -73,7 +73,7 @@ test("#_constructArgs: can extract addressing modes ", t => {
 test("decode nop", t => {
     const bytes = [ 0x00 ];
     const tasks = decodeToTasks(bytes, OPCODES.nop);
-    t.deepEqual(tasks, []);
+    t.deepEqual(tasks, [[TASKS.NOP]]);
 });
 
 const ALL_WORD_REGS = [

@@ -58,8 +58,25 @@ test("Can read word of memory from the system bus", t => {
     const memory = new Memory({ systemBus });
 
     memory.writeWord(0x1234, 517);
-    const byte = systemBus.readWord(0x1234);
-    t.is(byte, 517);
+    const word = systemBus.readWord(0x1234);
+    t.is(word, 517);
+});
+
+test("Can read word of high memory from the system bus", t => {
+    const systemBus = new SystemBus();
+    const memory = new Memory({ systemBus });
+
+    memory.writeWord(0x11234, 517);
+    const word = systemBus.readWord(0x11234);
+    t.is(word, 517);
+});
+
+test("Can read zero from of high memory when initialized", t => {
+    const systemBus = new SystemBus();
+    const memory = new Memory({ systemBus });
+
+    const word = systemBus.readWord(0x11234);
+    t.is(word, 0);
 });
 
 test.todo("Can't write to rom");
