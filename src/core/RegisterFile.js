@@ -142,4 +142,30 @@ export class RegisterFile {
     set OVERFLOW(v)          { this.FLAGS = ((this.FLAGS & 0b10111111) | (v & 0b1) << FLAGS_INDEX.OVERFLOW); }
     set NEGATIVE(v)          { this.FLAGS = ((this.FLAGS & 0b01111111) | (v & 0b1) << FLAGS_INDEX.NEGATIVE); }
 
+    toJSON() {
+        return {
+            A: this.A,
+            B: this.B,
+            C: this.C,
+            D: this.D,
+            X: this.X,
+            Y: this.Y,
+            BP: this.BP,
+            SP: this.SP,
+            STATUS: this.STATUS,
+            PC: this.PC,
+            MP: this.MP,
+            MM: this.MM,
+            FLAGS: {
+                ZERO: this.ZERO,
+                CARRY: this.CARRY,
+                SINGLE_STEP: this.SINGLE_STEP,
+                INTERRUPT_SERVICE: this.INTERRUPT_SERVICE,
+                INTERRUPT_DISABLE: this.INTERRUPT_DISABLE,
+                EXCEPTION: this.EXCEPTION,
+                OVERFLOW: this.OVERFLOW,
+                NEGATIVE: this.NEGATIVE
+            }
+        };
+    }
 }
