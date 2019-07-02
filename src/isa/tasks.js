@@ -23,12 +23,18 @@ export const TASKS = {
     POP_BYTE_INTO_MEMORY:  0x08,        // [s0] <- s1
     POP_WORD_INTO_MEMORY:  0x09,        // [s0] <- s1
 
-
-    // decompose and recompse
+    // decompose and recompose
     DECOMPOSE_WORD_TO_BYTES: 0x10,      // s0 -> [s0, s1]
     RECOMPOSE_BYTES_TO_WORD: 0x11,      // [s0, s1] -> s0
     DECOMPOSE_BYTE_TO_NIBBLE: 0x12,     // s0 -> [s0, s1]
     RECOMPOSE_NIBBLE_TO_BYTE: 0x13,     // [s0, s1] -> s0
+
+    // bit twiddling
+    SET_BIT:               0x20,
+    CLEAR_BIT:             0x21,
+
+    // decisions
+    PICK:                  0x30,
 
     // commands
     TRAP:                  0x40,
@@ -133,6 +139,28 @@ export const TASK_FNS = {
     [TASKS.TRAP]({stack, ioBus}) {
         // TODO
     },
+    [TASKS.SET_BIT]({stack, args}) {
+        const bit = 0b1 << args[0];
+        let [newVal, size] = stack.pop()[0];
+        newVal |= bit;
+        stack.push([newVal, size]);
+    },
+    [TASKS.CLEAR_BIT]({stack, args}) {
+        const bit = (0b1 << args[0]) ^ 0xFFFFFFFF;
+        let [newVal, size] = stack.pop()[0];
+        newVal &= bit;
+        stack.push([newVal, size]);
+    },
+    [TASKS.PICK]({stack, args}) {
+        const s0 = stack.pop();
+        const s1 = stack.pop();
+        const s2 = stack.pop();
+        if (s0[0] !== 0) {
+            stack.push(s2);
+        } else {
+            stack.push(s1);
+        }
+    }
 };
 
 Object.entries(TASKS).forEach(([k, v]) => {

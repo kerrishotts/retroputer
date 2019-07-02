@@ -36,7 +36,21 @@ OPCODES["nop"] = {
     asm: "nop",
     pattern: "0000_0000",
     operands: {},
-    decode: () => []
+    decode: () => [
+        [TASKS.NOP]
+    ]
+};
+
+OPCODES["brk"] = {
+    asm: "brk",
+    pattern: "0011_1111",
+    operands: {},
+    decode: () => [
+        [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.FLAGS],
+        [TASKS.PUSH_BYTE, 0b00000100],
+        [TASKS.OR],
+        [TASKS.POP_INTO_REGISTER, REGISTER_INDEX.FLAGS]
+    ]
 };
 
 OPCODES["not"] = {
@@ -103,6 +117,58 @@ OPCODES["mov_ds"] = {
 
 // some opcodes can be generated based on a recurring pattern.
 // no sense in typing those over and over, so let's do it automatically.
+
+// inc and dec are just add and subtract in disguise. It's no
+// faster to use them, but they are convenient from a typing
+// perspective
+[
+    ["inc", TASKS.ADD_WITH_FLAGS, `1100_rrrr`],
+    ["dec", TASKS.SUB_WITH_FLAGS, `1101_rrrr`]
+].forEach(([opcode, task, pattern]) => {
+    OPCODES[`${opcode}_r`] = {
+        asm: `${opcode} $r`,
+        pattern,
+        operands: { r: [3, 0] },
+        decode: ({r = 0} = {}) => [
+            [TASKS.GET_REGISTER_AND_PUSH, r],
+            [(r & 0b1) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD, 1],
+            [task],
+            [TASKS.POP_INTO_REGISTER, r]
+        ]
+    }
+});
+
+// push and pop register (not all or flags)
+[
+    ["push", TASKS.GET_REGISTER_AND_PUSH, `1110_rrrr`],
+    ["pop", TASKS.POP_INTO_REGISTER, `1111_rrrr`]
+].forEach(([opcode, task, pattern]) => {
+    OPCODES[`${opcode}_r`] = {
+        asm: `${opcode} $r`,
+        pattern,
+        operands: { r: [3, 0] },
+        decode: ({r = 0} = {}) => [
+            [task, r],
+        ]
+    }
+});
+
+// set and clear flag
+[
+    ["set", TASKS.SET_BIT, `1011_0fff`],
+    ["clr", TASKS.CLEAR_BIT, `1011_1fff`]
+].forEach(([opcode, task, pattern]) => {
+    OPCODES[`${opcode}_f`] = {
+        asm: `${opcode} $f`,
+        pattern,
+        operands: { f: [2, 0] },
+        decode: ({f = 0} = {}) => [
+            [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.FLAGS],
+            [task, f],
+            [TASKS.POP_INTO_REGISTER, REGISTER_INDEX.FLAGS]
+        ]
+    }
+});
 
 // add, sub, cmp, and, or, test, xor
 [
@@ -307,6 +373,87 @@ OPCODES["st"] = {
         // get byte/word to push to memory
         [TASKS.GET_REGISTER_AND_PUSH, s],
         // get the desired data from memory
-        [(s & 0x01) ? TASKS.POP_BYTE_INTO : TASKS.POP_WORD_INTO_MEMORY],
+        [(s & 0x01) ? TASKS.POP_BYTE_INTO_MEMORY : TASKS.POP_WORD_INTO_MEMORY],
     ]
-}
+};
+
+/*[
+    ["loop_r"],
+    ["loops_r"],
+].forEach();
+*/
+
+[
+    ["brs_calls_f", "1001_nfff mmix_yuw1 aaaa_aaaa", 8],
+    ["br_call_f",   "1001_nfff mmix_yuw0 aaaa_aaaa aaaa_aaaa", 0]
+].forEach(([opcode, pattern, offset]) => {
+    OPCODES[opcode] = {
+        asm: `${opcode} $n $f $m $i $x $y $u $w $a`,
+        pattern,
+        operands: { n: [27 - offset, 27 - offset],
+            f: [ 26 - offset, 24 - offset ],
+            m: [ 23 - offset, 22 - offset ],
+            i: [ 21 - offset, 21 - offset ],
+            x: [ 20 - offset, 20 - offset ],
+            y: [ 19 - offset, 19 - offset],
+            u: [18 - offset, 18 - offset],
+            w: [17 - offset, 17 - offset],
+            s: [16 - offset, 16 - offset],
+            a: [15 - offset, 0]
+        },
+        decode: ({ n = 0, f = 0, m = 0, i = 0, x = 0, y = 0, u = 0, w = 0, s = 0, a = 0 } = {}) => [
+            // value to use if branch is taken
+            // m: 0b00 === relative, 0b01 === address,
+            //    0b10 === BP, 0b11 ==== D
+            // i: 0b0 === absolute; 0b1 === indirect
+// TODO: handle CALL(S)
+            ...(s === 0 ? [
+                [TASKS.PUSH_WORD, a]
+            ] : [
+                // make sure the address is sign extended
+                [TASKS.PUSH_WORD, ((a & 0xF0) > 0 ? 0xFF00 : 0) | a]
+            ]),
+            ...(m === 0 ? [
+                // need this relative address turned into
+                // an absolute one, thanks!
+                [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.PC],
+                [TASKS.ADD]
+            ] : []),
+            // if we're BP or D, we need that register added to the address on the stack
+            ...(m > 1 ? [
+                [TASKS.GET_REGISTER_AND_PUSH, m === 2 ? REGISTER_INDEX.BP : REGISTER_INDEX.D],
+                [TASKS.ADD],
+            ] : []),
+            // if indexing by x, do so
+            ...(x === 1 ? [
+                [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.X],
+                // TODO: scale?
+                [TASKS.ADD]
+            ]: []),
+            // if indirect, we need memory at location
+            ...(i === 1 ? [
+                [TASKS.GET_WORD_FROM_MEMORY],
+                [TASKS.PUSH_ADDR, (a & 0x70000)],
+                [TASKS.OR]
+            ]: []),
+            // index by y
+            ...(y === 1 ? [
+                [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.Y],
+                // TODO: scale?
+                [TASKS.ADD]
+            ]: []),
+// TODO: handle unconditional jump
+            // value to use if branch isn't taken
+            [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.PC],
+            // check flags to see which branch we should take
+            [TASKS.GET_REGISTER_AND_PUSH, REGISTER_INDEX.FLAGS],
+            [TASKS.PUSH_BYTE, 0b1 << f],
+            [TASKS.PUSH_BYTE, n ? 0xFF : 0x00],
+            [TASKS.XOR],
+            [TASKS.AND],
+            // if s0 is non-zero, we branch to the desired address
+            [TASKS.PICK],
+            [TASKS.POP_INTO_REGISTER, REGISTER_INDEX.PC]
+        ]
+    }
+});
