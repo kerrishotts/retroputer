@@ -11,7 +11,11 @@ export function decodeInstruction(bytes) {
     let size, opcode;
 
     while (!complete) {
-        instruction.push(bytes.shift());
+        const byte = bytes.shift();
+        if (byte === undefined) {
+            return null; // definitely not a valid instruction
+        }
+        instruction.push(byte);
         size = instruction.length;
         if (size > 4) {
             return null; // no longer a valid instruction
@@ -88,7 +92,7 @@ export function decodeInstruction(bytes) {
             if (op === 0x30) { opcode = OPCODES.in_rp; }
             if (op === 0x31) { opcode = OPCODES.out_rp; }
             if ( op >= 0x80 && op <= 0x8F && p1 === 0x01) { opcode = OPCODES.loops_r; }
-            if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 1) { opcode = OPCODES.brs_calls_r; }
+            if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 1) { opcode = OPCODES.brs_calls_f; }
         }
 
         if (size === 4) {
@@ -96,13 +100,15 @@ export function decodeInstruction(bytes) {
             if (op >= 0x10 && op <= 0x1F && (op & 1) === 0 && p1 != 0x00) { opcode = OPCODES.ld; }
             if (op >= 0x20 && op <= 0x2F ) { opcode = OPCODES.st; }
             if ( op >= 0x80 && op <= 0x8F && p1 !== 0x00) { opcode = OPCODES.loop_r; }
-            if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 0) { opcode = OPCODES.br_call_r; }
+            if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 0) { opcode = OPCODES.br_call_f; }
         }
 
         complete = !!opcode;
 
     }
-
+    if (!complete) {
+        return null;
+    }
     return decodeToTasks(instruction, opcode);
 
 }
