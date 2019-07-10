@@ -30,6 +30,23 @@
     brk                                 {$3F}
 }
 
+# test-cmp-dw-4.regs: A=0x0001 B=0xFFFF
+# test-cmp-dw-4.flags: C- Z- N-
+.segment test-cmp-dw-4 0x02000 {
+    ld a, 0x0001                        {$10 $00 $00 $01}
+    ld b, 0xFFFF                        {$12 $00 $FF $FF}
+    cmp a, b                            {$03 $02}
+    brk                                 {$3F}
+}
+
+# test-cmp-dw-5.regs: A=0x0001
+# test-cmp-dw-5.flags: C- Z- N-
+.segment test-cmp-dw-5 0x02000 {
+    ld a, 0x0001                        {$10 $00 $00 $01}
+    cmp a, 0xFFFF                       {$58 $FF $FF}
+    brk                                 {$3F}
+}
+
 # test-load-and-add-dw-1.regs: A=0x0246 B=0x0123
 # test-load-and-add-dw-1.flags: C- Z- N- V-
 .segment test-load-and-add-dw-1 0x02000 {

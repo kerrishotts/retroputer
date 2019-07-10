@@ -5,7 +5,7 @@ import { SystemBus } from "./SystemBus.js";
 import { IOBus } from "./IOBus.js";
 import { RegisterFile } from "./RegisterFile.js";
 import { decodeInstruction } from "../isa/decodeInstruction.js";
-import { TASK_FNS } from "../isa/tasks.js";
+import { executeTask } from "../isa/tasks.js";
 import { decode } from "punycode";
 
 const _alu = Symbol("_alu");
@@ -134,8 +134,9 @@ export class Processor {
             // remove the decoded instruction from the cache
             this[_cache] = this[_cache].slice(decodedInstructionLength);
             pc += decodedInstructionLength;
+            pc &= 0xFFFF;
             // add the tasks to the queue, with associated PC
-            this[_taskQueue].push(...tasks.filter(task => !!task).map(task => [pc & 0xFFFF, task]));
+            this[_taskQueue].push(...tasks.map(task => [pc, task]));
             return;
         } else {
             if (this[_cache].length > 4) {
@@ -148,17 +149,17 @@ export class Processor {
 
     _execute() {
         if (this[_taskQueue].length > 0) {
-            const [pc, [task, operand]] = this[_taskQueue].shift();
+            const [pc, task] = this[_taskQueue].shift();
             // make sure PC is set to the address of the instruction
             // we're executing
             this.registers.PC = pc;
             if (task !== undefined) {
-                TASK_FNS[task]({
+                executeTask(task, {
                     stack: this[_stack],
                     registerFile: this[_registerFile],
                     alu: this[_alu],
                     memory: this[_memory],
-                    args: [operand]
+                    ioBus: this[_ioBus]
                 });
             }
             if (this.registers.PC !== pc) {

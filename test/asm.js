@@ -5,7 +5,7 @@ import path from "path";
 import { parser } from "../src/basm/parser.js";
 import { assemble } from "../src/basm/assemble.js";
 
-import { TASKS, TASK_FNS } from "../src/isa/tasks.js";
+import { mapTask, executeTask } from "../src/isa/tasks.js";
 import { decodeInstruction } from "../src/isa/decodeInstruction.js";
 import { _constructArgs, decodeToTasks, OPCODES } from "../src/isa/opcodes.js";
 import { RegisterFile, REGISTER_INDEX, FLAGS_INDEX } from "../src/core/RegisterFile.js";
@@ -22,11 +22,10 @@ test("Can assemble fixtures", t => {
     });
 });
 
-test("Can execute fixtures", t => {
-    const ast = parser.parse(fixture);
-    const segments = assemble(ast);
-
-    segments.forEach(segment => {
+const ast = parser.parse(fixture);
+const segments = assemble(ast);
+segments.forEach(segment => {
+    test(`Can execute ${segment.name}`, t => {
         const data = segment.data;
         const name = segment.name;
 
@@ -50,9 +49,10 @@ test("Can execute fixtures", t => {
         }
 
         t.notThrows( () => {
-            tasks.forEach(([task, operand]) => {
-                t.log(name, task, operand);
-                TASK_FNS[task]({stack, registerFile, alu, memory, args: [operand]});
+            tasks.forEach(task => {
+                t.log(name, mapTask(task));
+                executeTask(task, {stack, registerFile, alu, memory, ioBus: null});
+                t.log(JSON.stringify(registerFile));
             });
         }, `[${name}] can execute`);
 

@@ -1,5 +1,5 @@
 import test from "ava";
-import { TASKS, TASK_FNS } from "../src/isa/tasks.js";
+import { TASKS, mapTask, executeTask} from "../src/isa/tasks.js";
 import { _constructArgs, decodeToTasks, OPCODES } from "../src/isa/opcodes.js";
 import { RegisterFile, REGISTER_INDEX } from "../src/core/RegisterFile.js";
 import { Memory } from "../src/core/Memory.js";
@@ -14,8 +14,8 @@ export function execTaskMacro(t, {setup, tasks}, cb) {
     const alu = new ALU();
     const registerFile = new RegisterFile();
     if (setup) { setup({registerFile, memory, stack, alu}); }
-    tasks.forEach(([task, operand]) => {
-        TASK_FNS[task]({stack, registerFile, alu, memory, args: [operand]});
+    tasks.forEach(task => {
+        executeTask(task, {stack, registerFile, alu, memory, ioBus: null});
     });
 
     t.notThrows(() => cb(t, {stack, registerFile, alu, memory}));
@@ -73,7 +73,7 @@ test("#_constructArgs: can extract addressing modes ", t => {
 test("decode nop", t => {
     const bytes = [ 0x00 ];
     const tasks = decodeToTasks(bytes, OPCODES.nop);
-    t.deepEqual(tasks, [[TASKS.NOP]]);
+    t.deepEqual(tasks, [TASKS.NOP]);
 });
 
 const ALL_WORD_REGS = [
@@ -97,10 +97,10 @@ ALL_DATA_REGS.forEach(r => {
         const bytes = [ 0x09, r ];
         const tasks = decodeToTasks(bytes, OPCODES.not);
         t.deepEqual(tasks, [
-            [TASKS.GET_REGISTER_AND_PUSH, r], // a, op1
-            [(r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD, (r & 0x01) ? 0xFF : 0xFFFF], // b, op2
-            [TASKS.XOR_WITH_FLAGS],
-            [TASKS.POP_INTO_REGISTER, r]
+            TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
+            ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b, op2
+            TASKS.XOR_WITH_FLAGS,
+            TASKS.POP_INTO_REGISTER | r
         ]);
     }) ;
 });
@@ -128,12 +128,12 @@ ALL_DATA_REGS.forEach(r => {
         const bytes = [ 0x09, 0x10 | r ];
         const tasks = decodeToTasks(bytes, OPCODES.neg);
         t.deepEqual(tasks, [
-            [TASKS.GET_REGISTER_AND_PUSH, r], // a
-            [(r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD, (r & 0x01) ? 0xFF : 0xFFFF], // b
-            [TASKS.XOR],
-            [(r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD, 0x01],
-            [TASKS.ADD_WITH_FLAGS],
-            [TASKS.POP_INTO_REGISTER, r]
+            TASKS.GET_REGISTER_AND_PUSH | r, // a
+            ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b
+            TASKS.XOR,
+            ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | 0x01,
+            TASKS.ADD_WITH_FLAGS,
+            TASKS.POP_INTO_REGISTER | r
         ]);
     }) ;
 });

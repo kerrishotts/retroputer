@@ -1,6 +1,9 @@
 import test from "ava";
 import fs from "fs";
 import path from "path";
+import { performance, PerformanceObserver } from "perf_hooks";
+
+
 
 import { parser } from "../src/basm/parser.js";
 import { assemble } from "../src/basm/assemble.js";
@@ -39,7 +42,7 @@ function checkFlags({processor, t, flags, name}) {
     });
 }
 
-export function execFixture(t, {setup, file}, cb) {
+export function execFixture(t, {setup = null, file}, cb) {
 
     const fixture = fs.readFileSync(path.resolve(__dirname, "fixtures", file), {encoding: "utf8"});
 
@@ -73,12 +76,22 @@ export function execFixture(t, {setup, file}, cb) {
 
     if (setup) { setup({processor}); }
 
+    // start perf measuring from here
+    const obs = new PerformanceObserver((list, observer) => {
+        console.log(`\n\n\n\n\n\nTook: ${list.getEntries()[0].duration}\n\n\n\n`);
+        performance.clearMarks();
+        observer.disconnect();
+      });
+    obs.observe({ entryTypes: ['measure'], buffered: true });
+    performance.mark("start");
     t.notThrows( () => {
         let ticks = 0;
         while (!processor.registers.SINGLE_STEP) {
             clock.signal();
         }
     }, `[${file}] can execute in a processor`);
+    performance.mark("end");
+    performance.measure("test", "start", "end");
 
     const regs = fixture.match(new RegExp(`^# ${codeSegment.name}.regs:(.*)$`, "m"));
     const flags = fixture.match(new RegExp(`^# ${codeSegment.name}.flags:(.*)$`, "m"));
@@ -115,7 +128,7 @@ test("Can execute asm fixtures in a processor", t => {
         processor.registers.PC = segment.addr;
         t.notThrows( () => {
             let ticks = 0;
-            while (!processor.registers.SINGLE_STEP /*&& ticks++ < 100*/) {
+            while (!processor.registers.SINGLE_STEP) {
                 // signalling the clock will cause the processor to tick
                 clock.signal();
             }
@@ -125,4 +138,5 @@ test("Can execute asm fixtures in a processor", t => {
     });
 });
 
-test("Can count to 10", execFixture, {file: "countToTen.asm"});
+test("Can count", execFixture, { file: "count.asm" });
+test("Can loop", execFixture, { file: "loop.asm" });
