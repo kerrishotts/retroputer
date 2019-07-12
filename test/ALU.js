@@ -30,6 +30,7 @@ function aluMacro(t, {a, b, sizeOfA, sizeOfB, checkFlags, command} = {}, {masked
     const alu = new ALU();
     alu.op1Bus.data = a;
     alu.op2Bus.data = b;
+    alu.flagsBus.data = 0;
     alu.commandBus.data = sizeOfRet | sizeOfA | sizeOfB | command;
     alu.executeBus.signal();
     t.is(alu.retBus.data, maskedRet);
@@ -55,7 +56,7 @@ const commandMap = {
     [COMMANDS.NEG]: "neg"
 };
 aluMacro.title = function(title = "", {a, b, sizeOfA, sizeOfB, checkFlags, command}, {maskedRet, ret, sizeOfRet, flags}) {
-    return `${title}: ${a}(${sizeMapping[sizeOfA]}) ${commandMap[command]} ${b}(${sizeMapping[sizeOfB]}) = ${ret}[${maskedRet}](${sizeMapping[sizeOfRet]}) with flags ${flags.toString(2).padStart(4, "0")}(${checkFlags.toString(2).padStart(4, "0")})`;
+    return `${title}: ${a}(${sizeMapping[sizeOfA]}) ${commandMap[command]} ${b}(${sizeMapping[sizeOfB]}) = ${ret}[${maskedRet}](${sizeMapping[sizeOfRet]}) with flags ${flags.toString(2).padStart(4, "0")}(${checkFlags.toString(2).padStart(4, "0")}, NCVZ)`;
 }
 
 const aSizes = [SIZES.OP1_8, SIZES.OP1_16, SIZES.OP1_18];
@@ -102,6 +103,7 @@ for (let aIdx = 0; aIdx < 3; aIdx++) {
                         const maskedRet = ret & uMask;
                         const checkFlags = 0b1101;
                         const expectedFlags = ((maskedRet > sMask) ? 0b1000 : 0) |
+                                            ((a - b < 0) ? 0b0100 : 0) |
                                             ((ret > uMask) ? 0b0100 : 0) |
                                             ((maskedRet === 0) ? 1 : 0);
                         test(`U:Sub(${sizeMapping[aIdx]}, ${sizeMapping[bIdx]}, ${sizeMapping[rIdx]})`, aluMacro, {a, b, sizeOfA: sizeA, sizeOfB: sizeB, command: COMMANDS.SUB, checkFlags}, {ret, maskedRet, sizeOfRet: sizeR, flags: expectedFlags});

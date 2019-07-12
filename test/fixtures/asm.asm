@@ -13,7 +13,7 @@
 }
 
 # test-cmp-dw-2.regs: A=0x0123 B=0x0124
-# test-cmp-dw-2.flags: C- Z- N+
+# test-cmp-dw-2.flags: C+ Z- N+
 .segment test-cmp-dw-2 0x02000 {
     ld a, 0x0123                        {$10 $00 $01 $23}
     ld b, 0x0124                        {$12 $00 $01 $24}
@@ -31,7 +31,7 @@
 }
 
 # test-cmp-dw-4.regs: A=0x0001 B=0xFFFF
-# test-cmp-dw-4.flags: C- Z- N-
+# test-cmp-dw-4.flags: C+ Z- N-
 .segment test-cmp-dw-4 0x02000 {
     ld a, 0x0001                        {$10 $00 $00 $01}
     ld b, 0xFFFF                        {$12 $00 $FF $FF}
@@ -40,7 +40,7 @@
 }
 
 # test-cmp-dw-5.regs: A=0x0001
-# test-cmp-dw-5.flags: C- Z- N-
+# test-cmp-dw-5.flags: C+ Z- N-
 .segment test-cmp-dw-5 0x02000 {
     ld a, 0x0001                        {$10 $00 $00 $01}
     cmp a, 0xFFFF                       {$58 $FF $FF}
@@ -103,6 +103,30 @@
     ld b, 0x2345                        {$12 $00 $23 $45}
     st [0x01234], b                     {$22 $40 $12 $34}
     ld a, <0x01000>                     {$10 $60 $10 $00}
+    brk                                 {$3F}
+}
+
+# test-dec-from-zero.regs: A=0xFFFF
+# test-dec-from-zero.flags: C+
+.segment test-dec-from-zero 0x02000 {
+    ld a, 0x0000                        {$10 $00 $00 $00}
+    dec a                               {$D0}
+    brk                                 {$3F}
+}
+
+# test-dec-from-max-word.regs: C=0xFFFE
+# test-dec-from-max-word.flags: C-
+.segment test-dec-from-max-word 0x02000 {
+    ld c, 0xFFFF                        {$14 $00 $FF $FF}
+    dec c                               {$D4}
+    brk                                 {$3F}
+}
+
+# test-dec-from-zero-3.regs: C=0x7FFF
+# test-dec-from-zero-3.flags: C-
+.segment test-dec-from-zero-3 0x02000 {
+    ld c, 0x8000                        {$14 $00 $80 $00}
+    dec c                               {$D4}
     brk                                 {$3F}
 }
 

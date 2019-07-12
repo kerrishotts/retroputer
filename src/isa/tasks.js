@@ -94,6 +94,11 @@ export const TASKS = {
     DUP: 0x50000000,
     SWAP: 0x51000000,
 
+    // FLAGS
+    CLEAR_FLAG_IMM: 0x60000000,
+    SET_FLAG_IMM: 0x61000000,
+    TEST_FLAG_IMM: 0x62000000,
+
     // arithmetic
     ADD: 0x80000000,        // [s0, s1] -> s0 + s1
     ADD_WITH_FLAGS: 0x81000000,
@@ -232,7 +237,22 @@ export const TASK_FNS = new Map([
         } else {
             stack.push(s1);
         }
-    }]
+    }],
+    [TASKS.SET_FLAG_IMM, ({ arg, registerFile }) => {
+        const flags = registerFile.FLAGS;
+        const bit = 0b1 << arg;
+        registerFile.FLAGS = flags | bit;
+    }],
+    [TASKS.CLEAR_FLAG_IMM, ({ arg, registerFile }) => {
+        const flags = registerFile.FLAGS;
+        const bit = (0b1 << arg) ^ 0xFFFFFFFF;
+        registerFile.FLAGS = flags & bit;
+    }],
+    [TASKS.TEST_FLAG_IMM, ({ stack, arg, registerFile }) => {
+        const flags = registerFile.FLAGS;
+        const bit = 0b1 << arg;
+        push(stack, (((flags & bit) >> arg) > 0) ? 1 : 0, SIZE_BYTE);
+    }],
 ]);
 
 Object.entries(TASKS).forEach(([k, v]) => {

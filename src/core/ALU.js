@@ -114,8 +114,14 @@ export class ALU {
         let ret = 0;
 
         switch (op) {
-            case COMMANDS.SUB: ret = a - b; break;
-            case COMMANDS.ADD: ret = a + b; break;
+            case COMMANDS.SUB: {
+                ret = a + (-b) + carryIn;
+                if (ret < 0) {
+                    carry = 1;
+                }
+                break;
+            }
+            case COMMANDS.ADD: ret = a + b + carryIn; break;
             case COMMANDS.MUL: ret = a * b; break;
             case COMMANDS.MOD:
             case COMMANDS.DIV:
@@ -157,8 +163,9 @@ export class ALU {
         negative = (ret & signBit[sizeOfRet]) ? 1 : 0;
 
         // carry is set if the return value is larger than the value we can
-        // handle
-        carry = (ret > mask[sizeOfRet]) ? 1 : 0;
+        // handle -- preserve carry, since it might have been
+        // set during subtraction
+        carry = carry | ((ret > mask[sizeOfRet]) ? 1 : 0);
 
         // mask off the return value to ensure we don't transmit invalid bits
         ret &= mask[sizeOfRet];

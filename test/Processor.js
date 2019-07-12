@@ -1,7 +1,7 @@
 import test from "ava";
 import fs from "fs";
 import path from "path";
-import { performance, PerformanceObserver } from "perf_hooks";
+import { performance } from "perf_hooks";
 
 
 
@@ -43,6 +43,7 @@ function checkFlags({processor, t, flags, name}) {
 }
 
 export function execFixture(t, {setup = null, file}, cb) {
+    const TIMEOUT = 60000;
 
     const fixture = fs.readFileSync(path.resolve(__dirname, "fixtures", file), {encoding: "utf8"});
 
@@ -76,22 +77,18 @@ export function execFixture(t, {setup = null, file}, cb) {
 
     if (setup) { setup({processor}); }
 
-    // start perf measuring from here
-    const obs = new PerformanceObserver((list, observer) => {
-        console.log(`\n\n\n\n\n\nTook: ${list.getEntries()[0].duration}\n\n\n\n`);
-        performance.clearMarks();
-        observer.disconnect();
-      });
-    obs.observe({ entryTypes: ['measure'], buffered: true });
-    performance.mark("start");
     t.notThrows( () => {
-        let ticks = 0;
-        while (!processor.registers.SINGLE_STEP) {
+        let start = performance.now();
+        let now = performance.now();
+        while (!processor.registers.SINGLE_STEP && now < start + TIMEOUT) {
             clock.signal();
+            now = performance.now();
         }
+        if (!processor.registers.SINGLE_STEP) {
+            throw new Error(`Timed out.`);
+        }
+        t.log(`Took: ${now - start}ms`);
     }, `[${file}] can execute in a processor`);
-    performance.mark("end");
-    performance.measure("test", "start", "end");
 
     const regs = fixture.match(new RegExp(`^# ${codeSegment.name}.regs:(.*)$`, "m"));
     const flags = fixture.match(new RegExp(`^# ${codeSegment.name}.flags:(.*)$`, "m"));
@@ -102,7 +99,7 @@ export function execFixture(t, {setup = null, file}, cb) {
     t.notThrows(() => cb && cb(t, {processor}));
 };
 
-test("Can execute asm fixtures in a processor", t => {
+test.serial("Can execute asm fixtures in a processor", t => {
     const fixture = fs.readFileSync(path.resolve(__dirname, "fixtures", "asm.asm"), {encoding: "utf8"});
     const ast = parser.parse(fixture);
     const segments = assemble(ast);

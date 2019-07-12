@@ -15,12 +15,12 @@
   },
   "devDependencies": {
     "ava": "^1.4.1",
-    "c8": "^4.1.4",
+    "c8": "^5.0.2",
     "chai": "^4.2.0",
     "coveralls": "^3.0.3",
     "cross-env": "^5.2.0",
     "eslint-plugin-ava": "^6.0.0",
-    "esm": "^3.2.22",
+    "esm": "^3.2.25",
     "mocha": "^6.1.4"
   },
   "scripts": {

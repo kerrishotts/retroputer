@@ -86,7 +86,7 @@ function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, append = fal
 function findIdent(ident, context = {}) {
     const parts = ident.split(".");
     const head = parts.length > 1 ? parts.shift() : undefined,
-          last = parts.pop();
+        last = parts.pop();
     let curContext = context;
 
     if (head !== undefined) {
@@ -130,43 +130,43 @@ function evaluate(node, context) {
     }
     lastPos = node.pos;
     switch (node.type) {
-    case TOKENS.UNARY_EXPRESSION:
-        {
-            switch(node.op) {
-                case "-": return -(evaluate(node.r, context));
-                case "!": return (evaluate(node.r, context) ^ 0xFFFFFFFF);
-                default:
-                    err(`Unexpected operator in unary expression: ${node.op}`);
+        case TOKENS.UNARY_EXPRESSION:
+            {
+                switch (node.op) {
+                    case "-": return -(evaluate(node.r, context));
+                    case "!": return (evaluate(node.r, context) ^ 0xFFFFFFFF);
+                    default:
+                        err(`Unexpected operator in unary expression: ${node.op}`);
+                }
             }
-        }
-    case TOKENS.BINARY_EXPRESSION:
-        {
-            switch(node.op) {
-                case "+": return evaluate(node.l, context) + evaluate(node.r, context);
-                case "-": return evaluate(node.l, context) - evaluate(node.r, context);
-                case "*": return evaluate(node.l, context) * evaluate(node.r, context);
-                case "/": return evaluate(node.l, context) / evaluate(node.r, context);
-                case "&": return evaluate(node.l, context) & evaluate(node.r, context);
-                case "|": return evaluate(node.l, context) | evaluate(node.r, context);
-                case "^": return evaluate(node.l, context) ^ evaluate(node.r, context);
-                case "<<": return evaluate(node.l, context) << evaluate(node.r, context);
-                case ">>": return evaluate(node.l, context) >> evaluate(node.r, context);
-                default:
-                    err(`Unexpected operator in binary expression: ${node.op}`);
+        case TOKENS.BINARY_EXPRESSION:
+            {
+                switch (node.op) {
+                    case "+": return evaluate(node.l, context) + evaluate(node.r, context);
+                    case "-": return evaluate(node.l, context) - evaluate(node.r, context);
+                    case "*": return evaluate(node.l, context) * evaluate(node.r, context);
+                    case "/": return evaluate(node.l, context) / evaluate(node.r, context);
+                    case "&": return evaluate(node.l, context) & evaluate(node.r, context);
+                    case "|": return evaluate(node.l, context) | evaluate(node.r, context);
+                    case "^": return evaluate(node.l, context) ^ evaluate(node.r, context);
+                    case "<<": return evaluate(node.l, context) << evaluate(node.r, context);
+                    case ">>": return evaluate(node.l, context) >> evaluate(node.r, context);
+                    default:
+                        err(`Unexpected operator in binary expression: ${node.op}`);
+                }
             }
-        }
-    case TOKENS.IDENTIFIER:
-        {
-            const v = findIdent(node.ident, context);
-            return evaluate(v, context);
-        }
-    case TOKENS.INTEGER:
-    case TOKENS.STRING:
-        return node.value;
-    case TOKENS.MEMORY:
-        return evaluate(node.addr, context);
-    default:
-        err(`Unexpected token in expression ${node.type}`);
+        case TOKENS.IDENTIFIER:
+            {
+                const v = findIdent(node.ident, context);
+                return evaluate(v, context);
+            }
+        case TOKENS.INTEGER:
+        case TOKENS.STRING:
+            return node.value;
+        case TOKENS.MEMORY:
+            return evaluate(node.addr, context);
+        default:
+            err(`Unexpected token in expression ${node.type}`);
     }
 }
 
@@ -193,30 +193,30 @@ function tryToAssemble(node, context, pc) {
 
     try {
         switch (op) {
-            case OPCODES.NOP: size = 1; bytes.push (0x00); break;
-            case OPCODES.BRK: size = 1; bytes.push (0x3F); break;
-            case OPCODES.PUSHALL: size = 1; bytes.push (0xA0); break;
-            case OPCODES.POPALL: size = 1; bytes.push (0xA1); break;
-            case OPCODES.PUSHF: size = 1; bytes.push (0xA2); break;
-            case OPCODES.POPF: size = 1; bytes.push (0xA3); break;
-            case OPCODES.RET: size = 1; bytes.push (0xA7); break;
-            case OPCODES.SET: size = 1; bytes.push (0xB0 | flag.flag); break;
-            case OPCODES.CLR: size = 1; bytes.push (0xB8 | flag.flag); break;
-            case OPCODES.INC: size = 1; bytes.push (0xC0 | reg.idx); break;
-            case OPCODES.DEC: size = 1; bytes.push (0xD0 | reg.idx); break;
-            case OPCODES.PUSH: size = 1; bytes.push (0xE0 | reg.idx); break;
-            case OPCODES.POP: size = 1; bytes.push (0xF0 | reg.idx); break;
-            case OPCODES.NOT: size = 2; bytes.push (0x09, reg.idx); break;
-            case OPCODES.NEG: size = 2; bytes.push (0x09, 0x10 | reg.idx); break;
-            case OPCODES.EXC: size = 2; bytes.push (0x09, 0x20 | reg.idx); break;
-            case OPCODES.SWAP: size = 2; bytes.push (0x0E, (dest.idx << 4) | source.idx); break;
-            case OPCODES.MOV: size = 2; bytes.push (0x0F, (dest.idx << 4) | source.idx); break;
-            case OPCODES.MUL: size = 2; bytes.push (0xA8, (dest.idx << 4) | source.idx); break;
-            case OPCODES.DIV: size = 2; bytes.push (0xA9, (dest.idx << 4) | source.idx); break;
-            case OPCODES.MOD: size = 2; bytes.push (0xAA, (dest.idx << 4) | source.idx); break;
-            case OPCODES.SMUL: size = 2; bytes.push (0xAB, (dest.idx << 4) | source.idx); break;
-            case OPCODES.SDIV: size = 2; bytes.push (0xAC, (dest.idx << 4) | source.idx); break;
-            case OPCODES.SMOD: size = 2; bytes.push (0xAD, (dest.idx << 4) | source.idx); break;
+            case OPCODES.NOP: size = 1; bytes.push(0x00); break;
+            case OPCODES.BRK: size = 1; bytes.push(0x3F); break;
+            case OPCODES.PUSHALL: size = 1; bytes.push(0xA0); break;
+            case OPCODES.POPALL: size = 1; bytes.push(0xA1); break;
+            case OPCODES.PUSHF: size = 1; bytes.push(0xA2); break;
+            case OPCODES.POPF: size = 1; bytes.push(0xA3); break;
+            case OPCODES.RET: size = 1; bytes.push(0xA7); break;
+            case OPCODES.SET: size = 1; bytes.push(0xB0 | flag.flag); break;
+            case OPCODES.CLR: size = 1; bytes.push(0xB8 | flag.flag); break;
+            case OPCODES.INC: size = 1; bytes.push(0xC0 | reg.idx); break;
+            case OPCODES.DEC: size = 1; bytes.push(0xD0 | reg.idx); break;
+            case OPCODES.PUSH: size = 1; bytes.push(0xE0 | reg.idx); break;
+            case OPCODES.POP: size = 1; bytes.push(0xF0 | reg.idx); break;
+            case OPCODES.NOT: size = 2; bytes.push(0x09, reg.idx); break;
+            case OPCODES.NEG: size = 2; bytes.push(0x09, 0x10 | reg.idx); break;
+            case OPCODES.EXC: size = 2; bytes.push(0x09, 0x20 | reg.idx); break;
+            case OPCODES.SWAP: size = 2; bytes.push(0x0E, (dest.idx << 4) | source.idx); break;
+            case OPCODES.MOV: size = 2; bytes.push(0x0F, (dest.idx << 4) | source.idx); break;
+            case OPCODES.MUL: size = 2; bytes.push(0xA8, (dest.idx << 4) | source.idx); break;
+            case OPCODES.DIV: size = 2; bytes.push(0xA9, (dest.idx << 4) | source.idx); break;
+            case OPCODES.MOD: size = 2; bytes.push(0xAA, (dest.idx << 4) | source.idx); break;
+            case OPCODES.SMUL: size = 2; bytes.push(0xAB, (dest.idx << 4) | source.idx); break;
+            case OPCODES.SDIV: size = 2; bytes.push(0xAC, (dest.idx << 4) | source.idx); break;
+            case OPCODES.SMOD: size = 2; bytes.push(0xAD, (dest.idx << 4) | source.idx); break;
             case OPCODES.TRAP: {
                 {
                     size = imm ? 2 : 1;
@@ -232,7 +232,7 @@ function tryToAssemble(node, context, pc) {
                 {
                     size = 2;
                     if (imm) {
-                        bytes.push(op === OPCODES.SHL ? 0x0A : 0x0C, (dest.idx << 4)| evaluate(imm, context) & 0x0F);
+                        bytes.push(op === OPCODES.SHL ? 0x0A : 0x0C, (dest.idx << 4) | evaluate(imm, context) & 0x0F);
                     } else {
                         bytes.push(op === OPCODES.SHL ? 0x0B : 0x0D, (dest.idx << 4) | source.idx);
                     }
@@ -264,12 +264,12 @@ function tryToAssemble(node, context, pc) {
                     } else {
                         const a = evaluate(source.addr, context) & 0x7FFFF;
                         bytes.push((source.m << 6) |
-                                ((source.i ? 1 : 0) << 5) |
-                                ((source.x ? 1 : 0) << 4) |
-                                ((source.y ? 1 : 0) << 3) |
-                                (a & 0x70000) >> 16,
-                                (a & 0x0FF00) >> 8,
-                                (a & 0x000FF));
+                            ((source.i ? 1 : 0) << 5) |
+                            ((source.x ? 1 : 0) << 4) |
+                            ((source.y ? 1 : 0) << 3) |
+                            (a & 0x70000) >> 16,
+                            (a & 0x0FF00) >> 8,
+                            (a & 0x000FF));
                     }
                 }
                 break;
@@ -279,12 +279,12 @@ function tryToAssemble(node, context, pc) {
                     bytes.push(0x20 | source.idx);
                     const a = evaluate(dest.addr, context) & 0x7FFFF;
                     bytes.push((dest.m << 6) |
-                            ((dest.i ? 1 : 0) << 5) |
-                            ((dest.x ? 1 : 0) << 4) |
-                            ((dest.y ? 1 : 0) << 3) |
-                            (a & 0x70000) >> 16,
-                            (a & 0x0FF00) >> 8,
-                            (a & 0x000FF));
+                        ((dest.i ? 1 : 0) << 5) |
+                        ((dest.x ? 1 : 0) << 4) |
+                        ((dest.y ? 1 : 0) << 3) |
+                        (a & 0x70000) >> 16,
+                        (a & 0x0FF00) >> 8,
+                        (a & 0x000FF));
                 }
                 break;
             case OPCODES.LOOP:
@@ -292,26 +292,30 @@ function tryToAssemble(node, context, pc) {
                 {
                     size = op === OPCODES.LOOP ? 4 : 3;
                     const a = evaluate(addr.addr, context) & 0x0FFFF;
-                    const npc = (pc + size) & 0x0FFFF;
-                    const r = a - npc;
-                    if (size === 3) {
-                        if (r > 127 || r < -128) {
-                            err(`Attempted to loop beyond short range`);
-                        }
-                    } else {
-                        if (r > 32767 || r < -32768) {
-                            err(`Attempted to loop beyond range`);
+                    let r = a;
+                    if (addr.m === 0) { // relative
+                        const npc = (pc + size) & 0x0FFFF;
+                        r = a - npc;
+                        if (size === 3) {
+                            if (r > 127 || r < -128) {
+                                err(`Attempted to loop beyond short range`);
+                            }
+                        } else {
+                            if (r > 32767 || r < -32768) {
+                                err(`Attempted to loop beyond range`);
+                            }
                         }
                     }
-                    bytes.push( 0x80 | reg.idx,
-                            ((addr.i ? 1 : 0) << 5) |
-                            ((addr.x ? 1 : 0) << 4) |
-                            ((addr.y ? 1 : 0) << 3) |
-                            ((size === 3 ? 1 : 0)));
+                    bytes.push(0x80 | reg.idx,
+                        (addr.m << 6) |
+                        ((addr.i ? 1 : 0) << 5) |
+                        ((addr.x ? 1 : 0) << 4) |
+                        ((addr.y ? 1 : 0) << 3) |
+                        ((size === 3 ? 1 : 0)));
                     if (size === 3) {
-                        bytes.push( (r & 0x000FF));
+                        bytes.push((r & 0x000FF));
                     } else {
-                        bytes.push( (r & 0x0FF00) >> 8, (r & 0x000FF));
+                        bytes.push((r & 0x0FF00) >> 8, (r & 0x000FF));
                     }
                 }
                 break;
@@ -321,32 +325,36 @@ function tryToAssemble(node, context, pc) {
             case OPCODES.BRS:
                 {
                     size = (op === OPCODES.CALL || op === OPCODES.BR) ? 4 : 3;
-                    const isCall = (op === OPCODES.CALL || op === OPCODES.CALLS );
+                    const isCall = (op === OPCODES.CALL || op === OPCODES.CALLS);
                     const a = evaluate(addr.addr, context) & 0x0FFFF;
-                    const npc = (pc + size) & 0x0FFFF;
-                    const r = a - npc;
-                    if (size === 3) {
-                        if (r > 127 || r < -128) {
-                            err(`Attempted to ${isCall ? "call" : "branch"}  beyond short range`);
-                        }
-                    } else {
-                        if (r > 32767 || r < -32768) {
-                            err(`Attempted to  ${isCall ? "call" : "branch"} beyond range`);
+                    let r = a;
+                    if (addr.m === 0) { // relative
+                        const npc = (pc + size) & 0x0FFFF;
+                        r = a - npc;
+                        if (size === 3) {
+                            if (r > 127 || r < -128) {
+                                err(`Attempted to ${isCall ? "call" : "branch"}  beyond short range`);
+                            }
+                        } else {
+                            if (r > 32767 || r < -32768) {
+                                err(`Attempted to  ${isCall ? "call" : "branch"} beyond range`);
+                            }
                         }
                     }
                     const neg = (flag && flag.neg);
                     const flg = (flag && flag.flag) || 0;
-                    bytes.push( 0x90 | (neg ? 1 : 0) << 3 | flg,
-                            ((addr.i ? 1 : 0) << 5) |
-                            ((addr.x ? 1 : 0) << 4) |
-                            ((addr.y ? 1 : 0) << 3) |
-                            ((!flag  ? 1 : 0) << 2) | // unconditional
-                            ((isCall ? 1 : 0) << 1) | // BR | CALL
-                            ((size === 3 ? 1 : 0)));
+                    bytes.push(0x90 | (neg ? 1 : 0) << 3 | flg,
+                        (addr.m << 6) |
+                        ((addr.i ? 1 : 0) << 5) |
+                        ((addr.x ? 1 : 0) << 4) |
+                        ((addr.y ? 1 : 0) << 3) |
+                        ((!flag ? 1 : 0) << 2) | // unconditional
+                        ((isCall ? 1 : 0) << 1) | // BR | CALL
+                        ((size === 3 ? 1 : 0)));
                     if (size === 3) {
-                        bytes.push( (r & 0x000FF));
+                        bytes.push((r & 0x000FF));
                     } else {
-                        bytes.push( (r & 0x0FF00) >> 8, (r & 0x000FF));
+                        bytes.push((r & 0x0FF00) >> 8, (r & 0x000FF));
                     }
                 }
                 break;
@@ -405,117 +413,117 @@ export function assemble(ast, global, context) {
 
     ast.forEach(node => {
         lastPos = node.pos;             // always mark the last visited source
-                                        // code position so we can display
-                                        // meaningful error messages
-        switch(node.type) {
-        default:
-        case TOKENS.COMMENT:
-            {
-                // do nothing :-)
-            }
-            break;
-        case TOKENS.IMPORT_DIRECTIVE:
-            {
-                const filePath = path.resolve(node.path.value);
-                const fileContents = fs.readFileSync(filePath, {encoding: "utf8"});
-                const ast = parser.parse(fileContents);
-                assemble(ast, global, context);
-            }
-            break;
-        case TOKENS.NAMESPACE_DIRECTIVE:
-            {
-                const newContext = createScope(SCOPE.TYPES.NAMESPACE, context, node.name.ident);
-                assemble(node.block, global, newContext);
-            }
-            break;
-        case TOKENS.SEGMENT_DIRECTIVE:
-            {
-                const newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, evaluate(node.addr, context), node.append);
-                if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
-                    global[SCOPE.SEGMENTS].push(newContext);
+        // code position so we can display
+        // meaningful error messages
+        switch (node.type) {
+            default:
+            case TOKENS.COMMENT:
+                {
+                    // do nothing :-)
                 }
-                assemble(node.block, global, newContext);
-            }
-            break;
-        case TOKENS.CONST_DIRECTIVE:
-            {
-                if (context[SCOPE.CONTENTS].hasOwnProperty(node.name.ident)) {
-                    err(`Cannot redefine constant ${node.name.ident}`);
-                }
-                context[SCOPE.CONTENTS][node.name.ident] = node.value;
-            }
-            break;
-        // the remaining tokens must be in a segment
-        case TOKENS.LABEL:
-            {
-                if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
-                    err(`Unexpected label ${node.name.ident} in ${context[SCOPE.NAME]} scope`);
-                }
-                context[SCOPE.CONTENTS][node.name.ident] = context[SCOPE.ADDR];
                 break;
-            }
-        case TOKENS.WORD_DIRECTIVE:
-        case TOKENS.BYTE_DIRECTIVE:
-            {
-                if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
-                    err(`Unexpected data directive in ${context[SCOPE.NAME]} scope`);
+            case TOKENS.IMPORT_DIRECTIVE:
+                {
+                    const filePath = path.resolve(node.path.value);
+                    const fileContents = fs.readFileSync(filePath, { encoding: "utf8" });
+                    const ast = parser.parse(fileContents);
+                    assemble(ast, global, context);
                 }
-                const incAmount = node.type === TOKENS.WORD_DIRECTIVE ? 2 : 1;
-                const size = node.size >= 0 ? evaluate(node.size, context) : -1;
-                const data = node.data.map(e => evaluate(e, context));
-                while (data.length < size) {
-                    data.push(0);
+                break;
+            case TOKENS.NAMESPACE_DIRECTIVE:
+                {
+                    const newContext = createScope(SCOPE.TYPES.NAMESPACE, context, node.name.ident);
+                    assemble(node.block, global, newContext);
                 }
-
-                const bytes = [];
-                data.forEach(v => {
-                    if (incAmount === 1) {
-                        bytes.push(v & 0xFF);
-                    } else {
-                        bytes.push((v & 0xFF00) >> 8);
-                        bytes.push((v & 0x00FF));
+                break;
+            case TOKENS.SEGMENT_DIRECTIVE:
+                {
+                    const newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, evaluate(node.addr, context), node.append);
+                    if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
+                        global[SCOPE.SEGMENTS].push(newContext);
                     }
-                });
-
-                context[SCOPE.DATA][context[SCOPE.ADDR]] = {
-                    asm: node,
-                    bytes
-                };
-
-                context[SCOPE.ADDR] += bytes.length;
-            }
-            break;
-        case TOKENS.STRING_DIRECTIVE:
-            {
-                if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
-                    err(`Unexpected string directive in ${context[SCOPE.NAME]} scope`);
+                    assemble(node.block, global, newContext);
                 }
-                const data = evaluate(node.data, context).split("").map(ch => ch.charCodeAt(0));
-                context[SCOPE.DATA][context[SCOPE.ADDR]] = {
-                    asm: node,
-                    bytes: data,
-                    pc: context[SCOPE.ADDR],
-                    context
-                };
-
-                context[SCOPE.ADDR] += data.length;
                 break;
-            }
-        case TOKENS.INSTRUCTION:
-            {
-                if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
-                    err(`Unexpected code in ${context[SCOPE.NAME]} scope`);
+            case TOKENS.CONST_DIRECTIVE:
+                {
+                    if (context[SCOPE.CONTENTS].hasOwnProperty(node.name.ident)) {
+                        err(`Cannot redefine constant ${node.name.ident}`);
+                    }
+                    context[SCOPE.CONTENTS][node.name.ident] = node.value;
                 }
-                const { size, bytes } = tryToAssemble(node, context, context[SCOPE.ADDR]);
-                context[SCOPE.DATA][context[SCOPE.ADDR]] = {
-                    asm: node,
-                    bytes,
-                    pc: context[SCOPE.ADDR],
-                    context
-                };
-                context[SCOPE.ADDR] += size;
                 break;
-            }
+            // the remaining tokens must be in a segment
+            case TOKENS.LABEL:
+                {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                        err(`Unexpected label ${node.name.ident} in ${context[SCOPE.NAME]} scope`);
+                    }
+                    context[SCOPE.CONTENTS][node.name.ident] = context[SCOPE.ADDR];
+                    break;
+                }
+            case TOKENS.WORD_DIRECTIVE:
+            case TOKENS.BYTE_DIRECTIVE:
+                {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                        err(`Unexpected data directive in ${context[SCOPE.NAME]} scope`);
+                    }
+                    const incAmount = node.type === TOKENS.WORD_DIRECTIVE ? 2 : 1;
+                    const size = node.size >= 0 ? evaluate(node.size, context) : -1;
+                    const data = node.data.map(e => evaluate(e, context));
+                    while (data.length < size) {
+                        data.push(0);
+                    }
+
+                    const bytes = [];
+                    data.forEach(v => {
+                        if (incAmount === 1) {
+                            bytes.push(v & 0xFF);
+                        } else {
+                            bytes.push((v & 0xFF00) >> 8);
+                            bytes.push((v & 0x00FF));
+                        }
+                    });
+
+                    context[SCOPE.DATA][context[SCOPE.ADDR]] = {
+                        asm: node,
+                        bytes
+                    };
+
+                    context[SCOPE.ADDR] += bytes.length;
+                }
+                break;
+            case TOKENS.STRING_DIRECTIVE:
+                {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                        err(`Unexpected string directive in ${context[SCOPE.NAME]} scope`);
+                    }
+                    const data = evaluate(node.data, context).split("").map(ch => ch.charCodeAt(0));
+                    context[SCOPE.DATA][context[SCOPE.ADDR]] = {
+                        asm: node,
+                        bytes: data,
+                        pc: context[SCOPE.ADDR],
+                        context
+                    };
+
+                    context[SCOPE.ADDR] += data.length;
+                    break;
+                }
+            case TOKENS.INSTRUCTION:
+                {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                        err(`Unexpected code in ${context[SCOPE.NAME]} scope`);
+                    }
+                    const { size, bytes } = tryToAssemble(node, context, context[SCOPE.ADDR]);
+                    context[SCOPE.DATA][context[SCOPE.ADDR]] = {
+                        asm: node,
+                        bytes,
+                        pc: context[SCOPE.ADDR],
+                        context
+                    };
+                    context[SCOPE.ADDR] += size;
+                    break;
+                }
         }
     });
 
@@ -538,10 +546,10 @@ export function assemble(ast, global, context) {
                 if (asm.bytes) {
                     const matchBytes = asm.bytes.map(byte => evaluate(byte, context));
                     if (datum.bytes.join(",") !== matchBytes.join(",")) {
-                        err(`Bytes mismatched at ${asm.pos.line}:${asm.pos.column}. Expected ${matchBytes.map(b => b.toString(16).padStart(2,"0"))}; saw ${datum.bytes.map(b => b.toString(16).padStart(2, "0"))}`);
+                        err(`Bytes mismatched at ${asm.pos.line}:${asm.pos.column}. Expected ${matchBytes.map(b => b.toString(16).padStart(2, "0"))}; saw ${datum.bytes.map(b => b.toString(16).padStart(2, "0"))}`);
                     }
                 }
-                return {idx, bytes: datum.bytes};
+                return { idx, bytes: datum.bytes };
             }
         });
         const arr = bytes.reduce((arr, item) => {
@@ -551,7 +559,7 @@ export function assemble(ast, global, context) {
             arr.push(...item.bytes);
             return arr;
         }, []);
-        return {name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr};
+        return { name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr };
     });
 
     // return the segments
