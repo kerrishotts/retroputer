@@ -35,10 +35,11 @@ export class Processor {
     constructor({memory, systemBus, ioBus, clock} = {}) {
         this[_alu] = new ALU();
         this[_registerFile] = new RegisterFile();
+        this[_registerFile].MM = 0b0000110001000001; // banks 1, 2, 3
 
         this[_memory] = memory;
         this[_systemBus] = systemBus;
-        this[_systemBus].map = 0b0000110001000001; // banks 1, 2, 3
+        this[_systemBus].map = this[_registerFile].MM;
         this[_ioBus] = ioBus;
         this[_clock] = clock;
 
@@ -153,6 +154,8 @@ export class Processor {
             // make sure PC is set to the address of the instruction
             // we're executing
             this.registers.PC = pc;
+            // also, assert MM on the system bus in case it's changed
+            this[_systemBus].map = this[_registerFile].MM;
             if (task !== undefined) {
                 executeTask(task, {
                     stack: this[_stack],

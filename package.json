@@ -11,7 +11,9 @@
   "browser": "index.js",
   "dependencies": {
     "cli": "^1.0.1",
-    "pegjs": "^0.10.0"
+    "cliffy": "^2.0.5",
+    "pegjs": "^0.10.0",
+    "yurnalist": "^1.0.5"
   },
   "devDependencies": {
     "ava": "^1.4.1",
@@ -30,9 +32,8 @@
     "coveralls": "c8 ava; c8 report --reporter html --reporter=text-lcov | coveralls",
     "cover:view": "open ./coverage/index.html",
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
-    "build:asm-grammar": "pegjs -o src/grammars/asm.js src/grammars/asm.pegjs",
-    "build:kite-grammar": "pegjs -o src/grammars/kite.js src/grammars/kite.pegjs",
-    "build:grammars": "npm run build:asm-grammar && npm run build:kite-grammar"
+    "basm": "node src/basm/index.js",
+    "monitor": "node src/monitor/index.js"
   },
   "repository": {
     "type": "git",

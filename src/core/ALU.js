@@ -49,6 +49,7 @@ export const SIZES = {
 // 01 == 16 bits
 // 10 == 18 bits
 // 11 == 32 bits
+// TODO: fix now that addresses are 19 bits wide
 const signBit =        [0x00000080, 0x00008000, 0x00020000]; //, 0x080000000 ];
 const signExtend =     [0x00FFFF80, 0x00FF8000, 0x00FE0000]; //, 0x080000000 ];
 const signExtendMask = [0x0000007F, 0x00007FFF, 0x0001FFFF]; //, 0x07FFFFFFF ];
