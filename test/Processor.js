@@ -7,11 +7,9 @@ import { performance } from "perf_hooks";
 
 import { parser } from "../src/basm/parser.js";
 import { assemble } from "../src/basm/assemble.js";
-import { SIZE_BYTE, SIZE_WORD, SIZE_ADDR, TASKS, TASK_FNS } from "../src/isa/tasks.js";
 
 import { REGISTER_INDEX, FLAGS_INDEX } from "../src/core/RegisterFile.js";
 import { Memory } from "../src/core/Memory.js";
-import memoryLayout from "../src/core/memoryLayout.js";
 import { SystemBus } from "../src/core/SystemBus.js";
 import { Bus } from "../src/core/Bus.js";
 import { IOBus } from "../src/core/IOBus.js";

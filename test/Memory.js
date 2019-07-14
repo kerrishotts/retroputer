@@ -1,6 +1,5 @@
 import test from "ava";
 
-import layout from "../src/core/memoryLayout.js";
 import { Memory } from "../src/core/Memory.js";
 import { SystemBus } from "../src/core/SystemBus.js";
 

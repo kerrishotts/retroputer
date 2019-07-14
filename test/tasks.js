@@ -7,14 +7,13 @@ import {
 
 import { RegisterFile, REGISTER_INDEX } from "../src/core/RegisterFile.js";
 import { Memory } from "../src/core/Memory.js";
-import memoryLayout from "../src/core/memoryLayout.js";
 import { SystemBus } from "../src/core/SystemBus.js";
 import { ALU } from "../src/core/ALU.js";
 
 export function execTaskMacro(t, { setup, tasks }, cb) {
     const stack = [];
     const systemBus = new SystemBus();
-    const memory = new Memory({ systemBus, layout: memoryLayout });
+    const memory = new Memory({ systemBus });
     const alu = new ALU();
     const registerFile = new RegisterFile();
     if (setup) { setup({ registerFile, memory, stack, alu }); }

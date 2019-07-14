@@ -90,7 +90,7 @@ export class MemoryBank {
 const _pages = Symbol("_pages");
 
 export class Memory {
-  constructor({ systemBus, pageCount = 32, pageSize = 0x4000, romPages=[28, 29, 30, 31], shared = false, buffer }) {
+  constructor({ systemBus, pageCount = 32, pageSize = 0x4000, romPages=[28, 29, 30, 31], shared = false, buffer = null }) {
     const pages = [];
 
     for (let i = 0; i< pageCount; i++) {

@@ -31,15 +31,15 @@ export const SIZES = {
     ADDR: 0b10,
     RET_8:  0b0000000000,
     RET_16: 0b0100000000,
-    RET_18: 0b1000000000,
+    RET_19: 0b1000000000,
     RET_32: 0b1100000000,
     OP1_8:  0b0000000000,
     OP1_16: 0b0001000000,
-    OP1_18: 0b0010000000,
+    OP1_19: 0b0010000000,
     OP1_32: 0b0011000000,
     OP2_8:  0b0000000000,
     OP2_16: 0b0000010000,
-    OP2_18: 0b0000100000,
+    OP2_19: 0b0000100000,
     OP2_32: 0b0000110000,
 };
 
@@ -47,15 +47,14 @@ export const SIZES = {
 // a command, and represent the following
 // 00 == 8 bits
 // 01 == 16 bits
-// 10 == 18 bits
+// 10 == 19 bits
 // 11 == 32 bits
-// TODO: fix now that addresses are 19 bits wide
-const signBit =        [0x00000080, 0x00008000, 0x00020000]; //, 0x080000000 ];
-const signExtend =     [0x00FFFF80, 0x00FF8000, 0x00FE0000]; //, 0x080000000 ];
-const signExtendMask = [0x0000007F, 0x00007FFF, 0x0001FFFF]; //, 0x07FFFFFFF ];
-const mask =           [0x000000FF, 0x0000FFFF, 0x0003FFFF]; //, 0x0FFFFFFFF ];
-const carryBit =       [0x00000100, 0x00010000, 0x00040000]; //, 0x100000000 ];
-const shift =          [         8,         16,         18]; //,          32 ];
+const signBit =        [0x00000080, 0x00008000, 0x00040000]; //, 0x080000000 ];
+const signExtend =     [0x00FFFF80, 0x00FF8000, 0x00FC0000]; //, 0x080000000 ];
+const signExtendMask = [0x0000007F, 0x00007FFF, 0x0003FFFF]; //, 0x07FFFFFFF ];
+const mask =           [0x000000FF, 0x0000FFFF, 0x0007FFFF]; //, 0x0FFFFFFFF ];
+const carryBit =       [0x00000100, 0x00010000, 0x00080000]; //, 0x100000000 ];
+const shift =          [         8,         16,         19]; //,          32 ];
 
 function extendSign(v, from, to) {
     const sign = (1 << from - 1);

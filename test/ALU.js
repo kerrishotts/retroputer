@@ -7,19 +7,19 @@ test("Can create an ALU", (t) => {
     t.notThrows(() => { alu = new ALU(); });
 });
 
-const sizeMapping = [8, 16, 18];
+const sizeMapping = [8, 16, 19];
 sizeMapping[SIZES.OP1_8] = 8;
 sizeMapping[SIZES.OP1_16] = 16;
-sizeMapping[SIZES.OP1_18] = 18;
+sizeMapping[SIZES.OP1_19] = 19;
 sizeMapping[SIZES.OP2_8] = 8;
 sizeMapping[SIZES.OP2_16] = 16;
-sizeMapping[SIZES.OP2_18] = 18;
+sizeMapping[SIZES.OP2_19] = 19;
 sizeMapping[SIZES.RET_8] = 8;
 sizeMapping[SIZES.RET_16] = 16;
-sizeMapping[SIZES.RET_18] = 18;
-const uMasks = [0xFF, 0xFFFF, 0x3FFFF];
-const sMasks = [0x7F, 0x7FFF, 0x1FFFF];
-const negs = [-128, -32768, -262144];
+sizeMapping[SIZES.RET_19] = 19;
+const uMasks = [0xFF, 0xFFFF, 0x7FFFF];
+const sMasks = [0x7F, 0x7FFF, 0x3FFFF];
+const negs = [-128, -32768, -524288];
 
 /**
  * @param {*} t
@@ -59,9 +59,9 @@ aluMacro.title = function(title = "", {a, b, sizeOfA, sizeOfB, checkFlags, comma
     return `${title}: ${a}(${sizeMapping[sizeOfA]}) ${commandMap[command]} ${b}(${sizeMapping[sizeOfB]}) = ${ret}[${maskedRet}](${sizeMapping[sizeOfRet]}) with flags ${flags.toString(2).padStart(4, "0")}(${checkFlags.toString(2).padStart(4, "0")}, NCVZ)`;
 }
 
-const aSizes = [SIZES.OP1_8, SIZES.OP1_16, SIZES.OP1_18];
-const bSizes = [SIZES.OP2_8, SIZES.OP2_16, SIZES.OP2_18];
-const rSizes = [SIZES.RET_8, SIZES.RET_16, SIZES.RET_18];
+const aSizes = [SIZES.OP1_8, SIZES.OP1_16, SIZES.OP1_19];
+const bSizes = [SIZES.OP2_8, SIZES.OP2_16, SIZES.OP2_19];
+const rSizes = [SIZES.RET_8, SIZES.RET_16, SIZES.RET_19];
 const uRanges = [
     { min: 0, max: 0x000FF, incA: 19, incB: 13, signed: -128, nums: [0, 1, 2, 3, 5, 11, 15, 32, 63, 127, 192, 255]},
     { min: 0, max: 0x0FFFF, incA: 1523, incB: 2334, signed: -32768, nums: [0, 1, 2, 3, 5, 11, 32, 255, 1594, 21852, 32767, 49152, 65535]},

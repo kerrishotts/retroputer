@@ -15,6 +15,7 @@ const _memory = Symbol("_memory");
 const _systemBus = Symbol("_systemBus");
 const _ioBus = Symbol("_ioBus");
 const _clock = Symbol("_clock");
+const _debug = Symbol("_debug");
 
 const _taskQueue = Symbol("_taskQueue");
 const _stack = Symbol("_stack");
@@ -31,8 +32,9 @@ export class Processor {
      * @property {SystemBus} param0.systemBus
      * @property {IOBus} param0.ioBus
      * @property {Bus} param0.clock
+     * @property {Bus} [param0.debug=null]
      */
-    constructor({memory, systemBus, ioBus, clock} = {}) {
+    constructor({memory, systemBus, ioBus, clock, debug = null} = {}) {
         this[_alu] = new ALU();
         this[_registerFile] = new RegisterFile();
         this[_registerFile].MM = 0b0000110001000001; // banks 1, 2, 3
@@ -42,6 +44,7 @@ export class Processor {
         this[_systemBus].map = this[_registerFile].MM;
         this[_ioBus] = ioBus;
         this[_clock] = clock;
+        this[_debug] = debug;
 
         this[_taskQueue] = [];
         this[_stack] = [];
@@ -93,6 +96,13 @@ export class Processor {
      */
     get clock() { return this[_clock]; }
 
+    /**
+     * @type {Bus}
+     * @readonly
+     * @memoberOf Processor
+     */
+    get debug() { return this[_debug]; }
+
     get internalState() {
         return {
             pc: this.registers.PC,
@@ -112,6 +122,28 @@ export class Processor {
      */
     inject(addr, bytes) {
         this[_cache].push(...bytes.map((byte, idx) => [addr+idx, byte]));
+    }
+
+    /**
+     * Forces a jump to the specified address
+     * @param {number} addr the address to jump to
+     * @param {boolean} [call=false] if true, acts as a call
+     */
+    jump(addr, call = false) {
+        // throw away the prefetch and task queue
+        this[_stack] = [];
+        this[_cache] = [];
+        this[_taskQueue] = [];
+
+        // if it's a call, simulate the push
+        if (call) {
+            this.registers.SP -= 2;
+            this.memory.writeWord(this.registers.SP, this.registers.PC);
+        }
+
+        // set the address
+        this.registers.PC = addr;
+        this.registers.MP = addr;
     }
 
     _fetch() {
@@ -150,12 +182,17 @@ export class Processor {
 
     _execute() {
         if (this[_taskQueue].length > 0) {
+            // next task
             const [pc, task] = this[_taskQueue].shift();
+
             // make sure PC is set to the address of the instruction
             // we're executing
             this.registers.PC = pc;
+
             // also, assert MM on the system bus in case it's changed
             this[_systemBus].map = this[_registerFile].MM;
+
+            // execute the task
             if (task !== undefined) {
                 executeTask(task, {
                     stack: this[_stack],
@@ -165,6 +202,7 @@ export class Processor {
                     ioBus: this[_ioBus]
                 });
             }
+
             if (this.registers.PC !== pc) {
                 // we've jumped -- clear the cache and task queue
                 // and start fetching from the new location
@@ -174,6 +212,26 @@ export class Processor {
                 this.registers.MP = this.registers.PC;
             }
 
+            if (this.debug) {
+                // see if we've asserted the SINGLE STEP line
+                // if so, we see if PC has changed
+                // send a signal on the debug line when
+                // we've encountered a BRK or are in single step
+                // mode.
+                if (this.registers.SINGLE_STEP) {
+                    let instructionOver = false;
+                    if (this.registers.PC !== pc) { instructionOver = true; }
+                    if (this[_taskQueue].length > 0) {
+                        // next instruction has a different PC
+                        if (this[_taskQueue][0][0] !== pc) { instructionOver = true; }
+                    } else {
+                        instructionOver = true;
+                    }
+                    if (instructionOver) {
+                        this.debug.signal();
+                    }
+                }
+            }
         }
     }
 
