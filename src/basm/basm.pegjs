@@ -60,6 +60,8 @@
         PUSHF: "pushf",
         POPF: "popf",
         PUSH: "push",
+        POPMM: "popmm",
+        PUSHMM: "pushmm",
         POP: "pop",
         RET: "ret",
         MUL: "mul",
@@ -382,6 +384,8 @@ iPUSHALL "Push All instruction"     = op:PUSHALL { return tInstruction(op); }
 iPOPALL  "Pop All Instruction"      = op:POPALL { return tInstruction(op); }
 iPUSHF   "Push Flags Instruction"   = op:PUSHF { return tInstruction(op); }
 iPOPF    "Pop Flags Instruction"    = op:POPF { return tInstruction(op); }
+iPUSHMM  "Push MM Instruction"      = op:PUSHMM { return tInstruction(op); }
+iPOPMM   "Pop MM Instruction"       = op:POPMM { return tInstruction(op); }
 iRET     "Return Instruction"       = op:RET { return tInstruction(op); }
 
 iLOAD "Load Instruction"
@@ -572,6 +576,8 @@ POPF  "Pop Flags"     = "POPF"i !IdentifierPart { return OPCODES.POPF; }
 PUSH  "Push"          = "PUSH"i !IdentifierPart { return OPCODES.PUSH; }
 PUSHALL "Push All"    = "PUSHALL"i !IdentifierPart { return OPCODES.PUSHALL; }
 PUSHF "Push Flags"    = "PUSHF"i !IdentifierPart { return OPCODES.PUSHF; }
+PUSHMM "Push MM"      = "PUSHMM"i !IdentifierPart { return OPCODES.PUSHMM; }
+POPMM "Pop MM"        = "POPMM"i !IdentifierPart { return OPCODES.POPMM; }
 RET   "Return"        = "RET"i !IdentifierPart { return OPCODES.RET; }
 SDIV  "Signed Divide" = "SDIV"i !IdentifierPart { return OPCODES.SDIV; }
 SET   "Set"           = "SET"i !IdentifierPart { return OPCODES.SET; }
@@ -592,6 +598,7 @@ Keyword "Keyword"
 / EXIT / LD / LOOPS / LOOP / INC / IN / MOD
 / MOV / MUL / NEG / NOP / NOT / OR / OUT
 / POPALL / POPF / POP / PUSHALL / PUSHF
+/ POPMM / PUSHMM
 / PUSH / RET / SDIV / SET / SMOD / SMUL
 / SHL / SHR / ST / SUB / SWAP / TEST
 / TRAP / XOR

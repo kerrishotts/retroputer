@@ -29,6 +29,12 @@ export class Computer {
         const ioBus = new IOBus();
         const debugLine = debug ? new Bus(1, 0b1) : null;
 
+        this.stats = {
+            time: 0,
+            ticks: 0,
+            batches: 0
+        };
+
         this._stopSignal = false;
         if (debugLine) {
             debugLine.addReceiver(() => {
@@ -70,6 +76,7 @@ export class Computer {
      * may in fact require multiple
      */
     tick() {
+        this.stats.ticks++;
         this.clock.signal();
     }
 
@@ -95,16 +102,20 @@ export class Computer {
      * only a single instruction will execute
      */
     runBatch() {
-        const { batchTime: timeout, batchGranularity: granularity, performance} = this.options;
+        const { batchTime: timeout, batchGranularity: granularity, performance, timingMethod} = this.options;
         this._stopSignal = false;       // clear any stop signal for this batch
+        this.stats.batches++;
         const start = performance.now();
-        if (timeout > 0) {
+        if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
             let now = start;
             let c = 0;
-            while (!this._stopSignal && now < (start + timeout)) {
+            while (!this._stopSignal) {
                 this.tick();
                 if ((c = ((c + 1) & granularity)) === 0) {
                     now = performance.now();
+                    if (now >= (start + timeout)) {
+                        break;
+                    }
                 }
             }
         } else {
@@ -116,7 +127,9 @@ export class Computer {
             this.stop();
         }
         const end = performance.now();
-        return end - start;             // used for next batch timing
+        const totalTime = end - start;
+        this.stats.time += totalTime;
+        return totalTime;             // used for next batch timing
     }
 
     /**
@@ -144,6 +157,10 @@ export class Computer {
                         this._runID = requestAnimationFrame(batch.bind(this));
                     }
                 }).bind(this));
+                break;
+            }
+            case TIMING_METHODS.BLOCKING: {
+                this.runBatch();
                 break;
             }
             case TIMING_METHODS.INTERVAL:

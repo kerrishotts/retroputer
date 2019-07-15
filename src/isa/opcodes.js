@@ -288,6 +288,30 @@ OPCODES["trap_r"] = {
     }
 });
 
+OPCODES["in_rp"] = {
+    asm: "in $r, $p",
+    pattern: "0011_0000 rrrr_0000 pppppppp",
+    operands: { r: [15, 12], p: [7, 0] },
+    decode: ({ r = 0, p = 0 } = {}) => [
+        TASKS.PUSH_BYTE | p,
+        TASKS.IO_IN,
+        TASKS.POP_INTO_REGISTER | r
+    ]
+};
+
+OPCODES["out_rp"] = {
+    asm: "out $r, $p",
+    pattern: "0011_0001 rrrr_0000 pppppppp",
+    operands: { r: [15, 12], p: [7, 0] },
+    decode: ({ r = 0, p = 0 } = {}) => [
+        TASKS.PUSH_BYTE | p,
+        TASKS.GET_REGISTER_AND_PUSH | r,
+        TASKS.IO_OUT,
+    ]
+};
+
+
+
 // LD dw
 OPCODES["ld_dw"] = {
     asm: "ld $d, $w",
@@ -382,11 +406,11 @@ OPCODES["push_r"] = {
         TASKS.PUSH_WORD | ((r & 0b1) ? 1 : 2),
         TASKS.SUB,
         TASKS.DUP,
-        TASKS.POP_INTO_REGISTER | REGISTER_INDEX.SP,
         TASKS.GET_REGISTER_AND_PUSH | r,
         ((r & 0b1)
             ? TASKS.POP_BYTE_INTO_MEMORY
             : TASKS.POP_WORD_INTO_MEMORY),
+        TASKS.POP_INTO_REGISTER | REGISTER_INDEX.SP,
     ]
 };
 OPCODES["pop_r"] = {
@@ -406,6 +430,82 @@ OPCODES["pop_r"] = {
     ]
 };
 
+OPCODES["pushall"] = {
+    asm: `pushall`,
+    pattern: "1010_0000",
+    operands: {},
+    decode: () => [
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.SP}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.A}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.B}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.C}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.D}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.X}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.Y}),
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.BP})
+    ]
+};
+OPCODES["popall"] = {
+    asm: `popall`,
+    pattern: "1010_0001",
+    operands: {},
+    decode: () => [
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.BP}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.Y}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.X}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.D}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.C}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.B}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.A}),
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.SP})
+    ]
+};
+
+
+OPCODES["pushf"] = {
+    asm: `pushf`,
+    pattern: "1010_0010",
+    operands: {},
+    decode: () => [
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.STATUS})
+    ]
+};
+
+OPCODES["popf"] = {
+    asm: `popf`,
+    pattern: "1010_0011",
+    operands: {},
+    decode: () => [
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.STATUS})
+    ]
+};
+
+OPCODES["pushmm"] = {
+    asm: `pushmm`,
+    pattern: "1010_0100",
+    operands: {},
+    decode: () => [
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.MM})
+    ]
+};
+
+OPCODES["popmm"] = {
+    asm: `popmm`,
+    pattern: "1010_0101",
+    operands: {},
+    decode: () => [
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.MM})
+    ]
+};
+
+OPCODES["ret"] = {
+    asm: `ret`,
+    pattern: "1010_0111",
+    operands: {},
+    decode: () => [
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.PC})
+    ]
+};
 
 [
     ["brs_calls_f", "1001_nfff mmix_yuw1 aaaa_aaaa", 8],
@@ -446,7 +546,7 @@ OPCODES["pop_r"] = {
                 TASKS.PUSH_WORD | a
             ] : [
                     // make sure the address is sign extended
-                    TASKS.PUSH_WORD | (((a & 0xF0) > 0 ? 0xFF00 : 0) | a)
+                    TASKS.PUSH_WORD | (((a & 0x80) > 0 ? 0xFF00 : 0) | a)
                 ]),
             ...(m === 0 ? [
                 // need this relative address turned into

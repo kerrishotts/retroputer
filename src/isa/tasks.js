@@ -99,6 +99,10 @@ export const TASKS = {
     SET_FLAG_IMM: 0x61000000,
     TEST_FLAG_IMM: 0x62000000,
 
+    // IO
+    IO_IN: 0x70000000,
+    IO_OUT: 0x71000000,
+
     // arithmetic
     ADD: 0x80000000,        // [s0, s1] -> s0 + s1
     ADD_WITH_FLAGS: 0x81000000,
@@ -209,7 +213,26 @@ export const TASK_FNS = new Map([
         push(stack, (s1 << 4) | s0, SIZE_BYTE);
     }],
     [TASKS.TRAP, ({ stack, ioBus }) => {
-        // TODO
+        const s0 = pop(stack) & 0x0F;                             // pop trap number
+        ioBus.irqServiceBus.value = s0;
+        ioBus.irqSignalBus.signal();                                // send command
+    }],
+    [TASKS.IO_IN, ({ stack, ioBus}) => {
+        const s0 = pop(stack) & 0xFF;                             // pop off the port #
+        ioBus.deviceSelectBus.value = (s0 & 0xF0) >> 4;           // top four bits represent the device
+        ioBus.addressSelectBus.value = (s0 & 0x0F);               // bottom four represent the address
+        ioBus.commandBus.value = 0;                               // READ from bus
+        ioBus.executeBus.signal();                                // send command
+        push(stack, ioBus.dataBus.value, SIZE_BYTE);              // put the result on the stack
+    }],
+    [TASKS.IO_OUT, ({ stack, ioBus}) => {
+        const s0 = pop(stack) & 0xFF;                             // pop off the data
+        const s1 = pop(stack) & 0xFF;                             // pop off the port #
+        ioBus.deviceSelectBus.value = (s1 & 0xF0) >> 4;           // top four bits represent the device
+        ioBus.addressSelectBus.value = (s1 & 0x0F);               // bottom four represent the address
+        ioBus.dataBus.value = s0;                                 // put the data on the bus
+        ioBus.commandBus.value = 1;                               // WRITE from bus
+        ioBus.executeBus.signal();                                // send command
     }],
     [TASKS.DUP, ({ stack }) => {
         const s0 = stack.pop();   // use pop() to preserve type info

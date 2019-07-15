@@ -31,6 +31,8 @@ export function decodeInstruction(bytes) {
             if (op === 0xA1) { opcode = OPCODES.popall; }
             if (op === 0xA2) { opcode = OPCODES.pushf; }
             if (op === 0xA3) { opcode = OPCODES.popf; }
+            if (op === 0xA4) { opcode = OPCODES.pushmm; }
+            if (op === 0xA5) { opcode = OPCODES.popmm; }
             if (op === 0xA7) { opcode = OPCODES.ret; }
 
             // one byte, operand instructions
@@ -91,15 +93,15 @@ export function decodeInstruction(bytes) {
             if (op >= 0x10 && op <= 0x1F && (op & 1) === 1 && p1 === 0x00) { opcode = OPCODES.ld_db; }
             if (op === 0x30) { opcode = OPCODES.in_rp; }
             if (op === 0x31) { opcode = OPCODES.out_rp; }
-            if ( op >= 0x80 && op <= 0x8F && p1 === 0x01) { opcode = OPCODES.loops_r; }
+            if ( op >= 0x80 && op <= 0x8F && (p1 & 1) === 1) { opcode = OPCODES.loops_r; }
             if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 1) { opcode = OPCODES.brs_calls_f; }
         }
 
         if (size === 4) {
             if (op >= 0x10 && op <= 0x1F && (op & 1) === 0 && p1 === 0x00) { opcode = OPCODES.ld_dw; }
-            if (op >= 0x10 && op <= 0x1F && (op & 1) === 0 && p1 != 0x00) { opcode = OPCODES.ld; }
+            if (op >= 0x10 && op <= 0x1F /*&& (op & 1) === 0*/ && p1 != 0x00) { opcode = OPCODES.ld; }
             if (op >= 0x20 && op <= 0x2F ) { opcode = OPCODES.st; }
-            if ( op >= 0x80 && op <= 0x8F && p1 !== 0x00) { opcode = OPCODES.loop_r; }
+            if ( op >= 0x80 && op <= 0x8F && (p1 & 1) === 0) { opcode = OPCODES.loop_r; }
             if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 0) { opcode = OPCODES.br_call_f; }
         }
 

@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { performance } from "perf_hooks";
-import readline from "readline";
 
 import report from "yurnalist";
 import { CLI } from "cliffy";
@@ -9,7 +8,9 @@ import { CLI } from "cliffy";
 import { parser } from "../basm/parser.js";
 import { assemble } from "../basm/assemble.js";
 
-import { Computer } from "../core/Computer.js";
+import { Computer, TIMING_METHODS } from "../core/Computer.js";
+import { ConsoleDevice } from "../devices/Console.js";
+
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagnostics.js";
 
 const VERSION = "0.0.1";
@@ -29,7 +30,15 @@ class Monitor {
         if (this.includes(name)) {
             throw new Error(`A computer with the name "${name}" already exists.`);
         }
-        this.computers[name] = new Computer({performance, debug: true});
+        const computer = new Computer({performance, debug: true, timingMethod: TIMING_METHODS.AUTO});
+        const console = new ConsoleDevice({
+            device: 8,
+            length: 16,
+            ioBus: computer.ioBus,
+            memory: computer.memory,
+            clock: computer.clock
+        });
+        this.computers[name] = computer;
         this.diagnostics[name] = new Diagnostics(this.computers[name]);
     }
     start({name = this.default, at = undefined} = {}) {
@@ -113,12 +122,16 @@ class Monitor {
 
     reportStatus({name = undefined, stack = false, tasks = false, cache = false, dump = false} = {}) {
         report.table(
-            ["Name", "Activity", "A", "B", "C", "D", "X", "Y", "BP", "SP", "STAT", "PC", "MP", "MM"],
+            ["Name", "Activity", "#Ticks", "#Batch", "tpb", "time(ms)", "A", "B", "C", "D", "X", "Y", "BP", "SP", "STAT", "PC", "MP", "MM"],
             Object.entries(this.diagnostics)
                 .filter(([candidate]) => name !== undefined ? candidate === name : true)
                 .map(([name, diag]) => [
                     name,
                     diag.state,
+                    (this.computers[name].stats.ticks).toString(),
+                    (this.computers[name].stats.batches).toString(),
+                    (this.computers[name].stats.batches !== 0 ? (this.computers[name].stats.ticks / this.computers[name].stats.batches) : 0).toString(),
+                    (this.computers[name].stats.time).toString(),
                     ...diag.dumpRegisters().map(toHex4)
                 ])
         );
