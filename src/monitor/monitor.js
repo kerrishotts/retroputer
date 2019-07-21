@@ -16,6 +16,7 @@ import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagn
 
 
 const VERSION = "0.0.1";
+let verbose = false;
 
 class Monitor {
     constructor() {
@@ -170,6 +171,18 @@ class Monitor {
 const monitor = new Monitor();
 
 const commands = {
+    level: {
+        description: "Set output level",
+        parameters: [
+            {
+                label: "level", optional: true, type: "string",
+                description: "Level of output; defaults to verbose for REPL"
+            }
+        ],
+        action: ({level = "verbose"}) => {
+            verbose = level === "verbose";
+        }
+    },
     create: {
         description: "Create a new Retroputer instance",
         parameters: [
@@ -187,7 +200,7 @@ const commands = {
             try {
                 monitor.create({name, debug: true, timingMethod: blocking ? TIMING_METHODS.BLOCKING : TIMING_METHODS.AUTO});
                 monitor.default = name; // this is the new default machine
-                report.info(`Created a computer with name "${name}"`);
+                if (verbose) report.info(`Created a computer with name "${name}"`);
             } catch (err) {
                 report.error(err.message);
             }
@@ -203,7 +216,7 @@ const commands = {
         ],
         action: ({name = monitor.default} = {}) => {
             monitor.default = name;
-            report.info(`Switched to computer "${name}"`);
+            if (verbose) report.info(`Switched to computer "${name}"`);
         }
     },
     start: {
@@ -221,7 +234,7 @@ const commands = {
         action: ({at, name = monitor.default}) => {
             try {
                 monitor.start({at, name});
-                report.info(`Started execution on computer "${name}"`);
+                if (verbose) report.info(`Started execution on computer "${name}"`);
             } catch (err) {
                 report.error(err.message);
             }
@@ -238,7 +251,7 @@ const commands = {
         action: ({name = monitor.default}) => {
             try {
                 monitor.stop({name});
-                report.info(`Stopped computer "${name}"`);
+                if (verbose) report.info(`Stopped computer "${name}"`);
             } catch (err) {
                 report.error(err.message);
             }
@@ -371,20 +384,20 @@ const commands = {
             try {
                 const memory = monitor.memory({ name });
                 const resolvedPath = path.resolve(process.cwd(), file);
-                report.info(`Assembling ${resolvedPath}...`)
+                if (verbose) report.info(`Assembling ${resolvedPath}...`)
                 const asm = fs.readFileSync(resolvedPath, {encoding: "utf8"});
-                report.info(`... parsing...`);
+                if (verbose) report.info(`... parsing...`);
                 const ast = parser.parse(asm);
-                report.info(`... assembling...`);
+                if (verbose) report.info(`... assembling...`);
                 const segments = assemble(ast);
-                report.info(`... writing...`);
+                if (verbose) report.info(`... writing...`);
                 segments.forEach(segment => {
                     const data = segment.data;
                     const name = segment.name;
-                    report.info(`... ... writing segment ${name} with ${data.length} bytes to ${toHex(segment.addr)}...`);
+                    if (verbose) report.info(`... ... writing segment ${name} with ${data.length} bytes to ${toHex(segment.addr)}...`);
                     data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte));
                 });
-                report.info(`... finished!`);
+                if (verbose) report.info(`... finished!`);
             } catch (err) {
                 report.error(err.message);
             }
@@ -429,7 +442,7 @@ const commands = {
     default: {
         description: "Show the current computer default",
         action: () => {
-            report.info(`The current computer default is "${monitor.default}"`);
+            if (verbose) report.info(`The current computer default is "${monitor.default}"`);
         }
 
     }
@@ -437,25 +450,28 @@ const commands = {
 
 const prog = sade("monitor");
 prog
-    .version(VERSION);
+    .version(VERSION)
+    .option("--level", "Specify verbosity level (error, verbose)", "error");
 
 prog
     .command("run <asmFile>")
     .describe("Assemble the specified assembly file, and then execute it to completion.")
     .option("-g, --at", "Specify the starting address for execution", "0x02000")
     .example("run asm/examples/console.asm -g 0x03000")
-    .action((asmFile, {g = "0x02000"} = {}) => {
+    .action((asmFile, {g = "0x02000", level = "error"} = {}) => {
+        verbose = level === "verbose";
         commands.create.action({name:"local"}, {blocking: true});
         commands.assemble.action({file: asmFile, name: "local"});
         commands.start.action({at: g, name: "local"});
-        commands.list.action();
+        if (verbose) commands.list.action();
         process.exit(0);
     });
 
 prog
     .command("repl", "Execute as a REPL", {default: true})
     .example("repl")
-    .action(() => {
+    .action(({level = "error"}) => {
+        verbose = level === "verbose";
         const cli = new CLI()
             .setName("Retroputer Monitor")
             .setVersion(VERSION)
@@ -501,6 +517,8 @@ prog
             .addCommand("q", commands.exit)
             .addCommand("quit", commands.exit)
             .addCommand("exit", commands.exit)
+            // output level
+            .addCommand("level", commands.level)
             .show();
     });
 
