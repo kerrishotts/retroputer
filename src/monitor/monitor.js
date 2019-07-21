@@ -180,7 +180,7 @@ const commands = {
         ],
         options: [
             {
-                option: "blocking", description: "If set, computer execution is blocking until it voluntarily surrenders control via setting SS."
+                label: "blocking", description: "If set, computer execution is blocking until it voluntarily surrenders control via setting SS."
             }
         ],
         action: ({name = monitor.default}, {blocking = false}) => {
