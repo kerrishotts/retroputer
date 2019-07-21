@@ -13,6 +13,7 @@
     "cli": "^1.0.1",
     "cliffy": "^2.0.5",
     "pegjs": "^0.10.0",
+    "sade": "^1.6.0",
     "yurnalist": "^1.0.5"
   },
   "devDependencies": {
@@ -33,7 +34,11 @@
     "cover:view": "open ./coverage/index.html",
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
     "basm": "node src/basm/index.js",
-    "monitor": "node src/monitor/index.js"
+    "monitor": "node src/monitor/index.js",
+    "inspect:monitor": "node --inspect src/monitor/index.js",
+    "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
+    "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
+    "perf": "node --prof-process --preprocess -j .perf/i*.log | flamebearer && rm flamegraph.html"
   },
   "repository": {
     "type": "git",

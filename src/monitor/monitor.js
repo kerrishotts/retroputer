@@ -4,6 +4,7 @@ import { performance } from "perf_hooks";
 
 import report from "yurnalist";
 import { CLI } from "cliffy";
+import sade from "sade";
 
 import { parser } from "../basm/parser.js";
 import { assemble } from "../basm/assemble.js";
@@ -12,6 +13,7 @@ import { Computer, TIMING_METHODS } from "../core/Computer.js";
 import { ConsoleDevice } from "../devices/Console.js";
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagnostics.js";
+
 
 const VERSION = "0.0.1";
 
@@ -26,11 +28,11 @@ class Monitor {
         return Object.keys(this.computers).indexOf(name) > -1;
     }
 
-    create({name = this.default} = {}) {
+    create({name = this.default, debug = true, timingMethod = TIMING_METHODS.AUTO} = {}) {
         if (this.includes(name)) {
             throw new Error(`A computer with the name "${name}" already exists.`);
         }
-        const computer = new Computer({performance, debug: true, timingMethod: TIMING_METHODS.AUTO});
+        const computer = new Computer({performance, debug, timingMethod});
         const console = new ConsoleDevice({
             device: 8,
             length: 16,
@@ -176,9 +178,14 @@ const commands = {
                 description: `Name of the retroputer; defaults to current default`
             }
         ],
-        action: ({name = monitor.default}) => {
+        options: [
+            {
+                option: "blocking", description: "If set, computer execution is blocking until it voluntarily surrenders control via setting SS."
+            }
+        ],
+        action: ({name = monitor.default}, {blocking = false}) => {
             try {
-                monitor.create({name});
+                monitor.create({name, debug: true, timingMethod: blocking ? TIMING_METHODS.BLOCKING : TIMING_METHODS.AUTO});
                 monitor.default = name; // this is the new default machine
                 report.info(`Created a computer with name "${name}"`);
             } catch (err) {
@@ -428,49 +435,74 @@ const commands = {
     }
 };
 
-const cli = new CLI()
-    .setName("Retroputer Monitor")
-    .setVersion(VERSION)
-    .setDelimiter("\n. ")
-    // create
-    .addCommand("c", commands.create)
-    .addCommand("create", commands.create)
-    // switch
-    .addCommand("sw", commands.switch)
-    .addCommand("switch", commands.switch)
-    // default
-    .addCommand("default", commands.default)
-    // stop
-    .addCommand("x", commands.stop)
-    .addCommand("stop", commands.stop)
-    // start
-    .addCommand("g", commands.start)
-    .addCommand("start", commands.start)
-    // step
-    .addCommand("n", commands.step)
-    .addCommand("step", commands.step)
-    // tick
-    .addCommand("t", commands.tick)
-    .addCommand("tick", commands.tick)
-    // status
-    .addCommand("s", commands.status)
-    .addCommand("status", commands.status)
-    // instruction
-    .addCommand("i", commands.instruction)
-    .addCommand("inst", commands.instruction)
-    .addCommand("instruction", commands.instruction)
-    // assemble
-    .addCommand("a", commands.assemble)
-    .addCommand("asm", commands.assemble)
-    .addCommand("assemble", commands.assemble)
-    // dump
-    .addCommand("d", commands.dump)
-    .addCommand("dump", commands.dump)
-    // list
-    .addCommand("l", commands.list)
-    .addCommand("list", commands.list)
-    // quit
-    .addCommand("q", commands.exit)
-    .addCommand("quit", commands.exit)
-    .addCommand("exit", commands.exit)
-    .show();
+const prog = sade("monitor");
+prog
+    .version(VERSION);
+
+prog
+    .command("run <asmFile>")
+    .describe("Assemble the specified assembly file, and then execute it to completion.")
+    .option("-g, --at", "Specify the starting address for execution", "0x02000")
+    .example("run asm/examples/console.asm -g 0x03000")
+    .action((asmFile, {g = "0x02000"} = {}) => {
+        commands.create.action({name:"local"}, {blocking: true});
+        commands.assemble.action({file: asmFile, name: "local"});
+        commands.start.action({at: g, name: "local"});
+        commands.list.action();
+        process.exit(0);
+    });
+
+prog
+    .command("repl", "Execute as a REPL", {default: true})
+    .example("repl")
+    .action(() => {
+        const cli = new CLI()
+            .setName("Retroputer Monitor")
+            .setVersion(VERSION)
+            .setDelimiter("\n. ")
+            // create
+            .addCommand("c", commands.create)
+            .addCommand("create", commands.create)
+            // switch
+            .addCommand("sw", commands.switch)
+            .addCommand("switch", commands.switch)
+            // default
+            .addCommand("default", commands.default)
+            // stop
+            .addCommand("x", commands.stop)
+            .addCommand("stop", commands.stop)
+            // start
+            .addCommand("g", commands.start)
+            .addCommand("start", commands.start)
+            // step
+            .addCommand("n", commands.step)
+            .addCommand("step", commands.step)
+            // tick
+            .addCommand("t", commands.tick)
+            .addCommand("tick", commands.tick)
+            // status
+            .addCommand("s", commands.status)
+            .addCommand("status", commands.status)
+            // instruction
+            .addCommand("i", commands.instruction)
+            .addCommand("inst", commands.instruction)
+            .addCommand("instruction", commands.instruction)
+            // assemble
+            .addCommand("a", commands.assemble)
+            .addCommand("asm", commands.assemble)
+            .addCommand("assemble", commands.assemble)
+            // dump
+            .addCommand("d", commands.dump)
+            .addCommand("dump", commands.dump)
+            // list
+            .addCommand("l", commands.list)
+            .addCommand("list", commands.list)
+            // quit
+            .addCommand("q", commands.exit)
+            .addCommand("quit", commands.exit)
+            .addCommand("exit", commands.exit)
+            .show();
+    });
+
+
+prog.parse(process.argv);

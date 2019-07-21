@@ -94,7 +94,7 @@ const ALL_DATA_REGS = [
 
 ALL_DATA_REGS.forEach(r => {
     test(`decode not r${r}`, t => {
-        const bytes = [ 0x09, r ];
+        const bytes = 0x0900 | r;
         const tasks = decodeToTasks(bytes, OPCODES.not);
         t.deepEqual(tasks, [
             TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
@@ -107,7 +107,7 @@ ALL_DATA_REGS.forEach(r => {
 
 ALL_DATA_REGS.forEach(r => {
     test(`exec not r${r}`, t=> {
-        const bytes = [ 0x09, 0x00 | r ];
+        const bytes = 0x0900 | r;
         const set = [0x12, 0x1234];
         const exp = [0xED, 0xEDCB];
         const regSize = 1 - (r & 0b01);
@@ -125,7 +125,7 @@ ALL_DATA_REGS.forEach(r => {
 
 ALL_DATA_REGS.forEach(r => {
     test(`decode neg r${r}`, t => {
-        const bytes = [ 0x09, 0x10 | r ];
+        const bytes = 0x0910 | r ;
         const tasks = decodeToTasks(bytes, OPCODES.neg);
         t.deepEqual(tasks, [
             TASKS.GET_REGISTER_AND_PUSH | r, // a

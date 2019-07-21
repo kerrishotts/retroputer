@@ -39,12 +39,15 @@ segments.forEach(segment => {
         const registerFile = new RegisterFile();
 
         const tasks = [];
+        let i = 0;
         while (data.length > 0) {
-            const opTasks = decodeInstruction(data);
+            i += 1;
+            const bytes = data.slice(0, i);
+            const {tasks: opTasks} = decodeInstruction(bytes);
             if (opTasks) {
                 tasks.push(...opTasks);
-            } else {
-                t.fail(`[${name}] Couldn't decode ${data[0]}, ${data[1]}, ${data[2]}, ${data[3]}`);
+                data.splice(0, i);
+                i = 0;
             }
         }
 

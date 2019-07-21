@@ -21,9 +21,7 @@ export function _constructArgs(instruction, operands) {
     return args;
 }
 
-export function decodeToTasks(bytes, { operands, decode }) {
-    let instruction = 0;
-    bytes.forEach(byte => instruction = (instruction << 8) | byte);
+export function decodeToTasks(instruction, { operands, decode }) {
     if (taskCache.has(instruction)) {
         return taskCache.get(instruction);
     }

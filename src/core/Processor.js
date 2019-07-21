@@ -21,8 +21,8 @@ const _taskQueue = Symbol("_taskQueue");
 const _stack = Symbol("_stack");
 const _cache = Symbol("_cache")
 
-const MAX_CACHE = 256;
-const MAX_TASKS = 256;
+const MAX_CACHE = 16;
+const MAX_TASKS = 512;
 
 export class Processor {
 
@@ -116,12 +116,13 @@ export class Processor {
     /**
      * Injects bytes into the fetch cache
      *
-     * @param {Array} bytes bytes to inject
+     * @param {number} byte byte to inject
      * @returns {void}
      * @memberof Processor
      */
-    inject(addr, bytes) {
-        this[_cache].push(...bytes.map((byte, idx) => [addr+idx, byte]));
+    inject(addr, byte) {
+        const cache = this[_cache];
+        cache.push(addr, byte);
     }
 
     /**
@@ -151,28 +152,32 @@ export class Processor {
         if (byte === undefined) {
             throw new Error("Bad memory");
         }
-        this.inject(this.registers.MP, [byte]);
+        this.inject(this.registers.MP, byte);
         this.registers.MP += 1;
     }
 
     _decode() {
-        let pc = this[_cache][0] && this[_cache][0][0];
-        const bytes = this[_cache].map(([_, byte]) => byte);
+        const cache = this[_cache];
+        const taskQueue = this[_taskQueue];
+        let pc = cache[0];
+        const bytes = Array(cache.length >> 1);
+        for (let i = 1, l = cache.length; i < l; i+=2 ) {
+            bytes[i >> 1] = cache[i]; // we want the byte, not its PC
+        }
         const preDecodeLength = bytes.length;
-        const tasks = decodeInstruction(bytes);
+        const {size, tasks} = decodeInstruction(bytes);
         if (tasks) {
-            const postDecodeLength = bytes.length;
-            const decodedInstructionLength = preDecodeLength - postDecodeLength;
-
             // remove the decoded instruction from the cache
-            this[_cache] = this[_cache].slice(decodedInstructionLength);
-            pc += decodedInstructionLength;
+            cache.splice(0, size << 1);
+            pc += size;
             pc &= 0xFFFF;
             // add the tasks to the queue, with associated PC
-            this[_taskQueue].push(...tasks.map(task => [pc, task]));
+            for (let i = 0, l = tasks.length; i < l; i++) {
+                taskQueue.push(pc, tasks[i]);
+            }
             return;
         } else {
-            if (this[_cache].length > 4) {
+            if (cache.length > 8) {
                 // failed to decode what was in the cache, and it's
                 // long enough to have done so
                 throw new Error(`Couldn't properly decode cache: ${this[_cache]}`);
@@ -181,9 +186,11 @@ export class Processor {
     }
 
     _execute() {
-        if (this[_taskQueue].length > 0) {
+        const taskQueue = this[_taskQueue];
+        if (taskQueue.length > 0) {
             // next task
-            const [pc, task] = this[_taskQueue].shift();
+            const pc = taskQueue.shift();
+            const task = taskQueue.shift();
 
             // make sure PC is set to the address of the instruction
             // we're executing
@@ -221,9 +228,9 @@ export class Processor {
                 if (this.registers.SINGLE_STEP) {
                     let instructionOver = false;
                     if (this.registers.PC !== pc) { instructionOver = true; }
-                    if (this[_taskQueue].length > 0) {
+                    if (taskQueue.length > 0) {
                         // next instruction has a different PC
-                        if (this[_taskQueue][0][0] !== pc) { instructionOver = true; }
+                        if (taskQueue[0] !== pc) { instructionOver = true; }
                     } else {
                         instructionOver = true;
                     }
@@ -236,17 +243,19 @@ export class Processor {
     }
 
     tick() {
+        const taskQueue = this[_taskQueue];
+        const cache = this[_cache];
         // we'll fetch up to 256 instructions / tasks
-        if (this[_cache].length < MAX_CACHE && this[_taskQueue].length < MAX_TASKS) {
+        if (cache.length < MAX_CACHE) {
             this._fetch();
         }
 
-        if (this[_cache].length > 0 && this[_taskQueue].length < MAX_TASKS) {
+        if (cache.length > 0 && taskQueue.length < MAX_TASKS) {
             this._decode();
         }
 
         // if there's something in the queue, execute it :-)
-        if (this[_taskQueue].length > 0) {
+        if (taskQueue.length > 0) {
             this._execute();
         }
     }

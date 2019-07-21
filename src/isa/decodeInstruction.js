@@ -1,5 +1,9 @@
 import { OPCODES, decodeToTasks } from "./opcodes.js";
 
+export const INVALID_INSTRUCTION = {
+    size: 0,
+    tasks: null
+};
 /**
  * @export
  * @param {number[]} bytes
@@ -7,21 +11,26 @@ import { OPCODES, decodeToTasks } from "./opcodes.js";
  */
 export function decodeInstruction(bytes) {
     let complete = false;
-    let instruction = [];
-    let size, opcode;
+    let instruction = 0;
+    let byte = 0;
+    let size = 0
+    let idx = 0;
+    let opcode;
+    let op, p1;
 
     while (!complete) {
-        const byte = bytes.shift();
+        byte = bytes[idx];
+        idx += 1;
         if (byte === undefined) {
-            return null; // definitely not a valid instruction
+            return INVALID_INSTRUCTION; // definitely not a valid instruction
         }
-        instruction.push(byte);
-        size = instruction.length;
+        instruction = (instruction << 8) | byte;
+        size = idx;
         if (size > 4) {
-            return null; // no longer a valid instruction
+            return INVALID_INSTRUCTION; // no longer a valid instruction
         }
 
-        const [op, p1, p2, p3] = instruction;
+        op = (instruction >> ((size - 1) << 3)) & 0xFF;
 
         if (size === 1) {
             // one byte, single variant instructions
@@ -44,6 +53,8 @@ export function decodeInstruction(bytes) {
             if (op >= 0xE0 && op <= 0xEF) { opcode = OPCODES.push_r; }
             if (op >= 0xF0 && op <= 0xFF) { opcode = OPCODES.pop_r; }
         }
+
+        p1 = size > 1 ? ((instruction >> ((size - 2) << 3)) & 0xFF) : 0;
 
         if (size === 2) {
             if (op === 0x01) { opcode = OPCODES.add_ds; }
@@ -105,12 +116,12 @@ export function decodeInstruction(bytes) {
             if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 0) { opcode = OPCODES.br_call_f; }
         }
 
-        complete = !!opcode;
+        complete = opcode !== undefined;
 
     }
     if (!complete) {
-        return null;
+        return INVALID_INSTRUCTION;
     }
-    return decodeToTasks(instruction, opcode);
+    return { size, tasks: decodeToTasks(instruction, opcode) };
 
 }
