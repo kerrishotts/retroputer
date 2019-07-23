@@ -169,6 +169,7 @@ class Monitor {
 }
 
 const monitor = new Monitor();
+let cli;
 
 const commands = {
     level: {
@@ -472,7 +473,7 @@ prog
     .example("repl")
     .action(({level = "error"}) => {
         verbose = level === "verbose";
-        const cli = new CLI()
+        cli = new CLI()
             .setName("Retroputer Monitor")
             .setVersion(VERSION)
             .setDelimiter("\n. ")

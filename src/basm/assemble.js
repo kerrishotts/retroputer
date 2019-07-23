@@ -14,6 +14,7 @@ const SCOPE = {
         GLOBAL: "global",
         NAMESPACE: "namespace",
         SEGMENT: "segment",
+        BLOCK: "block",
     },
     NAME: Symbol("SCOPE.NAME"),
     BASE: Symbol("SCOPE.BASE"),
@@ -55,7 +56,7 @@ function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, append = fal
         [SCOPE.NAME]: name,
         [SCOPE.SEGMENTS]: []
     };
-    if (parent) {
+    if (parent && type !== SCOPE.TYPES.BLOCK) {
         if (!parent[name]) {
             parent[name] = scope;
         } else {
@@ -410,7 +411,15 @@ function tryToAssemble(node, context, pc) {
 export function assemble(ast, global, context) {
     global = global || createScope();
     if (!context) { context = global; }
-
+    if (!ast) {
+        err(`Tried to assemble an undefined AST.`);
+    }
+    if (!ast.forEach) {
+        if (ast.type === TOKENS.BLOCK && ast.block) {
+            return assemble(ast.block, global, context);
+        }
+        err(`Tried to assemble invalid AST ${JSON.stringify(ast)}`);
+    }
     ast.forEach(node => {
         lastPos = node.pos;             // always mark the last visited source
         // code position so we can display
@@ -445,6 +454,31 @@ export function assemble(ast, global, context) {
                     assemble(node.block, global, newContext);
                 }
                 break;
+            case TOKENS.BLOCK:
+                {
+                    const addr = context[SCOPE.ADDR];
+                    const newContext = createScope(SCOPE.TYPES.BLOCK, context, "block", addr, false);
+                    //console.log(`new block ${addr}, ${util.inspect(node)}`);
+                    try {
+                    assemble(node.block, global, newContext);
+                    } catch(err) {
+                        //console.log(`failed block ${addr}`);
+                    }
+                    //console.log(`filling block ${addr}, ${util.inspect(node)}`);
+                    // put the data back into the current context
+                    newContext[SCOPE.DATA].forEach(data => {
+                        context[SCOPE.DATA][context[SCOPE.ADDR]] = {
+                            asm: data.asm,
+                            bytes: node.data,
+                            size: data.size,
+                            pc: data.pc,
+                            context: newContext
+                        };
+                        context[SCOPE.ADDR] += data.size;
+                    });
+                    //console.log(`done block ${addr}, ${context[SCOPE.ADDR]}`);
+                }
+                break;
             case TOKENS.CONST_DIRECTIVE:
                 {
                     if (context[SCOPE.CONTENTS].hasOwnProperty(node.name.ident)) {
@@ -456,16 +490,17 @@ export function assemble(ast, global, context) {
             // the remaining tokens must be in a segment
             case TOKENS.LABEL:
                 {
-                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT && context[SCOPE.TYPE] !== SCOPE.TYPES.BLOCK) {
                         err(`Unexpected label ${node.name.ident} in ${context[SCOPE.NAME]} scope`);
                     }
+                    //console.log(node.name.ident, context[SCOPE.NAME]);
                     context[SCOPE.CONTENTS][node.name.ident] = context[SCOPE.ADDR];
                     break;
                 }
             case TOKENS.WORD_DIRECTIVE:
             case TOKENS.BYTE_DIRECTIVE:
                 {
-                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT && context[SCOPE.TYPE] !== SCOPE.TYPES.BLOCK) {
                         err(`Unexpected data directive in ${context[SCOPE.NAME]} scope`);
                     }
                     const incAmount = node.type === TOKENS.WORD_DIRECTIVE ? 2 : 1;
@@ -487,6 +522,7 @@ export function assemble(ast, global, context) {
 
                     context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                         asm: node,
+                        size: bytes.length,
                         bytes
                     };
 
@@ -495,13 +531,14 @@ export function assemble(ast, global, context) {
                 break;
             case TOKENS.STRING_DIRECTIVE:
                 {
-                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT && context[SCOPE.TYPE] !== SCOPE.TYPES.BLOCK) {
                         err(`Unexpected string directive in ${context[SCOPE.NAME]} scope`);
                     }
                     const data = evaluate(node.data, context).split("").map(ch => ch.charCodeAt(0));
                     context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                         asm: node,
                         bytes: data,
+                        size: data.length,
                         pc: context[SCOPE.ADDR],
                         context
                     };
@@ -511,13 +548,14 @@ export function assemble(ast, global, context) {
                 }
             case TOKENS.INSTRUCTION:
                 {
-                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT) {
+                    if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT && context[SCOPE.TYPE] !== SCOPE.TYPES.BLOCK) {
                         err(`Unexpected code in ${context[SCOPE.NAME]} scope`);
                     }
                     const { size, bytes } = tryToAssemble(node, context, context[SCOPE.ADDR]);
                     context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                         asm: node,
                         bytes,
+                        size,
                         pc: context[SCOPE.ADDR],
                         context
                     };
@@ -539,6 +577,7 @@ export function assemble(ast, global, context) {
                     if (newBytes) {
                         datum.bytes = newBytes;
                     } else {
+                        //console.log(util.inspect(context[SCOPE.CONTENTS]));
                         err(`Could not locate symbol`);
                     }
                 }

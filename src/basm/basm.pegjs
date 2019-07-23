@@ -127,8 +127,17 @@
         WORD_DIRECTIVE: "directive.word",
         STRING_DIRECTIVE: "directive.string",
         LABEL: "label",
-        MEMORY: "memory"
+        MEMORY: "memory",
+        BLOCK: "block"
     };
+
+    function tBlock(block) {
+        return {
+            type: TOKENS.BLOCK,
+            block,
+            pos: location().start
+        };
+    }
 
     function tLiteral(value) {
         return {
@@ -304,6 +313,7 @@ Line "Line"
 / _ l:Instruction _ { return l; }
 / _ l:Directive _ { return l; }
 / _ l:COMMENT _ { return l; }
+/ _ LCURLY _ l:Line* _ RCURLY { return tBlock(l); }
 
 //
 // Directives
@@ -351,7 +361,7 @@ STRING "String"         = ".string"i
 APPEND "Append"         = ".append"i
 CONST "Constant"        = ".const"i
 IMPORT "Import"         = ".import"i
-NAMESPACE "Namesspace"  = ".namespace"i
+NAMESPACE "Namespace"   = ".namespace"i
 ARRAY "Array" = LBRACKET _ size:Expression _ RBRACKET { return size; }
 
 ExpectedAssembly "Expected Assembly"

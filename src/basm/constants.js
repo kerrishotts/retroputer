@@ -101,7 +101,8 @@ export const TOKENS = {
     WORD_DIRECTIVE: "directive.word",
     STRING_DIRECTIVE: "directive.string",
     LABEL: "label",
-    MEMORY: "memory"
+    MEMORY: "memory",
+    BLOCK: "block"
 };
 
 export const MODES = {

@@ -135,3 +135,4 @@ test.serial("Can execute asm fixtures in a processor", t => {
 
 test("Can count", execFixture, { file: "count.asm" });
 test("Can loop", execFixture, { file: "loop.asm" });
+test("Can loop (w block)", execFixture, { file: "block.asm" });
