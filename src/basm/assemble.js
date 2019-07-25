@@ -458,7 +458,7 @@ export function assemble(ast, global, context) {
                 {
                     const addr = context[SCOPE.ADDR];
                     const newContext = createScope(SCOPE.TYPES.BLOCK, context, "block", addr, false);
-                    //console.log(`new block ${addr}, ${util.inspect(node)}`);
+                    //console.log(`new block ${addr}, {util.inspect(node)}`);
                     try {
                     assemble(node.block, global, newContext);
                     } catch(err) {
@@ -467,16 +467,17 @@ export function assemble(ast, global, context) {
                     //console.log(`filling block ${addr}, ${util.inspect(node)}`);
                     // put the data back into the current context
                     newContext[SCOPE.DATA].forEach(data => {
+                        //console.log(util.inspect(data.bytes));
                         context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                             asm: data.asm,
-                            bytes: node.data,
+                            bytes: data.bytes,
                             size: data.size,
                             pc: data.pc,
                             context: newContext
                         };
                         context[SCOPE.ADDR] += data.size;
                     });
-                    //console.log(`done block ${addr}, ${context[SCOPE.ADDR]}`);
+                    //console.log(`done block ${addr}, {util.inspect(newContext[SCOPE.CONTENTS])}`);
                 }
                 break;
             case TOKENS.CONST_DIRECTIVE:
