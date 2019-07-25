@@ -1,4 +1,12 @@
 {
+    const expectedRegister = () => expected("REGISTER");
+    const expectedMemoryAddress = () => expected("MEMORY ADDRESS");
+    const expectedComma = () => expected("COMMA");
+    const expectedExpression = () => expected("EXPRESSION");
+    const expectedIdentifier = () => expected("IDENTIFIER");
+    const expectedFlag = () => expected("FLAG");
+    const expectedQuote = () => expected("QUOTE");
+
     const REGISTERS = {
         A: 0,
         AL: 1,
@@ -100,10 +108,10 @@
         }
 
         str = str.replace("0x", "")
-                 .replace("0b", "")
-                 .replace("$", "")
-                 .replace("h", "")
-                 .replace("b", "");
+                .replace("0b", "")
+                .replace("$", "")
+                .replace("h", "")
+                .replace("b", "");
 
         return parseInt(str, radix);
     }
@@ -296,24 +304,23 @@
 }
 
 Program "Program"
-= TopLevel*
+= parts:TopLevel* { return parts.filter(part => part !== null); }
 
 TopLevel
 = _ l:dSegment _ { return l; }
 / _ l:dImport _ { return l; }
 / _ l:dNamespace _ { return l; }
 / _ l:COMMENT _ { return l; }
+/ _ EOL _ { return null; }
 
 Block "Block"
-= LCURLY l:Line* RCURLY { return l; }
-/ l:Line { return l; }
+= _ LCURLY lines:Line* RCURLY _ { return tBlock(lines.flat().filter(line => !!line)); }
 
 Line "Line"
-= _ l:Label _ { return l; }
-/ _ l:Instruction _ { return l; }
-/ _ l:Directive _ { return l; }
-/ _ l:COMMENT _ { return l; }
-/ _ LCURLY _ l:Line* _ RCURLY { return tBlock(l); }
+= _ EOL _ { return null; }
+/ Block
+/ _ label:Label? _ content:(Instruction / Directive / Block)? _ c:COMMENT? _ EOL _ { return [label, content, c].filter(e => e !== null); }
+/ !(RCURLY / EOL).+ { expected("BLOCK, LABEL, INSTRUCTION, DIRECTIVE, or COMMENT")}
 
 //
 // Directives
@@ -399,116 +406,112 @@ iPOPMM   "Pop MM Instruction"       = op:POPMM { return tInstruction(op); }
 iRET     "Return Instruction"       = op:RET { return tInstruction(op); }
 
 iLOAD "Load Instruction"
-= op:LD _ dest:Register _ COMMA _ source:MemoryAddressingMode
-   { return tInstruction(op, {dest, source}); }
+= LD _ !Register { expectedRegister() }
+/ LD _ Register _ !COMMA { expectedComma() }
+/ LD _ Register _ COMMA _ !MemoryAddressingMode { expectedMemoryAddress() }
+/ op:LD _ dest:Register _ COMMA _ source:MemoryAddressingMode { return tInstruction(op, {dest, source}); }
 
 iSTORE "Store Instruction"
-= op:ST _ dest:MemoryAddressingMode _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:ST _ dest:MemoryAddressingMode _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ ST _ MemoryAddressingMode _ COMMA _ !Register { expectedRegister() }
+/ ST _ MemoryAddressingMode _ !COMMA { expectedRegister() }
+/ ST _ !MemoryAddressingMode { expectedMemoryAddress() }
 
 iLOOP "Loop Instruction"
-= op:LOOPS _ addr:BranchAddressingMode _ COMMA _ reg:Register
-   { return tInstruction(op, {addr, reg}); }
-/ op:LOOP _ addr:BranchAddressingMode _ COMMA _ reg:Register
-   { return tInstruction(op, {addr, reg}); }
+= op:LOOPS _ addr:BranchAddressingMode _ COMMA _ reg:Register { return tInstruction(op, {addr, reg}); }
+/ op:LOOP _ addr:BranchAddressingMode _ COMMA _ reg:Register { return tInstruction(op, {addr, reg}); }
+/ LOOPS _ BranchAddressingMode _ COMMA _ !Register { expectedRegister() }
+/ LOOP _ BranchAddressingMode _ COMMA _ !Register { expectedRegister() }
+/ LOOPS _ BranchAddressingMode _ !COMMA { expectedComma() }
+/ LOOP _ BranchAddressingMode _ !COMMA { expectedComma() }
+/ LOOPS _ !BranchAddressingMode { expectedMemoryAddress() }
+/ LOOP _ !BranchAddressingMode { expectedMemoryAddress() }
 
 iCALL "Call Instruction"
-= op:CALLS _ flag:AllFlags? _ addr:BranchAddressingMode
-   { return tInstruction(op, {addr, flag}); }
-/ op:CALL _ flag:AllFlags? _ addr:BranchAddressingMode
-   { return tInstruction(op, {addr, flag}); }
+= op:CALLS _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ op:CALL _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ CALLS _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
+/ CALL _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
 
 iBR "Branch Instruction"
-= op:BRS _ flag:AllFlags? _ addr:BranchAddressingMode
-   { return tInstruction(op, {addr, flag}); }
-/ op:BR _ flag:AllFlags? _ addr:BranchAddressingMode
-   { return tInstruction(op, {addr, flag}); }
+= op:BRS _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ op:BR _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ BRS _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
+/ BR _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
 
 iADD "Add Instruction"
-= op:ADD _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:ADD _ dest:GeneralRegister _ COMMA _ imm:Expression
-   { return tInstruction(op, {dest, imm}); }
+= op:ADD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:ADD _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ ADD _ Register _ !COMMA { expectedComma() }
+/ ADD _ !Register { expectedRegister() }
 
 iAND "And Instruction"
-= op:AND _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:AND _ dest:GeneralRegister _ COMMA _ imm:Expression
-   { return tInstruction(op, {dest, imm}); }
+= op:AND _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:AND _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ AND _ Register _ !COMMA { expectedComma() }
+/ AND _ !Register { expectedRegister() }
 
 iCMP "Compare Instruction"
-= op:CMP _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:CMP _ dest:GeneralRegister _ COMMA _ imm:Expression
-   { return tInstruction(op, {dest, imm}); }
+= op:CMP _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:CMP _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ CMP _ Register _ !COMMA { expectedComma() }
+/ CMP _ !Register { expectedRegister() }
 
 iSUB "Subtract Instruction"
-= op:SUB _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:SUB _ dest:GeneralRegister _ COMMA _ imm:Expression
-   { return tInstruction(op, {dest, imm}); }
+= op:SUB _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:SUB _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ SUB _ Register _ !COMMA { expectedComma() }
+/ SUB _ !Register { expectedRegister() }
 
 iOR "Or Instruction"
-= op:OR _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:OR _ dest:GeneralRegister _ COMMA _ imm:Expression
-   { return tInstruction(op, {dest, imm}); }
+= op:OR _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:OR _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ OR _ Register _ !COMMA { expectedComma() }
+/ OR _ !Register { expectedRegister() }
 
 iXOR "Exclusive Or Instruction"
-= op:XOR _ dest:Register _ COMMA _ source:Register
-    { return tInstruction(op, {dest, source}); }
-/ op:XOR _ dest:GeneralRegister _ COMMA _ imm:Expression
-    { return tInstruction(op, {dest, imm}); }
+= op:XOR _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:XOR _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ XOR _ Register _ !COMMA { expectedComma() }
+/ XOR _ !Register { expectedRegister() }
 
 iTEST "Test Instruction"
-= op:TEST _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:TEST _ dest:GeneralRegister _ COMMA _ imm:Expression
-   { return tInstruction(op, {dest, imm}); }
+= op:TEST _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:TEST _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ TEST _ Register _ !COMMA { expectedComma() }
+/ TEST _ !Register { expectedRegister() }
 
 iSHL "Shift Left Instruction"
-= op:SHL _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:SHL _ dest:Register _ COMMA _ imm:Immediate4
-   { return tInstruction(op, {dest, imm}); }
+= op:SHL _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:SHL _ dest:Register _ COMMA _ imm:Immediate4 { return tInstruction(op, {dest, imm}); }
 
 iSHR "Shift Right Instruction"
-= op:SHR _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
-/ op:SHR _ dest:Register _ COMMA _ imm:Immediate4
-   { return tInstruction(op, {dest, imm}); }
+= op:SHR _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:SHR _ dest:Register _ COMMA _ imm:Immediate4 { return tInstruction(op, {dest, imm}); }
 
 iDIV "Divide Instruction"
-= op:DIV _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:DIV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iMUL "Multiply Instruction"
-= op:MUL _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:MUL _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iMOD "Modulo Instruction"
-= op:MOD _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:MOD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iSDIV "Signed Divide Instruction"
-= op:SDIV _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:SDIV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iSMUL "Singed Multiply Instruction"
-= op:SMUL _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:SMUL _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iSMOD "Signed Modulo Instruction"
-= op:SMOD _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:SMOD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iSWAP "Swap Instruction"
-= op:SWAP _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:SWAP _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iMOV "Move Instruction"
-= op:MOV _ dest:Register _ COMMA _ source:Register
-   { return tInstruction(op, {dest, source}); }
+= op:MOV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 
 iNOT "Not Instruction"
 = op:NOT _ reg:Register { return tInstruction(op, {reg}); }
@@ -521,29 +524,22 @@ iEXC "Exchange Halves Instruction"
 
 iTRAP "Trap Instruction"
 = op:TRAP _ reg:Register { return tInstruction(op, {reg}); }
-/ op:TRAP _ imm:Immediate8
-   { return tInstruction(op, {imm}); }
+/ op:TRAP _ imm:Immediate8 { return tInstruction(op, {imm}); }
 
 iIN "In Instruction"
-= op:IN _ reg:Register _ COMMA _ imm:Immediate8
-   { return tInstruction(op, {reg, imm}); }
+= op:IN _ reg:Register _ COMMA _ imm:Immediate8 { return tInstruction(op, {reg, imm}); }
 
 iOUT "OUT Instruction"
-= op:OUT _ imm:Immediate8 _ COMMA _ reg:Register
-   { return tInstruction(op, {reg, imm}); }
+= op:OUT _ imm:Immediate8 _ COMMA _ reg:Register { return tInstruction(op, {reg, imm}); }
 
 iENTER "Enter Instruction"
-= op:ENTER _ imm:Immediate8
-   { return tInstruction(op, {imm}); }
+= op:ENTER _ imm:Immediate8 { return tInstruction(op, {imm}); }
 
 iEXIT "Exit Instruction"
-= op:EXIT _ imm:Immediate8
-   { return tInstruction(op, {imm}); }
+= op:EXIT _ imm:Immediate8 { return tInstruction(op, {imm}); }
 
-iSET "Set Instruction"   = op:SET _ flag:Flags
-   { return tInstruction(op, {flag}); }
-iCLR "Clear Instruction" = op:CLR _ flag:Flags
-   { return tInstruction(op, {flag}); }
+iSET "Set Instruction"   = op:SET _ flag:Flags { return tInstruction(op, {flag}); }
+iCLR "Clear Instruction" = op:CLR _ flag:Flags { return tInstruction(op, {flag}); }
 
 iINC "Increment Instruction" = op:INC _ reg:Register { return tInstruction(op, {reg}); }
 iDEC "Decrement Instruction" = op:DEC _ reg:Register { return tInstruction(op, {reg}); }
@@ -721,25 +717,19 @@ Indirect18 "Indirect Address"
 = LANGLE _ addr:Expression _ x:IndexByX? _ RANGLE _ y:IndexByY? { return addressingMode({addr, x: !!x, y: !!y, i: true, m:MODES.ABSOLUTE}); }
 
 AbsoluteRegister "Absolute BP or D"
-= LBRACKET _ reg:MemoryRegister _ imm:ImmediateOffset?
-  _ x:IndexByX?
-  _ y:IndexByY?
-  _ RBRACKET
-  {
+= LBRACKET _ reg:MemoryRegister _ imm:ImmediateOffset? _ x:IndexByX? _ y:IndexByY? _ RBRACKET
+{
     return addressingMode({
         m: reg.idx === REGISTERS.D ? MODES.D : MODES.BP,
         addr: imm || 0,
         x: !!x,
         y: !!y
     });
-  }
+}
 
 IndirectRegister "Indirect BP"
-= LANGLE _ reg:MemoryRegister _ imm:ImmediateOffset?
-  _ x:IndexByX?
-  _ RANGLE
-  _ y:IndexByY?
-  {
+= LANGLE _ reg:MemoryRegister _ imm:ImmediateOffset? _ x:IndexByX? _ RANGLE _ y:IndexByY?
+{
     return addressingMode({
         m: reg.idx === REGISTERS.D ? MODES.D : MODES.BP,
         addr: imm || 0,
@@ -747,23 +737,23 @@ IndirectRegister "Indirect BP"
         y: !!y,
         i: true
     });
-  }
+}
 
 MemoryAddressingMode "Memory Addressing Mode"
-= Immediate16
+= AbsoluteRegister
+/ IndirectRegister
+/ Immediate16
 / Immediate8
 / Absolute18
 / Indirect18
-/ AbsoluteRegister
-/ IndirectRegister
 
 BranchAddressingMode "Branch Addressing Mode"
-= Relative16
+= AbsoluteRegister
+/ IndirectRegister
+/ Relative16
 / Relative8
 / Absolute18
 / Indirect18
-/ AbsoluteRegister
-/ IndirectRegister
 
 
 //
@@ -802,31 +792,31 @@ ShiftOperator "Shift Operator"
 
 OrExpression "Or Expression"
 = head:XorExpression tail:(_ (OP_OR) _ XorExpression)* {
-      return tBinaryExpression(head, tail);
+    return tBinaryExpression(head, tail);
 }
 XorExpression "Xor Expression"
 = head:AndExpression tail:(_ (OP_XOR) _ AndExpression)* {
-      return tBinaryExpression(head, tail);
+    return tBinaryExpression(head, tail);
 }
 AndExpression "And Expression"
 = head:ShiftExpression tail:(_ (OP_AND) _ ShiftExpression)* {
-      return tBinaryExpression(head, tail);
+    return tBinaryExpression(head, tail);
 }
 
 ShiftExpression "Shift Expression"
 = head:AdditiveExpression tail:(_ (ShiftOperator) _ AdditiveExpression)* {
-      return tBinaryExpression(head, tail);
+    return tBinaryExpression(head, tail);
 }
 
 AdditiveExpression "Additive Expression"
 = head:MultiplicativeExpression tail:(_ (AdditiveOperator) _ MultiplicativeExpression)* {
-      return tBinaryExpression(head, tail);
-    }
+    return tBinaryExpression(head, tail);
+}
 
 MultiplicativeExpression "Multiplicative Expression"
 = head:Literal tail:(_ (MultiplicativeOperator) _ Literal)* {
-      return tBinaryExpression(head, tail);
-    }
+    return tBinaryExpression(head, tail);
+}
 
 NotExpression "Not Expression"
 = _ op:OP_NOT _ v:Expression {
@@ -838,19 +828,20 @@ NegativeExpression "Negative Expression"
 }
 
 CommaSepExpressions
-  = head:Expression tail:(_ COMMA _ Expression)* {
-      return [ head, ...tail.map(([,,,expr]) => expr)];
-  }
+= head:Expression tail:(_ COMMA _ Expression)* {
+    return [ head, ...tail.map(([,,,expr]) => expr)];
+}
 
 Expression
-  = OrExpression
+= OrExpression
 
 Literal
-  = LPAREN _ expr:Expression _ RPAREN { return expr; }
-  / NotExpression
-  / NegativeExpression
-  / Integer
-  / Identifier
+= LPAREN _ expr:Expression _ RPAREN { return expr; }
+/ NotExpression
+/ NegativeExpression
+/ Integer
+/ Identifier
+/ ReservedWord { error(`Literal can not be a reserved word: ${text()}`); }
 
 //
 // Primitives
@@ -861,6 +852,7 @@ ReservedWord "Reserved Word"
 
 Label "Label"
 = name:Identifier ":" { return tLabel(name); }
+/ ReservedWord ":" { error(`Label can not be a reserved word: ${text()}`); }
 
 Identifier "Identifier"
 = !ReservedWord IdentifierName { return tIdentifier(text()); }
@@ -893,17 +885,14 @@ Integer "Integer"
 
 StringLiteral "String Literal"
 = DQUOTE text:(!DQUOTE .)* DQUOTE { return tLiteral(text.map(([,ch]) => ch).join("")); }
+/ DQUOTE (!DQUOTE .)* { expectedQuote() }
 
 //
 // Delimiters
 ////////////////////////////////////////
 
-LCURLY   "Left Curly Brace"
-= "{" { return ""; }
-
-RCURLY   "Right Curly Brace"
-= "}" { return ""; }
-
+LCURLY   "Left Curly Brace" = "{" { return ""; }
+RCURLY   "Right Curly Brace" = "}" { return ""; }
 LBRACKET "Left Bracket"  = "[" { return "["; }
 RBRACKET "Right Bracket" = "]" { return "]"; }
 LPAREN   "Left Paren"    = "(" { return "("; }
@@ -913,7 +902,7 @@ RANGLE   "Right Angle"   = ">" { return ">"; }
 DQUOTE   "Double Quote"  = '"' { return '"'; }
 PLUS "Plus"              = "+" { return "+"; }
 COMMA "Comma"            = "," { return ","; }
-__ "Space"               = [ \t\r\n]+ { return " "; }
+__ "Space"               = [ \t]+ { return " "; }
 
 //
 // Whitespace
@@ -923,4 +912,6 @@ COMMENT "Comment"
 = "#" data:([^\n]*) { return tComment(data.join("").trim()); }
 
 _ "Whitespace"
-= [ \t\r\n]* { return null; }
+= [ \t]* { return null; }
+
+EOL "End Of Line" = [\r\n]+ { return null; }
