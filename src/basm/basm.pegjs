@@ -326,10 +326,26 @@ Line "Line"
 // High Level Statements
 ////////////////////////////////////////
 
-hlStatement = hlIF / hlDO
+hlStatement = hlIF / hlDO / hlBreak / hlContinue
 
 hlElse
 = _ ELSE _ e:Block _ { return e; }
+
+hlBreak
+= _ BREAK _ {
+    return tInstruction("br", {
+        flag: null,
+        addr: addressingMode({ addr: tIdentifier("__end"), m: 0 })
+    });
+}
+
+hlContinue
+= _ CONTINUE _ {
+    return tInstruction("br", {
+        flag: null,
+        addr: addressingMode({ addr: tIdentifier("__begin"), m: 0 })
+    });
+}
 
 hlIF
 = _ IF _ f:AllFlags _ t:Block _ e:hlElse? {
@@ -358,32 +374,33 @@ hlIF
 hlDO
 = _ DO _ l:Block _ WHILE _ f:AllFlags _ {
     return tBlock([
-        tLabel(tIdentifier("__top")),
+        tLabel(tIdentifier("__begin")),
         l,
         tInstruction("br", {
             flag: f,
-            addr: addressingMode({ addr: tIdentifier("__top"), m: 0 })
-        })
+            addr: addressingMode({ addr: tIdentifier("__begin"), m: 0 })
+        }),
+        tLabel(tIdentifier("__end")),
     ]);
 }
 / _ WHILE _ f:AllFlags _ DO _ l:Block _ {
     return tBlock([
-        tLabel(tIdentifier("__top")),
+        tLabel(tIdentifier("__begin")),
         tInstruction("br", {
             flag: f,
             addr: addressingMode({ addr: tIdentifier("__do"), m: 0 })
         }),
         tInstruction("br", {
             flag: null,
-            addr: addressingMode({ addr: tIdentifier("__done"), m: 0 })
+            addr: addressingMode({ addr: tIdentifier("__end"), m: 0 })
         }),
         tLabel(tIdentifier("__do")),
         l,
         tInstruction("br", {
             flag: null,
-            addr: addressingMode({ addr: tIdentifier("__top"), m: 0 })
+            addr: addressingMode({ addr: tIdentifier("__begin"), m: 0 })
         }),
-        tLabel(tIdentifier("__done")),
+        tLabel(tIdentifier("__end")),
     ]);
 }
 
@@ -666,6 +683,8 @@ IF    "IF"            = "IF"i !IdentifierPart { return "IF"; }
 ELSE  "ELSE"          = "ELSE"i !IdentifierPart { return "ELSE"; }
 DO    "DO"            = "DO"i !IdentifierPart { return "DO"; }
 WHILE "WHILE"         = "WHILE"i !IdentifierPart { return "WHILE"; }
+BREAK "BREAK"         = "BREAK"i !IdentifierPart { return "BREAK"; }
+CONTINUE "CONTINUE"         = "CONTINUE"i !IdentifierPart { return "CONTINUE"; }
 
 Keyword "Keyword"
 = ADD / AND / BRK / BRS / BR / CALLS / CALL
@@ -677,7 +696,7 @@ Keyword "Keyword"
 / PUSH / RET / SDIV / SET / SMOD / SMUL
 / SHL / SHR / ST / SUB / SWAP / TEST
 / TRAP / XOR
-/ IF / ELSE / DO / WHILE
+/ IF / ELSE / DO / WHILE / BREAK / CONTINUE
 
 
 //

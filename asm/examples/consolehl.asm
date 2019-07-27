@@ -45,6 +45,7 @@ print:
                     in al, 0x83                     # wait for ACK
                 } while z
                 inc x                               # next character
+                continue
             }
         } while !z
         pop a
