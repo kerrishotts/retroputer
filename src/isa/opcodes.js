@@ -244,6 +244,34 @@ OPCODES["trap_r"] = {
     ]
 };
 
+// enter
+OPCODES["enter_n"] = {
+    asm: "enter $n",
+    pattern: "0011_1000 nnnn_nnnn",
+    operands: { n: [7, 0] },
+    decode: ({ n = 0} = {}) => [
+        ...OPCODES["push_r"].decode({r: REGISTER_INDEX.BP}),
+        ...OPCODES["mov_ds"].decode({d: REGISTER_INDEX.BP, s: REGISTER_INDEX.SP}),
+        TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.SP,
+        TASKS.PUSH_WORD | n,
+        TASKS.SUB,
+        TASKS.POP_INTO_REGISTER | REGISTER_INDEX.SP
+    ]
+};
+// exit
+OPCODES["exit_n"] = {
+    asm: "exit $n",
+    pattern: "0011_1001 nnnn_nnnn",
+    operands: { n: [7, 0] },
+    decode: ({ n = 0} = {}) => [
+        TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.SP,
+        TASKS.PUSH_WORD | n,
+        TASKS.ADD,
+        TASKS.POP_INTO_REGISTER | REGISTER_INDEX.SP,
+        ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.BP})
+    ]
+};
+
 // ds variants of shl, shr, mul, div, mod, smul, sdiv, smod
 [
     ["shl", TASKS.SHL_WITH_FLAGS, "0000_1011 dddd_ssss"],
@@ -339,6 +367,8 @@ const addressingTasks = ({ m = 0, i = 0, x = 0, y = 0, a = 0 } = {}) => [
     ...(m > 1 ? [
         TASKS.GET_REGISTER_AND_PUSH | (m === 2 ? REGISTER_INDEX.BP : REGISTER_INDEX.D),
         TASKS.ADD,
+        TASKS.PUSH_WORD | 0xFFFF,
+        TASKS.AND
     ] : []),
     // if indexing by x, do so
     ...(x === 1 ? [
@@ -418,13 +448,13 @@ OPCODES["pop_r"] = {
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.SP,
         TASKS.DUP,
+        TASKS.PUSH_WORD | ((r & 0b1) ? 1 : 2),
+        TASKS.ADD,
+        TASKS.POP_INTO_REGISTER | REGISTER_INDEX.SP,
         ((r & 0b1)
             ? TASKS.GET_BYTE_FROM_MEMORY
             : TASKS.GET_WORD_FROM_MEMORY),
         TASKS.POP_INTO_REGISTER | r,
-        TASKS.PUSH_WORD | ((r & 0b1) ? 1 : 2),
-        TASKS.ADD,
-        TASKS.POP_INTO_REGISTER | REGISTER_INDEX.SP
     ]
 };
 

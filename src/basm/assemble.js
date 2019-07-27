@@ -247,7 +247,7 @@ function tryToAssemble(node, context, pc, fail = false) {
             case OPCODES.ENTER:
             case OPCODES.EXIT:
                 size = 2;
-                bytes.push(op === OPCODES.ENTER ? 38 : 39, evaluate(imm, context) & 0xFF);
+                bytes.push(op === OPCODES.ENTER ? 0x38 : 0x39, evaluate(imm, context) & 0xFF);
                 break;
             case OPCODES.LD:
                 {
