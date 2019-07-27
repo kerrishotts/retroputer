@@ -182,7 +182,7 @@ function evaluate(node, context) {
  * @param {*} pc      the current location
  * @returns {{size: number, bytes: number[]}} Data
  */
-function tryToAssemble(node, context, pc) {
+function tryToAssemble(node, context, pc, fail = false) {
     if (node.type !== TOKENS.INSTRUCTION) {
         err(`Tried to assemble an unexpected token: ${node}`);
     }
@@ -401,6 +401,9 @@ function tryToAssemble(node, context, pc) {
         }
     } catch (err) {
         bytes = undefined;
+        if (fail) {
+            throw err;
+        }
         if (!err.message.startsWith("Could not locate")) {
             throw err;
         }
@@ -408,6 +411,7 @@ function tryToAssemble(node, context, pc) {
     return { size, bytes };
 }
 
+let block_id = 0;
 export function assemble(ast, global, context) {
     global = global || createScope();
     if (!context) { context = global; }
@@ -457,10 +461,11 @@ export function assemble(ast, global, context) {
             case TOKENS.BLOCK:
                 {
                     const addr = context[SCOPE.ADDR];
-                    const newContext = createScope(SCOPE.TYPES.BLOCK, context, "block", addr, false);
-                    //console.log(`new block ${addr}, {util.inspect(node)}`);
+                    const name = `block-${++block_id}`;
+                    const newContext = createScope(SCOPE.TYPES.BLOCK, context, name, addr, false);
+                    //console.log(`new ${name} ${addr}, {util.inspect(node)}`);
                     try {
-                    assemble(node.block, global, newContext);
+                        assemble(node.block, global, newContext);
                     } catch(err) {
                         //console.log(`failed block ${addr}`);
                     }
@@ -473,11 +478,11 @@ export function assemble(ast, global, context) {
                             bytes: data.bytes,
                             size: data.size,
                             pc: data.pc,
-                            context: newContext
+                            context: data.context
                         };
                         context[SCOPE.ADDR] += data.size;
                     });
-                    //console.log(`done block ${addr}, {util.inspect(newContext[SCOPE.CONTENTS])}`);
+                    //console.log(`done ${name} ${addr}, ${util.inspect(newContext[SCOPE.CONTENTS])}`);
                 }
                 break;
             case TOKENS.CONST_DIRECTIVE:
@@ -574,12 +579,16 @@ export function assemble(ast, global, context) {
             if (datum) {
                 const { asm, bytes, context, pc } = datum;
                 if (bytes === undefined) {
-                    const { bytes: newBytes } = tryToAssemble(asm, context, pc);
-                    if (newBytes) {
-                        datum.bytes = newBytes;
-                    } else {
-                        //console.log(util.inspect(context[SCOPE.CONTENTS]));
-                        err(`Could not locate symbol`);
+                    try {
+                        const { bytes: newBytes } = tryToAssemble(asm, context, pc, true);
+                        if (newBytes) {
+                            datum.bytes = newBytes;
+                        } else {
+                            err(`Could not locate symbol`);
+                        }
+                    } catch (err) {
+                        //console.log(util.inspect(context[SCOPE.NAME]));
+                        throw err;
                     }
                 }
                 // if the instruction has its own bytes specified, see if we match

@@ -16,11 +16,10 @@
     ld c, 0x1000
 
     ld a, data.str
-    {
-    _loop:
+    do {
         calls print
-        loops _loop, c
-    }
+        dec c
+    } while !c
 
     ld a, data.crlf
     calls print
@@ -35,23 +34,19 @@ print:
         mov d, a                            # D must have the address to print
         ld x, 0x0000                        # x is our index
         ld a, 0x0000                        # zero A to get it ready for loding characters
-        {
-        _loop:
+        do {
             ld al, [D,X]                        # A should be the desired character
             cmp al, 0x00                        # check if NUL
-            brs z _done                         # ... if NUL, we're done!
-            out 0x82, al                        # write to CON:SEND
-            ld al, 0b10                         # indicate write
-            out 0x80, al                        # ...on CON:CTRL
-            {
-            _loop:
-                in al, 0x83                     # wait for ACK
-                brs z _loop  {$90 $01 $FA}      # ...will be non-zero when ACK'd
+            if !z {
+                out 0x82, al                        # write to CON:SEND
+                ld al, 0b10                         # indicate write
+                out 0x80, al                        # ...on CON:CTRL
+                do {
+                    in al, 0x83                     # wait for ACK
+                } while z
+                inc x                               # next character
             }
-            inc x                               # next character
-            brs _loop                           # go back for another round
-        _done:
-        }
+        } while !z
         pop a
         pop x
         pop d                               # cleaned up, ready to go back

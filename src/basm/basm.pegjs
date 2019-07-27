@@ -319,8 +319,73 @@ Block "Block"
 Line "Line"
 = _ EOL _ { return null; }
 / Block
-/ _ label:Label? _ content:(Instruction / Directive / Block)? _ c:COMMENT? _ EOL _ { return [label, content, c].filter(e => e !== null); }
+/ _ label:Label? _ content:(hlStatement/ Instruction / Directive / Block)? _ c:COMMENT? _ EOL _ { return [label, content, c].filter(e => e !== null); }
 / !(RCURLY / EOL).+ { expected("BLOCK, LABEL, INSTRUCTION, DIRECTIVE, or COMMENT")}
+
+//
+// High Level Statements
+////////////////////////////////////////
+
+hlStatement = hlIF / hlDO
+
+hlElse
+= _ ELSE _ e:Block _ { return e; }
+
+hlIF
+= _ IF _ f:AllFlags _ t:Block _ e:hlElse? {
+    return tBlock([
+        tInstruction("br", {
+            flag: f,
+            addr: addressingMode({ addr: tIdentifier("__then"), m: 0 })
+        }),
+        tInstruction("br", {
+            flag: null,
+            addr: addressingMode({ addr: e ? tIdentifier("__else") : tIdentifier("__endif"), m: 0 })
+        }),
+        tLabel(tIdentifier("__then")),
+        t,
+        ...(e ? [
+            tInstruction("br", {
+                flag: null,
+                addr: addressingMode({ addr: tIdentifier("__endif"), m: 0 })
+            }),
+            tLabel(tIdentifier("__else")),
+            e
+        ] : []),
+        tLabel(tIdentifier("__endif"))
+    ]);
+}
+hlDO
+= _ DO _ l:Block _ WHILE _ f:AllFlags _ {
+    return tBlock([
+        tLabel(tIdentifier("__top")),
+        l,
+        tInstruction("br", {
+            flag: f,
+            addr: addressingMode({ addr: tIdentifier("__top"), m: 0 })
+        })
+    ]);
+}
+/ _ WHILE _ f:AllFlags _ DO _ l:Block _ {
+    return tBlock([
+        tLabel(tIdentifier("__top")),
+        tInstruction("br", {
+            flag: f,
+            addr: addressingMode({ addr: tIdentifier("__do"), m: 0 })
+        }),
+        tInstruction("br", {
+            flag: null,
+            addr: addressingMode({ addr: tIdentifier("__done"), m: 0 })
+        }),
+        tLabel(tIdentifier("__do")),
+        l,
+        tInstruction("br", {
+            flag: null,
+            addr: addressingMode({ addr: tIdentifier("__top"), m: 0 })
+        }),
+        tLabel(tIdentifier("__done")),
+    ]);
+}
 
 //
 // Directives
@@ -597,6 +662,10 @@ SWAP  "Swap"          = "SWAP"i !IdentifierPart { return OPCODES.SWAP; }
 TEST  "Test"          = "TEST"i !IdentifierPart { return OPCODES.TEST; }
 TRAP  "Trap"          = "TRAP"i !IdentifierPart { return OPCODES.TRAP; }
 XOR   "Exclusive Or"  = "XOR"i !IdentifierPart { return OPCODES.XOR; }
+IF    "IF"            = "IF"i !IdentifierPart { return "IF"; }
+ELSE  "ELSE"          = "ELSE"i !IdentifierPart { return "ELSE"; }
+DO    "DO"            = "DO"i !IdentifierPart { return "DO"; }
+WHILE "WHILE"         = "WHILE"i !IdentifierPart { return "WHILE"; }
 
 Keyword "Keyword"
 = ADD / AND / BRK / BRS / BR / CALLS / CALL
@@ -608,6 +677,7 @@ Keyword "Keyword"
 / PUSH / RET / SDIV / SET / SMOD / SMUL
 / SHL / SHR / ST / SUB / SWAP / TEST
 / TRAP / XOR
+/ IF / ELSE / DO / WHILE
 
 
 //
@@ -664,14 +734,14 @@ Flags "Flags"
 / fEXCEPTION / fINTERRUPT_DISABLE
 / fINTERRUPT_SERVICE / fSINGLE_STEP
 
-fNOTZERO              "Not Zero"              = "N"i flag:fZERO { flag.neg = true; return flag; }
-fNOTCARRY             "Not Carry"             = "N"i flag:fCARRY { flag.neg = true; return flag; }
-fNOTOVERFLOW          "Not Overflow"          = "N"i flag:fOVERFLOW { flag.neg = true; return flag; }
-fNOTNEGATIVE          "Not Negative"          = "N"i flag:fNEGATIVE { flag.neg = true; return flag; }
-fNOTEXCEPTION         "Not Exception"         = "N"i flag:fEXCEPTION { flag.neg = true; return flag; }
-fNOTINTERRUPT_DISABLE "Not Interrupt Disable" = "N"i flag:fINTERRUPT_DISABLE { flag.neg = true; return flag; }
-fNOTINTERRUPT_SERVICE "Not Interrupt Service" = "N"i flag:fINTERRUPT_SERVICE { flag.neg = true; return flag; }
-fNOTSINGLE_STEP       "Not Single Step"       = "N"i flag:fSINGLE_STEP { flag.neg = true; return flag; }
+fNOTZERO              "Not Zero"              = ("N"i / "!") flag:fZERO { flag.neg = true; return flag; }
+fNOTCARRY             "Not Carry"             = ("N"i / "!") flag:fCARRY { flag.neg = true; return flag; }
+fNOTOVERFLOW          "Not Overflow"          = ("N"i  / "!")flag:fOVERFLOW { flag.neg = true; return flag; }
+fNOTNEGATIVE          "Not Negative"          = ("N"i  / "!")flag:fNEGATIVE { flag.neg = true; return flag; }
+fNOTEXCEPTION         "Not Exception"         = ("N"i  / "!")flag:fEXCEPTION { flag.neg = true; return flag; }
+fNOTINTERRUPT_DISABLE "Not Interrupt Disable" = ("N"i  / "!")flag:fINTERRUPT_DISABLE { flag.neg = true; return flag; }
+fNOTINTERRUPT_SERVICE "Not Interrupt Service" = ("N"i  / "!")flag:fINTERRUPT_SERVICE { flag.neg = true; return flag; }
+fNOTSINGLE_STEP       "Not Single Step"       = ("N"i  / "!")flag:fSINGLE_STEP { flag.neg = true; return flag; }
 
 NotFlags "Not Flags"
 = fNOTZERO / fNOTCARRY / fNOTOVERFLOW / fNOTNEGATIVE
