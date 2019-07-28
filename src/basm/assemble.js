@@ -525,6 +525,7 @@ export function assemble(ast, global, context) {
                     }
                     const incAmount = node.type === TOKENS.WORD_DIRECTIVE ? 2 : 1;
                     const size = node.size >= 0 ? evaluate(node.size, context) : -1;
+                    // TODO: this is broken if we just want to reserve space without defining the data
                     const data = node.data.map(e => evaluate(e, context));
                     while (data.length < size) {
                         data.push(0);
