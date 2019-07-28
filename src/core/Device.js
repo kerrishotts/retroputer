@@ -11,10 +11,12 @@ export class Device {
         this[_memory] = memory;
         this[_device] = device;
 
-        this[_buffer] = new Uint8Array(new ArrayBuffer(length));
+        this[_buffer] = new Uint8Array(new ArrayBuffer(length << 1));
 
-        this.read = this.read.bind(this);
-        this.write = this.write.bind(this);
+        this.putOnBus = this.putOnBus.bind(this);
+        this.pullFromBus = this.pullFromBus.bind(this);
+        this._read = this._read.bind(this);
+        this._write = this._write.bind(this);
 
         ioBus.executeBus.addReceiver(() => {
             const ioBus = this[_ioBus];
@@ -22,10 +24,9 @@ export class Device {
             if (selectedDevice === this.device) {
                 const command = ioBus.commandBus.value;
                 const address = ioBus.addressSelectBus.value;
-                const data = ioBus.dataBus.value;
-                const fn = command === 0 ? this.read : this.write;
+                const fn = command === 0 ? this.putOnBus : this.pullFromBus;
                 if (fn) {
-                    fn(address, data);
+                    fn(address);
                 }
             }
         });
@@ -37,14 +38,28 @@ export class Device {
 
     }
 
-    read(address = 0) {
-        const ioBus = this[_ioBus];
-        ioBus.dataBus.value = this[_buffer][address];
+    _read(address = 0) {
+        return this[_buffer][address];
+    }
+    _write(address = 0, data = 0) {
+        this[_buffer][address << 1] = data;
+        if (this.mirrored[address]) {
+            this[_buffer][address] = data;
+        }
     }
 
-    write(address = 0, data = 0) {
+    putOnBus(address = 0) {
         const ioBus = this[_ioBus];
-        this[_buffer][address] = data;
+        ioBus.dataBus.value = this._read(address);
+    }
+
+    pullFromBus(address = 0) {
+        const data = this[_ioBus].dataBus.value;
+        this._write(address, data);
+    }
+
+    get mirrored() {
+        return {}
     }
 
     get device() {
@@ -53,8 +68,8 @@ export class Device {
 
     requestService(r) {
         const ioBus = this[_ioBus];
-        this[_ioBus].irqServiceBus.value = this.device;
-        this[_ioBus].irqSignalBus.signal(1);  // hold?
+        ioBus.irqServiceBus.value = this.device;
+        ioBus.irqSignalBus.signal(1);  // hold?
     }
 
     tick() {

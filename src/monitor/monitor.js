@@ -14,6 +14,19 @@ import { ConsoleDevice } from "../devices/Console.js";
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagnostics.js";
 
+import shell from "shelljs";
+
+const round = (n, places = 0) => {
+    const multiplier = 10 ** places;
+    const v = Math.round(n * multiplier) / multiplier;
+    return v;
+}
+
+const numToString = (n, { padWhole = 0, padDecimal = 2, padSign = 0 } = {}) => {
+    const [ whole, decimal ] = Math.abs(n).toString().split(".");
+    const neg = n < 0;
+    return `${(neg ? "-" : "").padStart(padSign)}${whole.padStart(padWhole, "0")}${padDecimal ? "." : ""}${(decimal || "").padEnd(padDecimal, "0")}`;
+}
 
 const VERSION = "0.0.1";
 let verbose = false;
@@ -125,16 +138,19 @@ class Monitor {
 
     reportStatus({name = undefined, stack = false, tasks = false, cache = false, dump = false} = {}) {
         report.table(
-            ["Name", "Activity", "#Ticks", "#Batch", "tpb", "time(ms)", "A", "B", "C", "D", "X", "Y", "BP", "SP", "STAT", "PC", "MP", "MM"],
+            ["Name", "Activity", "#Ticks", "#Slices", "µOP/slice", "time(ms)", "µOP/s", "|",
+             "r: A", "r: B", "r: C", "r: D", "r: X", "r: Y", "r:BP", "r:SP", "STAT", "r:PC", "r:MP", "r:MM"],
             Object.entries(this.diagnostics)
                 .filter(([candidate]) => name !== undefined ? candidate === name : true)
                 .map(([name, diag]) => [
                     name,
                     diag.state,
-                    (this.computers[name].stats.ticks).toString(),
-                    (this.computers[name].stats.batches).toString(),
-                    (this.computers[name].stats.batches !== 0 ? (this.computers[name].stats.ticks / this.computers[name].stats.batches) : 0).toString(),
-                    (this.computers[name].stats.time).toString(),
+                    /* #ticks */ numToString(this.computers[name].stats.ticks, {padDecimal: 0}),
+                    /* #slices */ numToString(this.computers[name].stats.slices, {padDecimal: 0}),
+                    /* micro ops / slice */ numToString(round(this.computers[name].stats.slices !== 0 ? (this.computers[name].stats.ticks / this.computers[name].stats.slices) : 0, 2)),
+                    /* time */ numToString(round(this.computers[name].stats.time, 2)),
+                    /* micro ops / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].stats.ticks / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
+                    "|",
                     ...diag.dumpRegisters().map(toHex4)
                 ])
         );
@@ -384,7 +400,11 @@ const commands = {
         action: ({file, name = monitor.default}) => {
             try {
                 const memory = monitor.memory({ name });
-                const resolvedPath = path.resolve(process.cwd(), file);
+                const dirname = path.dirname(file);
+                const basename = path.basename(file);
+                const newDir = path.resolve(process.cwd(), dirname);
+                shell.pushd("-q", newDir);
+                const resolvedPath = path.resolve(process.cwd(), basename);
                 if (verbose) report.info(`Assembling ${resolvedPath}...`)
                 const asm = fs.readFileSync(resolvedPath, {encoding: "utf8"});
                 if (verbose) report.info(`... parsing...`);
@@ -401,6 +421,8 @@ const commands = {
                 if (verbose) report.info(`... finished!`);
             } catch (err) {
                 report.error(err.message);
+            } finally {
+                shell.popd("-q");
             }
         }
     },

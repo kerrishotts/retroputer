@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import shell from "shelljs";
 import util, { types } from "util";
 
 import { parser } from "./parser.js";
@@ -332,6 +333,7 @@ function tryToAssemble(node, context, pc, fail = false) {
                     if (addr.m === 0) { // relative
                         const npc = (pc + size) & 0x0FFFF;
                         r = a - npc;
+                        /*
                         if (size === 3) {
                             if (r > 127 || r < -128) {
                                 err(`Attempted to ${isCall ? "call" : "branch"}  beyond short range`);
@@ -341,6 +343,7 @@ function tryToAssemble(node, context, pc, fail = false) {
                                 err(`Attempted to  ${isCall ? "call" : "branch"} beyond range`);
                             }
                         }
+                        */
                     }
                     const neg = (flag && flag.neg);
                     const flg = (flag && flag.flag) || 0;
@@ -437,10 +440,21 @@ export function assemble(ast, global, context) {
                 break;
             case TOKENS.IMPORT_DIRECTIVE:
                 {
-                    const filePath = path.resolve(node.path.value);
-                    const fileContents = fs.readFileSync(filePath, { encoding: "utf8" });
+                    const name = node.path.value;
+                    const dirname = path.dirname(name);
+                    const basename = path.basename(name);
+                    const newPath = path.resolve(process.cwd(), dirname);
+                    shell.pushd("-q", newPath);
+                    const asmFile = path.resolve(process.cwd(), basename);
+                    const fileContents = fs.readFileSync(asmFile, { encoding: "utf8" });
                     const ast = parser.parse(fileContents);
-                    assemble(ast, global, context);
+                    try {
+                        assemble(ast, global, context);
+                    } catch (err) {
+                        throw err;
+                    } finally {
+                        shell.popd("-q");
+                    }
                 }
                 break;
             case TOKENS.NAMESPACE_DIRECTIVE:

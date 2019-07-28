@@ -14,6 +14,7 @@
     "cliffy": "^2.0.5",
     "pegjs": "^0.10.0",
     "sade": "^1.6.0",
+    "shelljs": "^0.8.3",
     "yurnalist": "^1.0.5"
   },
   "devDependencies": {

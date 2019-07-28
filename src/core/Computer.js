@@ -16,12 +16,12 @@ export class Computer {
     /**
      * @param {*} param0
      * @property {Performance} param0.performance the performance class to use
-     * @property {boolean} [param0.debug=false] if true, batch stops on single step mode
-     * @property {number} [param0.batchTime=16] the amount of time to run, per batch
-     * @property {number} [param0.batchGranularity=4096] the granularity when checking for batch timing
+     * @property {boolean} [param0.debug=false] if true, slice stops on single step mode
+     * @property {number} [param0.sliceTime=16] the amount of time to run, per slice
+     * @property {number} [param0.sliceGranularity=4096] the granularity when checking for slice timing
      * @property {number} [param0.timingMethod=0] the timing method to use
      */
-    constructor({ performance, debug = false, batchTime = 16, batchGranularity = 4096, timingMethod = TIMING_METHODS.AUTO} = {}) {
+    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 4096, timingMethod = TIMING_METHODS.AUTO} = {}) {
 
         const clock = new Bus(1, 0b1);
         const systemBus = new SystemBus();
@@ -32,7 +32,7 @@ export class Computer {
         this.stats = {
             time: 0,
             ticks: 0,
-            batches: 0
+            slices: 0
         };
 
         this._stopSignal = false;
@@ -59,8 +59,8 @@ export class Computer {
             : TIMING_METHODS.TIMEOUT;
 
         this.options = {
-            batchTime,
-            batchGranularity,
+            sliceTime,
+            sliceGranularity,
             timingMethod: timingMethod === TIMING_METHODS.AUTO ? detectedTimingMethod : timingMethod,
             performance
         };
@@ -88,7 +88,7 @@ export class Computer {
     step() {
         if (this.debug) {
             this.processor.registers.SINGLE_STEP = 1;
-            this.runBatch();
+            this.runSlice();
             this._stopSignal = false;
         } else {
             this.tick();  // without the debug signal, we can't effectively single step
@@ -96,15 +96,15 @@ export class Computer {
     }
 
     /**
-     * Run the computer in batch mode until the desired timeout has been passed
+     * Run the computer in slice mode until the desired timeout has been passed
      * If the computer is in debug mode, a BRK instruction will trigger single-step mode
      * and stop execution early. If the computer is already in single step mode,
      * only a single instruction will execute
      */
-    runBatch() {
-        const { batchTime: timeout, batchGranularity: granularity, performance, timingMethod} = this.options;
-        this._stopSignal = false;       // clear any stop signal for this batch
-        this.stats.batches++;
+    runSlice() {
+        const { sliceTime: timeout, sliceGranularity: granularity, performance, timingMethod} = this.options;
+        this._stopSignal = false;       // clear any stop signal for this slice
+        this.stats.slices++;
         const start = performance.now();
         if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
             let now = start;
@@ -129,51 +129,51 @@ export class Computer {
         const end = performance.now();
         const totalTime = end - start;
         this.stats.time += totalTime;
-        return totalTime;             // used for next batch timing
+        return totalTime;             // used for next slice timing
     }
 
     /**
      * Run the computer indefinitely using the configured timing method.
      */
     run() {
-        const {timingMethod, batchTime} = this.options;
+        const {timingMethod, sliceTime} = this.options;
 
         if (this.running) this.stop();
 
         switch (timingMethod) {
             case TIMING_METHODS.TIMEOUT: {
-                this._runID = setTimeout((function batch() {
-                    const timeTaken = this.runBatch();
+                this._runID = setTimeout((function slice() {
+                    const timeTaken = this.runSlice();
                     if (this.running) {
-                        this._runID = setTimeout(batch.bind(this), batchTime - timeTaken);
+                        this._runID = setTimeout(slice.bind(this), sliceTime - timeTaken);
                     }
                 }).bind(this), 0 );     // may as well start as soon as possible
                 break;
             }
             case TIMING_METHODS.RAF: {
-                this._runID = requestAnimationFrame((function batch() {
-                    const timeTaken = this.runBatch();
+                this._runID = requestAnimationFrame((function slice() {
+                    const timeTaken = this.runSlice();
                     if (this.running) {
-                        this._runID = requestAnimationFrame(batch.bind(this));
+                        this._runID = requestAnimationFrame(slice.bind(this));
                     }
                 }).bind(this));
                 break;
             }
             case TIMING_METHODS.BLOCKING: {
-                this.runBatch();
+                this.runSlice();
                 break;
             }
             case TIMING_METHODS.INTERVAL:
             default: {
                 this._runID = setInterval(() => {
-                    this.runBatch();
-                }, batchTime + 1); // give it time to breathe
+                    this.runSlice();
+                }, sliceTime + 1); // give it time to breathe
             }
         }
     }
     stop() {
         const {timingMethod} = this.options;
-        this._stopSignal = true;        // stop any running batch
+        this._stopSignal = true;        // stop any running slice
         if (this._runID) {
             switch (timingMethod) {
                 case TIMING_METHODS.TIMEOUT: {
