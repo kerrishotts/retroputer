@@ -56,7 +56,7 @@ export class RegisterFile {
 
     getRegister(index) {
         if ((index & 0b1) === 0) {
-            return this[_wordData][index >> 1];
+            return (this[_byteData][index] << 8) | this[_byteData][index+1];
         } else {
             return this[_byteData][index];
         }
@@ -76,7 +76,8 @@ export class RegisterFile {
 
     setRegister(index, value) {
         if ((index & 0b1) === 0) {
-            this[_wordData][index >> 1] = value;
+            this[_byteData][index] = (value & 0xFF00) >> 8;
+            this[_byteData][index + 1] = value & 0x00FF;
         } else {
             this[_byteData][index] = value;
         }
