@@ -583,6 +583,9 @@ OPCODES["ret"] = {
                 TASKS.ADD
             ] : []),
             ...addressingTasks({ m, i, x, y, a }),
+            ...(m !== 0 ? [
+                    TASKS.GET_WORD_FROM_MEMORY
+            ] : []),
             ...(u === 1 ? [
                 // unconditional, so don't check any flags
                 // as such, the address is currently on the stack

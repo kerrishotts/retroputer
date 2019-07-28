@@ -179,7 +179,8 @@ class Monitor {
             }
         }
         if (cache) {
-            report.log("Instruction Cache: " + this.diagnostics[name].dumpInstructionCache().map(([_, v]) => toHex2(v)));
+            report.log("Instruction Cache: ");
+            report.log(this.diagnostics[name].dumpInstructionCache().map(v => toHex4(v)));
         }
     }
 }

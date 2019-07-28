@@ -1,5 +1,5 @@
 import { Computer, TIMING_METHODS } from "./Computer.js";
-import { mapTask } from "../isa/tasks.js";
+import { mapTask, TASKS } from "../isa/tasks.js";
 
 export const toHex = (n, padding=4) => n.toString(16).padStart(padding, "0").toUpperCase();
 export const toHex2 = n => toHex(n, 2);
@@ -62,7 +62,18 @@ export class Diagnostics {
     }
 
     dumpTaskQueue({mapped = false} = {}) {
-        return this.computer.processor.internalState.tasks.map(([pc, task]) => [pc, mapped ? mapTask(task) : task]);
+        //return this.computer.processor.internalState.tasks.map(([pc, task]) => [pc, mapped ? mapTask(task) : task]);
+        return this.computer.processor.internalState.tasks.reduce((acc, cur, idx) => {
+            const which = idx % 2; // if which is 0, processing PC. Otherwise task.
+            if (which === 0) {
+                acc.push([cur, undefined]);
+            } else {
+                const last = acc.pop();
+                last[1] = mapped ? mapTask(cur) : cur;
+                acc.push(last)
+            }
+            return acc;
+        }, []);
     }
 
     dumpTaskStack() {
