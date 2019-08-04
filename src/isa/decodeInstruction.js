@@ -1,15 +1,32 @@
 import { OPCODES, decodeToTasks } from "./opcodes.js";
+import { utils } from "mocha";
 
 export const INVALID_INSTRUCTION = {
     size: 0,
     tasks: null
 };
+
+export const INVALID_DECODE = {
+    size: 0,
+    opcode: null,
+    instruction: 0
+};
+
+
+const opMap = [
+    null,      // size 0 insts don't exist
+    new Map(), // size 1 instructions
+    new Map(), // size 2
+    new Map(), // size 3
+    new Map()  // size 4
+];
+
 /**
  * @export
  * @param {number[]} bytes
  * @returns {*}
  */
-export function decodeInstruction(bytes) {
+function _decodeInstruction(bytes) {
     let complete = false;
     let instruction = 0;
     let byte = 0;
@@ -22,12 +39,12 @@ export function decodeInstruction(bytes) {
         byte = bytes[idx];
         idx += 1;
         if (byte === undefined) {
-            return INVALID_INSTRUCTION; // definitely not a valid instruction
+            return INVALID_DECODE; // definitely not a valid instruction
         }
         instruction = (instruction << 8) | byte;
         size = idx;
         if (size > 4) {
-            return INVALID_INSTRUCTION; // no longer a valid instruction
+            return INVALID_DECODE; // no longer a valid instruction
         }
 
         op = (instruction >> ((size - 1) << 3)) & 0xFF;
@@ -120,8 +137,68 @@ export function decodeInstruction(bytes) {
 
     }
     if (!complete) {
-        return INVALID_INSTRUCTION;
+        return INVALID_DECODE;
     }
-    return { size, tasks: decodeToTasks(instruction, opcode) };
+    return { size, opcode, instruction };
+    //return { size, tasks: decodeToTasks(instruction, opcode) };
 
+}
+
+// decode size 1 instructions
+for (let b = 0; b < 256; b++) {
+    const r = _decodeInstruction([b]);
+    if (r !== INVALID_DECODE) {
+        opMap[r.size].set(b, r.opcode);
+    }
+}
+// decode size 2 instructions and above
+for (let b = 0; b < 256; b++) {
+    for (let bb = 0; bb < 256; bb++) {
+        const op = (b << 8) | bb;
+        // size 2
+        let r = _decodeInstruction([b, bb]);
+        if (r !== INVALID_DECODE) { opMap[2].set(op, r.opcode); }
+        // size 3
+        r = _decodeInstruction([b, bb, 0x00]);
+        if (r !== INVALID_DECODE) { opMap[3].set(op, r.opcode); }
+        // size 4
+        r = _decodeInstruction([b, bb, 0x00, 0x00]);
+        if (r !== INVALID_DECODE) { opMap[4].set(op, r.opcode); }
+    }
+}
+
+const __decodeInstruction = bytes => {
+    let op = 0, idx = 0;
+    let opcode = null, instruction = 0;
+    const len = bytes.length;
+    if (len === 0) return INVALID_DECODE;
+
+    op = bytes[idx++];
+    instruction = op;
+    // check size 1
+    if (opcode = opMap[1].get(op)) return { size: 1, opcode, instruction };
+    if (idx >= len) return INVALID_DECODE;
+
+    op = (op << 8) | bytes[idx++];
+    instruction = op;
+    if (opcode = opMap[2].get(op)) return { size: 2, opcode, instruction };
+    if (idx >= len) return INVALID_DECODE;
+
+    instruction = (instruction << 8) | bytes[idx++];
+    if (opcode = opMap[3].get(op)) return { size: 3, opcode, instruction };
+    if (idx >= len) return INVALID_DECODE;
+
+    instruction = (instruction << 8) | bytes[idx++];
+    if (opcode = opMap[4].get(op)) return { size: 4, opcode, instruction };
+    if (idx >= len) return INVALID_DECODE;
+
+    return INVALID_DECODE;
+}
+
+export const decodeInstruction = bytes => {
+    const r = __decodeInstruction(bytes);
+    if (r !== INVALID_DECODE) {
+        return { size: r.size, tasks: decodeToTasks(r.instruction, r.opcode) };
+    }
+    return INVALID_INSTRUCTION;
 }

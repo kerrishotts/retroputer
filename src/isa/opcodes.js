@@ -10,21 +10,25 @@ const taskCache = new Map();
 export function _constructArgs(instruction, operands) {
     const args = {};
     const argLocations = Object.entries(operands);
-    for (let i = 0, l = argLocations.length; i < l; i++) {
-        const [arg, [msb, lsb]] = argLocations[i];
-        args[arg] = 0;
-        for (let x = msb; x >= lsb; x--) {
-            const bit = (instruction & (1 << x)) ? 1 : 0;
-            args[arg] = (args[arg] << 1) | bit;
+    let i, l, arg, msb, lsb, x, bit, v;
+    for (i = 0, l = argLocations.length; i < l; i++) {
+        [arg, [msb, lsb]] = argLocations[i];
+        v = 0;
+        for (x = msb; x >= lsb; x--) {
+            bit = (instruction & (1 << x)) ? 1 : 0;
+            v = (v << 1) | bit;
         }
+        args[arg] = v;
     }
     return args;
 }
 
 export function decodeToTasks(instruction, { operands, decode }) {
-    if (taskCache.has(instruction)) {
+    const cachedInst = taskCache.get(instruction);
+    if (cachedInst) return cachedInst;
+    /*if (taskCache.has(instruction)) {
         return taskCache.get(instruction);
-    }
+    }*/
     const args = _constructArgs(instruction, operands);
     const tasks = decode(args);
     taskCache.set(instruction, tasks);

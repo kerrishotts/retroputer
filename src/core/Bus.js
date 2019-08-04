@@ -58,8 +58,9 @@ export class Bus {
             this.value = v;
         }
 
+        let curValue = this.value;
         for (let i = this[_receivers].length - 1; i >= 0; i--) {
-            this[_receivers][i](this.value);
+            this[_receivers][i](curValue);
         }
 
         if (!hold) {

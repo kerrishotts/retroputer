@@ -134,14 +134,14 @@ export class RegisterFile {
     get OVERFLOW()          { return (this.FLAGS & 0b01000000) >> FLAGS_INDEX.OVERFLOW; }
     get NEGATIVE()          { return (this.FLAGS & 0b10000000) >> FLAGS_INDEX.NEGATIVE; }
 
-    set ZERO(v)              { this.FLAGS = ((this.FLAGS & 0b11111110) | (v & 0b1)); }
-    set CARRY(v)             { this.FLAGS = ((this.FLAGS & 0b11111101) | (v & 0b1) << FLAGS_INDEX.CARRY); }
-    set SINGLE_STEP(v)       { this.FLAGS = ((this.FLAGS & 0b11111011) | (v & 0b1) << FLAGS_INDEX.SINGLE_STEP); }
-    set INTERRUPT_SERVICE(v) { this.FLAGS = ((this.FLAGS & 0b11110111) | (v & 0b1) << FLAGS_INDEX.INTERRUPT_SERVICE); }
-    set INTERRUPT_DISABLE(v) { this.FLAGS = ((this.FLAGS & 0b11101111) | (v & 0b1) << FLAGS_INDEX.INTERRUPT_DISABLE); }
-    set EXCEPTION(v)         { this.FLAGS = ((this.FLAGS & 0b11011111) | (v & 0b1) << FLAGS_INDEX.EXCEPTION); }
-    set OVERFLOW(v)          { this.FLAGS = ((this.FLAGS & 0b10111111) | (v & 0b1) << FLAGS_INDEX.OVERFLOW); }
-    set NEGATIVE(v)          { this.FLAGS = ((this.FLAGS & 0b01111111) | (v & 0b1) << FLAGS_INDEX.NEGATIVE); }
+    set ZERO(v)              { this.FLAGS = ((this.FLAGS & 0b11111110) | (v && 0b00000001)); }
+    set CARRY(v)             { this.FLAGS = ((this.FLAGS & 0b11111101) | (v && 0b00000010)); }
+    set SINGLE_STEP(v)       { this.FLAGS = ((this.FLAGS & 0b11111011) | (v && 0b00000100)); }
+    set INTERRUPT_SERVICE(v) { this.FLAGS = ((this.FLAGS & 0b11110111) | (v && 0b00001000)); }
+    set INTERRUPT_DISABLE(v) { this.FLAGS = ((this.FLAGS & 0b11101111) | (v && 0b00010000)); }
+    set EXCEPTION(v)         { this.FLAGS = ((this.FLAGS & 0b11011111) | (v && 0b00100000)); }
+    set OVERFLOW(v)          { this.FLAGS = ((this.FLAGS & 0b10111111) | (v && 0b01000000)); }
+    set NEGATIVE(v)          { this.FLAGS = ((this.FLAGS & 0b01111111) | (v && 0b10000000)); }
 
     toJSON() {
         return {

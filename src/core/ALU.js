@@ -77,6 +77,25 @@ export class ALU {
 
         this.signaled = this.signaled.bind(this);
         this[_execute].addReceiver(this.signaled);
+
+        this.stats = {
+            ops: 0,
+            [COMMANDS.ADD]: 0,
+            [COMMANDS.AND]: 0,
+            [COMMANDS.DIV]: 0,
+            [COMMANDS.MOD]: 0,
+            [COMMANDS.MUL]: 0,
+            [COMMANDS.NEG]: 0,
+            [COMMANDS.NOT]: 0,
+            [COMMANDS.OR]:  0,
+            [COMMANDS.SDIV]: 0,
+            [COMMANDS.SMOD]: 0,
+            [COMMANDS.SMUL]: 0,
+            [COMMANDS.SHL]: 0,
+            [COMMANDS.SHR]: 0,
+            [COMMANDS.SUB]: 0,
+            [COMMANDS.XOR]: 0
+        };
     }
 
     get op1Bus() { return this[_op1]; }
@@ -94,6 +113,8 @@ export class ALU {
         let sizeOfOp1 = (command & 0b0011000000) >> 6;
         let sizeOfOp2 = (command & 0b0000110000) >> 4;
         const op = command & 0x00F;
+        this.stats[op]++;
+        this.stats.ops++;
 
         // get the operands and mask them based on the command size
         let a = op1;
@@ -172,16 +193,15 @@ export class ALU {
 
         // overflow is set if the result of the operation is incorrect
         // when performing signed arithmetic
-        const signRet = negative;
         if ((op === COMMANDS.ADD || op === COMMANDS.MUL) && signA === signB) {
             // this is the only case in which an overflow can occur for addition
-            if (signA !== signRet) {
+            if (signA !== negative) {
                 // the return sign is different from one of the input signs
                 // we've overflowed.
                 overflow = 1;
             }
         } else if (op === COMMANDS.SUB && signA !== signB) {
-            if (signA !== signRet) {
+            if (signA !== negative) {
                 overflow = 1;
             }
         }

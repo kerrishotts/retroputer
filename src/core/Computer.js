@@ -18,10 +18,10 @@ export class Computer {
      * @property {Performance} param0.performance the performance class to use
      * @property {boolean} [param0.debug=false] if true, slice stops on single step mode
      * @property {number} [param0.sliceTime=16] the amount of time to run, per slice
-     * @property {number} [param0.sliceGranularity=4096] the granularity when checking for slice timing
+     * @property {number} [param0.sliceGranularity=4095] the granularity when checking for slice timing
      * @property {number} [param0.timingMethod=0] the timing method to use
      */
-    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 4096, timingMethod = TIMING_METHODS.AUTO} = {}) {
+    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0xFFF, timingMethod = TIMING_METHODS.AUTO} = {}) {
 
         const clock = new Bus(1, 0b1);
         const systemBus = new SystemBus();

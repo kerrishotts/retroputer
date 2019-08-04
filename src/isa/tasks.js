@@ -7,12 +7,21 @@ export const SIZE_BYTE = SIZES.BYTE;
 export const SIZE_WORD = SIZES.WORD;
 export const SIZE_ADDR = SIZES.ADDR;
 
-// stack sizes are stored in the top 2 bits
+// stack sizes are stored in bits 30 and 29. Avoiding msb for perf
 export const STACK_BYTE = 0x00000000;
-export const STACK_WORD = 0x40000000;
-export const STACK_ADDR = 0x80000000;
-export const STACK_TYPE_MASK = 0xC0000000;
-export const STACK_DATA_MASK = 0x3FFFFFFF;
+export const STACK_WORD = 0x20000000;
+export const STACK_ADDR = 0x40000000;
+export const STACK_TYPE_MASK = 0x60000000;
+export const STACK_DATA_MASK = 0x1FFFFFFF;
+
+const mapSize = size =>
+    size === SIZE_BYTE ? STACK_BYTE
+  : size === SIZE_WORD ? STACK_WORD
+  : size === SIZE_ADDR ? STACK_ADDR
+  : size === STACK_BYTE ? SIZE_BYTE
+  : size === STACK_WORD ? SIZE_WORD
+  : size === STACK_ADDR ? SIZE_ADDR
+  : size;
 
 /**
  * @param {Array<Number>} stack
@@ -20,42 +29,45 @@ export const STACK_DATA_MASK = 0x3FFFFFFF;
  * @param {number} size
  */
 const push = (stack, data, size) => {
-    const newSize = size === SIZE_BYTE ? STACK_BYTE
-        : size === SIZE_WORD ? STACK_WORD
-            : STACK_ADDR;
+    const newSize = mapSize(size);
     return stack.push(newSize | data);
 };
 
 /**
  * @param {Array<number>} stack
- * @param {boolean} [withSize = false]
- * @returns {number|Array<number>}
+ * @returns {number}
  */
-const pop = (stack, withSize = false) => {
-    const s0 = stack.pop();
+const pop = stack => {
+    const s0 = stack.pop() | 0;
     const data = s0 & STACK_DATA_MASK;
-    if (withSize) {
-        const stackSize = s0 & STACK_TYPE_MASK;
-        const size = stackSize === STACK_BYTE ? SIZE_BYTE
-            : stackSize === STACK_WORD ? SIZE_WORD
-                : SIZE_ADDR;
-        return [data, size];
-    } else {
-        return data;
-    }
+    return data;
 };
+
+/**
+ * @param {Array<number>} stack
+ * @returns {number[]}
+ */
+const popWithSize = stack => {
+    const s0 = stack.pop() | 0;
+    const data = s0 & STACK_DATA_MASK;
+    const stackSize = s0 & STACK_TYPE_MASK;
+    const size = mapSize(stackSize);
+    return [data, size];
+}
 
 
 // tasks comprise an opcode in the top 8 bits
 // and oeprands in the lower 24 bits.
-export const TASK_OPCODE_MASK = 0xFF000000;
+export const TASK_OPCODE_MASK = 0x7F000000;
 export const TASK_OPERAND_MASK = 0x00FFFFFF;
 
-export const opcodeFromTask = task => {
-    let opcode = task & TASK_OPCODE_MASK;
+export const opcodeFromTask = task => task & TASK_OPCODE_MASK;
+/*
+{    let opcode = task & TASK_OPCODE_MASK;
     if (opcode < 0) opcode += 0x100000000;
     return opcode;
 }
+*/
 export const operandFromTask = task => task & TASK_OPERAND_MASK;
 /**
  * @type {Object.<string, number>}
@@ -64,76 +76,76 @@ export const operandFromTask = task => task & TASK_OPERAND_MASK;
  * top eight bits and an optional argument in the lower 24 bits.
  */
 export const TASKS = {
-    NOP: 0x00000000,
+    NOP:                      0x00000000,
     // get and push
-    GET_REGISTER_AND_PUSH: 0x01000000,        // r -> s0
-    POP_INTO_REGISTER: 0x02000000,        // r <- s0
-    PUSH_BYTE: 0x03000000,        // b -> s0
-    PUSH_WORD: 0x04000000,        // w -> s0
-    PUSH_ADDR: 0x05000000,        // a -> s0
-    GET_BYTE_FROM_MEMORY: 0x06000000,        // [s0] -> s0
-    GET_WORD_FROM_MEMORY: 0x07000000,        // [s0] -> s0
-    POP_BYTE_INTO_MEMORY: 0x08000000,        // [s0] <- s1
-    POP_WORD_INTO_MEMORY: 0x09000000,        // [s0] <- s1
+    GET_REGISTER_AND_PUSH:    0x01000000,        // r -> s0
+    POP_INTO_REGISTER:        0x02000000,        // r <- s0
+    PUSH_BYTE:                0x03000000,        // b -> s0
+    PUSH_WORD:                0x04000000,        // w -> s0
+    PUSH_ADDR:                0x05000000,        // a -> s0
+    GET_BYTE_FROM_MEMORY:     0x06000000,        // [s0] -> s0
+    GET_WORD_FROM_MEMORY:     0x07000000,        // [s0] -> s0
+    POP_BYTE_INTO_MEMORY:     0x08000000,        // [s0] <- s1
+    POP_WORD_INTO_MEMORY:     0x09000000,        // [s0] <- s1
 
     // decompose and recompose
-    DECOMPOSE_WORD_TO_BYTES: 0x10000000,      // s0 -> [s0, s1]
-    RECOMPOSE_BYTES_TO_WORD: 0x11000000,      // [s0, s1] -> s0
+    DECOMPOSE_WORD_TO_BYTES:  0x10000000,      // s0 -> [s0, s1]
+    RECOMPOSE_BYTES_TO_WORD:  0x11000000,      // [s0, s1] -> s0
     DECOMPOSE_BYTE_TO_NIBBLE: 0x12000000,     // s0 -> [s0, s1]
     RECOMPOSE_NIBBLE_TO_BYTE: 0x13000000,     // [s0, s1] -> s0
 
     // bit twiddling
-    SET_BIT: 0x20000000,
-    CLEAR_BIT: 0x21000000,
+    SET_BIT:         0x14000000,
+    CLEAR_BIT:       0x15000000,
 
     // decisions
-    PICK: 0x30000000,
+    PICK:            0x16000000,
 
     // commands
-    TRAP: 0x40000000,
-    DUP: 0x50000000,
-    SWAP: 0x51000000,
+    TRAP:            0x17000000,
+    DUP:             0x18000000,
+    SWAP:            0x19000000,
 
     // FLAGS
-    CLEAR_FLAG_IMM: 0x60000000,
-    SET_FLAG_IMM: 0x61000000,
-    TEST_FLAG_IMM: 0x62000000,
+    CLEAR_FLAG_IMM:  0x1A000000,
+    SET_FLAG_IMM:    0x1B000000,
+    TEST_FLAG_IMM:   0x1C000000,
 
     // IO
-    IO_IN: 0x70000000,
-    IO_OUT: 0x71000000,
+    IO_IN:           0x20000000,
+    IO_OUT:          0x21000000,
 
     // arithmetic
-    ADD: 0x80000000,        // [s0, s1] -> s0 + s1
-    ADD_WITH_FLAGS: 0x81000000,
-    SUB: 0x82000000,
-    SUB_WITH_FLAGS: 0x83000000,
-    CMP: 0x84000000,
-    CMP_WITH_FLAGS: 0x85000000,
-    AND: 0x86000000,
-    AND_WITH_FLAGS: 0x87000000,
-    OR: 0x88000000,
-    OR_WITH_FLAGS: 0x89000000,
-    TEST: 0x8A000000,
-    TEST_WITH_FLAGS: 0x8B000000,
-    XOR: 0x8C000000,
-    XOR_WITH_FLAGS: 0x8D000000,
-    SHL: 0x90000000,
-    SHL_WITH_FLAGS: 0x91000000,
-    SHR: 0x92000000,
-    SHR_WITH_FLAGS: 0x93000000,
-    MUL: 0xA0000000,
-    MUL_WITH_FLAGS: 0xA1000000,
-    DIV: 0xA2000000,
-    DIV_WITH_FLAGS: 0xA3000000,
-    MOD: 0xA4000000,
-    MOD_WITH_FLAGS: 0xA5000000,
-    SMUL: 0xB0000000,
-    SMUL_WITH_FLAGS: 0xB1000000,
-    SDIV: 0xB2000000,
-    SDIV_WITH_FLAGS: 0xB3000000,
-    SMOD: 0xB4000000,
-    SMOD_WITH_FLAGS: 0xB5000000,
+    ADD:             0x40000000,        // [s0, s1] -> s0 + s1
+    ADD_WITH_FLAGS:  0x41000000,
+    SUB:             0x42000000,
+    SUB_WITH_FLAGS:  0x43000000,
+    CMP:             0x44000000,
+    CMP_WITH_FLAGS:  0x45000000,
+    AND:             0x46000000,
+    AND_WITH_FLAGS:  0x47000000,
+    OR:              0x48000000,
+    OR_WITH_FLAGS:   0x49000000,
+    TEST:            0x4A000000,
+    TEST_WITH_FLAGS: 0x4B000000,
+    XOR:             0x4C000000,
+    XOR_WITH_FLAGS:  0x4D000000,
+    SHL:             0x50000000,
+    SHL_WITH_FLAGS:  0x51000000,
+    SHR:             0x52000000,
+    SHR_WITH_FLAGS:  0x53000000,
+    MUL:             0x60000000,
+    MUL_WITH_FLAGS:  0x61000000,
+    DIV:             0x62000000,
+    DIV_WITH_FLAGS:  0x63000000,
+    MOD:             0x64000000,
+    MOD_WITH_FLAGS:  0x65000000,
+    SMUL:            0x70000000,
+    SMUL_WITH_FLAGS: 0x71000000,
+    SDIV:            0x72000000,
+    SDIV_WITH_FLAGS: 0x73000000,
+    SMOD:            0x74000000,
+    SMOD_WITH_FLAGS: 0x75000000,
 };
 /**
  * @typedef {Number} Task
@@ -155,14 +167,16 @@ export const TASKS = {
  * @name TASK_FN
  */
 
+
+
+
 /**
  * @type {Object.<Number, TASK_FN>}
  */
 export const TASK_FNS = new Map([
     [TASKS.NOP, () => { }],
     [TASKS.GET_REGISTER_AND_PUSH, ({ stack, registerFile, arg }) => {
-        const rIdx = arg;
-        push(stack, registerFile.getRegister(rIdx), registerFile.getSizeOfRegister(rIdx));
+        push(stack, registerFile.getRegister(arg), registerFile.getSizeOfRegister(arg));
     }],
     [TASKS.POP_INTO_REGISTER, ({ stack, registerFile, arg }) => {
         registerFile.setRegister(arg, pop(stack));
@@ -236,12 +250,14 @@ export const TASK_FNS = new Map([
     }],
     [TASKS.DUP, ({ stack }) => {
         const s0 = stack.pop();   // use pop() to preserve type info
-        stack.push(s0, s0);
+        stack.push(s0);
+        stack.push(s0);
     }],
-    [TASKS.SWAP, ({ stack, registerFile }) => {
+    [TASKS.SWAP, ({ stack}) => {
         const s0 = stack.pop();
         const s1 = stack.pop();
-        stack.push(s0, s1);
+        stack.push(s0);
+        stack.push(s1);
     }],
     [TASKS.SET_BIT, ({ stack, arg }) => {
         const bit = 0b1 << arg;
@@ -251,15 +267,16 @@ export const TASK_FNS = new Map([
         const bit = (0b1 << arg) ^ 0xFFFFFFFF;
         stack.push(stack.pop() & bit);
     }],
-    [TASKS.PICK, ({ stack, arg }) => {
+    [TASKS.PICK, ({ stack}) => {
         const s0 = pop(stack);
         const s1 = stack.pop();
         const s2 = stack.pop();
-        if (s0 !== 0) {
+        stack.push(s0 !== 0 ? s2 : s1);
+        /*if (s0 !== 0) {
             stack.push(s2);
         } else {
             stack.push(s1);
-        }
+        }*/
     }],
     [TASKS.SET_FLAG_IMM, ({ arg, registerFile }) => {
         const flags = registerFile.FLAGS;
@@ -279,7 +296,7 @@ export const TASK_FNS = new Map([
 ]);
 
 Object.entries(TASKS).forEach(([k, v]) => {
-    if (v >= 0x80000000) {
+    if (v >= 0x40000000) {
         let eatReturn = false;
         // this is an ALU op
         if (k.startsWith("CMP")) {
@@ -289,27 +306,37 @@ Object.entries(TASKS).forEach(([k, v]) => {
         const withFlags = v & 0x01000000;
         const op = k.split("_")[0];
         const command = COMMANDS[op];
-        TASK_FNS.set(v, (function (command, eatReturn, { stack, alu, registerFile }) {
-            const [s0, sz0] = pop(stack, true);                   // s1, op2, b
-            const [s1, sz1] = pop(stack, true);                   // s0, op1, a
+        TASK_FNS.set(v, (function (command, eatReturn, withFlags, { stack, alu, registerFile }) {
+            const [s0, sz0] = popWithSize(stack);                   // s1, op2, b
+            const [s1, sz1] = popWithSize(stack);                   // s0, op1, a
             const retSize = Math.max(sz0, sz1);
             alu.op1Bus.data = s1;
             alu.op2Bus.data = s0;
             // set the flags ONLY if this is a WITH_FLAGS operation
             alu.flagsBus.data = (withFlags === 0)
                 ? 0
-                : (registerFile.NEGATIVE << 3) | (registerFile.CARRY << 2) | (registerFile.OVERFLOW << 1) | (registerFile.ZERO);
+                : ((registerFile.FLAGS & 0b10) << 1);
+            //    : (registerFile.NEGATIVE << 3) | (registerFile.CARRY << 2) | (registerFile.OVERFLOW << 1) | (registerFile.ZERO);
             alu.commandBus.data = (retSize << 8) | (sz0 << 6) | (sz1 << 4) | command;
             alu.executeBus.signal();
-            if (!eatReturn) push(stack, alu.retBus.data, retSize);
+            const ret = alu.retBus.data;
+            const flags = alu.flagsBus.data;
+            if (!eatReturn) push(stack, ret, retSize);
             if (withFlags) {
                 // pull back the flags
-                registerFile.NEGATIVE = (alu.flagsBus.data & 0b1000) >> 3;
-                registerFile.CARRY = (alu.flagsBus.data & 0b0100) >> 2;
-                registerFile.OVERFLOW = (alu.flagsBus.data & 0b0010) >> 1;
-                registerFile.ZERO = (alu.flagsBus.data & 0b0001);
+                registerFile.FLAGS = (registerFile.FLAGS & 0b00111100) |
+                        ((flags & 0b1000) << 4) |
+                        ((flags & 0b0100) >> 1) |
+                        ((flags & 0b0010) << 5) |
+                        ((flags & 0b0001));
+                /*
+                registerFile.NEGATIVE = (flags & 0b1000) >> 3;
+                registerFile.CARRY = (flags & 0b0100) >> 2;
+                registerFile.OVERFLOW = (flags & 0b0010) >> 1;
+                registerFile.ZERO = (flags & 0b0001);
+                */
             }
-        }).bind(undefined, command, eatReturn));
+        }).bind(undefined, command, eatReturn, withFlags));
     }
 });
 
@@ -327,11 +354,9 @@ export const mapTask = task => {
 export const executeTask = (task, { stack, alu, registerFile, ioBus, memory }) => {
     const opcode = opcodeFromTask(task);
     const operand = operandFromTask(task);
-    if (TASK_FNS.has(opcode)) {
-        const fn = TASK_FNS.get(opcode);
-        const arg = operand;
-        fn({ arg, stack, alu, registerFile, ioBus, memory });
-    } else {
-        throw new Error(`Could not execute task ${mapTask(task)}`);
-    }
+    //if (TASK_FNS.has(opcode)) {
+        TASK_FNS.get(opcode)({ arg: operand, stack, alu, registerFile, ioBus, memory });
+    //} else {
+        //throw new Error(`Could not execute task ${mapTask(task)}`);
+    //}
 };
