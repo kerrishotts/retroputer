@@ -1,5 +1,5 @@
 .segment data 0x02000 {
-    num: .word 20                       # number to start counting down from
+    num: .word 1000                    # number to start counting down from
     buffer: .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     start: .string "T MINUS ..."
         .byte 0x00
