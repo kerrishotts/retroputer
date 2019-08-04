@@ -138,18 +138,26 @@ class Monitor {
 
     reportStatus({name = undefined, stack = false, tasks = false, cache = false, dump = false} = {}) {
         report.table(
-            ["Name", "Activity", "#Ticks", "#Slices", "µOP/slice", "time(ms)", "µOP/s", "|",
+            ["Name", "Activity", "|", "#Ticks", "#µOPs", "#Insts", "#aOPs", "#Slices", "µOP/slice", "i/slice", "time(ms)", "mµOP/s", "mips", "maOP/s", "µOP/i" ,"|",
              "r: A", "r: B", "r: C", "r: D", "r: X", "r: Y", "r:BP", "r:SP", "STAT", "r:PC", "r:MP", "r:MM"],
             Object.entries(this.diagnostics)
                 .filter(([candidate]) => name !== undefined ? candidate === name : true)
                 .map(([name, diag]) => [
                     name,
                     diag.state,
-                    /* #ticks */ numToString(this.computers[name].stats.ticks, {padDecimal: 0}),
+                    "|",
+                    /* #ticks */ numToString(this.computers[name].processor.stats.ticks, {padDecimal: 0}),
+                    /* #tasks */ numToString(this.computers[name].processor.stats.tasks, {padDecimal: 0}),
+                    /* #insts */ numToString(this.computers[name].processor.stats.insts, {padDecimal: 0}),
+                    /* #alu ops */ numToString(this.computers[name].processor.alu.stats.ops, {padDecimal: 0}),
                     /* #slices */ numToString(this.computers[name].stats.slices, {padDecimal: 0}),
-                    /* micro ops / slice */ numToString(round(this.computers[name].stats.slices !== 0 ? (this.computers[name].stats.ticks / this.computers[name].stats.slices) : 0, 2)),
+                    /* micro ops / slice */ numToString(round(this.computers[name].stats.slices !== 0 ? (this.computers[name].processor.stats.tasks / this.computers[name].stats.slices) : 0, 2)),
+                    /* insts / slice */ numToString(round(this.computers[name].stats.slices !== 0 ? (this.computers[name].processor.stats.insts / this.computers[name].stats.slices) : 0, 2)),
                     /* time */ numToString(round(this.computers[name].stats.time, 2)),
-                    /* micro ops / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].stats.ticks / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
+                    /* million micro ops / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].processor.stats.tasks / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
+                    /* mllion ips / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].processor.stats.insts / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
+                    /* million aops / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].processor.alu.stats.ops / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
+                    /* mop / ips */ numToString(round(this.computers[name].processor.stats.insts !== 0 ? ((this.computers[name].processor.stats.tasks / this.computers[name].processor.stats.insts)) : 0, 4), {padDecimal: 4}),
                     "|",
                     ...diag.dumpRegisters().map(toHex4)
                 ])
@@ -214,9 +222,9 @@ const commands = {
                 label: "blocking", description: "If set, computer execution is blocking until it voluntarily surrenders control via setting SS."
             }
         ],
-        action: ({name = monitor.default}, {blocking = false}) => {
+        action: ({name = monitor.default}, {blocking = false, debug = true}) => {
             try {
-                monitor.create({name, debug: true, timingMethod: blocking ? TIMING_METHODS.BLOCKING : TIMING_METHODS.AUTO});
+                monitor.create({name, debug, timingMethod: blocking ? TIMING_METHODS.BLOCKING : TIMING_METHODS.AUTO});
                 monitor.default = name; // this is the new default machine
                 if (verbose) report.info(`Created a computer with name "${name}"`);
             } catch (err) {
