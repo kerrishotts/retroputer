@@ -79,7 +79,8 @@ test("Can we add two unsigned bytes, generating carry, and pull flags", execTask
     {
         tasks: [TASKS.PUSH_BYTE | 0xA0,
         TASKS.PUSH_BYTE | 0xB9,
-        TASKS.ADD_WITH_FLAGS]
+        TASKS.ADD,
+        TASKS.PULL_FLAGS_FROM_ALU]
     },
     (t, { stack, registerFile }) => {
         t.deepEqual(stack, [0x59 | STACK_BYTE]);
@@ -93,7 +94,8 @@ test("Can we compare two equal numbers, pulling flags", execTaskMacro,
         tasks: [
             TASKS.PUSH_BYTE | 0xA1,
             TASKS.PUSH_BYTE | 0xA1,
-            TASKS.CMP_WITH_FLAGS
+            TASKS.CMP,
+            TASKS.PULL_FLAGS_FROM_ALU
         ]
     },
     (t, { stack, registerFile }) => {
@@ -108,7 +110,8 @@ test("Can we compare two numbers, a < b, pulling flags", execTaskMacro,
         tasks: [
             TASKS.PUSH_BYTE | 0xA1,
             TASKS.PUSH_BYTE | 0xA9,
-            TASKS.CMP_WITH_FLAGS
+            TASKS.CMP,
+            TASKS.PULL_FLAGS_FROM_ALU
         ]
     },
     (t, { stack, registerFile }) => {
@@ -123,7 +126,8 @@ test("Can we compare two numbers, a > b, pulling flags", execTaskMacro,
         tasks: [
             TASKS.PUSH_BYTE | 0xA9,
             TASKS.PUSH_BYTE | 0xA1,
-            TASKS.CMP_WITH_FLAGS
+            TASKS.CMP,
+            TASKS.PULL_FLAGS_FROM_ALU
         ]
     },
     (t, { stack, registerFile }) => {

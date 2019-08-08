@@ -26,13 +26,13 @@
 
     const FLAGS = {
         ZERO: 0,
-        CARRY: 1,
-        SINGLE_STEP: 2,
-        INTERRUPT_SERVICE: 3,
-        INTERRUPT_DISABLE: 4,
-        EXCEPTION: 5,
-        OVERFLOW: 6,
-        NEGATIVE: 7
+        OVERFLOW: 1,
+        CARRY: 2,
+        NEGATIVE: 3,
+        SINGLE_STEP: 4,
+        INTERRUPT_SERVICE: 5,
+        INTERRUPT_DISABLE: 6,
+        EXCEPTION: 7,
     };
 
     const OPCODES = {
@@ -741,7 +741,7 @@ MemoryRegister "Memory Register"
 ////////////////////////////////////////
 fZERO              "Zero"              = "Z"i !IdentifierPart { return tFlag(FLAGS.ZERO); }
 fCARRY             "Carry"             = "C"i !IdentifierPart { return tFlag(FLAGS.CARRY); }
-fOVERFLOW          "Overflow"          = "O"i !IdentifierPart { return tFlag(FLAGS.OVERFLOW); }
+fOVERFLOW          "Overflow"          = "V"i !IdentifierPart { return tFlag(FLAGS.OVERFLOW); }
 fNEGATIVE          "Negative"          = "N"i !IdentifierPart { return tFlag(FLAGS.NEGATIVE); }
 fEXCEPTION         "Exception"         = "X"i !IdentifierPart { return tFlag(FLAGS.EXCEPTION); }
 fINTERRUPT_DISABLE "Interrupt Disable" = "ID"i !IdentifierPart { return tFlag(FLAGS.INTERRUPT_DISABLE); }

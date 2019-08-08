@@ -163,7 +163,7 @@ export class ALU {
             case COMMANDS.AND: ret = a & b; break;
             case COMMANDS.OR:  ret = a | b; break;
             case COMMANDS.XOR: ret = a ^ b; break;
-            case COMMANDS.NOT: ret = a ^ mask[sizeOfOp1]; break;
+            case COMMANDS.NOT: ret = ~a; break;
             case COMMANDS.NEG: ret = -a; break;
             case COMMANDS.SHL: ret = a << (b & 0x3F); break;
             case COMMANDS.SHR:
@@ -186,7 +186,8 @@ export class ALU {
         // carry is set if the return value is larger than the value we can
         // handle -- preserve carry, since it might have been
         // set during subtraction
-        carry = carry | ((ret > mask[sizeOfRet]) ? 1 : 0);
+        //carry = carry | ((ret > mask[sizeOfRet]) ? 1 : 0);
+        carry = carry | ((ret & ~mask[sizeOfRet]) ? 1 : 0);
 
         // mask off the return value to ensure we don't transmit invalid bits
         ret &= mask[sizeOfRet];

@@ -96,12 +96,7 @@ ALL_DATA_REGS.forEach(r => {
     test(`decode not r${r}`, t => {
         const bytes = 0x0900 | r;
         const tasks = decodeToTasks(bytes, OPCODES.not);
-        t.deepEqual(tasks, [
-            TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
-            ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b, op2
-            TASKS.XOR_WITH_FLAGS,
-            TASKS.POP_INTO_REGISTER | r
-        ]);
+        t.deepEqual(tasks, OPCODES.not.decode({r}));
     }) ;
 });
 
@@ -127,13 +122,6 @@ ALL_DATA_REGS.forEach(r => {
     test(`decode neg r${r}`, t => {
         const bytes = 0x0910 | r ;
         const tasks = decodeToTasks(bytes, OPCODES.neg);
-        t.deepEqual(tasks, [
-            TASKS.GET_REGISTER_AND_PUSH | r, // a
-            ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b
-            TASKS.XOR,
-            ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | 0x01,
-            TASKS.ADD_WITH_FLAGS,
-            TASKS.POP_INTO_REGISTER | r
-        ]);
+        t.deepEqual(tasks, OPCODES.neg.decode({r}));
     }) ;
 });

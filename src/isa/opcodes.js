@@ -1,4 +1,4 @@
-import { TASKS, mapTask } from "./tasks.js";
+import { TASKS, mapTask, FLAGS_PULL_FROM_ALU, FLAGS_PUSH_AND_PULL, FLAGS_PUSH_TO_ALU } from "./tasks.js";
 
 import { REGISTER_INDEX, FLAGS_INDEX, RegisterFile } from "../core/RegisterFile.js";
 import { Memory } from "../core/Memory.js";
@@ -50,11 +50,7 @@ OPCODES["brk"] = {
     pattern: "0011_1111",
     operands: {},
     decode: () => [
-        TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP,
-        //TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.FLAGS,
-        //TASKS.PUSH_BYTE | 0b00000100,
-        //TASKS.OR,
-        //TASKS.POP_INTO_REGISTER | REGISTER_INDEX.FLAGS
+        TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
     ]
 };
 
@@ -65,7 +61,7 @@ OPCODES["not"] = {
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b, op2
-        TASKS.XOR_WITH_FLAGS,
+        TASKS.XOR | FLAGS_PULL_FROM_ALU,
         TASKS.POP_INTO_REGISTER | r
     ]
 };
@@ -79,7 +75,7 @@ OPCODES["neg"] = {
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b
         TASKS.XOR,
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | 0x01,
-        TASKS.ADD_WITH_FLAGS,
+        TASKS.ADD | FLAGS_PULL_FROM_ALU,
         TASKS.POP_INTO_REGISTER | r
     ]
 };
@@ -93,7 +89,7 @@ OPCODES["exc"] = {
         ((r & 0x01) ? TASKS.DECOMPOSE_BYTE_TO_NIBBLE : TASKS.DECOMPOSE_WORD_TO_BYTES),
         TASKS.PUSH_BYTE | ((r & 0x01) ? 4 : 8),
         TASKS.SHL,
-        TASKS.OR_WITH_FLAGS,
+        TASKS.OR | FLAGS_PULL_FROM_ALU,
         TASKS.POP_INTO_REGISTER | r
     ]
 };
@@ -127,8 +123,8 @@ OPCODES["mov_ds"] = {
 // faster to use them, but they are convenient from a typing
 // perspective
 [
-    ["inc", TASKS.ADD_WITH_FLAGS, `1100_rrrr`],
-    ["dec", TASKS.SUB_WITH_FLAGS, `1101_rrrr`]
+    ["inc", TASKS.ADD, `1100_rrrr`],
+    ["dec", TASKS.SUB, `1101_rrrr`]
 ].forEach(([opcode, task, pattern]) => {
     OPCODES[`${opcode}_r`] = {
         asm: `${opcode} $r`,
@@ -140,7 +136,7 @@ OPCODES["mov_ds"] = {
             // now do the real work
             TASKS.GET_REGISTER_AND_PUSH | r,
             ((r & 0b1) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | 1,
-            task,
+            task | FLAGS_PULL_FROM_ALU,
             TASKS.POP_INTO_REGISTER | r
         ]
     }
@@ -163,13 +159,13 @@ OPCODES["mov_ds"] = {
 
 // add, sub, cmp, and, or, test, xor
 [
-    ["add", TASKS.ADD_WITH_FLAGS, "0000_0001", "0100_1dd1", "0100_1dd0"],
-    ["sub", TASKS.SUB_WITH_FLAGS, "0000_0010", "0101_0dd1", "0101_0dd0"],
-    ["cmp", TASKS.CMP_WITH_FLAGS, "0000_0011", "0101_1dd1", "0101_1dd0"],
-    ["and", TASKS.AND_WITH_FLAGS, "0000_0100", "0110_0dd1", "0110_0dd0"],
-    ["or", TASKS.OR_WITH_FLAGS, "0000_0101", "0110_1dd1", "0110_1dd0"],
-    ["test", TASKS.TEST_WITH_FLAGS, "0000_0110", "0111_0dd1", "0111_0dd0"],    // TODO: incorrect; the alu doesn't support test ATM
-    ["xor", TASKS.XOR_WITH_FLAGS, "0000_0111", "0111_1dd1", "0111_1dd0"],
+    ["add", TASKS.ADD, "0000_0001", "0100_1dd1", "0100_1dd0"],
+    ["sub", TASKS.SUB, "0000_0010", "0101_0dd1", "0101_0dd0"],
+    ["cmp", TASKS.CMP, "0000_0011", "0101_1dd1", "0101_1dd0"],
+    ["and", TASKS.AND, "0000_0100", "0110_0dd1", "0110_0dd0"],
+    ["or", TASKS.OR, "0000_0101", "0110_1dd1", "0110_1dd0"],
+    ["test", TASKS.TEST, "0000_0110", "0111_0dd1", "0111_0dd0"],    // TODO: incorrect; the alu doesn't support test ATM
+    ["xor", TASKS.XOR, "0000_0111", "0111_1dd1", "0111_1dd0"],
 ].forEach(([opcode, task, ds, db, dw]) => {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
@@ -180,12 +176,14 @@ OPCODES["mov_ds"] = {
                 ? ({ d = 0, s = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | d, // a
                     TASKS.GET_REGISTER_AND_PUSH | s, // b
-                    task]
+                    task | FLAGS_PULL_FROM_ALU
+                ]
                 : ({ d = 0, s = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | d, // a
                     TASKS.GET_REGISTER_AND_PUSH | s, // b
-                    task,
-                    (TASKS.POP_INTO_REGISTER | d)]
+                    task | FLAGS_PUSH_AND_PULL,
+                    (TASKS.POP_INTO_REGISTER | d)
+                ]
         )
     };
     OPCODES[`${opcode}_db`] = {
@@ -197,12 +195,12 @@ OPCODES["mov_ds"] = {
                 ? ({ d = 0, b = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | ((d << 1) | 1), // a
                     TASKS.PUSH_BYTE | b, //b
-                    [task],
+                    task | FLAGS_PULL_FROM_ALU
                 ]
                 : ({ d = 0, b = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | ((d << 1) | 1), // a
                     TASKS.PUSH_BYTE | b, //b
-                    [task],
+                    task | FLAGS_PUSH_AND_PULL,
                     (TASKS.POP_INTO_REGISTER | ((d << 1) | 1))
                 ]
         )
@@ -216,12 +214,12 @@ OPCODES["mov_ds"] = {
                 ? ({ d = 0, w = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | (d << 1), // a
                     TASKS.PUSH_WORD | w, // b
-                    task,
+                    task | FLAGS_PULL_FROM_ALU
                 ]
                 : ({ d = 0, w = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | (d << 1), // a
                     TASKS.PUSH_WORD | w, // b
-                    task,
+                    task | FLAGS_PUSH_AND_PULL,
                     (TASKS.POP_INTO_REGISTER | (d << 1))
                 ]
         )
@@ -278,14 +276,14 @@ OPCODES["exit_n"] = {
 
 // ds variants of shl, shr, mul, div, mod, smul, sdiv, smod
 [
-    ["shl", TASKS.SHL_WITH_FLAGS, "0000_1011 dddd_ssss"],
-    ["shr", TASKS.SHR_WITH_FLAGS, "0000_1101 dddd_ssss"],
-    ["mul", TASKS.MUL_WITH_FLAGS, "1010_1000 dddd_ssss"],
-    ["div", TASKS.DIV_WITH_FLAGS, "1010_1001 dddd_ssss"],
-    ["mod", TASKS.MOD_WITH_FLAGS, "1010_1010 dddd_ssss"],
-    ["smul", TASKS.SMUL_WITH_FLAGS, "1010_1011 dddd_ssss"],
-    ["sdiv", TASKS.SDIV_WITH_FLAGS, "1010_1100 dddd_ssss"],
-    ["smod", TASKS.SMOD_WITH_FLAGS, "1010_1101 dddd_ssss"]
+    ["shl", TASKS.SHL, "0000_1011 dddd_ssss"],
+    ["shr", TASKS.SHR, "0000_1101 dddd_ssss"],
+    ["mul", TASKS.MUL, "1010_1000 dddd_ssss"],
+    ["div", TASKS.DIV, "1010_1001 dddd_ssss"],
+    ["mod", TASKS.MOD, "1010_1010 dddd_ssss"],
+    ["smul", TASKS.SMUL, "1010_1011 dddd_ssss"],
+    ["sdiv", TASKS.SDIV, "1010_1100 dddd_ssss"],
+    ["smod", TASKS.SMOD, "1010_1101 dddd_ssss"]
 ].forEach(([opcode, task, pattern]) => {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
@@ -294,7 +292,7 @@ OPCODES["exit_n"] = {
         decode: ({ d = 0, s = 0 } = {}) => [
             TASKS.GET_REGISTER_AND_PUSH | d, // a
             TASKS.GET_REGISTER_AND_PUSH | s, // b
-            task,
+            task | FLAGS_PUSH_AND_PULL,
             TASKS.POP_INTO_REGISTER | d
         ]
     }
@@ -302,8 +300,8 @@ OPCODES["exit_n"] = {
 
 // rn variants of shl, shr
 [
-    ["shl", TASKS.SHL_WITH_FLAGS, "0000_1010 rrrr_nnnn"],
-    ["shr", TASKS.SHR_WITH_FLAGS, "0000_1100 rrrr_nnnn"]
+    ["shl", TASKS.SHL, "0000_1010 rrrr_nnnn"],
+    ["shr", TASKS.SHR, "0000_1100 rrrr_nnnn"]
 ].forEach(([opcode, task, pattern]) => {
     OPCODES[`${opcode}_rn`] = {
         asm: `${opcode} $r, $n`,
@@ -312,7 +310,7 @@ OPCODES["exit_n"] = {
         decode: ({ r = 0, n = 0 } = {}) => [
             TASKS.GET_REGISTER_AND_PUSH | r, // a
             TASKS.PUSH_BYTE | n, // b
-            task,
+            task | FLAGS_PUSH_AND_PULL,
             TASKS.POP_INTO_REGISTER | r
         ]
     }

@@ -14,6 +14,10 @@ export const STACK_ADDR = 0x40000000;
 export const STACK_TYPE_MASK = 0x60000000;
 export const STACK_DATA_MASK = 0x1FFFFFFF;
 
+export const FLAGS_PUSH_TO_ALU = 0b01;
+export const FLAGS_PULL_FROM_ALU = 0b10;
+export const FLAGS_PUSH_AND_PULL = 0b11;
+
 const mapSize = size =>
     size === SIZE_BYTE ? STACK_BYTE
   : size === SIZE_WORD ? STACK_WORD
@@ -110,6 +114,8 @@ export const TASKS = {
     CLEAR_FLAG_IMM:  0x1A000000,
     SET_FLAG_IMM:    0x1B000000,
     TEST_FLAG_IMM:   0x1C000000,
+    PULL_FLAGS_FROM_ALU: 0x1D000000,
+    PUSH_FLAGS_TO_ALU: 0x1E000000,
 
     // IO
     IO_IN:           0x20000000,
@@ -117,35 +123,20 @@ export const TASKS = {
 
     // arithmetic
     ADD:             0x40000000,        // [s0, s1] -> s0 + s1
-    ADD_WITH_FLAGS:  0x41000000,
     SUB:             0x42000000,
-    SUB_WITH_FLAGS:  0x43000000,
     CMP:             0x44000000,
-    CMP_WITH_FLAGS:  0x45000000,
     AND:             0x46000000,
-    AND_WITH_FLAGS:  0x47000000,
     OR:              0x48000000,
-    OR_WITH_FLAGS:   0x49000000,
     TEST:            0x4A000000,
-    TEST_WITH_FLAGS: 0x4B000000,
     XOR:             0x4C000000,
-    XOR_WITH_FLAGS:  0x4D000000,
     SHL:             0x50000000,
-    SHL_WITH_FLAGS:  0x51000000,
     SHR:             0x52000000,
-    SHR_WITH_FLAGS:  0x53000000,
     MUL:             0x60000000,
-    MUL_WITH_FLAGS:  0x61000000,
     DIV:             0x62000000,
-    DIV_WITH_FLAGS:  0x63000000,
     MOD:             0x64000000,
-    MOD_WITH_FLAGS:  0x65000000,
     SMUL:            0x70000000,
-    SMUL_WITH_FLAGS: 0x71000000,
     SDIV:            0x72000000,
-    SDIV_WITH_FLAGS: 0x73000000,
     SMOD:            0x74000000,
-    SMOD_WITH_FLAGS: 0x75000000,
 };
 /**
  * @typedef {Number} Task
@@ -293,7 +284,32 @@ export const TASK_FNS = new Map([
         const bit = 0b1 << arg;
         push(stack, (((flags & bit) >> arg) > 0) ? 1 : 0, SIZE_BYTE);
     }],
+    [TASKS.PULL_FLAGS_FROM_ALU, ({ arg, alu, registerFile }) => {
+        registerFile.FLAGS = (registerFile.FLAGS & 0xF0) | ( alu.flagsBus.data & arg );
+    }],
+    [TASKS.PUSH_FLAGS_TO_ALU, ({ arg, alu, registerFile }) => {
+        alu.flagsBus.data = (registerFile.FLAGS & 0x0F) & arg;
+    }],
 ]);
+
+const makeArithOp = (command, eatReturn) => {
+    return ({ arg, stack, alu, registerFile }) => {
+        const [s0, sz0] = popWithSize(stack);                   // s1, op2, b
+        const [s1, sz1] = popWithSize(stack);                   // s0, op1, a
+        //const retSize = Math.max(sz0, sz1);
+        const retSize = sz1 > sz0 ? sz1 : sz0; //Math.max(sz0, sz1);
+        alu.op1Bus.data = s1;
+        alu.op2Bus.data = s0;
+        alu.commandBus.data = (retSize << 8) | (sz0 << 6) | (sz1 << 4) | command;
+        alu.flagsBus.data = (arg & 0b1) ? (registerFile.FLAGS & 0xF) : 0;
+        alu.executeBus.signal();
+        if (arg & 0b10) {
+            registerFile.FLAGS = (registerFile.FLAGS & 0xF0) | alu.flagsBus.data;
+        }
+        const ret = alu.retBus.data;
+        if (!eatReturn) push(stack, ret, retSize);
+    };
+};
 
 Object.entries(TASKS).forEach(([k, v]) => {
     if (v >= 0x40000000) {
@@ -303,40 +319,9 @@ Object.entries(TASKS).forEach(([k, v]) => {
             k = k.replace("CMP", "SUB")
             eatReturn = true;
         }
-        const withFlags = v & 0x01000000;
         const op = k.split("_")[0];
         const command = COMMANDS[op];
-        TASK_FNS.set(v, (function (command, eatReturn, withFlags, { stack, alu, registerFile }) {
-            const [s0, sz0] = popWithSize(stack);                   // s1, op2, b
-            const [s1, sz1] = popWithSize(stack);                   // s0, op1, a
-            const retSize = Math.max(sz0, sz1);
-            alu.op1Bus.data = s1;
-            alu.op2Bus.data = s0;
-            // set the flags ONLY if this is a WITH_FLAGS operation
-            alu.flagsBus.data = (withFlags === 0)
-                ? 0
-                : ((registerFile.FLAGS & 0b10) << 1);
-            //    : (registerFile.NEGATIVE << 3) | (registerFile.CARRY << 2) | (registerFile.OVERFLOW << 1) | (registerFile.ZERO);
-            alu.commandBus.data = (retSize << 8) | (sz0 << 6) | (sz1 << 4) | command;
-            alu.executeBus.signal();
-            const ret = alu.retBus.data;
-            const flags = alu.flagsBus.data;
-            if (!eatReturn) push(stack, ret, retSize);
-            if (withFlags) {
-                // pull back the flags
-                registerFile.FLAGS = (registerFile.FLAGS & 0b00111100) |
-                        ((flags & 0b1000) << 4) |
-                        ((flags & 0b0100) >> 1) |
-                        ((flags & 0b0010) << 5) |
-                        ((flags & 0b0001));
-                /*
-                registerFile.NEGATIVE = (flags & 0b1000) >> 3;
-                registerFile.CARRY = (flags & 0b0100) >> 2;
-                registerFile.OVERFLOW = (flags & 0b0010) >> 1;
-                registerFile.ZERO = (flags & 0b0001);
-                */
-            }
-        }).bind(undefined, command, eatReturn, withFlags));
+        TASK_FNS.set(v, makeArithOp(command, eatReturn));
     }
 });
 

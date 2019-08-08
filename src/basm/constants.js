@@ -17,13 +17,13 @@ export const REGISTERS = {
 
 export const FLAGS = {
     ZERO: 0,
-    CARRY: 1,
-    SINGLE_STEP: 2,
-    INTERRUPT_SERVICE: 3,
-    INTERRUPT_DISABLE: 4,
-    EXCEPTION: 5,
-    OVERFLOW: 6,
-    NEGATIVE: 7
+    OVERFLOW: 1,
+    CARRY: 2,
+    NEGATIVE: 3,
+    SINGLE_STEP: 4,
+    INTERRUPT_SERVICE: 5,
+    INTERRUPT_DISABLE: 6,
+    EXCEPTION: 7,
 };
 
 export const OPCODES = {

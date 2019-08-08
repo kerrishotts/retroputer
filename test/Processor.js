@@ -93,6 +93,7 @@ export function execFixture(t, {setup = null, file}, cb) {
 
     if (regs) checkRegs({processor, regs, t, name: codeSegment.name});
     if (flags) checkFlags({processor, flags, t, name: codeSegment.name});
+        t.log(JSON.stringify(processor.registers));
 
     t.notThrows(() => cb && cb(t, {processor}));
 };

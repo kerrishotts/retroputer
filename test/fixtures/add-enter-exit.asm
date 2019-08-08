@@ -4,7 +4,6 @@
 
     ld a, 0x123
     push a                              # arg a, bp + 8
-
     ld a, 0x234
     push a                              # arg b, bp + 6
 
