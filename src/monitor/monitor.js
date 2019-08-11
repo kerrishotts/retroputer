@@ -7,7 +7,9 @@ import { CLI } from "cliffy";
 import sade from "sade";
 
 import { parser } from "../basm/parser.js";
-import { assemble } from "../basm/assemble.js";
+import { assemble, setImportProvider } from "../basm/assemble.js";
+import { nodeImportProvider } from "../basm/importProviders/node.js";
+setImportProvider(nodeImportProvider);
 
 import { Computer, TIMING_METHODS } from "../core/Computer.js";
 import { ConsoleDevice } from "../devices/Console.js";

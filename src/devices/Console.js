@@ -15,18 +15,21 @@ const MASK_CTRL_READ = 0b01;
 const DATA_ACK = 1;
 
 export class ConsoleDevice extends Device {
+    _put(ch) {
+        // log it out
+        if (typeof process !== "undefined") {
+            process.stdout.write(ch);
+        } else {
+            console.log(ch);
+        }
+    }
     pullFromBus(address) {
         super.pullFromBus(address);
         const isWrite = (address === ADR_CTRL) && (this._read(ADR_CTRL) & MASK_CTRL_WRITE) !== 0;
         if (isWrite) {
             // something's been put in our buffer on the SEND line
             const ch = this._read(ADR_SEND);
-            // log it out
-            if (typeof process !== "undefined") {
-                process.stdout.write(String.fromCharCode(ch));
-            } else {
-                console.log(String.fromCharCode(ch));
-            }
+            this._put(String.fromCharCode(ch));
 
             // ACK
             this._write(ADR_ACK, DATA_ACK);

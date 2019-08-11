@@ -12,19 +12,21 @@
   "dependencies": {
     "cli": "^1.0.1",
     "cliffy": "^2.0.5",
-    "pegjs": "^0.10.0",
+    "pegjs": "^0.11.0-master.0b102d2",
     "sade": "^1.6.0",
     "shelljs": "^0.8.3",
     "yurnalist": "^1.0.5"
   },
   "devDependencies": {
     "ava": "^1.4.1",
+    "benchmark": "^2.1.4",
     "c8": "^5.0.2",
     "chai": "^4.2.0",
     "coveralls": "^3.0.3",
     "cross-env": "^5.2.0",
     "eslint-plugin-ava": "^6.0.0",
     "esm": "^3.2.25",
+    "microtime": "^3.0.0",
     "mocha": "^6.1.4"
   },
   "scripts": {
@@ -36,6 +38,7 @@
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
     "basm": "node src/basm/index.js",
     "monitor": "node src/monitor/index.js",
+    "build:basm": "pegjs --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
     "inspect:monitor": "node --inspect src/monitor/index.js",
     "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
     "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",

@@ -6,8 +6,6 @@ import { IOBus } from "./IOBus.js";
 import { RegisterFile } from "./RegisterFile.js";
 import { decodeInstruction } from "../isa/decodeInstruction.js";
 import { executeTask } from "../isa/tasks.js";
-import { Stack } from "../util/Stack";
-import { decode } from "punycode";
 
 const _alu = Symbol("_alu");
 const _registerFile = Symbol("_registerFile");

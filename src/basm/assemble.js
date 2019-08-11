@@ -1,7 +1,7 @@
-import path from "path";
-import fs from "fs";
-import shell from "shelljs";
-import util, { types } from "util";
+let importProvider = {
+    tryImport(name) { throw new Error("Import not supported in this environment."); },
+    finallyImport() { }
+};
 
 import { parser } from "./parser.js";
 
@@ -441,19 +441,14 @@ export function assemble(ast, global, context) {
             case TOKENS.IMPORT_DIRECTIVE:
                 {
                     const name = node.path.value;
-                    const dirname = path.dirname(name);
-                    const basename = path.basename(name);
-                    const newPath = path.resolve(process.cwd(), dirname);
-                    shell.pushd("-q", newPath);
-                    const asmFile = path.resolve(process.cwd(), basename);
-                    const fileContents = fs.readFileSync(asmFile, { encoding: "utf8" });
+                    const fileContents = importProvider.tryImport(name);
                     const ast = parser.parse(fileContents);
                     try {
                         assemble(ast, global, context);
                     } catch (err) {
                         throw err;
                     } finally {
-                        shell.popd("-q");
+                        importProvider.finallyImport();
                     }
                 }
                 break;
@@ -628,4 +623,8 @@ export function assemble(ast, global, context) {
 
     // return the segments
     return code.sort((a, b) => a.addr < b.addr ? -1 : a.addr > b.addr ? 1 : 0);
+}
+
+export const setImportProvider = theImportProvider => {
+    importProvider = theImportProvider;
 }

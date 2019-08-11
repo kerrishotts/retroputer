@@ -8,8 +8,11 @@ import peg from "pegjs";
 import util, { types } from "util";
 
 import { parser } from "./parser.js";
-import { assemble } from "./assemble.js";
+import { assemble, setImportProvider } from "./assemble.js";
+import { nodeImportProvider } from "./importProviders/node.js";
 import cvtDataToBin from "../util/cvtDataToBin.js";
+
+setImportProvider(nodeImportProvider);
 
 function write(segments, format = "js", newline) {
     if (!newline) {

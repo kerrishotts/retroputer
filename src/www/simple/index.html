@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple Retroputer</title>
+    <style>
+        body {
+            font-family: '16-bit7x9Nostalgia-Monospace', Menlo;
+            font-size: 16px;
+            line-height: 16px;
+            margin: 0;
+            text-rendering: optimizeSpeed;
+            -webkit-font-smoothing: none;
+        }
+        #status {
+            width: 100vw;
+        }
+        #status th, #status td {
+            text-align: right;
+            width: 8em;
+            padding: 0.5em;
+        }
+        #status th {
+            background-color: #F8F8F8;
+        }
+
+        #console {
+            font-size: 16px;
+            white-space: pre-wrap;
+            width: 664px;
+            height: 424px;
+            color: white;
+            background-color: black;
+            padding: 12px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+   <h1>Simple Retroputer</h1>
+   <div id="status"></div>
+   <div id="console"></div>
+   <script type="module" src="index.js" /></script>
+</body>
+</html>

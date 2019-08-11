@@ -9,8 +9,8 @@ const _buffer = Symbol("_buffer");
 const _data = Symbol("_data");
 const _systemBus = Symbol("_systemBus");
 
-const { COMMANDS_MEMORY_READ_BYTE, COMMANDS_MEMORY_WRITE_BYTE,
-        COMMANDS_MEMORY_READ_WORD, COMMANDS_MEMORY_WRITE_WORD } = require ("./SystemBus.js");
+import { COMMANDS_MEMORY_READ_BYTE, COMMANDS_MEMORY_WRITE_BYTE,
+        COMMANDS_MEMORY_READ_WORD, COMMANDS_MEMORY_WRITE_WORD } from "./SystemBus.js";
 
 export class MemoryBank {
   constructor({ systemBus, address = 0x00000, size = 0, rom = false, shared = false, buffer = undefined }) {

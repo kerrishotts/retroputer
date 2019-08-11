@@ -1,5 +1,4 @@
 import { OPCODES, decodeToTasks } from "./opcodes.js";
-import { utils } from "mocha";
 
 export const INVALID_INSTRUCTION = {
     size: 0,

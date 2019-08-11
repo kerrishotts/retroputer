@@ -1,4 +1,4 @@
-import { SIZES } from "./ALU";
+import { SIZES } from "./ALU.js";
 
 const _buffer = Symbol("_buffer");
 const _byteData = Symbol("_data");

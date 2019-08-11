@@ -1,5 +1,5 @@
 import { ALU, COMMANDS, SIZES } from "../src/core/ALU.js";
-import { executeTask, TASKS } from "../src/isa/tasks.js";
+import { executeTask, TASKS, TASK_FNS } from "../src/isa/tasks.js";
 import { RegisterFile } from "../src/core/RegisterFile.js";
 import { Stack } from "../src/util/Stack.js";
 
@@ -148,17 +148,14 @@ console.timeEnd("add-alu-with-flags");
 const alu = new ALU();
 const registerFile = new RegisterFile();
 const stack = new Stack(16, 4);
+const fnPUSH = TASK_FNS.get(TASKS.PUSH_WORD);
+const fnADD = TASK_FNS.get(TASKS.ADD);
 console.time("add-tasks");
 for (a = 0; a < AMAX; a++) {
     for (b = 0; b < BMAX; b++) {
-        let tasks = [
-                    TASKS.PUSH_WORD | a,
-                    TASKS.PUSH_WORD | b,
-                    TASKS.ADD | 0,
-                ];
-        for (var i = 0, l = tasks.length; i < l; i++) {
-            executeTask(tasks[i], { stack, alu, registerFile} );
-        }
+        fnPUSH({arg: a, stack, alu, registerFile});
+        fnPUSH({arg: b, stack, alu, registerFile});
+        fnADD({arg: 0, stack, alu, registerFile});
         z = stack.pop() & 0xFFFF;
     }
 }

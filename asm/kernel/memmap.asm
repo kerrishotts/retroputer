@@ -21,6 +21,10 @@
         .const code-start       0x0C000 # start of kernel code
     }
 
+    .namespace screen {
+        .const charmap-start    0x20000
+    }
+
     .namespace traps {
         .const size             256 * 2
         .const start            0x00000 # bottom of trap vectors
