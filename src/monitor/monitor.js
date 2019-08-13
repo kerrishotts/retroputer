@@ -16,6 +16,8 @@ import { ConsoleDevice } from "../devices/Console.js";
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagnostics.js";
 
+import rom from "../roms/kernel.js";
+
 import shell from "shelljs";
 
 const round = (n, places = 0) => {
@@ -49,6 +51,7 @@ class Monitor {
             throw new Error(`A computer with the name "${name}" already exists.`);
         }
         const computer = new Computer({performance, debug, timingMethod});
+        computer.memory.loadFromJS(rom, true);
         const console = new ConsoleDevice({
             device: 8,
             length: 16,
@@ -382,7 +385,7 @@ const commands = {
                         const segments = assemble(ast);
                         segments.forEach(segment => {
                             const data = segment.data;
-                            data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte));
+                            data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte, true));
                             location = segment.addr + data.length;
                         });
                     } else {
@@ -427,7 +430,7 @@ const commands = {
                     const data = segment.data;
                     const name = segment.name;
                     if (verbose) report.info(`... ... writing segment ${name} with ${data.length} bytes to ${toHex(segment.addr)}...`);
-                    data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte));
+                    data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte, true));
                 });
                 if (verbose) report.info(`... finished!`);
             } catch (err) {

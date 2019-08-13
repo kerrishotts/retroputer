@@ -2,7 +2,7 @@ import test from "ava";
 
 import { ALU, COMMANDS, SIZES } from "../src/core/ALU.js";
 
-test("Can create an ALU", (t) => {
+test.only("Can create an ALU", (t) => {
     let alu;
     t.notThrows(() => { alu = new ALU(); });
 });

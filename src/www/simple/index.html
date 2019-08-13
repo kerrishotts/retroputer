@@ -7,19 +7,18 @@
     <title>Simple Retroputer</title>
     <style>
         body {
-            font-family: '16-bit7x9Nostalgia-Monospace', Menlo;
+            margin: 0;
+        }
+        #status, #console, #code, #address {
             font-size: 16px;
             line-height: 16px;
-            margin: 0;
+            font-family: '16-bit7x9Nostalgia-Monospace', Menlo;
             text-rendering: optimizeSpeed;
             -webkit-font-smoothing: none;
         }
-        #status {
-            width: 100vw;
-        }
         #status th, #status td {
             text-align: right;
-            width: 8em;
+            width: 4em;
             padding: 0.5em;
         }
         #status th {
@@ -36,12 +35,55 @@
             padding: 12px;
             margin: 0 auto;
         }
+        .panel-wrapper {
+            display: flex;
+            flex-direction: row;
+        }
+
+        #asm {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+
+        #asm button {
+            flex: 0;
+        }
+        #asm #code {
+            flex: 1 1 auto;
+        }
     </style>
 </head>
 <body>
-   <h1>Simple Retroputer</h1>
-   <div id="status"></div>
-   <div id="console"></div>
-   <script type="module" src="index.js" /></script>
+    <h1>Simple Retroputer</h1>
+    <div id="control">
+        <label>Starting Address: <input type="text" id="address" value="0x02000"/></label>
+        <button id="start">Start</button>
+        <button id="continue">Continue</button>
+        <button id="stop">Stop</button>
+        <button id="random">Randomize Memory</button>
+    </div>
+    <div class="panel-wrapper">
+        <div id="status"></div>
+        <div id="console"></div>
+        <div id="asm">
+            <button id="assemble">Assemble</button>
+            <textarea id="code">.segment code 0x02000 {
+    ld a, 0x0000
+    ld c, 0xFFFE
+    do {
+        inc a
+        dec c
+    } while !c
+    ld c, 0x7FFE
+    do {
+        dec a
+        dec c
+    } while !c
+    brk
+}</textarea>
+        </div>
+    </div>
+    <script type="module" src="index.js" /></script>
 </body>
 </html>

@@ -53,8 +53,8 @@ export class MemoryBank {
     return this[_data][address - this[_startingAddress]];
   }
 
-  write(address, value) {
-    if (!this[_rom]) {
+  write(address, value, override = false) {
+    if (!this[_rom] || override) {
       this[_data][address - this[_startingAddress]] = value;
     }
   }
@@ -153,9 +153,9 @@ export class Memory {
     return (page.read(address) << 8) + page.read(address + 1);
   }
 
-  writeByte(address, value) {
+  writeByte(address, value, override = false) {
     const page = this.pageForAddress(address);
-    page.write(address, value);
+    page.write(address, value, override);
   }
 
   writeWord(address, value) {
@@ -166,13 +166,12 @@ export class Memory {
     page.write(address + 1, lo);
   }
 
-  loadFromJS(data, addrOverride) {
-    let addr = data.addr;
-    if (addrOverride) {
-      addr = addrOverride;
-    }
-    data.data.forEach((v, i) => {
-      this.writeByte(i + addr, v);
+  loadFromJS(bin, override = false) {
+    bin.forEach(segment => {
+      const addr = segment.addr;
+      segment.data.forEach((v, i) => {
+        this.writeByte(i + addr, v, override);
+      });
     });
   }
 }

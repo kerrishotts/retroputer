@@ -3,7 +3,7 @@ import fs from "fs";
 import shell from "shelljs";
 
 export const nodeImportProvider = {
-    tryImport(filename) {
+    tryImport(name) {
         const dirname = path.dirname(name);
         const basename = path.basename(name);
         const newPath = path.resolve(process.cwd(), dirname);

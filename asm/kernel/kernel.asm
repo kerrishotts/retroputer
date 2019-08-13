@@ -2,6 +2,8 @@
     .import "./trapmap.asm"
     .import "./iomap.asm"
     .import "./memmap.asm"
+    .import "./charmap.asm"
+    .import "./palette.asm"
 
     .import "./core/core.asm"
 

@@ -164,8 +164,9 @@ export const TASKS = {
 /**
  * @type {Object.<Number, TASK_FN>}
  */
-export const TASK_FNS = new Map([
-    [TASKS.NOP, () => { }],
+export const TASK_FNS = new Array(256).fill(() => 0);
+[
+    [TASKS.NOP, () => 0],
     [TASKS.GET_REGISTER_AND_PUSH, ({ stack, registerFile, arg }) => {
         push(stack, registerFile.getRegister(arg), registerFile.getSizeOfRegister(arg));
     }],
@@ -255,7 +256,7 @@ export const TASK_FNS = new Map([
         stack.push(stack.pop() | bit); // technically lets us set the upper bits, bot oh well
     }],
     [TASKS.CLEAR_BIT, ({ stack, arg }) => {
-        const bit = (0b1 << arg) ^ 0xFFFFFFFF;
+        const bit = ~(0b1 << arg);
         stack.push(stack.pop() & bit);
     }],
     [TASKS.PICK, ({ stack}) => {
@@ -276,7 +277,7 @@ export const TASK_FNS = new Map([
     }],
     [TASKS.CLEAR_FLAG_IMM, ({ arg, registerFile }) => {
         const flags = registerFile.FLAGS;
-        const bit = (0b1 << arg) ^ 0xFFFFFFFF;
+        const bit = ~(0b1 << arg);
         registerFile.FLAGS = flags & bit;
     }],
     [TASKS.TEST_FLAG_IMM, ({ stack, arg, registerFile }) => {
@@ -290,7 +291,10 @@ export const TASK_FNS = new Map([
     [TASKS.PUSH_FLAGS_TO_ALU, ({ arg, alu, registerFile }) => {
         alu.flagsBus.data = (registerFile.FLAGS & 0x0F) & arg;
     }],
-]);
+].forEach(([command, fn]) => {
+    const idx = command >>> 24;
+    TASK_FNS[idx] = fn;
+});
 
 const makeArithOp = (command, eatReturn) => {
     return ({ arg, stack, alu, registerFile }) => {
@@ -321,7 +325,8 @@ Object.entries(TASKS).forEach(([k, v]) => {
         }
         const op = k.split("_")[0];
         const command = COMMANDS[op];
-        TASK_FNS.set(v, makeArithOp(command, eatReturn));
+        //TASK_FNS.set(v, makeArithOp(command, eatReturn));
+        TASK_FNS[v >>> 24] = makeArithOp(command, eatReturn);
     }
 });
 
@@ -340,7 +345,8 @@ export const executeTask = (task, { stack, alu, registerFile, ioBus, memory }) =
     const opcode = opcodeFromTask(task);
     const operand = operandFromTask(task);
     //if (TASK_FNS.has(opcode)) {
-        TASK_FNS.get(opcode)({ arg: operand, stack, alu, registerFile, ioBus, memory });
+        //TASK_FNS.get(opcode)({ arg: operand, stack, alu, registerFile, ioBus, memory });
+        TASK_FNS[opcode >>> 24]({ arg: operand, stack, alu, registerFile, ioBus, memory });
     //} else {
         //throw new Error(`Could not execute task ${mapTask(task)}`);
     //}

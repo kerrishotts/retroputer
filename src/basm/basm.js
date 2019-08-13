@@ -35,7 +35,7 @@ const options = cli.parse({
         basepath: [ "d", "Base directory (for imports)", "string", process.cwd()]
     });
 global.log = cli.debug;
-
+process.chdir(options.basepath);
 cli.debug("Using options: \n" + JSON.stringify(options, null, 2 ));
 cli.withStdinLines(function(lines, newline) {
     const ast = parser.parse(lines.join(newline));

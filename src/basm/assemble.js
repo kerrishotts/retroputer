@@ -1,6 +1,6 @@
 let importProvider = {
     tryImport(name) { throw new Error("Import not supported in this environment."); },
-    finallyImport() { }
+    importFinally() { }
 };
 
 import { parser } from "./parser.js";
@@ -448,7 +448,7 @@ export function assemble(ast, global, context) {
                     } catch (err) {
                         throw err;
                     } finally {
-                        importProvider.finallyImport();
+                        importProvider.importFinally();
                     }
                 }
                 break;
