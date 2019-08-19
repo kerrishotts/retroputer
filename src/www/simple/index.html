@@ -9,20 +9,28 @@
         body {
             margin: 0;
         }
-        #status, #console, #code, #address {
+        #status {
+            min-width: 25em;
+        }
+
+        #status, #console, #code, #address, code {
             font-size: 16px;
             line-height: 16px;
-            font-family: '16-bit7x9Nostalgia-Monospace', Menlo;
+            font-family: '16-bit-7x9-Nostalgia', '16-bit7x9Nostalgia-Monospace', Menlo;
             text-rendering: optimizeSpeed;
             -webkit-font-smoothing: none;
+            white-space: pre;
         }
         #status th, #status td {
             text-align: right;
             width: 4em;
             padding: 0.5em;
+            color: #444444;
         }
         #status th {
             background-color: #F8F8F8;
+            font-weight: normal;
+            color: #111111;
         }
 
         #console {
@@ -34,6 +42,19 @@
             background-color: black;
             padding: 12px;
             margin: 0 auto;
+            overflow: scroll;
+            display: none;
+        }
+        #canvas {
+            flex: 1 1 auto;
+        }
+        #canvas canvas {
+            image-rendering: optimizeSpeed;             /* Older versions of FF          */
+            image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+            image-rendering: -webkit-optimize-contrast; /* Safari                        */
+            image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+            image-rendering: pixelated;                 /* Awesome future-browsers       */
+            -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
         }
         .panel-wrapper {
             display: flex;
@@ -58,14 +79,22 @@
     <h1>Simple Retroputer</h1>
     <div id="control">
         <label>Starting Address: <input type="text" id="address" value="0x02000"/></label>
+        |
         <button id="start">Start</button>
         <button id="continue">Continue</button>
         <button id="stop">Stop</button>
+        |
+        <button id="jump">Jump</button>
+        <button id="step">Step</button>
+        |
         <button id="random">Randomize Memory</button>
     </div>
     <div class="panel-wrapper">
         <div id="status"></div>
         <div id="console"></div>
+        <div id="canvas">
+            <canvas width="640" height="480"></canvas>
+        </div>
         <div id="asm">
             <button id="assemble">Assemble</button>
             <textarea id="code">.segment code 0x02000 {

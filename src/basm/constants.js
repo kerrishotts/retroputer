@@ -15,6 +15,8 @@ export const REGISTERS = {
     SP: 14
 };
 
+export const REGISTER_NAMES = Object.entries(REGISTERS).reduce((o, [k, v]) => (o[v] = k, o), {});
+
 export const FLAGS = {
     ZERO: 0,
     OVERFLOW: 1,
@@ -25,6 +27,7 @@ export const FLAGS = {
     INTERRUPT_DISABLE: 6,
     EXCEPTION: 7,
 };
+export const FLAG_NAMES = [ "Z", "V", "C", "N", "SS", "IS", "ID", "EX" ];
 
 export const OPCODES = {
     NOP: "nop",
@@ -58,6 +61,8 @@ export const OPCODES = {
     POPALL: "popall",
     PUSHF: "pushf",
     POPF: "popf",
+    PUSHMM: "pushmm",
+    POPMM: "popmm",
     PUSH: "push",
     POP: "pop",
     RET: "ret",

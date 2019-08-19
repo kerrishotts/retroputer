@@ -66,6 +66,14 @@ export class Device {
         return this[_device];
     }
 
+    get ioBus() {
+        return this[_ioBus];
+    }
+
+    get memory() {
+        return this[_memory];
+    }
+
     requestService(r) {
         const ioBus = this[_ioBus];
         ioBus.irqServiceBus.value = this.device;

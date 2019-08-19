@@ -10,11 +10,12 @@ export class SimpleConsoleDevice extends ConsoleDevice {
     }
     _updateTarget() {
         this._outputThrottle = null;
-        this._target.innerText = this._output.substr(-2000).split("\n").slice(-25).join("\n");
+        this._output = this._output.substr(-2000);
+        this._target.innerText = this._output.split("\n").slice(-25).join("\n");
     }
     _put(ch) {
         this._output += ch;
-        if (this._outputThrottle) cancelAnimationFrame(this._outputThrottle);
+        if (this._outputThrottle) return;
         this._outputThrottle = requestAnimationFrame(this._updateTarget);
     }
 }

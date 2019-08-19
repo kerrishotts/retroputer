@@ -3,5 +3,13 @@
     "mix.rootPath": "/",
     "mix.port": 8181,
     "typescript.check.workspaceVersion": false,
-    "vsicons.presets.angular": false
+    "vsicons.presets.angular": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "node_modules": true
+    }
 }

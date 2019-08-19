@@ -20,18 +20,6 @@ import rom from "../roms/kernel.js";
 
 import shell from "shelljs";
 
-const round = (n, places = 0) => {
-    const multiplier = 10 ** places;
-    const v = Math.round(n * multiplier) / multiplier;
-    return v;
-}
-
-const numToString = (n, { padWhole = 0, padDecimal = 2, padSign = 0 } = {}) => {
-    const [ whole, decimal ] = Math.abs(n).toString().split(".");
-    const neg = n < 0;
-    return `${(neg ? "-" : "").padStart(padSign)}${whole.padStart(padWhole, "0")}${padDecimal ? "." : ""}${(decimal || "").padEnd(padDecimal, "0")}`;
-}
-
 const VERSION = "0.0.1";
 let verbose = false;
 
@@ -117,6 +105,14 @@ class Monitor {
         return this.computers[name].memory;
     }
 
+    disassemble({start = undefined, length = 16, name = this.default} = {}) {
+        if (!this.includes(name)) {
+            throw new Error(`A computer with the name "${name}" doesn't exist.`);
+        }
+        const startAt = (start === undefined) ? this.computers[name].processor.registers.PC : start;
+        report.log(this.diagnostics[name].disassembleMemory({start: startAt, length}));
+    }
+
     dump({start = undefined, length = 256, name = this.default} = {}) {
         if (!this.includes(name)) {
             throw new Error(`A computer with the name "${name}" doesn't exist.`);
@@ -145,31 +141,24 @@ class Monitor {
         report.table(
             ["Name", "Activity", "|", "#Ticks", "#µOPs", "#Insts", "#aOPs", "#Slices", "µOP/slice", "i/slice", "time(ms)", "mµOP/s", "mips", "maOP/s", "µOP/i" ,"|",
              "r: A", "r: B", "r: C", "r: D", "r: X", "r: Y", "r:BP", "r:SP", "STAT", "r:PC", "r:MP", "r:MM"],
-            Object.entries(this.diagnostics)
+                    Object.entries(this.diagnostics)
                 .filter(([candidate]) => name !== undefined ? candidate === name : true)
-                .map(([name, diag]) => [
-                    name,
-                    diag.state,
-                    "|",
-                    /* #ticks */ numToString(this.computers[name].processor.stats.ticks, {padDecimal: 0}),
-                    /* #tasks */ numToString(this.computers[name].processor.stats.tasks, {padDecimal: 0}),
-                    /* #insts */ numToString(this.computers[name].processor.stats.insts, {padDecimal: 0}),
-                    /* #alu ops */ numToString(this.computers[name].processor.alu.stats.ops, {padDecimal: 0}),
-                    /* #slices */ numToString(this.computers[name].stats.slices, {padDecimal: 0}),
-                    /* micro ops / slice */ numToString(round(this.computers[name].stats.slices !== 0 ? (this.computers[name].processor.stats.tasks / this.computers[name].stats.slices) : 0, 2)),
-                    /* insts / slice */ numToString(round(this.computers[name].stats.slices !== 0 ? (this.computers[name].processor.stats.insts / this.computers[name].stats.slices) : 0, 2)),
-                    /* time */ numToString(round(this.computers[name].stats.time, 2)),
-                    /* million micro ops / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].processor.stats.tasks / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
-                    /* mllion ips / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].processor.stats.insts / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
-                    /* million aops / sec */ numToString(round(this.computers[name].stats.time !== 0 ? ((this.computers[name].processor.alu.stats.ops / this.computers[name].stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
-                    /* mop / ips */ numToString(round(this.computers[name].processor.stats.insts !== 0 ? ((this.computers[name].processor.stats.tasks / this.computers[name].processor.stats.insts)) : 0, 4), {padDecimal: 4}),
-                    "|",
-                    ...diag.dumpRegisters().map(toHex4)
-                ])
+                .map(([name, diag]) => { 
+                    const dumpedStats = diag.dumpStatistics();
+                    const stats = [ dumpedStats.ticks, dumpedStats.tasks, dumpedStats.insts, dumpedStats.aluOps,
+                        dumpedStats.slices, dumpedStats.microOpsPerSlice, dumpedStats.instsPerSlice, dumpedStats.totalTime,
+                        dumpedStats.MMOPs, dumpedStats.MIPs, dumpedStats.MAOPs, dumpedStats.microOpsPerInst ];
+                    return [
+                        name,
+                        diag.state,
+                        "|", ...stats, "|",
+                        ...diag.dumpRegisters().map(toHex4)
+                    ]})
         );
         if (dump) {
-            report.log("Next 16 bytes: ");
-            this.dump({length: 16, name});
+            report.log("Next Instruction (disassembled): ");
+            const startAt = this.computers[name].processor.registers.PC;
+            report.log(this.diagnostics[name].disassembleMemory({start: startAt, length: 8}).split("\n")[0]);
         }
         if (stack) {
             const stack = this.diagnostics[name].dumpTaskStack();
@@ -464,6 +453,30 @@ const commands = {
             }
         }
     },
+    disassemble: {
+        description: "Disassemble computer memory contents",
+        parameters: [
+            {
+                label: "start", optional: true, type: "number",
+                description: "Starting address to disassemble, defaults to PC"
+            },
+            {
+                label: "length", optional: true, type: "number",
+                description: "Number of bytes to disassemble, defaults to $0F"
+            },
+            {
+                label: "name", optional: true, type: "string",
+                description: `Target computer to disassemble; defaults to current default"`
+            }
+        ],
+        action: ({start, length = 0xF, name = monitor.default}) => {
+            try {
+                monitor.disassemble({start, length, name});
+            } catch (err) {
+                report.error(err.message);
+            }
+        }
+    },
     list: {
         description: "List computer instances and statuses",
         action: () => {
@@ -547,6 +560,9 @@ prog
             // dump
             .addCommand("d", commands.dump)
             .addCommand("dump", commands.dump)
+            // disassemble
+            .addCommand("u", commands.disassemble)
+            .addCommand("disassemble", commands.disassemble)
             // list
             .addCommand("l", commands.list)
             .addCommand("list", commands.list)
