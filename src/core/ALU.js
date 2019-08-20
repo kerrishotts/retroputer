@@ -110,8 +110,8 @@ export class ALU {
         const op1 = this.op1Bus.data;
         const op2 = this.op2Bus.data;
         const sizeOfRet = (command & 0b1100000000) >> 8;
-        let sizeOfOp1 = (command & 0b0011000000) >> 6;
-        let sizeOfOp2 = (command & 0b0000110000) >> 4;
+        const sizeOfOp1 = (command & 0b0011000000) >> 6;
+        const sizeOfOp2 = (command & 0b0000110000) >> 4;
         const op = command & 0x00F;
         this.stats[op]++;
         this.stats.ops++;
@@ -213,6 +213,7 @@ export class ALU {
 
         this.retBus.data = ret;
         this.flagsBus.data = (negative << 3) | (carry << 2) | (overflow << 1) | (zero);
+
     }
 
 }

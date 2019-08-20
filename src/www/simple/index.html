@@ -97,20 +97,27 @@
         </div>
         <div id="asm">
             <button id="assemble">Assemble</button>
-            <textarea id="code">.segment code 0x02000 {
-    ld a, 0x0000
-    ld c, 0xFFFE
+            <textarea id="code">
+.segment code 0x02000 {
+    ld al, 0
+top:
+    ld x, 0
+    ld c, 768
+    ld bl, 0xff
+    ld dl, 0
     do {
-        inc a
+        st [0x10000,x], al
+        st [0x11000,x], bl
+        st [0x12000,x], dl
+        inc al
+        inc x
         dec c
-    } while !c
-    ld c, 0x7FFE
-    do {
-        dec a
-        dec c
-    } while !c
+    } while !z
+    dec al
+    br top
     brk
-}</textarea>
+}
+</textarea>
         </div>
     </div>
     <script type="module" src="index.js" /></script>

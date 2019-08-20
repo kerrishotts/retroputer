@@ -304,7 +304,7 @@ const makeArithOp = (command, eatReturn) => {
         const retSize = sz1 > sz0 ? sz1 : sz0; //Math.max(sz0, sz1);
         alu.op1Bus.data = s1;
         alu.op2Bus.data = s0;
-        alu.commandBus.data = (retSize << 8) | (sz0 << 6) | (sz1 << 4) | command;
+        alu.commandBus.data = (retSize << 8) | (sz1 << 6) | (sz0 << 4) | command;
         alu.flagsBus.data = (arg & 0b1) ? (registerFile.FLAGS & 0xF) : 0;
         alu.executeBus.signal();
         if (arg & 0b10) {

@@ -249,8 +249,8 @@ export class Screen extends Device {
         const bgColor = this._read(BG_COLOR);
         const borderColor = this._read(BORDER_COLOR);
         const borderCfg = this._read(BORDER_CFG);
-        const extraBorderWidth  = borderCfg & 0b00000111 << 1; // border width is * 2
-        const extraBorderHeight = borderCfg & 0b00111000 >> 2; // same for height
+        const extraBorderWidth  = (borderCfg & 0b00000111) << 1; // border width is * 2
+        const extraBorderHeight = (borderCfg & 0b00111000) >> 2; // same for height
         const trapOnRaster = this._read(TRAP_ON_RASTER);
         const currentRaster = this._raster;
         const layers = this._getLayers();
@@ -267,9 +267,9 @@ export class Screen extends Device {
         let whichBit;
 
         for (let x = 0; x < SCREEN_COLUMNS; x++) {
-            if ((x < BORDER_WIDTH + extraBorderWidth) || (x > ADDRESSABLE_COLUMNS + BORDER_WIDTH - extraBorderWidth)) {
+            if ((x < BORDER_WIDTH + extraBorderWidth) || (x >= ADDRESSABLE_COLUMNS + BORDER_WIDTH - extraBorderWidth)) {
                 curPixelColor = borderColor;
-            } else if ((y < BORDER_HEIGHT + extraBorderHeight) || (y > ADDRESSABLE_ROWS + BORDER_HEIGHT - extraBorderHeight)) {
+            } else if ((y < BORDER_HEIGHT + extraBorderHeight) || (y >= ADDRESSABLE_ROWS + BORDER_HEIGHT - extraBorderHeight)) {
                 curPixelColor = borderColor;
             } else {
                 curPixelColor = bgColor;
@@ -290,7 +290,7 @@ export class Screen extends Device {
                                 charColX = aX & 0x07;
                                 charRow = aY >>> 3;
                                 charRowY = aY & 0x07;
-                                tilePos = (aY << (layer.mode === 0 ? 5 : 6)) + aX;
+                                tilePos = (charRow << (layer.mode === 0 ? 5 : 6)) + charCol;
                                 tile = this.memory.readByte(pageAddr + tilePos)
                                 tilePixel = this.memory.readByte(tilePageAddr + (tile << 6) + (charRowY << 3) + charColX);
                                 tileFgColor = this.memory.readByte(pageAddr + tilePos + 0x1000);

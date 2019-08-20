@@ -13,6 +13,8 @@ export class Device {
 
         this[_buffer] = new Uint8Array(new ArrayBuffer(length << 1));
 
+        this._length = length;
+
         this.putOnBus = this.putOnBus.bind(this);
         this.pullFromBus = this.pullFromBus.bind(this);
         this._read = this._read.bind(this);
@@ -29,6 +31,16 @@ export class Device {
                     fn(address);
                 }
             }
+            if (this._length === 32) {
+                if (selectedDevice === this.device + 1) {
+                    const command = ioBus.commandBus.value;
+                    const address = ioBus.addressSelectBus.value + 16;
+                    const fn = command === 0 ? this.putOnBus : this.pullFromBus;
+                    if (fn) {
+                        fn(address);
+                    }
+                }
+            }
         });
 
         this.tick = this.tick.bind(this);
@@ -42,7 +54,7 @@ export class Device {
         return this[_buffer][address];
     }
     _write(address = 0, data = 0) {
-        this[_buffer][address << 1] = data;
+        this[_buffer][this._length + address] = data;
         if (this.mirrored[address]) {
             this[_buffer][address] = data;
         }
