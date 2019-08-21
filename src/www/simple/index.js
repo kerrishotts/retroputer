@@ -16,7 +16,7 @@ import rom from "../../roms/kernel.js";
 
 const $ = sel => document.querySelector(sel);
 
-const computer = new Computer({ performance, debug: true, timingMethed: TIMING_METHODS.AUTO, sliceTime: 16 });
+const computer = new Computer({ performance, debug: true, timingMethed: TIMING_METHODS.AUTO, sliceTime: 15 });
 // load in the ROM data
 computer.memory.loadFromJS(rom, true);
 

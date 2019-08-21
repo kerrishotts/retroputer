@@ -291,10 +291,10 @@ export class Screen extends Device {
                                 charRow = aY >>> 3;
                                 charRowY = aY & 0x07;
                                 tilePos = (charRow << (layer.mode === 0 ? 5 : 6)) + charCol;
-                                tile = this.memory.readByte(pageAddr + tilePos)
-                                tilePixel = this.memory.readByte(tilePageAddr + (tile << 6) + (charRowY << 3) + charColX);
-                                tileFgColor = this.memory.readByte(pageAddr + tilePos + 0x1000);
-                                tileBgColor = this.memory.readByte(pageAddr + tilePos + 0x2000);
+                                tile = this.memory.readUnmappedByte(pageAddr + tilePos)
+                                tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (charRowY << 3) + charColX);
+                                tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x1000);
+                                tileBgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x2000);
                                 if (tilePixel === 0x00) tempPixelColor = tileBgColor;
                                 else if (tilePixel === 0xFF) tempPixelColor = tileFgColor;
                                 else tempPixelColor = tilePixel;
@@ -302,10 +302,10 @@ export class Screen extends Device {
                                 else if (tempPixelColor === 0xFF) tempPixelColor = layer.fg;
                                 break;
                             case 2:
-                                tempPixelColor = this.memory.readByte(pageAddr + (aY << 8) + aX);
+                                tempPixelColor = this.memory.readUnmappedByte(pageAddr + (aY << 8) + aX);
                                 break;
                             case 3:
-                                tempPixelColor = this.memory.readByte(pageAddr + (aY << 7) + (aX >> 2));
+                                tempPixelColor = this.memory.readUnmappedByte(pageAddr + (aY << 7) + (aX >> 2));
                                 whichBit = aX & 0b11;
                                 tempPixelColor &= (0b11 << (whichBit * 2)) >> (whichBit * 2) << 6;
                                 break;
@@ -316,9 +316,9 @@ export class Screen extends Device {
             }
 
             paletteOffset = curPixelColor * 4;
-            r = this.memory.readByte(paletteAddr + paletteOffset + 0);
-            g = this.memory.readByte(paletteAddr + paletteOffset + 1);
-            b = this.memory.readByte(paletteAddr + paletteOffset + 2);
+            r = this.memory.readUnmappedByte(paletteAddr + paletteOffset + 0);
+            g = this.memory.readUnmappedByte(paletteAddr + paletteOffset + 1);
+            b = this.memory.readUnmappedByte(paletteAddr + paletteOffset + 2);
 
             frameOffset = (y * 640 + x) * 4;
             this._frame[frameOffset + 0] = r;
@@ -335,7 +335,8 @@ export class Screen extends Device {
             this._lastPerformance = now;
 
             const numSeconds = (now - this._startTime) / MS_PER_SEC;
-            this._ticksPerSecond = ((this._ticksPerSecond * SAMPLES) + this._ticksThisSecond) / (SAMPLES + 1);
+            //this._ticksPerSecond = ((this._ticksPerSecond * SAMPLES) + this._ticksThisSecond) / (SAMPLES + 1);
+            this._ticksPerSecond = (this._ticksPerSecond + this._ticksThisSecond) / 2;
             this._ticksThisSecond = 0;
 
             this._ticksPerRaster = this._ticksPerSecond / (TARGET_FPS * SCREEN_ROWS);

@@ -9,8 +9,10 @@ const _buffer = Symbol("_buffer");
 const _data = Symbol("_data");
 const _systemBus = Symbol("_systemBus");
 
-import { COMMANDS_MEMORY_READ_BYTE, COMMANDS_MEMORY_WRITE_BYTE,
-        COMMANDS_MEMORY_READ_WORD, COMMANDS_MEMORY_WRITE_WORD } from "./SystemBus.js";
+import {
+  COMMANDS_MEMORY_READ_BYTE, COMMANDS_MEMORY_WRITE_BYTE,
+  COMMANDS_MEMORY_READ_WORD, COMMANDS_MEMORY_WRITE_WORD
+} from "./SystemBus.js";
 
 export class MemoryBank {
   constructor({ systemBus, address = 0x00000, size = 0, rom = false, shared = false, buffer = undefined }) {
@@ -80,7 +82,7 @@ export class MemoryBank {
           const hi = (data & 0xFF00) >> 8;
           const lo = (data & 0x00FF);
           this.write(address, hi);
-          this.write(address+1, lo);
+          this.write(address + 1, lo);
           break;
       }
     }
@@ -90,17 +92,17 @@ export class MemoryBank {
 const _pages = Symbol("_pages");
 
 export class Memory {
-  constructor({ systemBus, pageCount = 32, pageSize = 0x4000, romPages=[28, 29, 30, 31], shared = false, buffer = null }) {
+  constructor({ systemBus, pageCount = 32, pageSize = 0x4000, romPages = [28, 29, 30, 31], shared = false, buffer = null }) {
     const pages = [];
 
-    for (let i = 0; i< pageCount; i++) {
+    for (let i = 0; i < pageCount; i++) {
       pages.push(new MemoryBank({
         systemBus,
         address: i * pageSize,
         size: pageSize,
         rom: romPages.indexOf(i) > -1,
         shared,
-        buffer: buffer ? buffer.slice(i*pageSize, pageSize) : undefined
+        buffer: buffer ? buffer.slice(i * pageSize, pageSize) : undefined
       }));
     }
 
@@ -122,29 +124,34 @@ export class Memory {
   pageForAddress(address) {
     const pages = this[_pages];
     const map = this[_systemBus].map;
-    const mappedPages = [
-      0,
-      map & 0b0000000000011111 ,
-      (map & 0b0000001111100000) >> 5,
-      (map & 0b0111110000000000) >> 10
-    ];
     const page = (address & 0b1111100000000000000) >> 14;
-    if (page < 4) {
-      return pages[mappedPages[page]];
-    } else {
-      return pages[page];
+
+    switch (page) {
+      case 1:
+        return pages[map & 0b0000000000011111];
+      case 2:
+        return pages[(map & 0b0000001111100000) >> 5];
+      case 3:
+        return pages[(map & 0b0111110000000000) >> 10];
+      default:
+        return pages[page];
     }
-/*
-    for (let i = pages.length - 1; i >= 0; i--) {
-      if (pages[i].startingAddress <= address && address <= pages[i].endingAddress) {
-        return pages[i];
-      }
-    }
-*/
+    /*
+        for (let i = pages.length - 1; i >= 0; i--) {
+          if (pages[i].startingAddress <= address && address <= pages[i].endingAddress) {
+            return pages[i];
+          }
+        }
+    */
   }
 
   readByte(address) {
     const page = this.pageForAddress(address);
+    return page.read(address);
+  }
+
+  readUnmappedByte(address) {
+    const page = this[_pages][(address & 0b1111100000000000000) >> 14];
     return page.read(address);
   }
 
