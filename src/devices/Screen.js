@@ -81,8 +81,8 @@ const MIRROR_MAP = {
     [BORDER_COLOR]: true,
     [BORDER_CFG]: true,
     [TRAP_ON_RASTER]: true,
-    [CURRENT_RASTER]: false,
-    [RESET_WAIT]: false
+    [CURRENT_RASTER]: true,
+    [RESET_WAIT]: true
 };
 
 const VSYNC_TRAP    = 0x88;
@@ -189,6 +189,7 @@ export class Screen extends Device {
                     this._wait = true;
                 }
             }
+            this._write(CURRENT_RASTER, this._raster >> 1);
             this._adjustRasterSpeed();
         } 
     }
@@ -339,7 +340,7 @@ export class Screen extends Device {
             this._ticksPerSecond = (this._ticksPerSecond + this._ticksThisSecond) / 2;
             this._ticksThisSecond = 0;
 
-            this._ticksPerRaster = this._ticksPerSecond / (TARGET_FPS * SCREEN_ROWS);
+            this._ticksPerRaster = Math.floor(this._ticksPerSecond / (TARGET_FPS * SCREEN_ROWS));
         }
     }
 }

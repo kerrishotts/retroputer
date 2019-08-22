@@ -10767,8 +10767,7 @@ function peg$parse(input, options) {
           str = str.replace("0x", "")
                   .replace("0b", "")
                   .replace("$", "")
-                  .replace("h", "")
-                  .replace("b", "");
+                  .replace("h", "");
 
           return parseInt(str, radix);
       }

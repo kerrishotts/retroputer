@@ -6,6 +6,7 @@ const html = htm.bind(React.createElement);
 import { Computer, TIMING_METHODS } from "../../core/Computer.js";
 import { SimpleConsoleDevice } from "./SimpleConsole.js";
 import { Screen } from "../../devices/Screen.js";
+import { DMA } from "../../devices/DMA.js";
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics, numToString, round } from "../../core/Diagnostics.js";
 
@@ -16,7 +17,7 @@ import rom from "../../roms/kernel.js";
 
 const $ = sel => document.querySelector(sel);
 
-const computer = new Computer({ performance, debug: true, timingMethed: TIMING_METHODS.AUTO, sliceTime: 15 });
+const computer = new Computer({ performance, debug: true, timingMethed: TIMING_METHODS.AUTO, sliceTime: 16 });
 // load in the ROM data
 computer.memory.loadFromJS(rom, true);
 
@@ -38,6 +39,14 @@ const screen = new Screen({
     memory: computer.memory,
     clock: computer.clock,
     performance
+});
+
+const dma = new DMA({
+    device: 13,
+    length: 16,
+    ioBus: computer.ioBus,
+    memory: computer.memory,
+    clock: computer.clock
 });
 
 const frameCanvas = document.createElement("canvas");

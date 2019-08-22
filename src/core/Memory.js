@@ -17,7 +17,7 @@ import {
 export class MemoryBank {
   constructor({ systemBus, address = 0x00000, size = 0, rom = false, shared = false, buffer = undefined }) {
     this[_buffer] = buffer || new (shared ? SharedArrayBuffer : ArrayBuffer)(size);
-    this[_data] = new Uint8Array(this[_buffer]);
+    this[_data] = new Uint8Array(this[_buffer], buffer ? address : 0, size);
     this[_size] = size;
     this[_startingAddress] = address;
     this[_endingAddress] = address + size - 1;
@@ -94,6 +94,7 @@ const _pages = Symbol("_pages");
 export class Memory {
   constructor({ systemBus, pageCount = 32, pageSize = 0x4000, romPages = [28, 29, 30, 31], shared = false, buffer = null }) {
     const pages = [];
+    this[_buffer] = buffer || new (shared ? SharedArrayBuffer : ArrayBuffer)(pageCount * pageSize);
 
     for (let i = 0; i < pageCount; i++) {
       pages.push(new MemoryBank({
@@ -102,7 +103,7 @@ export class Memory {
         size: pageSize,
         rom: romPages.indexOf(i) > -1,
         shared,
-        buffer: buffer ? buffer.slice(i * pageSize, pageSize) : undefined
+        buffer: this[_buffer]
       }));
     }
 
@@ -180,5 +181,25 @@ export class Memory {
         this.writeByte(i + addr, v, override);
       });
     });
+  }
+
+  copyWithin(sourceAddress, targetAddress, length) {
+    (new Uint8Array(this[_buffer])).copyWithin(targetAddress, sourceAddress, sourceAddress + length);
+  }
+
+  setWithin(buffer, address) {
+    (new Uint8Array(this[_buffer])).set(buffer, address);
+  }
+
+  fillWithin(data, address, length) {
+    (new Uint8Array(this[_buffer])).fill(data, address, address + length);
+  }
+
+  swapWithin(sourceAddress, targetAddress, length) {
+    const source = Uint8Array.from(new Uint8Array(this[_buffer], sourceAddress, length));
+    const target = Uint8Array.from(new Uint8Array(this[_buffer], targetAddress, length));
+
+    this.setWithin(source, targetAddress);
+    this.setWithin(target, sourceAddress);
   }
 }
