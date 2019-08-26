@@ -71,12 +71,14 @@ const diagnostics = new Diagnostics(computer);
 window.diagnostics = diagnostics;
 
 let stopTimer = false;
+let diagnosticsTimer;
 const updateDiagnostics = () => {
     if (diagnostics.state !== "running") {
         stopTimer = true;
+        diagnosticsTimer = null;
     }
     //if (!stopTimer) requestAnimationFrame(updateDiagnostics);
-    if (!stopTimer) setTimeout(updateDiagnostics, 100);
+    if (!stopTimer) diagnosticsTimer = setTimeout(updateDiagnostics, 100);
     const el = document.querySelector("#status");
     const statsHeader = ["Activity", "#Ticks", "#µOPs", "#Insts", "#aOPs", "#Slices", "µOP/slice", "i/slice", "time(ms)", "mµOP/s", "mips", "maOP/s", "µOP/i"];
     const regsHeader = ["", "r: A", "r: B", "r: C", "r: D", "r: X", "r: Y", "r:BP", "r:SP", "STAT", "r:PC", "r:MP", "r:MM"];
@@ -132,11 +134,13 @@ $("#start").onclick = () => {
     computer.processor.jump(Number($("#address").value));
     computer.processor.registers.SINGLE_STEP = 0;
     stopTimer = false;
+    if (diagnostics.state == "running") return;
     requestAnimationFrame(updateDiagnostics);
     computer.run();
 }
 
 $("#continue").onclick = () => {
+    if (diagnostics.state == "running") return;
     computer.processor.registers.SINGLE_STEP = 0;
     stopTimer = false;
     requestAnimationFrame(updateDiagnostics);
@@ -146,6 +150,7 @@ $("#continue").onclick = () => {
 $("#jump").onclick = () => {
     computer.processor.jump(Number($("#address").value));
     stopTimer = false;
+    if (diagnostics.state == "running") return;
     requestAnimationFrame(updateDiagnostics);
 }
 

@@ -46,7 +46,7 @@
     "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
     "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
     "perf": "node --prof-process --preprocess -j .perf/i*.log | flamebearer && rm flamegraph.html",
-    "server": "http-server -c-1 ."
+    "server": "http-server -a 127.0.0.1 -c-1 ."
   },
   "repository": {
     "type": "git",
