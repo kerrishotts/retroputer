@@ -309,7 +309,7 @@ export class Screen extends Device {
                             case 3:
                                 tempPixelColor = this.memory.readUnmappedByte(pageAddr + (aY << 7) + (aX >> 2));
                                 whichBit = aX & 0b11;
-                                tempPixelColor &= (0b11 << (whichBit * 2)) >> (whichBit * 2) << 6;
+                                tempPixelColor = (0b11 << (whichBit * 2)) >> (whichBit * 2) << 6;
                                 break;
                         }
                         curPixelColor = tempPixelColor !== 0 ? tempPixelColor : curPixelColor;
