@@ -23,6 +23,9 @@ computer.memory.loadFromJS(rom, true);
 
 window.computer = computer;
 
+const diagnostics = new Diagnostics(computer);
+window.diagnostics = diagnostics;
+
 const simpleConsole = new SimpleConsoleDevice({
     target: document.querySelector("#console"),
     device: 8,
@@ -49,26 +52,7 @@ const dma = new DMA({
     clock: computer.clock
 });
 
-const frameCanvas = document.createElement("canvas");
-frameCanvas.setAttribute("width", "640");
-frameCanvas.setAttribute("height", "480");
-const frameCtx = frameCanvas.getContext("2d");
-const frameBuffer = frameCtx.createImageData(640, 480);
 
-const canvas = $("#canvas canvas");
-const ctx = canvas.getContext("2d");
-
-function handleVSYNC() {
-    frameBuffer.data.set(screen.frame);
-    frameCtx.putImageData(frameBuffer, 0, 0);
-    ctx.drawImage(frameCanvas, 0, 0);
-    screen.resetWait();
-    requestAnimationFrame(handleVSYNC);
-}
-handleVSYNC();
-
-const diagnostics = new Diagnostics(computer);
-window.diagnostics = diagnostics;
 
 let stopTimer = false;
 let diagnosticsTimer;
@@ -106,7 +90,36 @@ const updateDiagnostics = () => {
 };
 updateDiagnostics();
 
+const frameCanvas = document.createElement("canvas");
+frameCanvas.setAttribute("width", "640");
+frameCanvas.setAttribute("height", "480");
+const frameCtx = frameCanvas.getContext("2d");
+const frameBuffer = frameCtx.createImageData(640, 480);
 
+const canvas = $("#canvas canvas");
+const ctx = canvas.getContext("2d");
+
+let orphanedFrames = 0;
+function handleVSYNC() {
+    if (diagnostics.state !== "running") {
+        if (orphanedFrames < 3) {
+            while (!screen._wait)
+                screen.tick();
+            orphanedFrames++;
+            updateDiagnostics();
+        }
+    }
+    frameBuffer.data.set(screen.frame);
+    frameCtx.putImageData(frameBuffer, 0, 0);
+    ctx.drawImage(frameCanvas, 0, 0);
+    screen.resetWait();
+    requestAnimationFrame(handleVSYNC);
+
+    if (diagnostics.state === "running") {
+        orphanedFrames = 0;
+    }
+}
+handleVSYNC();
 
 $("#assemble").onclick = () => {
     const asm = $("#code").value;
@@ -118,6 +131,7 @@ $("#assemble").onclick = () => {
         const name = segment.name;
         data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte));
     });
+    orphanedFrames = 0;
 }
 
 $("#random").onclick = () => {
@@ -128,6 +142,7 @@ $("#random").onclick = () => {
         } while (byte === 0x3F)
         computer.memory.writeByte(addr, byte);
     };
+    orphanedFrames = 0;
 }
 
 $("#start").onclick = () => {
@@ -158,6 +173,7 @@ $("#step").onclick = () => {
     computer.processor.registers.SINGLE_STEP = 0;
     stopTimer = false;
     requestAnimationFrame(updateDiagnostics);
+    orphanedFrames = 0;
     computer.step();
 }
 
