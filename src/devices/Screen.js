@@ -1,19 +1,19 @@
 import { Device } from "../core/Device.js";
 
 /******************************************************************************
- * 
+ *
  * Display Generator
- * 
+ *
  * The display supports a 640x480 canvas, of which 512x384 is addressable by
  * the user. Depending on the mode, the addressable area is either 256x192 or
  * 512x384px.
- * 
+ *
  * Supported Modes:
  *  0 - Tiles (32 x 24, equivalent to 256 x 192, 256 colors)
  *  1 - Tiles (64 x 48, equivalent to 512 x 384, 256 colors)
  *  2 - HiRes (256 x 192, 256 colors, 8 bpp)
  *  3 - HiRes (512 x 192, 4 colors, 2 bpp)
- * 
+ *
  */
 
 const PALETTE_PAGE  = 0x00; // ???_ppppp
@@ -177,6 +177,7 @@ export class Screen extends Device {
     }
 
     tick() {
+        super.tick();
         this._ticksSinceRaster++;
         this._ticksThisSecond++;
         if (this._ticksSinceRaster >= this._ticksPerRaster) {
@@ -191,7 +192,7 @@ export class Screen extends Device {
             }
             this._write(CURRENT_RASTER, this._raster >> 1);
             this._adjustRasterSpeed();
-        } 
+        }
     }
 
     _getLayers() {

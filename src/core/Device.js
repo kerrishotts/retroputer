@@ -4,12 +4,14 @@ export const _ioBus = Symbol("_ioBus");
 export const _memory = Symbol("_memory");
 export const _buffer = Symbol("_buffer");
 export const _device = Symbol("_device");
+export const _priority = Symbol("_priority");
 
 export class Device {
-    constructor({device = 0, length = 16, ioBus, memory = undefined, clock = undefined}) {
+    constructor({device = 0, length = 16, priority = 15, ioBus, memory = undefined, clock = undefined}) {
         this[_ioBus] = ioBus;
         this[_memory] = memory;
         this[_device] = device;
+        this[_priority] = priority;
 
         this[_buffer] = new Uint8Array(new ArrayBuffer(length << 1));
 
@@ -88,11 +90,14 @@ export class Device {
 
     requestService(r) {
         const ioBus = this[_ioBus];
-        ioBus.irqServiceBus.value = this.device;
-        ioBus.irqSignalBus.signal(1);  // hold?
+        ioBus.irqServiceBus.value |= 1 << this.device;
+        ioBus.irqSignalBus.signal(1);
     }
 
     tick() {
-        // nop
+        if (this.ioBus.irqServiceBus.value & (1 << this.device)) {
+            // keep signalling until we get serviced
+            ioBus.irqSignalBus.signal(1);
+        }
     }
 }
