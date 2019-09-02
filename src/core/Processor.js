@@ -3,6 +3,7 @@ import { Memory } from "./Memory.js";
 import { Bus } from "./Bus.js";
 import { SystemBus } from "./SystemBus.js";
 import { IOBus } from "./IOBus.js";
+import { Controller } from "./Controller.js";
 import { RegisterFile } from "./RegisterFile.js";
 import { decodeInstruction } from "../isa/decodeInstruction.js";
 import { executeTask } from "../isa/tasks.js";
@@ -10,6 +11,7 @@ import { executeTask } from "../isa/tasks.js";
 const _alu = Symbol("_alu");
 const _registerFile = Symbol("_registerFile");
 
+const _controller = Symbol("_controller");
 const _memory = Symbol("_memory");
 const _systemBus = Symbol("_systemBus");
 const _ioBus = Symbol("_ioBus");
@@ -26,17 +28,19 @@ const MAX_TASKS = 256;
 export class Processor {
 
     /**
-     * @param {*} param0  options
-     * @property {Memory} param0.memory
-     * @property {SystemBus} param0.systemBus
-     * @property {IOBus} param0.ioBus
-     * @property {Bus} param0.clock
-     * @property {Bus} [param0.debug=null]
+     * @param {Object} config  options
+     * @param {Memory} config.memory
+     * @param {SystemBus} config.systemBus
+     * @param {Controller} config.controller
+     * @param {Bus} config.clock
+     * @param {Bus} [config.debug=null]
      */
     constructor({memory, systemBus, ioBus, clock, debug = null} = {}) {
         this[_alu] = new ALU();
         this[_registerFile] = new RegisterFile();
-        this[_registerFile].MM = 0b0000110001000001; // banks 1, 2, 3
+        this[_registerFile].BP = 0x02000;
+        this[_registerFile].SP = 0x02000;
+        this[_registerFile].MM = 0b0111110001000001; // banks 1, 2, 3
 
         this[_memory] = memory;
         this[_systemBus] = systemBus;
@@ -52,6 +56,9 @@ export class Processor {
 
         this.tick = this.tick.bind(this);
         this.clock.addReceiver(this.tick);
+
+        this.serviceDevices = this.serviceDevices.bind(this);
+        ioBus.irqSignalBus.addReceiver(this.serviceDevices);
 
         this.stats = {
             ticks: 0,
@@ -108,6 +115,12 @@ export class Processor {
     get ioBus() { return this[_ioBus]; }
 
     /**
+     * @type {Controller}
+     * @readonly
+     */
+    get controller() { return this[_controller]; }
+
+    /**
      * @type {Bus}
      * @readonly
      * @memberof Processor
@@ -130,6 +143,13 @@ export class Processor {
             tasks: this[_taskQueue],
             stats: this.stats
         };
+    }
+
+    /**
+     * @param {Controller} controller 
+     */
+    registerController(controller) {
+        this[_controller] = controller;
     }
 
     /**
@@ -266,6 +286,19 @@ export class Processor {
             }
         }
         this[_taskQueue] = [];
+    }
+
+    serviceDevices() {
+        const ioBus = this.ioBus;
+        if (ioBus.irqServiceBus.value !== 0 && !this.registers.INTERRUPT_DISABLE) {
+            const whichDevice = ioBus.irqSignalBus.value;
+            const trapToTrigger = 0x80 | (whichDevice << 3);
+            const trapVectorLookup = trapToTrigger << 1;
+            const trapTarget = this.memory.readWord(trapVectorLookup);
+            this.registers.STATUS = (this.registers.STATUS & 0x00FF) | (trapToTrigger << 8);
+            this.jump(trapTarget, true);
+            this.controller.ackInterrupt(whichDevice);
+        }
     }
 
     tick() {

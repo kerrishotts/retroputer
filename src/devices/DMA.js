@@ -24,8 +24,8 @@ const MIRROR_MAP = {
 };
 
 export class DMA extends Device {
-    constructor({device = 13, length = 16, ioBus, memory = undefined, clock = undefined}) {
-        super({device, length, ioBus, memory, clock});
+    constructor({device = 13, length = 16, controller, memory = undefined, clock = undefined}) {
+        super({device, length, controller, memory, clock});
     }
 
     pullFromBus(address) {

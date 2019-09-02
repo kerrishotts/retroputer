@@ -33,7 +33,7 @@ export class ConsoleDevice extends Device {
 
             // ACK
             this._write(ADR_ACK, DATA_ACK);
-            this.requestService(SVC_CON_ACK);
+            //this.requestService(SVC_CON_ACK);
         }
     }
     get mirrored() {

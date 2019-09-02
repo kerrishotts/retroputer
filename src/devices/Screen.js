@@ -98,8 +98,8 @@ const MS_PER_SEC = 1000;
 const SAMPLES = 10;
 
 export class Screen extends Device {
-    constructor({device = 1, length = 32, ioBus, memory = undefined, clock = undefined, performance}) {
-        super({device, length, ioBus, memory, clock});
+    constructor({device = 1, length = 32, controller, memory = undefined, clock = undefined, performance}) {
+        super({device, length, controller, memory, clock});
 
         this._baseDevice = device;
         this._raster = 0;
@@ -188,6 +188,9 @@ export class Screen extends Device {
                 if (this._raster > SCREEN_ROWS) {
                     this._raster = 0;
                     this._wait = true;
+                }
+                if (this._raster === (this._read(TRAP_ON_RASTER) << 1)) {
+                    this.requestService();
                 }
             }
             this._write(CURRENT_RASTER, this._raster >> 1);

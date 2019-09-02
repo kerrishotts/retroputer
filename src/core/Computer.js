@@ -3,6 +3,7 @@ import { SystemBus } from "../core/SystemBus.js";
 import { Bus } from "../core/Bus.js";
 import { IOBus } from "../core/IOBus.js";
 import { Processor } from "../core/Processor.js";
+import { Controller } from "../core/Controller.js";
 
 export const TIMING_METHODS = {
     AUTO: 0,
@@ -12,14 +13,24 @@ export const TIMING_METHODS = {
     BLOCKING: 4
 };
 
+const _clock = Symbol("_clock");
+const _processor = Symbol("_processor");
+const _memory = Symbol("_memory");
+const _ioBus = Symbol("_ioBus");
+const _systemBus = Symbol("_systemBus");
+const _controller = Symbol("_controller");
+const _debug = Symbol("_debug");
+const _stopSignal = Symbol("_stopSignal");
+const _runID = Symbol("_runID");
+
 export class Computer {
     /**
-     * @param {*} param0
-     * @property {Performance} param0.performance the performance class to use
-     * @property {boolean} [param0.debug=false] if true, slice stops on single step mode
-     * @property {number} [param0.sliceTime=16] the amount of time to run, per slice
-     * @property {number} [param0.sliceGranularity=4095] the granularity when checking for slice timing
-     * @property {number} [param0.timingMethod=0] the timing method to use
+     * @param {Object} config
+     * @param {Performance} config.performance the performance class to use
+     * @param {boolean} [config.debug=false] if true, slice stops on single step mode
+     * @param {number} [config.sliceTime=16] the amount of time to run, per slice
+     * @param {number} [config.sliceGranularity=4095] the granularity when checking for slice timing
+     * @param {number} [config.timingMethod=0] the timing method to use
      */
     constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0xFFF, timingMethod = TIMING_METHODS.AUTO} = {}) {
 
@@ -28,6 +39,8 @@ export class Computer {
         const memory = new Memory({ systemBus });
         const ioBus = new IOBus();
         const debugLine = debug ? new Bus(1, 0b1) : null;
+        const processor = new Processor({ memory, systemBus, ioBus, clock, debug: debugLine });
+        const controller = new Controller({processor: processor, ioBus, clock});
 
         this.stats = {
             time: 0,
@@ -35,24 +48,23 @@ export class Computer {
             slices: 0
         };
 
-        this._stopSignal = false;
+        this[_stopSignal] = false;
         if (debugLine) {
             debugLine.addReceiver(() => {
                 // stop any interval-based execution
-                this._stopSignal = true; // <-- kill any executing routines.
+                this[_stopSignal] = true; // <-- kill any executing routines.
                 this.stop();
             });
         }
 
-        const processor = new Processor({ memory, systemBus, ioBus, clock, debug: debugLine });
 
-        /* public */
-        this.clock = clock;
-        this.systemBus = systemBus;
-        this.memory = memory;
-        this.ioBus = ioBus;
-        this.debug = debugLine;
-        this.processor = processor;
+        this[_clock] = clock;
+        this[_systemBus] = systemBus;
+        this[_memory] = memory;
+        this[_ioBus] = ioBus;
+        this[_debug] = debugLine;
+        this[_processor] = processor;
+        this[_controller] = controller;
 
         const detectedTimingMethod = typeof requestAnimationFrame !== "undefined"
             ? TIMING_METHODS.RAF
@@ -66,7 +78,56 @@ export class Computer {
         };
 
         /* private */
-        this._runID = null;
+        this[_runID] = null;
+    }
+
+    /**
+     * @type {Bus}
+     */
+    get clock() {
+        return this[_clock];
+    }
+
+    /**
+     * @type {SystemBus}
+     */
+    get systemBus() {
+        return this[_systemBus];
+    }
+
+    /**
+     * @type {Memory}
+     */
+    get memory() {
+        return this[_memory];
+    }
+
+    /**
+     * @type {IOBus}
+     */
+    get ioBus() {
+        return this[_ioBus];
+    }
+
+    /**
+     * @type {Controller}
+     */
+    get controller() {
+        return this[_controller];
+    }
+
+    /**
+     * @type {Bus}
+     */
+    get debugLine() {
+        return this[_debug];
+    }
+
+    /**
+     * @type {Processor}
+     */
+    get processor() {
+        return this[_processor];
     }
 
     /**
@@ -103,13 +164,13 @@ export class Computer {
      */
     runSlice() {
         const { sliceTime: timeout, sliceGranularity: granularity, performance, timingMethod} = this.options;
-        this._stopSignal = false;       // clear any stop signal for this slice
+        this[_stopSignal] = false;       // clear any stop signal for this slice
         this.stats.slices++;
         const start = performance.now();
         if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
             let now = start;
             let c = 0;
-            while (!this._stopSignal) {
+            while (!this[_stopSignal]) {
                 this.tick();
                 if ((c = ((c + 1) & granularity)) === 0) {
                     now = performance.now();
@@ -119,11 +180,11 @@ export class Computer {
                 }
             }
         } else {
-            while (!this._stopSignal) {
+            while (!this[_stopSignal]) {
                 this.tick();
             }
         }
-        if (this._stopSignal) {
+        if (this[_stopSignal]) {
             this.stop();
         }
         const end = performance.now();
@@ -142,19 +203,19 @@ export class Computer {
 
         switch (timingMethod) {
             case TIMING_METHODS.TIMEOUT: {
-                this._runID = setTimeout((function slice() {
+                this[_runID] = setTimeout((function slice() {
                     const timeTaken = this.runSlice();
                     if (this.running) {
-                        this._runID = setTimeout(slice.bind(this), sliceTime - timeTaken);
+                        this[_runID] = setTimeout(slice.bind(this), sliceTime - timeTaken);
                     }
                 }).bind(this), 0 );     // may as well start as soon as possible
                 break;
             }
             case TIMING_METHODS.RAF: {
-                this._runID = requestAnimationFrame((function slice() {
+                this[_runID] = requestAnimationFrame((function slice() {
                     const timeTaken = this.runSlice();
                     if (this.running) {
-                        this._runID = requestAnimationFrame(slice.bind(this));
+                        this[_runID] = requestAnimationFrame(slice.bind(this));
                     }
                 }).bind(this));
                 break;
@@ -165,7 +226,7 @@ export class Computer {
             }
             case TIMING_METHODS.INTERVAL:
             default: {
-                this._runID = setInterval(() => {
+                this[_runID] = setInterval(() => {
                     this.runSlice();
                 }, sliceTime + 1); // give it time to breathe
             }
@@ -173,27 +234,27 @@ export class Computer {
     }
     stop() {
         const {timingMethod} = this.options;
-        this._stopSignal = true;        // stop any running slice
-        if (this._runID) {
+        this[_stopSignal] = true;        // stop any running slice
+        if (this[_runID]) {
             switch (timingMethod) {
                 case TIMING_METHODS.TIMEOUT: {
-                    clearTimeout(this._runID);
+                    clearTimeout(this[_runID]);
                     break;
                 }
                 case TIMING_METHODS.RAF: {
-                    cancelAnimationFrame(this._runID);
+                    cancelAnimationFrame(this[_runID]);
                     break;
                 }
                 case TIMING_METHODS.INTERVAL:
                 default: {
-                    clearInterval(this._runID);
+                    clearInterval(this[_runID]);
                 }
             }
         }
-        this._runID = null;
+        this[_runID] = null;
     }
     get running() {
-        return this._runID !== null;
+        return this[_runID] !== null;
     }
 
     get stepping() {

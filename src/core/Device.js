@@ -1,5 +1,8 @@
+import { Bus } from "./Bus.js";
 import { IOBus } from "./IOBus.js";
+import { Controller } from "./Controller.js";
 
+export const _controller = Symbol("_controller");
 export const _ioBus = Symbol("_ioBus");
 export const _memory = Symbol("_memory");
 export const _buffer = Symbol("_buffer");
@@ -7,8 +10,20 @@ export const _device = Symbol("_device");
 export const _priority = Symbol("_priority");
 
 export class Device {
-    constructor({device = 0, length = 16, priority = 15, ioBus, memory = undefined, clock = undefined}) {
-        this[_ioBus] = ioBus;
+    /**
+     * 
+     * @param {Object} config 
+     * @param {number} [config.device = 0] The device number
+     * @param {number} [config.length = 16] The number of ports this device handles
+     * @param {number} [config.priority = 15] The interrupt priority for this device
+     * @param {Controller} config.controller  The associated controller
+     * @param {Memory} config.memory The associated memory
+     * @param {Bus} config.clock The clock
+     */
+    constructor({device = 0, length = 16, priority = 15, controller, memory = undefined, clock = undefined}) {
+        this[_controller] = controller;
+        controller.register(this);
+        this[_ioBus] = controller.ioBus;
         this[_memory] = memory;
         this[_device] = device;
         this[_priority] = priority;
@@ -22,7 +37,7 @@ export class Device {
         this._read = this._read.bind(this);
         this._write = this._write.bind(this);
 
-        ioBus.executeBus.addReceiver(() => {
+        this.ioBus.executeBus.addReceiver(() => {
             const ioBus = this[_ioBus];
             const selectedDevice = ioBus.deviceSelectBus.value;
             if (selectedDevice === this.device) {
@@ -88,16 +103,19 @@ export class Device {
         return this[_memory];
     }
 
+    get priority() {
+        return this[_priority];
+    }
+
+    get controller() {
+        return this[_controller];
+    }
+
     requestService(r) {
-        const ioBus = this[_ioBus];
-        ioBus.irqServiceBus.value |= 1 << this.device;
-        ioBus.irqSignalBus.signal(1);
+        this.controller.sendInterruptForDevice(this);
     }
 
     tick() {
-        if (this.ioBus.irqServiceBus.value & (1 << this.device)) {
-            // keep signalling until we get serviced
-            ioBus.irqSignalBus.signal(1);
-        }
+        // do nothing for now
     }
 }

@@ -47,6 +47,9 @@ export class RegisterFile {
         this[_wordData] = new Uint16Array(this[_buffer]);
     }
 
+    /**
+     * @param {number} index 
+     */
     getRegister(index) {
         //return (index & 0b1) ? this[_byteData][index] : (this[_byteData][index] << 8) | this[_byteData][index + 1];
         if ((index & 0b1) === 0) {
@@ -57,10 +60,16 @@ export class RegisterFile {
         }
     }
 
+    /**
+     * @param {number} index 
+     */
     getSizeOfRegister(index) {
         return (index & 0b1) ? SIZES.BYTE : SIZES.WORD;
     }
 
+    /**
+     * @param {number} index 
+     */
     getRegisterMask(index) {
         //return (index & 0b1) ? 0xFF : 0xFFFF;
         if ((index & 0b1) === 0) {
@@ -70,6 +79,10 @@ export class RegisterFile {
         }
     }
 
+    /**
+     * @param {number} index 
+     * @param {number} value
+     */
     setRegister(index, value) {
         if ((index & 0b1) === 0) {
             this[_wordData][index >> 1] = value & 0xFFFF;

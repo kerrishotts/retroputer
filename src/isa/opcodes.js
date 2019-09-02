@@ -232,17 +232,17 @@ OPCODES["trap_b"] = {
     pattern: "0000_1000 bbbb_bbbb",
     operands: { b: [7, 0] },
     decode: ({ b = 0 } = {}) => [
-        TASKS.PUSH_BYTE | b,
-        TASKS.TRAP
+        ...OPCODES["br_call_f"].decode({w: 1, i: 1, m: 1, a: b})
     ]
 };
+
+// FIXME: does not work!
 OPCODES["trap_r"] = {
     asm: "trap $r",
     pattern: "0100_0rrr",
     operands: { r: [2, 0] },
     decode: ({ r = 0 } = {}) => [
-        TASKS.GET_REGISTER_AND_PUSH | r,
-        TASKS.TRAP
+        TASKS.NOP
     ]
 };
 

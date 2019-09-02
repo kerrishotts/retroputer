@@ -35,6 +35,9 @@ export class Bus {
         this[_receivers] = [];
     }
 
+    /**
+     * @param {Function} receiver 
+     */
     addReceiver(receiver) {
         if (receiver) {
             this[_receivers].push(receiver);
@@ -53,6 +56,10 @@ export class Bus {
         return this[_size];
     }
 
+    /**
+     * @param {number} v 
+     * @param {boolean} [hold = false]
+     */
     signal(v, hold = false) {
         if (v !== undefined) {
             this.value = v;
