@@ -1,4 +1,4 @@
-.segment data 0x02000 {
+.segment data 0x03000 {
     num: .word 1000                    # number to start counting down from
     buffer: .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     start: .string "T MINUS ..."
@@ -8,7 +8,7 @@
     crlf: .byte 13, 10                  ## CR/LF
         .byte 0x00
 }
-.segment code 0x03000 {
+.segment code 0x02000 {
     ld sp, 0x02000                      # Initialize the stack
     ld bp, 0x02000
 

@@ -1,10 +1,10 @@
-.segment data 0x02000 {
+.segment data 0x03000 {
     str: .string "Hello, world! I'm alive! "
         .byte 0x00
     crlf: .byte 13, 10                  ## CR/LF
         .byte 0x00
 }
-.segment code 0x03000 {
+.segment code 0x02000 {
     # set up the stack for now
     ld sp, 0x02000
     ld bp, 0x02000
