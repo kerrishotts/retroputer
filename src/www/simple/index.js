@@ -30,7 +30,7 @@ const simpleConsole = new SimpleConsoleDevice({
     target: document.querySelector("#console"),
     device: 8,
     length: 16,
-    ioBus: computer.ioBus,
+    controller: computer.controller,
     memory: computer.memory,
     clock: computer.clock
 });
@@ -38,7 +38,7 @@ const simpleConsole = new SimpleConsoleDevice({
 const screen = new Screen({
     device: 1,
     length: 32,
-    ioBus: computer.ioBus,
+    controller: computer.controller,
     memory: computer.memory,
     clock: computer.clock,
     performance
@@ -47,7 +47,7 @@ const screen = new Screen({
 const dma = new DMA({
     device: 13,
     length: 16,
-    ioBus: computer.ioBus,
+    controller: computer.controller,
     memory: computer.memory,
     clock: computer.clock
 });
