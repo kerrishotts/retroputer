@@ -43,7 +43,7 @@ class Monitor {
         const console = new ConsoleDevice({
             device: 8,
             length: 16,
-            ioBus: computer.ioBus,
+            controller: computer.controller,
             memory: computer.memory,
             clock: computer.clock
         });
