@@ -18,72 +18,36 @@ import { Device } from "../core/Device.js";
 
 const PALETTE_PAGE  = 0x00; // ???_ppppp
 const BG_COLOR      = 0x01;
-const LAYER0_SRC    = 0x02; // v_zz_ppppp
-const LAYER0_CFG    = 0x03; // ss_?_ttttt
-const LAYER0_POS    = 0x04; // yyyy_xxxx
-const LAYER0_BG     = 0x05;
-const LAYER0_FG     = 0x06;
-const LAYER0_WINDOW = 0x07; // yyyy_xxxx
-const LAYER1_SRC    = 0x08;
-const LAYER1_CFG    = 0x09;
-const LAYER1_POS    = 0x0A;
-const LAYER1_BG     = 0x0B;
-const LAYER1_FG     = 0x0C;
-const LAYER1_WINDOW = 0x0D;
-const LAYER2_SRC    = 0x0E;
-const LAYER2_CFG    = 0x0F;
-const LAYER2_POS    = 0x10;
-const LAYER2_BG     = 0x11;
-const LAYER2_FG     = 0x12;
-const LAYER2_WINDOW = 0x13;
-const LAYER3_SRC    = 0x14;
-const LAYER3_CFG    = 0x15;
-const LAYER3_POS    = 0x16;
-const LAYER3_BG     = 0x17;
-const LAYER3_FG     = 0x18;
-const LAYER3_WINDOW = 0x19;
-const LAYER_MODES   = 0x1A; // 0b33_22_11_00
+const LAYER_SEL     = 0x02; // Change this to select which layer to read from/write to
+const LAYER_SRC     = 0x03; // v_zz_ppppp
+const LAYER_CFG     = 0x04; // ss_?_ttttt
+const LAYER_BG      = 0x05;
+const LAYER_FG      = 0x06;
+const LAYER_XOFFSET = 0x07;
+const LAYER_YOFFSET = 0x08;
+const LAYER_XCROP   = 0x09;
+const LAYER_YCROP   = 0x0A;
+const LAYER_MODE    = 0x0B; // ?????_mm; mode
+const SPRITE_SEL    = 0x0C;
+const SPRITE_SRC    = 0x0D; // v_zz_ppppp
+const SPRITE_IDX    = 0x0E; // * 64 bytes
+const SPRITE_CFG    = 0x0F; // ss_?_ttttt
+const SPRITE_DIM    = 0x10; // hhhh_wwww
+const SPRITE_BG     = 0x11;
+const SPRITE_FG     = 0x12;
+const SPRITE_X_HI   = 0x13;
+const SPRITE_X_LO   = 0x14;
+const SPRITE_Y_HI   = 0x15;
+const SPRITE_Y_LO   = 0x16;
+/*    OPEN_FOR_EXP  = 0x17; */
+/*    OPEN_FOR_EXP  = 0x18; */
+const SPRITE_COL_HI = 0x19; // collision high
+const SPRITE_COL_LO = 0x1A; // collision lo
 const BORDER_COLOR  = 0x1B;
 const BORDER_CFG    = 0x1C; // v_?_yyy_xxx
 const TRAP_ON_RASTER= 0x1D;
 const CURRENT_RASTER= 0x1E;
 const RESET_WAIT    = 0x1F;
-/*    OPEN_FOR_EXP  = 0x1F; */
-
-const MIRROR_MAP = {
-    [PALETTE_PAGE]: true,
-    [BG_COLOR]: true,
-    [LAYER0_SRC]: true,
-    [LAYER0_CFG]: true,
-    [LAYER0_POS]: true,
-    [LAYER0_BG]: true,
-    [LAYER0_FG]: true,
-    [LAYER0_WINDOW]: true,
-    [LAYER1_SRC]: true,
-    [LAYER1_CFG]: true,
-    [LAYER1_POS]: true,
-    [LAYER1_BG]: true,
-    [LAYER1_FG]: true,
-    [LAYER1_WINDOW]: true,
-    [LAYER2_SRC]: true,
-    [LAYER2_CFG]: true,
-    [LAYER2_POS]: true,
-    [LAYER2_BG]: true,
-    [LAYER2_FG]: true,
-    [LAYER2_WINDOW]: true,
-    [LAYER3_SRC]: true,
-    [LAYER3_CFG]: true,
-    [LAYER3_POS]: true,
-    [LAYER3_BG]: true,
-    [LAYER3_FG]: true,
-    [LAYER3_WINDOW]: true,
-    [LAYER_MODES]: true,
-    [BORDER_COLOR]: true,
-    [BORDER_CFG]: true,
-    [TRAP_ON_RASTER]: true,
-    [CURRENT_RASTER]: true,
-    [RESET_WAIT]: true
-};
 
 const VSYNC_TRAP    = 0x88;
 
@@ -96,6 +60,21 @@ const BORDER_WIDTH = (SCREEN_COLUMNS - ADDRESSABLE_COLUMNS) / 2;
 const BORDER_HEIGHT = (SCREEN_ROWS - ADDRESSABLE_ROWS) / 2;
 const MS_PER_SEC = 1000;
 const SAMPLES = 10;
+
+const MIRROR_MAP = {
+    [PALETTE_PAGE]: true,
+    [BG_COLOR]: true,
+    [LAYER_SEL]: true,
+    [SPRITE_SEL]: true,
+    [SPRITE_COL_HI]: true,
+    [SPRITE_COL_LO]: true,
+    [BORDER_COLOR]: true,
+    [BORDER_CFG]: true,
+    [TRAP_ON_RASTER]: true,
+    [CURRENT_RASTER]: true,
+    [RESET_WAIT]: true,
+};
+
 
 export class Screen extends Device {
     constructor({device = 1, length = 32, controller, memory = undefined, clock = undefined, performance}) {
@@ -119,6 +98,9 @@ export class Screen extends Device {
         // the frame is composed of RGBA bytes for 640 x 480 pixels
         this._frame = new Uint8Array(new ArrayBuffer(SCREEN_ROWS * SCREEN_COLUMNS * 4));
 
+        // internal configuration
+        this._cfg = {};
+
         this.reset();
     }
 
@@ -129,33 +111,139 @@ export class Screen extends Device {
     reset() {
         this._write(PALETTE_PAGE, 29);
         this._write(BG_COLOR, 9);
-        this._write(BORDER_COLOR, 19);
         this._write(BORDER_CFG, 0x80);
-        this._write(LAYER0_SRC, 0b10000100);
-        this._write(LAYER0_CFG, 28);
-        this._write(LAYER1_SRC, 0b00000101);
-        this._write(LAYER1_CFG, 28);
-        this._write(LAYER2_SRC, 0b00000110);
-        this._write(LAYER2_CFG, 28);
-        this._write(LAYER3_SRC, 0b00000111);
-        this._write(LAYER3_CFG, 28);
-        this._write(LAYER0_BG, 0);
-        this._write(LAYER1_BG, 0);
-        this._write(LAYER2_BG, 0);
-        this._write(LAYER3_BG, 0);
-        this._write(LAYER0_FG, 0xFF);
-        this._write(LAYER1_FG, 0xFF);
-        this._write(LAYER2_FG, 0xFF);
-        this._write(LAYER3_FG, 0xFF);
-        this._write(LAYER0_POS, 0);
-        this._write(LAYER1_POS, 0);
-        this._write(LAYER2_POS, 0);
-        this._write(LAYER3_POS, 0);
-        this._write(LAYER0_WINDOW, 0);
-        this._write(LAYER1_WINDOW, 0);
-        this._write(LAYER2_WINDOW, 0);
-        this._write(LAYER3_WINDOW, 0);
-        this._write(LAYER_MODES, 0);
+        this._write(BORDER_COLOR, 19);
+        this._write(TRAP_ON_RASTER, 0x00);
+        this._write(CURRENT_RASTER, 0x00);
+        this._write(RESET_WAIT, 0);
+        this._cfg = {
+            layers: Array.from({length: 4}, (_, idx) => ({
+                src: (idx === 0 ? 0x80 : 0x00) | (idx + 4), // v_zz_ppppp / visible / z-order / page
+                cfg: 28, // ss_?_ttttt - scale / tile
+                bg: 0,
+                fg: 0xFF,
+                mode: 0, //screen mode
+                visible: (idx === 0 ? 1 : 0),
+                zIndex: idx,
+                page: idx + 4,
+                scale: 0,
+                tilePage: 28,
+                yOffset: 0,
+                xOffset: 0,
+                yWindow: 0,
+                xWindow: 0,
+            })),
+            sprites: Array.from({length: 16}, () => ({
+                src: 0,
+                idx: 0,
+                page: 0,
+                zIndex: 0,
+                tilePage: 28,
+                dimensions: 0, // hhhh_wwww; up to 16x16 tiles
+                height: 0,
+                width: 0,
+                bg: 0,
+                fg: 0,
+                x: 0, // x-position
+                y: 0, // y-position
+                scale: 0, // yyyy_xxxx - scale in each direction (multiples; 0 = 1px)
+                visible: 0,
+                collided: 0, 
+            }))
+        }
+    }
+
+    _read(address = 0) {
+        const r = super._read(address);
+        if (address > LAYER_SEL && address < SPRITE_SEL) {
+            const layer = this._cfg.layers[this._read(LAYER_SEL) & 0x3];
+            switch (address) {
+                case LAYER_SRC: return layer.src;
+                case LAYER_CFG: return layer.cfg;
+                case LAYER_BG:  return layer.bg;
+                case LAYER_FG:  return layer.fg;
+                case LAYER_XOFFSET: return layer.xOffset;
+                case LAYER_YOFFSET: return layer.yOffset;
+                case LAYER_XCROP: return layer.xWindow;
+                case LAYER_YCROP: return layer.yWindow;
+                case LAYER_MODE: return layer.mode;
+            }
+        }
+        if (address > SPRITE_SEL && address < SPRITE_COL_HI) {
+            const sprite = this._cfg.sprites[this._read(SPRITE_SEL) & 0xF];
+            switch (address) {
+                case SPRITE_SRC: return sprite.src;
+                case SPRITE_CFG: return sprite.cfg;
+                case SPRITE_IDX: return sprite.idx;
+                case SPRITE_DIM: return sprite.dimensions;
+                case SPRITE_FG: return sprite.fg;
+                case SPRITE_BG: return sprite.bg;
+                case SPRITE_X_HI: return (sprite.x & 0xFF00) >>> 8;
+                case SPRITE_X_LO: return (sprite.x & 0x00FF);
+                case SPRITE_Y_HI: return (sprite.y & 0xFF00) >>> 8;
+                case SPRITE_Y_LO: return (sprite.y & 0x00FF);
+            }
+        }
+        return r;
+    }
+    _write(address = 0, data = 0) {
+        super._write(address, data);
+        if (address > LAYER_SEL && address < SPRITE_SEL) {
+            const layer = this._cfg.layers[this._read(LAYER_SEL) & 0x3];
+            switch (address) {
+                case LAYER_SRC: {
+                    layer.src = data;
+                    layer.visible = (layer.src & 0x80) >>> 7;
+                    layer.zIndex = (layer.src & 0b01100000) >>> 5;
+                    layer.page = (layer.src & 0b00011111);
+                    return;
+                }
+                case LAYER_CFG: {
+                    layer.cfg = data;
+                    layer.scale    = (layer.cfg & 0b11000000) >>> 6;
+                    layer.tilePage = (layer.cfg & 0b00011111);
+                    return;
+                }
+                case LAYER_BG:  return layer.bg = data;
+                case LAYER_FG:  return layer.fg = data;
+                case LAYER_XOFFSET: return layer.xOffset = data;
+                case LAYER_YOFFSET: return layer.yOffset = data;
+                case LAYER_XCROP: return layer.xWindow = data;
+                case LAYER_YCROP: return layer.yWindow = data;
+                case LAYER_MODE: return layer.mode = data & 0b11;
+            }
+        }
+        if (address > SPRITE_SEL && address < SPRITE_COL_HI) {
+            const sprite = this._cfg.sprites[this._read(SPRITE_SEL) & 0xF];
+            switch (address) {
+                case SPRITE_SRC: {
+                    sprite.src = data;
+                    sprite.visible = (sprite.src & 0x80) >>> 7;
+                    sprite.zIndex = (sprite.src & 0b01100000) >>> 5;
+                    sprite.page = (sprite.src & 0b00011111);
+                    return;
+                }
+                case SPRITE_CFG: {
+                    sprite.cfg = data;
+                    sprite.scale    = (sprite.cfg & 0b11000000) >>> 6;
+                    sprite.tilePage = (sprite.cfg & 0b00011111);
+                    return;
+                }
+                case SPRITE_IDX: return sprite.idx = data;
+                case SPRITE_DIM: {
+                    sprite.dimensions = data;
+                    sprite.height = (sprite.dimensions & 0xF0) >>> 4;
+                    sprite.width = (sprite.dimensions & 0x0F);
+                    return;
+                }
+                case SPRITE_FG: return sprite.fg = data;
+                case SPRITE_BG: return sprite.bg = data;
+                case SPRITE_X_HI: return sprite.x = (sprite.x & 0x00FF) | (data << 8);
+                case SPRITE_X_LO: return sprite.x = (sprite.x & 0xFF00) | data;
+                case SPRITE_Y_HI: return sprite.y = (sprite.y & 0x00FF) | (data << 8);
+                case SPRITE_Y_LO: return sprite.y = (sprite.y & 0xFF00) | data;
+            }
+        }
     }
 
     pullFromBus(address) {
@@ -199,50 +287,12 @@ export class Screen extends Device {
     }
 
     _getLayers() {
-        let layers = [{
-            src: this._read(LAYER0_SRC),
-            cfg: this._read(LAYER0_CFG),
-            pos: this._read(LAYER0_POS),
-            bg:  this._read(LAYER0_BG),
-            fg:  this._read(LAYER0_FG),
-            win: this._read(LAYER0_WINDOW),
-            mode: this._read(LAYER_MODES) & 0b00000011
-        },{
-            src: this._read(LAYER1_SRC),
-            cfg: this._read(LAYER1_CFG),
-            pos: this._read(LAYER1_POS),
-            bg:  this._read(LAYER1_BG),
-            fg:  this._read(LAYER1_FG),
-            win: this._read(LAYER1_WINDOW),
-            mode: this._read(LAYER_MODES) & 0b00001100
-        },{
-            src: this._read(LAYER2_SRC),
-            cfg: this._read(LAYER2_CFG),
-            pos: this._read(LAYER2_POS),
-            bg:  this._read(LAYER2_BG),
-            fg:  this._read(LAYER2_FG),
-            win: this._read(LAYER2_WINDOW),
-            mode: this._read(LAYER_MODES) & 0b00110000
-        },{
-            src: this._read(LAYER3_SRC),
-            cfg: this._read(LAYER3_CFG),
-            pos: this._read(LAYER3_POS),
-            bg:  this._read(LAYER3_BG),
-            fg:  this._read(LAYER3_FG),
-            win: this._read(LAYER3_WINDOW),
-            mode: this._read(LAYER_MODES) & 0b11000000
-        }];
-        for (let layer of layers) {
-            layer.visible  = layer.src & 0b10000000 && 1;
-            layer.zIndex   = layer.src & 0b01100000 >>> 5;
-            layer.page     = layer.src & 0b00011111;
-            layer.scale    = layer.cfg & 0b11000000 >>> 6;
-            layer.tilePage = layer.cfg & 0b00011111;
-            layer.yOffset  = layer.pos & 0b11110000 >>> 4;
-            layer.xOffset  = layer.pos & 0b00001111;
-            layer.yWindow  = layer.win & 0b11110000 >>> 4;
-            layer.xWindow  = layer.win & 0b00001111;
-        }
+        let layers = [
+            this._cfg.layers[0],
+            this._cfg.layers[1],
+            this._cfg.layers[2],
+            this._cfg.layers[3]
+        ];
         layers.sort((a, b) => a.zIndex - b.zIndex);
         return layers;
     }
