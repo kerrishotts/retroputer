@@ -4,7 +4,7 @@
 #
 ########################################
 
-.segment kcode kmemmap.kernel.code-start .append {
+.segment kcode kmemmap.kernel.init-start .append {
 
 init: {
         # configure the stack

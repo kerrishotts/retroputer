@@ -19,6 +19,7 @@
         .const data-start       0x01000 # kernel scratch data
         .const data-size        0x00800 # kernel has 2K
         .const code-start       0x7C000 # start of kernel code
+        .const init-start       0x7FF00 # initialization code
     }
 
     .namespace screen {

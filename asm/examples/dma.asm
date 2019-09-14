@@ -1,8 +1,8 @@
 .segment code 0x02000 {
-    ld al, 100
-    out 0x2B, al
+    ld al, 0x00
+    out 0x12, al     # set the layer we're modifying
     ld al, 2
-    out 0x2A, al
+    out 0x1B, al     # graphics mode 2
     ld al, 0
 top:
     ld x, 49152
