@@ -5,7 +5,7 @@ import { SystemBus } from "./SystemBus.js";
 import { IOBus } from "./IOBus.js";
 import { Controller } from "./Controller.js";
 import { RegisterFile } from "./RegisterFile.js";
-import { decodeInstruction } from "../isa/decodeInstruction.js";
+import { decodeInstruction, necessaryBytesForInstruction } from "../isa/decodeInstruction.js";
 import { executeTask } from "../isa/tasks.js";
 
 const _alu = Symbol("_alu");
@@ -21,6 +21,8 @@ const _debug = Symbol("_debug");
 const _taskQueue = Symbol("_taskQueue");
 const _stack = Symbol("_stack");
 const _cache = Symbol("_cache")
+
+const _pendingServiceRequest = Symbol("_pendingServiceRequest");
 
 const MAX_CACHE = 32;
 const MAX_TASKS = 256;
@@ -40,7 +42,7 @@ export class Processor {
         this[_registerFile] = new RegisterFile();
         this[_registerFile].BP = 0x02000;
         this[_registerFile].SP = 0x02000;
-        this[_registerFile].MM = 0b0111110001000001; // banks 1, 2, 3
+        this[_registerFile].MM = 0b0111110001000001; // page 3 = page 31, page 2 = page 2, page 1 = page 1
 
         this[_memory] = memory;
         this[_systemBus] = systemBus;
@@ -48,6 +50,8 @@ export class Processor {
         this[_ioBus] = ioBus;
         this[_clock] = clock;
         this[_debug] = debug;
+
+        this[_pendingServiceRequest] = -1;
 
         this[_stack] = []; //new Stack(8, 4);
 
@@ -161,7 +165,7 @@ export class Processor {
      */
     inject(addr, byte) {
         const cache = this[_cache];
-        cache.push(addr, byte);
+        cache.push(byte);
         this.stats.reads++;
     }
 
@@ -189,17 +193,48 @@ export class Processor {
     }
 
     _fetch() {
+        const memory = this.memory;
+        let mp = this.registers.MP;
+        let bytes = [ memory.readByte(mp++) ];
+        let nbfi = necessaryBytesForInstruction(bytes);
+
+        while ( (nbfi < 0 || bytes.length < nbfi) && bytes.length < 5 ) {
+            bytes.push(memory.readByte(mp++));
+            nbfi = necessaryBytesForInstruction(bytes);
+        }
+
+        if (nbfi < 0) {
+            // couldn't fetch a valid instruction. We'll try again
+            // with the next byte
+            mp = this.registers.MP + 1;
+        }
+
+        this[_cache] = bytes; 
+        this.registers.PC = mp;
+        this.registers.MP = mp;
+
+/*
         const cache = this[_cache];
         if (cache.length < MAX_CACHE) {
             const byte = this.memory.readByte(this.registers.MP);
             this.inject(this.registers.MP, byte);
             this.registers.MP += 1;
         }
+*/
     }
 
     _decode() {
         const cache = this[_cache];
-        const taskQueue = this[_taskQueue];
+        const {tasks} = decodeInstruction(cache);
+        if (tasks) {
+            this.stats.decodes++;
+            this[_taskQueue] = tasks;
+        } else {
+            this[_taskQueue] = [];
+        }
+
+/*
+
         if (cache.length > 0 && taskQueue.length < MAX_TASKS) {
             let pc = cache[0];
             const bytes = Array(cache.length >> 1);
@@ -228,9 +263,51 @@ export class Processor {
                 }
             }
         }
+*/
     }
 
     _execute() {
+        const tasks = this[_taskQueue];
+        let pc = this.registers.PC;
+        let mp = this.registers.MP;
+        let mm = this.registers.MM;
+        let jump = false;
+
+        // assert MM on the system bus in case it's changed
+        this[_systemBus].map = this[_registerFile].MM;
+
+        this.stats.insts++;
+
+        for (let i = 0, l = tasks.length; i < l; i++) {
+            this.stats.tasks++;
+            executeTask(tasks[i], this._context);
+        }
+
+        if (this.registers.PC !== pc) {
+            // JUMP!
+            jump = true;
+            this.stats.misses++;
+            pc = this.registers.PC;
+            mp = this.registers.PC;
+        }
+
+        if (this.debug) {
+            // see if we've asserted the SINGLE STEP line
+            // if so, we see if PC has changed
+            // send a signal on the debug line when
+            // we've encountered a BRK or are in single step
+            // mode.
+            if (this.registers.SINGLE_STEP) {
+                this.debug.signal();
+            }
+        }
+
+        this.registers.PC = pc;
+        this.registers.MP = mp;
+        this[_cache] = [];
+        this[_taskQueue] = [];
+/*
+
         let taskQueueLength = this[_taskQueue].length;
         let i = 0;
         while (taskQueueLength > 0) {
@@ -286,25 +363,39 @@ export class Processor {
             }
         }
         this[_taskQueue] = [];
+*/
     }
 
     serviceDevices() {
         const ioBus = this.ioBus;
         if (ioBus.irqServiceBus.value !== 0 && !this.registers.INTERRUPT_DISABLE) {
             const whichDevice = ioBus.irqSignalBus.value;
-            const trapToTrigger = 0x80 | (whichDevice << 3);
-            const trapVectorLookup = trapToTrigger << 1;
-            const trapTarget = this.memory.readWord(trapVectorLookup);
-            this.registers.STATUS = (this.registers.STATUS & 0x00FF) | (trapToTrigger << 8);
-            this.jump(trapTarget, true);
-            this.controller.ackInterrupt(whichDevice);
+            if (this[_pendingServiceRequest] > -1 && this[_pendingServiceRequest] !== whichDevice) {
+                throw new Error("Multiple services at the same time!");
+            }
+            this[_pendingServiceRequest] = whichDevice;
         }
+    }
+
+    _reallyServiceDevices() {
+        const whichDevice = this[_pendingServiceRequest];
+        if (whichDevice < 0) return;
+        this[_pendingServiceRequest] = -1;
+
+        const trapToTrigger = 0x80 | (whichDevice << 3);
+        const trapVectorLookup = trapToTrigger << 1;
+        const trapTarget = this.memory.readWord(trapVectorLookup);
+        this.registers.STATUS = (this.registers.STATUS & 0x00FF) | (trapToTrigger << 8);
+        this.jump(trapTarget, true);
+        this.controller.ackInterrupt(whichDevice);
+
     }
 
     tick() {
         this.stats.ticks++;
-        this._execute();
-        this._decode();
         this._fetch();
+        this._decode();
+        this._execute();
+        this._reallyServiceDevices();
     }
 }

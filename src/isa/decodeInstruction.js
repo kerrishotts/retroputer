@@ -166,6 +166,30 @@ for (let b = 0; b < 256; b++) {
     }
 }
 
+export const necessaryBytesForInstruction = bytes => {
+    let op = 0, idx = 0;
+    const len = bytes.length;
+    if (len === 0) return -1;
+
+    op = bytes[idx++];
+    if (opMap[1].has(op)) return 1;
+    if (idx >= len) return -1;
+
+    op = (op << 8) | bytes[idx++];
+    if (opMap[2].has(op)) return 2;
+    if (idx >= len) return -1;
+
+    idx++;
+    if (opMap[3].has(op)) return 3;
+    if (idx >= len) return -1;
+
+    idx++;
+    if (opMap[4].has(op)) return 4;
+    if (idx >= len) return -1;
+
+    return -1;
+}
+
 const __decodeInstruction = bytes => {
     let op = 0, idx = 0;
     let opcode = null, instruction = 0;
