@@ -109,15 +109,18 @@ function handleVSYNC() {
             updateDiagnostics();
         }
     }
-    frameBuffer.data.set(screen.frame);
-    frameCtx.putImageData(frameBuffer, 0, 0);
-    ctx.drawImage(frameCanvas, 0, 0);
-    screen.resetWait();
-    requestAnimationFrame(handleVSYNC);
+
+    if (diagnostics.state === "running" || orphanedFrames < 3) {
+        frameBuffer.data.set(screen.frame);
+        frameCtx.putImageData(frameBuffer, 0, 0);
+        ctx.drawImage(frameCanvas, 0, 0);
+        screen.resetWait();
+    }
 
     if (diagnostics.state === "running") {
         orphanedFrames = 0;
     }
+    requestAnimationFrame(handleVSYNC);
 }
 handleVSYNC();
 
@@ -170,11 +173,14 @@ $("#jump").onclick = () => {
 }
 
 $("#step").onclick = () => {
+    const prevInterruptsDisabled = computer.processor.registers.INTERRUPT_DISABLE;
+    computer.processor.registers.INTERRUPT_DISABLE = 1;
     computer.processor.registers.SINGLE_STEP = 0;
     stopTimer = false;
     requestAnimationFrame(updateDiagnostics);
     orphanedFrames = 0;
     computer.step();
+    computer.processor.registers.INTERRUPT_DISABLE = prevInterruptsDisabled;
 }
 
 $("#stop").onclick = () => {
