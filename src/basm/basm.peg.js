@@ -1739,31 +1739,37 @@ function peg$parse(input, options) {
                                                             if (s1 === peg$FAILED) {
                                                               s1 = peg$parseiPUSHF();
                                                               if (s1 === peg$FAILED) {
-                                                                s1 = peg$parseiPOPF();
+                                                                s1 = peg$parseiPOPMM();
                                                                 if (s1 === peg$FAILED) {
-                                                                  s1 = peg$parseiPUSH();
+                                                                  s1 = peg$parseiPUSHMM();
                                                                   if (s1 === peg$FAILED) {
-                                                                    s1 = peg$parseiPOP();
+                                                                    s1 = peg$parseiPOPF();
                                                                     if (s1 === peg$FAILED) {
-                                                                      s1 = peg$parseiRET();
+                                                                      s1 = peg$parseiPUSH();
                                                                       if (s1 === peg$FAILED) {
-                                                                        s1 = peg$parseiMUL();
+                                                                        s1 = peg$parseiPOP();
                                                                         if (s1 === peg$FAILED) {
-                                                                          s1 = peg$parseiMOD();
+                                                                          s1 = peg$parseiRET();
                                                                           if (s1 === peg$FAILED) {
-                                                                            s1 = peg$parseiDIV();
+                                                                            s1 = peg$parseiMUL();
                                                                             if (s1 === peg$FAILED) {
-                                                                              s1 = peg$parseiSMUL();
+                                                                              s1 = peg$parseiMOD();
                                                                               if (s1 === peg$FAILED) {
-                                                                                s1 = peg$parseiSMOD();
+                                                                                s1 = peg$parseiDIV();
                                                                                 if (s1 === peg$FAILED) {
-                                                                                  s1 = peg$parseiSDIV();
+                                                                                  s1 = peg$parseiSMUL();
                                                                                   if (s1 === peg$FAILED) {
-                                                                                    s1 = peg$parseiSET();
+                                                                                    s1 = peg$parseiSMOD();
                                                                                     if (s1 === peg$FAILED) {
-                                                                                      s1 = peg$parseiCLR();
+                                                                                      s1 = peg$parseiSDIV();
                                                                                       if (s1 === peg$FAILED) {
-                                                                                        s1 = peg$parseiDEC();
+                                                                                        s1 = peg$parseiSET();
+                                                                                        if (s1 === peg$FAILED) {
+                                                                                          s1 = peg$parseiCLR();
+                                                                                          if (s1 === peg$FAILED) {
+                                                                                            s1 = peg$parseiDEC();
+                                                                                          }
+                                                                                        }
                                                                                       }
                                                                                     }
                                                                                   }

@@ -463,7 +463,7 @@ Instruction "Instruction"
 / iSHL / iSHR / iSWAP / iMOV
 / iLOAD / iSTORE / iINC / iIN / iOUT
 / iENTER / iEXIT / iBRK / iLOOP / iBR
-/ iCALL / iPUSHALL / iPOPALL / iPUSHF
+/ iCALL / iPUSHALL / iPOPALL / iPUSHF / iPOPMM / iPUSHMM
 / iPOPF / iPUSH / iPOP / iRET / iMUL
 / iMOD / iDIV / iSMUL / iSMOD / iSDIV
 / iSET / iCLR / iDEC) _ bytes:ExpectedAssembly? {
