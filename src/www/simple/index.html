@@ -8,47 +8,95 @@
     <style>
         body {
             margin: 0;
+            font-family: sans-serif;
+            font-size: 75%;
         }
-        #status {
-            min-width: 25em;
+        html * {
+            box-sizing: border-box;
+        }
+        .divider {
+            border-left: 1px solid var(--border-color);
+            margin-left: var(--half-padding);
+            margin-right: var(--half-padding);
+        }
+        .lm_content {
+            --padding: 8px;
+            --half-padding: 4px;
+            --background: #222222;
+            --border-color: #888888;
+            --text-color: #DDDDDD;
+            color: var(--text-color);
+        }
+        .lm_content input[type=text], .lm_content textarea {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            color: var(--text-color);
+            margin: var(--half-padding);
+        }
+        .lm_content button {
+            background-color: var(--border-color);
+            color: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            margin: var(--half-padding);
+        }
+        .lm_content button:hover {
+            background-color: var(--text-color);
+        }
+        .lm_content button:active {
+            background-color: var(--background);
+            color: var(--text-color);
+        }
+        .panel {
+            padding: var(--padding);
+            overflow: scroll;
+            height: 100%;
+        }
+        .row {
+            display: flex;
+            flex-direction: row;
+            flex-basis: auto;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            flex-basis: auto;
+        }
+        .nogrow {
+            flex-grow: 0;
+        }
+        .noshrink {
+            flex-shrink: 0;
         }
 
-        #status, #console, #code, #address, code {
-            font-size: 16px;
-            line-height: 16px;
-            font-family: '16-bit-7x9-Nostalgia', '16-bit7x9Nostalgia-Monospace', Menlo;
-            text-rendering: optimizeSpeed;
-            -webkit-font-smoothing: none;
-            white-space: pre;
+        .grow {
+            flex-grow: 1;
         }
-        #status th, #status td {
+        .shrink {
+            flex-shrink: 1;
+        }
+        .center {
+            margin: auto auto;
+        }
+
+        .lm_content code {
+            font-family: 'Menlo', monospace;
+            white-space: pre-wrap;
+        }
+        .lm_content table {
+            width: 100%;
+        }
+        .lm_content th, .lm_content td {
             text-align: right;
             width: 4em;
             padding: 0.5em;
-            color: #444444;
         }
-        #status th {
-            background-color: #F8F8F8;
-            font-weight: normal;
-            color: #111111;
+        .lm_content th {
+            font-weight: bold;
         }
 
-        #console {
-            font-size: 16px;
-            white-space: pre-wrap;
-            width: 664px;
-            height: 424px;
-            color: white;
-            background-color: black;
-            padding: 12px;
-            margin: 0 auto;
-            overflow: scroll;
-            display: none;
-        }
-        #canvas {
-            flex: 1 1 auto;
-        }
-        #canvas canvas {
+        canvas.screen {
             image-rendering: optimizeSpeed;             /* Older versions of FF          */
             image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
             image-rendering: -webkit-optimize-contrast; /* Safari                        */
@@ -56,6 +104,7 @@
             image-rendering: pixelated;                 /* Awesome future-browsers       */
             -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
         }
+        /*
         .panel-wrapper {
             display: flex;
             flex-direction: row;
@@ -73,53 +122,15 @@
         #asm #code {
             flex: 1 1 auto;
         }
+        */
     </style>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css" />
+    <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-dark-theme.css" />
+
 </head>
 <body>
-    <h1>Simple Retroputer</h1>
-    <div id="control">
-        <label>Starting Address: <input type="text" id="address" value="0x0FF00"/></label>
-        |
-        <button id="start">Start</button>
-        <button id="continue">Continue</button>
-        <button id="stop">Stop</button>
-        |
-        <button id="jump">Jump</button>
-        <button id="step">Step</button>
-        |
-        <button id="random">Randomize Memory</button>
-    </div>
-    <div class="panel-wrapper">
-        <div id="status"></div>
-        <div id="console"></div>
-        <div id="canvas">
-            <canvas width="640" height="480"></canvas>
-        </div>
-        <div id="asm">
-            <button id="assemble">Assemble</button>
-            <textarea id="code">
-.segment code 0x02000 {
-    ld al, 0
-top:
-    ld x, 0
-    ld c, 768
-    ld bl, 0xff
-    ld dl, 0
-    do {
-        st [0x10000,x], al
-        st [0x11000,x], bl
-        st [0x12000,x], dl
-        inc al
-        inc x
-        dec c
-    } while !z
-    dec al
-    br top
-    brk
-}
-</textarea>
-        </div>
-    </div>
     <script type="module" src="index.js" /></script>
 </body>
 </html>
