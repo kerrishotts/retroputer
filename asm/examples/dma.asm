@@ -48,6 +48,10 @@ sleep:
     in dl, 0x2E
     cmp dl, 0xf0
     br !z sleep
+hold:
+    in dl, 0x2E
+    cmp dl, 0xf0
+    br z hold
     br dma
     brk
 }
