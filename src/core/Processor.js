@@ -83,6 +83,15 @@ export class Processor {
 
     }
 
+    resetStats() {
+        this.stats.ticks = 0;
+        this.stats.insts = 0;
+        this.stats.misses = 0;
+        this.stats.decodes = 0;
+        this.stats.reads = 0;
+        this.stats.tasks = 0;
+    }
+
     /**
      * @type {ALU}
      * @readonly

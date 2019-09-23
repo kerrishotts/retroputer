@@ -100,18 +100,20 @@ export class Diagnostics {
 
     dumpStatistics() {
         return {
-            ticks: numToString(this.computer.processor.stats.ticks, {padDecimal: 0}),
-            tasks: numToString(this.computer.processor.stats.tasks, {padDecimal: 0}),
-            insts: numToString(this.computer.processor.stats.insts, {padDecimal: 0}),
-            aluOps: numToString(this.computer.processor.alu.stats.ops, {padDecimal: 0}),
+            ticks: numToString(this.computer.stats.processorStats.ticks, {padDecimal: 0}),
+            tasks: numToString(this.computer.stats.processorStats.tasks, {padDecimal: 0}),
+            insts: numToString(this.computer.stats.processorStats.insts, {padDecimal: 0}),
+            aluOps: numToString(this.computer.stats.aluStats.ops, {padDecimal: 0}),
             slices: numToString(this.computer.stats.slices, {padDecimal: 0}),
-            microOpsPerSlice: numToString(round(this.computer.stats.slices !== 0 ? (this.computer.processor.stats.tasks / this.computer.stats.slices) : 0, 2)),
-            instsPerSlice: numToString(round(this.computer.stats.slices !== 0 ? (this.computer.processor.stats.insts / this.computer.stats.slices) : 0, 2)),
+            microOpsPerSlice: numToString(this.computer.stats.processorStatsLastSlice.tasks, {padDecimal: 0}),
+            instsPerSlice: numToString(this.computer.stats.processorStatsLastSlice.insts, {padDecimal: 0}),
             totalTime: numToString(round(this.computer.stats.time, 2)),
-            MMOPs: numToString(round(this.computer.stats.time !== 0 ? ((this.computer.processor.stats.tasks / this.computer.stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
-            MIPs: numToString(round(this.computer.stats.time !== 0 ? ((this.computer.processor.stats.insts / this.computer.stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
-            MAOPs: numToString(round(this.computer.stats.time !== 0 ? ((this.computer.processor.alu.stats.ops / this.computer.stats.time) * 1000 / 1000000) : 0, 4), {padDecimal: 4}),
-            microOpsPerInst: numToString(round(this.computer.processor.stats.insts !== 0 ? ((this.computer.processor.stats.tasks / this.computer.processor.stats.insts)) : 0, 4), {padDecimal: 4}),
+            MMOPs: numToString(round((this.computer.stats.processorStatsLastSecond.tasks / 1000000), 4), {padDecimal: 4}),
+            MIPs: numToString(round((this.computer.stats.processorStatsLastSecond.insts / 1000000), 4), {padDecimal: 4}),
+            MAOPs: numToString(round((this.computer.stats.aluStatsLastSecond.ops / 1000000), 4), {padDecimal: 4}),
+            microOpsPerInst: numToString(round(this.computer.stats.processorStatsLastSlice.insts !== 0 ? 
+                ((this.computer.stats.processorStatsLastSlice.tasks / 
+                    this.computer.stats.processorStatsLastSlice.insts)) : 0, 4), {padDecimal: 4}),
         };
     }
 

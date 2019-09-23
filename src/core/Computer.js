@@ -10,7 +10,8 @@ export const TIMING_METHODS = {
     INTERVAL: 1,
     TIMEOUT: 2,
     RAF: 3,
-    BLOCKING: 4
+    BLOCKING: 4,
+    FIXED: 5
 };
 
 const _clock = Symbol("_clock");
@@ -32,7 +33,7 @@ export class Computer {
      * @param {number} [config.sliceGranularity=4095] the granularity when checking for slice timing
      * @param {number} [config.timingMethod=0] the timing method to use
      */
-    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0xFFF, timingMethod = TIMING_METHODS.AUTO} = {}) {
+    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO} = {}) {
 
         const clock = new Bus(1, 0b1);
         const systemBus = new SystemBus();
@@ -45,7 +46,19 @@ export class Computer {
         this.stats = {
             time: 0,
             ticks: 0,
-            slices: 0
+            slices: 0,
+            timeThisSlice: 0,
+            ticksThisSlice: 0,
+            ticksLastSlice: 0,
+            processorStats: { ... processor.stats },
+            processorStatsLastSlice: { ... processor.stats},
+            processorStatsThisSecond: { ... processor.stats },
+            processorStatsLastSecond: { ... processor.stats },
+            aluStats: { ... processor.alu.stats },
+            aluStatsLastSlice: { ... processor.alu.stats },
+            aluStatsThisSecond: { ... processor.alu.stats },
+            aluStatsLastSecond: { ... processor.alu.stats },
+            timeSinceLastSecond: 0,
         };
 
         this[_stopSignal] = false;
@@ -137,7 +150,7 @@ export class Computer {
      * may in fact require multiple
      */
     tick() {
-        this.stats.ticks++;
+        this.stats.ticksThisSlice++;
         this.clock.signal();
     }
 
@@ -153,6 +166,7 @@ export class Computer {
             this._stopSignal = false;
         } else {
             this.tick();  // without the debug signal, we can't effectively single step
+            this._updateStatsAfterSlice();
         }
     }
 
@@ -169,13 +183,25 @@ export class Computer {
         const start = performance.now();
         if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
             let now = start;
+            let slice = now;
+            let delta = 0;
             let c = 0;
-            while (!this[_stopSignal]) {
-                this.tick();
-                if ((c = ((c + 1) & granularity)) === 0) {
-                    now = performance.now();
-                    if (now >= (start + timeout)) {
-                        break;
+            if (timingMethod === TIMING_METHODS.FIXED) {
+                let ticks = 0;
+                while (!this[_stopSignal] && (ticks++ <= granularity)) {
+                    this.tick();
+                }
+            } else {
+                while (!this[_stopSignal]) {
+                    this.tick();
+                    if (c++ >= granularity) {
+                        c = 0;
+                        slice = now;
+                        now = performance.now();
+                        delta = now - slice;
+                        if ((now + delta) >= (start + timeout)) {
+                            break;
+                        }
                     }
                 }
             }
@@ -189,7 +215,9 @@ export class Computer {
         }
         const end = performance.now();
         const totalTime = end - start;
+        this.stats.timeThisSlice = totalTime;
         this.stats.time += totalTime;
+        this._updateStatsAfterSlice();
         return totalTime;             // used for next slice timing
     }
 
@@ -211,6 +239,7 @@ export class Computer {
                 }).bind(this), 0 );     // may as well start as soon as possible
                 break;
             }
+            case TIMING_METHODS.FIXED:
             case TIMING_METHODS.RAF: {
                 this[_runID] = requestAnimationFrame((function slice() {
                     const timeTaken = this.runSlice();
@@ -221,6 +250,7 @@ export class Computer {
                 break;
             }
             case TIMING_METHODS.BLOCKING: {
+                this[_runID] = 1; // convince this.running we're really running
                 this.runSlice();
                 break;
             }
@@ -237,10 +267,13 @@ export class Computer {
         this[_stopSignal] = true;        // stop any running slice
         if (this[_runID]) {
             switch (timingMethod) {
+                case TIMING_METHODS.BLOCKING:
+                    break;
                 case TIMING_METHODS.TIMEOUT: {
                     clearTimeout(this[_runID]);
                     break;
                 }
+                case TIMING_METHODS.FIXED:
                 case TIMING_METHODS.RAF: {
                     cancelAnimationFrame(this[_runID]);
                     break;
@@ -259,5 +292,41 @@ export class Computer {
 
     get stepping() {
         return this.processor.registers.SINGLE_STEP;
+    }
+
+    _updateStatsAfterSlice() {
+        this.stats.ticksLastSlice = this.stats.ticksThisSlice;
+        this.stats.ticks += this.stats.ticksThisSlice;
+        this.stats.ticksThisSlice = 0;
+        this.stats.timeSinceLastSecond += this.stats.timeThisSlice;
+        
+        // update processor stats
+        for (let [k, v] of Object.entries(this.processor.stats)) {
+            this.stats.processorStats[k] += v;
+            this.stats.processorStatsThisSecond[k] += v;
+        }
+        this.stats.processorStatsLastSlice = { ... this.processor.stats };
+
+        // update alu stats
+        for (let [k, v] of Object.entries(this.processor.alu.stats)) {
+            this.stats.aluStats[k] += v;
+            this.stats.aluStatsThisSecond[k] += v;
+        }
+        this.stats.aluStatsLastSlice = { ... this.processor.alu.stats };
+
+        if (this.stats.timeSinceLastSecond >= 1000) {
+            this.stats.processorStatsLastSecond = { ... this.stats.processorStatsThisSecond };
+            for (let [k, v] of Object.entries(this.processor.stats)) {
+                this.stats.processorStatsThisSecond[k] = 0;
+            }
+            this.stats.aluStatsLastSecond = { ... this.stats.aluStatsThisSecond };
+            for (let [k, v] of Object.entries(this.processor.alu.stats)) {
+                this.stats.aluStatsThisSecond[k] = 0;
+            }
+            this.stats.timeSinceLastSecond -= 1000;
+        }
+
+        this.processor.resetStats();
+        this.processor.alu.resetStats();
     }
 }

@@ -98,6 +98,27 @@ export class ALU {
         };
     }
 
+    resetStats() {
+        this.stats = {
+            ops: 0,
+            [COMMANDS.ADD]: 0,
+            [COMMANDS.AND]: 0,
+            [COMMANDS.DIV]: 0,
+            [COMMANDS.MOD]: 0,
+            [COMMANDS.MUL]: 0,
+            [COMMANDS.NEG]: 0,
+            [COMMANDS.NOT]: 0,
+            [COMMANDS.OR]:  0,
+            [COMMANDS.SDIV]: 0,
+            [COMMANDS.SMOD]: 0,
+            [COMMANDS.SMUL]: 0,
+            [COMMANDS.SHL]: 0,
+            [COMMANDS.SHR]: 0,
+            [COMMANDS.SUB]: 0,
+            [COMMANDS.XOR]: 0
+        };
+    }
+
     get op1Bus() { return this[_op1]; }
     get op2Bus() { return this[_op2]; }
     get retBus() { return this[_ret]; }
