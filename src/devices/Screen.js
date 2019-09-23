@@ -115,7 +115,7 @@ export class Screen extends Device {
         this._write(PALETTE_PAGE, 29);
         this._write(BG_COLOR, 9);
         this._write(BORDER_CFG, 0x80);
-        this._write(BORDER_COLOR, 19);
+        this._write(BORDER_COLOR, 0x80);
         this._write(TRAP_ON_RASTER, 0x00);
         this._write(CURRENT_RASTER, 0x00);
         this._write(RESET_WAIT, 0);
@@ -265,15 +265,17 @@ export class Screen extends Device {
 
     resetWait() {
         this._wait = false;
+        //this._ticksSinceRaster = 0;
     }
 
     tick() {
         super.tick();
-        this._ticksSinceRaster++;
         this._ticksThisSecond++;
+        this._ticksSinceRaster++;
+        if (this._wait) return;
         if (this._ticksSinceRaster >= this._ticksPerRaster) {
             this._ticksSinceRaster = 0;
-            if (!this._wait) {
+            //if (!this._wait) {
                 this._generateRasterLine();
                 this._raster++;
                 if (this._raster > SCREEN_ROWS) {
@@ -284,7 +286,7 @@ export class Screen extends Device {
                 if (this._raster === (this._read(TRAP_ON_RASTER) << 1)) {
                     this.requestService();
                 }
-            }
+           // }
             this._write(CURRENT_RASTER, this._raster >> 1);
             this._adjustRasterSpeed();
         }
@@ -461,7 +463,7 @@ export class Screen extends Device {
             const delta = now - this._lastPerformance;
             this._lastPerformance = now;
 
-            const numSeconds = (now - this._startTime) / MS_PER_SEC;
+            //const numSeconds = (now - this._startTime) / MS_PER_SEC;
             //this._ticksPerSecond = ((this._ticksPerSecond * SAMPLES) + this._ticksThisSecond) / (SAMPLES + 1);
             this._ticksPerSecond = (this._ticksPerSecond + this._ticksThisSecond) / 2;
             this._ticksThisSecond = 0;
