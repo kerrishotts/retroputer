@@ -56,6 +56,8 @@ const SCREEN_COLUMNS = 640;
 const SCREEN_ROWS = 480;
 const ADDRESSABLE_COLUMNS = 512;
 const ADDRESSABLE_ROWS = 384;
+const TILE_COLUMNS = 64;
+const TILE_ROWS = 48;
 const BORDER_WIDTH = (SCREEN_COLUMNS - ADDRESSABLE_COLUMNS) / 2;
 const BORDER_HEIGHT = (SCREEN_ROWS - ADDRESSABLE_ROWS) / 2;
 const MS_PER_SEC = 1000;
@@ -293,14 +295,7 @@ export class Screen extends Device {
     }
 
     _getLayers() {
-        let layers = [
-            this._cfg.layers[0],
-            this._cfg.layers[1],
-            this._cfg.layers[2],
-            this._cfg.layers[3]
-        ];
-        layers.sort((a, b) => a.zIndex - b.zIndex);
-        return layers;
+        return this._cfg.layers;
     }
 
     _getSprites() {
@@ -358,12 +353,12 @@ export class Screen extends Device {
                     if (layer.visible === 1) {
                         pageAddr = layer.page << 14;
                         tilePageAddr = layer.tilePage << 14;
-                        halfWidth = ((layer.mode & 1) === 0 ? 1 : 0);
+                        halfWidth = (layer.mode & 1) === 0;
                         maxWidth = (SCREEN_COLUMNS - (BORDER_WIDTH << 1)) >> halfWidth;
                         maxHeight = (SCREEN_ROWS - (BORDER_HEIGHT << 1)) >> halfWidth;
 
-                        xOffset = layer.xOffset - (layer.xOffset > 127 ? 256 : 0) << halfWidth;
-                        yOffset = layer.yOffset - (layer.yOffset > 127 ? 256 : 0) << halfWidth;
+                        xOffset = layer.xOffset - ((layer.xOffset > 127) << 8) << halfWidth;
+                        yOffset = layer.yOffset - ((layer.yOffset > 127) << 8) << halfWidth;
 
                         xLeftCrop = layer.xWindow << halfWidth;
                         xRightCrop = maxWidth - xLeftCrop;
@@ -375,34 +370,24 @@ export class Screen extends Device {
 
                         if (aX < xLeftCrop || aX >= xRightCrop) tempPixelColor = 0
                         else if (aY < yTopCrop || aY >= yBottomCrop) tempPixelColor = 0
-                        else {
-                            switch(layer.mode) {
-                                case 0:
-                                case 1:
-                                    charCol = aX >>> 3;
-                                    charColX = aX & 0x07;
-                                    charRow = aY >>> 3;
-                                    charRowY = aY & 0x07;
-                                    tilePos = (charRow << (layer.mode === 0 ? 5 : 6)) + charCol;
-                                    tile = this.memory.readUnmappedByte(pageAddr + tilePos)
-                                    tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (charRowY << 3) + charColX);
-                                    tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x1000);
-                                    tileBgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x2000);
-                                    if (tilePixel === 0x00) tempPixelColor = tileBgColor;
-                                    else if (tilePixel === 0xFF) tempPixelColor = tileFgColor;
-                                    else tempPixelColor = tilePixel;
-                                    if (tempPixelColor === 0x00) tempPixelColor = layer.bg
-                                    else if (tempPixelColor === 0xFF) tempPixelColor = layer.fg;
-                                    break;
-                                case 2:
-                                    tempPixelColor = this.memory.readUnmappedByte(pageAddr + (aY << 8) + aX);
-                                    break;
-                                case 3:
-                                    tempPixelColor = this.memory.readUnmappedByte(pageAddr + (aY << 7) + (aX >> 2));
-                                    whichBit = aX & 0b11;
-                                    tempPixelColor = (0b11 << (whichBit * 2)) >> (whichBit * 2) << 6;
-                                    break;
-                            }
+                        else if (layer.mode >= 2) {
+                            tempPixelColor = this.memory.readUnmappedByte(pageAddr + (aY << 8) + aX);
+                        } else {
+                            charCol = aX >>> 3;
+                            charColX = aX & 0x07;
+                            charRow = aY >>> 3;
+                            charRowY = aY & 0x07;
+                            tilePos = (charRow << (5 + (layer.mode !== 0))) + charCol;
+                            tile = this.memory.readUnmappedByte(pageAddr + tilePos)
+                            tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (charRowY << 3) + charColX);
+                            tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x1000);
+                            tileBgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x2000);
+
+                            if (tilePixel === 0x00) tempPixelColor = tileBgColor;
+                            else if (tilePixel === 0xFF) tempPixelColor = tileFgColor;
+                            else tempPixelColor = tilePixel;
+                            if (tempPixelColor === 0x00) tempPixelColor = layer.bg
+                            else if (tempPixelColor === 0xFF) tempPixelColor = layer.fg;
                         }
                         curPixelColor = tempPixelColor !== 0 ? tempPixelColor : curPixelColor;
                     }

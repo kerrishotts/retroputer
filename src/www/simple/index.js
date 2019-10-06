@@ -21,8 +21,10 @@ class Store {
             performance, 
             debug: true, 
             timingMethod: TIMING_METHODS.FIXED, 
+            //timingMethod: TIMING_METHODS.AUTO, 
             sliceTime: 16, 
-            sliceGranularity: 8191 //0xF 
+            sliceGranularity: 6143
+            //sliceGranularity: 0xFF 
         });
         computer.memory.loadFromJS(rom, true);
         const diagnostics = new Diagnostics(computer);
@@ -266,14 +268,16 @@ class ComputerScreen extends React.Component {
         }
 
         if (diagnostics.state === "running" || orphanedFrames < 3) {
-            screen.resetWait();
-            frameBuffer.data.set(screen.frame);
-            frameCtx.putImageData(frameBuffer, 0, 0);
+            if (screen._wait) {
+                screen.resetWait();
+                frameBuffer.data.set(screen.frame);
+                frameCtx.putImageData(frameBuffer, 0, 0);
 
-            const canvas = this.canvas.current;
-            const ctx = canvas.getContext("2d");
+                const canvas = this.canvas.current;
+                const ctx = canvas.getContext("2d");
 
-            ctx.drawImage(frameCanvas, 0, 0);
+                ctx.drawImage(frameCanvas, 0, 0);
+            }
         }
 
         if (diagnostics.state === "running") {
