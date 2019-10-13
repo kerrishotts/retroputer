@@ -18,7 +18,7 @@ See [status in the wiki](https://www.notion.so/Retroputer-V2-b025c3b6c86c46c7b21
 
 ## Launching
 
-You can try the [online version](https://kerrishotts.com/supporting/git/retroputer/src/www/). (Probably a few commits behind.)
+You can try the [online version](blissful-bose-ff8542.netlify.com). (Probably a few commits behind.)
 
 You can launch the browser interface executing:
 
