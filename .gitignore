@@ -7,3 +7,6 @@ coverage
 .nyc_output
 src/www/bundle.js
 *.log
+.cache
+.watch
+.watch-cache

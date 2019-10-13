@@ -10,12 +10,18 @@
   "main": "index.js",
   "browser": "index.js",
   "dependencies": {
+    "assets": "^3.0.1",
     "cli": "^1.0.1",
     "cliffy": "^2.0.5",
+    "golden-layout": "^1.5.9",
     "htm": "^2.2.1",
+    "jquery": "^3.4.1",
     "pegjs": "^0.11.0-master.0b102d2",
+    "react": "^16.10.2",
+    "react-dom": "^16.10.2",
     "sade": "^1.6.0",
     "shelljs": "^0.8.3",
+    "stats.js": "^0.17.0",
     "yurnalist": "^1.0.5"
   },
   "devDependencies": {
@@ -29,7 +35,9 @@
     "esm": "^3.2.25",
     "http-server": "^0.11.1",
     "microtime": "^3.0.0",
-    "mocha": "^6.1.4"
+    "mocha": "^6.1.4",
+    "parcel-bundler": "^1.12.4",
+    "rimraf": "^3.0.0"
   },
   "scripts": {
     "test": "ava",
@@ -46,7 +54,9 @@
     "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
     "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
     "perf": "node --prof-process --preprocess -j .perf/i*.log | flamebearer && rm flamegraph.html",
-    "server": "http-server -a 127.0.0.1 -c-1 ."
+    "clean": "rimraf dist .cache",
+    "watch": "parcel src/www/simple/index.html --out-dir .watch --cache-dir .watch-cache",
+    "build": "parcel build src/www/simple/index.html"
   },
   "repository": {
     "type": "git",

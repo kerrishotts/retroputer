@@ -79,7 +79,7 @@ const MIRROR_MAP = {
 
 
 export class Screen extends Device {
-    constructor({device = 1, length = 32, controller, memory = undefined, clock = undefined, performance}) {
+    constructor({device = 1, length = 32, controller, memory = undefined, clock = undefined, performance, stats}) {
         super({device, length, controller, memory, clock});
 
         this._baseDevice = device;
@@ -89,13 +89,15 @@ export class Screen extends Device {
         this._wait   = false;
 
         this._performance = performance;
-        this._ticksPerRaster = 50; /* good enough guess */
+        this._ticksPerRaster = 8; /* good enough guess */
         this._ticksSinceRaster = 0;
-        this._ticksPerSecond = 1500000; /* guess; will revise */
+        this._ticksPerSecond = 248000; /* guess; will revise */
         this._ticksThisSecond = 0;
 
         this._lastPerformance = performance.now();
         this._startTime = this._lastPerformance;
+
+        this._stats = stats;
 
         // the frame is composed of RGBA bytes for 640 x 480 pixels
         this._frame = new Uint8Array(new ArrayBuffer(SCREEN_ROWS * SCREEN_COLUMNS * 4));
@@ -267,6 +269,7 @@ export class Screen extends Device {
 
     resetWait() {
         this._wait = false;
+        if (this._stats) this._stats.begin();
         //this._ticksSinceRaster = 0;
     }
 
@@ -281,6 +284,8 @@ export class Screen extends Device {
                 this._generateRasterLine();
                 this._raster++;
                 if (this._raster > SCREEN_ROWS) {
+                    if (this._stats) this._stats.end();
+                    if (this._stats) this._stats.begin();
                     this._raster = 0;
                     this._wait = true;
                     this._spritesByLayer = this._getSprites();
@@ -400,19 +405,19 @@ export class Screen extends Device {
                             xOffset = sprite.x - (sprite.x > 32767 ? 65536 : 0);
                             yOffset = sprite.y - (sprite.y > 32767 ? 65536 : 0);
 
-                            aX = ((x - BORDER_WIDTH) - xOffset) >> sprite.scale;
-                            aY = ((y - BORDER_HEIGHT) - yOffset) >> sprite.scale;
+                            aX = (x - xOffset) >> sprite.scale;
+                            aY = (y - yOffset) >> sprite.scale;
 
                             maxWidth = sprite.width << 3;
                             maxHeight = sprite.height << 3;
 
                             tempPixelColor = 0;
-                            if ((aX >= 0 && aY < maxWidth) && (aY >= 0 && aY < maxHeight)) {
+                            if ((aX >= 0 && aX < maxWidth) && (aY >= 0 && aY < maxHeight)) {
                                 charCol = aX >>> 3;
                                 charColX = aX & 0x07;
                                 charRow = aY >>> 3;
                                 charRowY = aY & 0x07;
-                                tilePos = (charRow << 6) + charCol;
+                                tilePos = (charRow * sprite.width) + charCol;
                                 tile = this.memory.readUnmappedByte(pageAddr + tilePos)
                                 tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (charRowY << 3) + charColX);
                                 tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x0040);
