@@ -1,52 +1,62 @@
 {
   "name": "retroputer",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "retroputer",
+  "esm": {
+    "cjs": true,
+    "mode": "all",
+    "sourceMap": true
+  },
   "main": "index.js",
   "browser": "index.js",
   "dependencies": {
+    "assets": "^3.0.1",
     "cli": "^1.0.1",
-    "http-server": "^0.9.0",
-    "tone": "^0.9.0",
-    "ts-node": "^2.0.0",
-    "typescript": "^2.1.5"
+    "cliffy": "^2.0.5",
+    "golden-layout": "^1.5.9",
+    "htm": "^2.2.1",
+    "jquery": "^3.4.1",
+    "pegjs": "^0.11.0-master.0b102d2",
+    "react": "^16.10.2",
+    "react-dom": "^16.10.2",
+    "sade": "^1.6.0",
+    "shelljs": "^0.8.3",
+    "stats.js": "^0.17.0",
+    "yurnalist": "^1.0.5"
   },
   "devDependencies": {
-    "babel-core": "^6.18.2",
-    "babel-plugin-istanbul": "^3.1.2",
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.18.0",
-    "babel-polyfill": "^6.16.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-preset-es2015-loose": "^8.0.0",
-    "chai": "^3.5.0",
-    "coveralls": "^2.11.15",
-    "cross-env": "^3.1.4",
-    "eslint": "^3.15.0",
-    "get-pixels": "^3.3.0",
-    "mocha": "^3.2.0",
-    "nearley": "^2.7.11",
-    "nyc": "^10.1.2",
-    "pegjs": "^0.10.0",
-    "raw-loader": "^0.5.1",
-    "ts-loader": "^2.0.0",
-    "typescript": "^2.1.6",
-    "uglify-js": "git://github.com/mishoo/UglifyJS2.git#harmony",
-    "webpack": "^2.2.1"
+    "ava": "^1.4.1",
+    "benchmark": "^2.1.4",
+    "c8": "^5.0.2",
+    "chai": "^4.2.0",
+    "coveralls": "^3.0.3",
+    "cross-env": "^5.2.0",
+    "eslint-plugin-ava": "^6.0.0",
+    "esm": "^3.2.25",
+    "http-server": "^0.11.1",
+    "microtime": "^3.0.0",
+    "mocha": "^6.1.4",
+    "parcel-bundler": "^1.12.4",
+    "rimraf": "^3.0.0"
   },
   "scripts": {
-    "asm": "ts-node bin/asm",
-    "test": "mocha",
-    "serve": "http-server --cors -p 8080 -c-1 -s .",
-    "cover": "cross-env NODE_ENV=test nyc npm test; open ./coverage/index.html",
-    "coveralls": "cross-env NODE_ENV=test nyc npm test; nyc report --reporter=text-lcov | coveralls",
+    "test": "ava",
+    "watch:test": "ava --watch",
+    "cover": "c8 --reporter html ava",
+    "coveralls": "c8 ava; c8 report --reporter html --reporter=text-lcov | coveralls",
+    "cover:view": "open ./coverage/index.html",
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
-    "webpack": "webpack --config src/www/webpack.config.js",
-    "build:asm-grammar": "pegjs -o src/grammars/asm.js src/grammars/asm.pegjs",
-    "build:kite-grammar": "pegjs -o src/grammars/kite.js src/grammars/kite.pegjs",
-    "build:grammars": "npm run build:asm-grammar && npm run build:kite-grammar",
-    "build:asm:kernel": "ts-node bin/asm --basepath ./asm/kernel < ./asm/kernel/kernel.asm > ./src/roms/kernel.js",
-    "build:asm:bootstrap": "ts-node bin/asm --basepath ./asm < ./asm/bootstrap.asm > ./src/roms/bootstrap.js",
-    "build": "npm run build:asm:kernel && npm run lint && npm run webpack"
+    "basm": "node src/basm/index.js",
+    "monitor": "node src/monitor/index.js",
+    "build:basm": "pegjs --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
+    "build:kernel": "src/basm/index.js -d asm/kernel < asm/kernel/kernel.asm > src/roms/kernel.js",
+    "inspect:monitor": "node --inspect src/monitor/index.js",
+    "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
+    "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
+    "perf": "node --prof-process --preprocess -j .perf/i*.log | flamebearer && rm flamegraph.html",
+    "clean": "rimraf dist .cache",
+    "watch": "parcel src/www/simple/index.html --out-dir .watch --cache-dir .watch-cache",
+    "build": "parcel build src/www/simple/index.html"
   },
   "repository": {
     "type": "git",
@@ -58,15 +68,14 @@
     "url": "https://github.com/kerrishotts/retroputer/issues"
   },
   "homepage": "https://github.com/kerrishotts/retroputer#readme",
-  "nyc": {
+  "ava": {
     "require": [
-      "babel-register"
+      "esm"
     ],
-    "reporter": [
-      "text",
-      "html"
-    ],
-    "sourceMap": false,
-    "instrument": false
+    "verbose": false,
+    "files": [
+      "test/**/*.js",
+      "!test/tmp/**/*"
+    ]
   }
 }

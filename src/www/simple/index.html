@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple Retroputer</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            font-size: 75%;
+        }
+        html * {
+            box-sizing: border-box;
+        }
+        .divider {
+            border-left: 1px solid var(--border-color);
+            margin-left: var(--half-padding);
+            margin-right: var(--half-padding);
+        }
+        .lm_content {
+            --padding: 8px;
+            --half-padding: 4px;
+            --background: #222222;
+            --border-color: #888888;
+            --text-color: #DDDDDD;
+            color: var(--text-color);
+        }
+        .lm_content input[type=text], .lm_content textarea {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            color: var(--text-color);
+            margin: var(--half-padding);
+        }
+        .lm_content button {
+            background-color: var(--border-color);
+            color: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            margin: var(--half-padding);
+        }
+        .lm_content button:hover {
+            background-color: var(--text-color);
+        }
+        .lm_content button:active {
+            background-color: var(--background);
+            color: var(--text-color);
+        }
+        .panel {
+            padding: var(--padding);
+            overflow: scroll;
+            height: 100%;
+        }
+        .row {
+            display: flex;
+            flex-direction: row;
+            flex-basis: auto;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            flex-basis: auto;
+        }
+        .nogrow {
+            flex-grow: 0;
+        }
+        .noshrink {
+            flex-shrink: 0;
+        }
+
+        .grow {
+            flex-grow: 1;
+        }
+        .shrink {
+            flex-shrink: 1;
+        }
+        .center {
+            margin: auto auto;
+        }
+
+        .lm_content code {
+            font-family: 'Menlo', monospace;
+            white-space: pre-wrap;
+        }
+        .lm_content table {
+            width: 100%;
+        }
+        .lm_content th, .lm_content td {
+            text-align: right;
+            width: 4em;
+            padding: 0.5em;
+        }
+        .lm_content th {
+            font-weight: bold;
+        }
+
+        canvas.screen {
+            image-rendering: optimizeSpeed;             /* Older versions of FF          */
+            image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+            image-rendering: -webkit-optimize-contrast; /* Safari                        */
+            image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+            image-rendering: pixelated;                 /* Awesome future-browsers       */
+            -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+        }
+        /*
+        .panel-wrapper {
+            display: flex;
+            flex-direction: row;
+        }
+
+        #asm {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+
+        #asm button {
+            flex: 0;
+        }
+        #asm #code {
+            flex: 1 1 auto;
+        }
+        */
+    </style>
+    <!--<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css" />
+    <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-dark-theme.css" />-->
+
+</head>
+<body>
+    <script src="index.js" /></script>
+</body>
+</html>

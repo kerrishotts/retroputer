@@ -1,0 +1,134 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "6516 Assembly",
+	"patterns": [
+		{ "include": "#comments" },
+		{ "include": "#directives" },
+		{ "include": "#registers" },
+		{ "include": "#flags" },
+		{ "include": "#constants" },
+		{ "include": "#sigils" },
+		{ "include": "#keywords" },
+		{ "include": "#functions" },
+		{ "include": "#strings" }
+	],
+	"repository": {
+		"comments": {
+			"patterns": [{
+				"name": "comment.line.6516asm",
+				"match":"(#.*$)"
+			}]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.numeric.hex.6516asm",
+					"match":"\\b((0x|\\$)[0-9a-fA-F_]+)h?\\b"
+				},
+				{
+					"name": "constant.numeric.bin.6516asm",
+					"match":"\\b(0b[01_]+)\\b"
+				},
+				{
+					"name": "constant.numeric.dec.6516asm",
+					"match":"\\b(\\+?\\-?[0-9_]+)\\b"
+				}
+			]
+		},
+		"sigils": {
+			"patterns": [
+				{
+					"name": "support.type.label.6516asm",
+					"match":"([A-Za-z0-9\\-_]+[\\:])"
+				}
+			]
+		},
+		"registers": {
+			"patterns": [{
+				"name": "constant.language.registers.general-purpose.6516asm",
+				"match":"\\b(?i:[abcd]l?)\\b"
+			}, {
+				"name": "constant.language.registers.index.6516asm",
+				"match":"\\b(?i:[xy]l?)\\b"
+			}, {
+				"name": "constant.language.registers.stack-pointers.6516asm",
+				"match":"\\b(?i:[sb]p?)\\b"
+			}, {
+				"name": "constant.language.registers.flags.6516asm",
+				"match":"\\b(?i:flags)\\b"
+			}, {
+				"name": "constant.language.registers.program-counter.6516asm",
+				"match":"\\b(?i:pc)\\b"
+			}]
+		},
+		"flags": {
+			"patterns": [{
+				"name": "constant.language.flags.6516asm",
+				"match":"\\b(?i:n?(ss|id|is|x|v|c|n|z))\\b"
+			}]
+		},
+		"directives": {
+			"patterns": [{
+				"name": "entity.name.section.6516asm",
+				"match": "\\.(?i:(segment))\\b"
+			}, {
+				"name": "variable.name.6516asm",
+				"match": "\\.(?i:(const))\\s([A-Za-z0-9\\-_]+)\\b"
+			}, {
+				"name": "support.type.6516asm",
+				"match": "\\.(?i:(word|byte|string))\\b"
+			}, {
+				"name": "storage.modifier.import.6516asm",
+				"match": "\\.(?i:(import))\\s(.*)"
+			}]
+		},
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.6516asm",
+				"match": "\\b(?i:(brk|cmp|br|brs|call|calls|loop|loops|ret|trap))\\b"
+			}, {
+				"name": "keyword.stack.6516asm",
+				"match": "\\b(?i:(push|pop|pushall|popall|pushf|popf|enter|exit))\\b"
+			}, {
+				"name": "keyword.math.6516asm",
+				"match": "\\b(?i:(add|sub|mul|div|mod|smul|sdiv|smod|neg|inc|dec))\\b"
+			}, {
+				"name": "keyword.logic.6516asm",
+				"match": "\\b(?i:(and|or|xor|not))\\b"
+			}, {
+				"name": "keyword.bitplay.6516asm",
+				"match": "\\b(?i:(set|clr|xcb|shl|shr))\\b"
+			}, {
+				"name": "keyword.memory.6516asm",
+				"match": "\\b(?i:(ld|st))\\b"
+			}, {
+				"name": "keyword.io.6516asm",
+				"match": "\\b(?i:(in|out))\\b"
+			}, {
+				"name": "keyword.transfer.6516asm",
+				"match": "\\b(?i:(mov|swap))\\b"
+			}, {
+				"name": "keyword.other.6516asm",
+				"match": "\\b(?i:(nop))\\b"
+			}]
+		},
+		"functions": {
+			"patterns": [{
+				"name": "support.function.6516asm",
+				"match": "\\b(?i:(addr|bank|word|hi|lo|ord|chr))\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.6516asm",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.6516asm",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.6516.asm"
+}

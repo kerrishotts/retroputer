@@ -1,0 +1,35 @@
+{
+    "name": "6516-assembly",
+    "displayName": "6516 Assembly",
+    "description": "Syntax highlighting for 6516 Assembly (Retroputer)",
+    "version": "0.0.1",
+    "publisher": "kerrishotts",
+    "engines": {
+        "vscode": "^1.5.0"
+    },
+    "categories": [
+        "Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "6516asm",
+                "aliases": [
+                    "6516 Assembly",
+                    "6516asm"
+                ],
+                "extensions": [
+                    ".asm"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "6516asm",
+                "scopeName": "source.6516.asm",
+                "path": "./syntaxes/6516asm.tmLanguage.json"
+            }
+        ]
+    }
+}

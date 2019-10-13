@@ -1,534 +1,332 @@
-/* globals Atomics, SharedArrayBuffer */
-import CPU from "./Cpu.js";
-import Memory from "./Memory.js";
-import Screen from "./Screen.js";
+import { Memory } from "../core/Memory.js";
+import { SystemBus } from "../core/SystemBus.js";
+import { Bus } from "../core/Bus.js";
+import { IOBus } from "../core/IOBus.js";
+import { Processor } from "../core/Processor.js";
+import { Controller } from "../core/Controller.js";
 
-import TRAPS from "../core/traps.js";
-import memoryLayout from "./memoryLayout.js";
-import log from "../util/log.js";
+export const TIMING_METHODS = {
+    AUTO: 0,
+    INTERVAL: 1,
+    TIMEOUT: 2,
+    RAF: 3,
+    BLOCKING: 4,
+    FIXED: 5
+};
 
-import supportsWorkers from "../util/supportsWorkers.js";
-import supportsSharedArrayBuffer from "../util/supportsSharedArrayBuffer.js";
-import supportsAtomics from "../util/supportsAtomics.js";
+const _clock = Symbol("_clock");
+const _processor = Symbol("_processor");
+const _memory = Symbol("_memory");
+const _ioBus = Symbol("_ioBus");
+const _systemBus = Symbol("_systemBus");
+const _controller = Symbol("_controller");
+const _debug = Symbol("_debug");
+const _stopSignal = Symbol("_stopSignal");
+const _runID = Symbol("_runID");
 
-const useWorkers = supportsSharedArrayBuffer && supportsWorkers;
+export class Computer {
+    /**
+     * @param {Object} config
+     * @param {Performance} config.performance the performance class to use
+     * @param {boolean} [config.debug=false] if true, slice stops on single step mode
+     * @param {number} [config.sliceTime=16] the amount of time to run, per slice
+     * @param {number} [config.sliceGranularity=4095] the granularity when checking for slice timing
+     * @param {number} [config.timingMethod=0] the timing method to use
+     */
+    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO} = {}) {
 
-export default class Computer {
+        const clock = new Bus(1, 0b1);
+        const systemBus = new SystemBus();
+        const memory = new Memory({ systemBus });
+        const ioBus = new IOBus();
+        const debugLine = debug ? new Bus(1, 0b1) : null;
+        const processor = new Processor({ memory, systemBus, ioBus, clock, debug: debugLine });
+        const controller = new Controller({processor: processor, ioBus, clock});
 
-    constructor({
-        screenId = "screen",
-        borderId = "screen-border",
-        devices = [],
-        roms = [],
-        beforeFrameUpdate,
-        debug
-    } = {}) {
-        this.debug = debug;
-
-        this.performance = {
-            iterationsBetweenTimeCheck: 100,
-            timeToDevoteToCPU: 12,
-            throttlePoint: 14,          // floor((850/60))
-            maxTimeToDevoteToCPU: 12,   // floor((725/60))
-            minTimeToDevoteToCPU: 0.2,
-            finetuning: 1, // percent to adjust 25 = faster adjustments
-            FPSTargets: [60, 30, 15, 7.5],
-            targetFPSIdx: 0
-        };
-        this.targetFPS(60);
-
-        this.memory = new Memory(memoryLayout, { shared: useWorkers });
-        this.memory.init();
-
-        // load ROMS
-        this.roms = roms;
-        this.roms.forEach((rom) => {
-            this.memory.loadFromJS(rom);
-        });
-        this.memory.protected = true;
-
-        if (useWorkers) {
-            const cpuWorker = new Worker("./dist/CpuWorker.js");
-            let instSinceLastMessage = 0;
-            cpuWorker.addEventListener("message", (e) => {
-                const cmd = e.data.cmd;
-                const data = e.data.data;
-                switch (cmd) {
-                    case "stats":
-                        instSinceLastMessage = data.numInstructions - instSinceLastMessage;
-                        this.stats.lastFrameInstructions += instSinceLastMessage;
-                        this.stats.totalInstructions = data.numInstructions;
-                        break;
-                    case "status":
-                        this.cpu.stepping = data.stepping;
-                        this.cpu.running = data.running;
-                        this.cpu.paused = data.paused;
-                        break;
-                    case "state":
-                        this.cpu.state = data;
-                        break;
-                    case "registers":
-                        this.cpu.registers = data;
-                        break;
-                    case "flags":
-                        break;
-                    default:
-                }
-            });
-
-            if (supportsAtomics) {
-                this._sentinelSharedBuffer = new SharedArrayBuffer(1);
-                this._sentinel = new Uint8Array(this._sentinelSharedBuffer);
-                cpuWorker.postMessage({ cmd: "setSentinel", data: this._sentinelSharedBuffer });
-            }
-            cpuWorker.postMessage({ cmd: "setSharedMemory", data: this.memory.sharedArrayBuffer });
-            cpuWorker.postMessage({ cmd: "init" });
-            this.cpuWorker = cpuWorker;
-            this.cpu = {
-                stepping: false,
-                paused: false,
-                running: false,
-                registers: {},
-                state: {},
-                worker: true,
-                working: false,
-                sendTrap: (trap) => {
-                    this.cpuWorker.postMessage({ cmd: "trap", data: trap });
-                    this.getCPUAttention();
-                }
-            };
-        } else {
-            this.cpu = new CPU(this.memory);
-        }
-
-        this.devices = {};
-        this.deviceTickFns = [];
-
-        devices.forEach((Device) => {
-            let device = new Device({ cpu: this.cpu, memory: this.memory });
-            this.devices[device.name] = device;
-            if (typeof device.tick === "function") {
-                this.deviceTickFns.push(device.tick.bind(device));
-            }
-        });
-
-
-        if (useWorkers) {
-            this.screen = new Screen(screenId, borderId, this.memory, { shared: true });
-            const screenWorker = new Worker("./dist/ScreenWorker.js");
-            screenWorker.postMessage({ cmd: "setSharedMemory", data: this.memory.sharedArrayBuffer });
-            screenWorker.postMessage({ cmd: "setSharedFrameBuffer", data: this.screen.sharedArrayBuffer });
-            screenWorker.postMessage({ cmd: "init" });
-            screenWorker.addEventListener("message", (e) => {
-                const cmd = e.data.cmd;
-                switch (cmd) {
-                    case "updated":
-                        this.screen.draw();
-                        // send a frame interrupt to the CPU
-                        this.cpuWorker.postMessage({ cmd: "trap", data: TRAPS.FRAME });
-                        this.getCPUAttention();
-                        break;
-                    default:
-                }
-            });
-            this.screenWorker = screenWorker;
-        } else {
-            if (screenId) {
-                this.screen = new Screen(screenId, borderId, this.memory);
-            } else {
-                this.screen = null;
-            }
-        }
-        this.beforeFrameUpdate = beforeFrameUpdate;
-
-        this.resetStats();
-
-        this.tick = (f) => {
-            if (this.screen) {
-                if (useWorkers) {
-                    this.tickInBrowserUsingWorkers(f);
-                } else {
-                    this.tickInBrowser(f);
-                }
-            } else {
-                this.tickOutsideBrowser(f);
-            }
-        }
-    }
-    targetFPS(f) {
-        this.performance.targetFPSIdx = this.performance.FPSTargets.indexOf(f);
-        if (this.performance.targetFPSIdx === -1) {
-            this.performance.targetFPSIdx = 0;
-        }
-        this.performance.throttlePoint = Math.floor(1000 / f); // 850
-        this.performance.maxTimeToDevoteToCPU = Math.floor(725 / f);
-    }
-
-    now() {
-        return performance.now();
-    }
-
-    nodeNow() {
-        // TODO
-        // return a performance.now-like value
-    }
-
-    getCPUAttention() {
-        if (useWorkers && supportsAtomics && this.cpu.working) {
-            Atomics.store(this._sentinel, 0, 1);
-        }
-    }
-
-    tickInBrowserUsingWorkers(f) {
-        if (this.cpu.working) {
-            window.requestAnimationFrame(this.tick);
-        }
-
-        if (this.debug) {
-            //this.cpu.dump();
-            this.memory.dump();
-            this.dump();
-        }
-
-        this.stats.lastFrameInstructions = 0;
-
-        this.cpuWorker.postMessage({ cmd: "getStats" });
-        this.cpuWorker.postMessage({ cmd: "getStatus" });
-        this.cpuWorker.postMessage({ cmd: "getState" });
-        this.cpuWorker.postMessage({ cmd: "getRegisters" });
-
-        /*eslint-disable no-var, vars-on-top*/
-        var fudge = 1;
-        var msPerFrame = Math.floor(1000 / this.performance.FPSTargets[this.performance.targetFPSIdx]);
-
-        var startTime = this.now();
-        var deltaf = f - this.stats.oldf;
-        var curTime, stopTime, endTime, totalTime;
-
-        /*eslint-enable no-var, vars-on-top*/
-        this.stats.oldf = f;
-        this.stats.deltaf = deltaf;
-
-        // is there a beforeFrameUpdate callback? If so, call it
-        if (this.beforeFrameUpdate) {
-            this.beforeFrameUpdate(this, deltaf);
-        }
-
-        if (this.screen) {
-            // composite the screen
-            this.screenWorker.postMessage({ cmd: "update" });
-        }
-
-
-        // we need to know how long that took so we can devote
-        // a safe amount of time to the processor
-        // and if we need to reduce our targetFPS
-        curTime = this.now();
-        if ((curTime - startTime) > msPerFrame + fudge) {
-            if (this.performance.targetFPSIdx < (this.performance.FPSTargets.length - 1)) {
-                this.performance.targetFPSIdx++;
-            }
-        } else if ((curTime - startTime) < (msPerFrame / 2) + fudge) {
-            if (this.performance.targetFPSIdx > 0) {
-                this.performance.targetFPSIdx--;
-            }
-        }
-
-        //stopTime = curTime + (this.performance.timeToDevoteToCPU);
-        stopTime = Math.min(startTime + (msPerFrame - fudge), curTime + this.performance.timeToDevoteToCPU);
-
-        // if the time to devote to the CPU is so small that we've already passed
-        // stop time, give it some more time
-        if (stopTime < this.now()) {
-            stopTime = this.now() + this.performance.minTimeToDevoteToCPU;
-        }
-
-        this.tickDevices();
-
-        // compute final stats and adjust performance
-        endTime = this.now();
-        totalTime = endTime - startTime;
-        this.stats.lastFrameTime = totalTime;
-        this.stats.totalTime += totalTime;
-        this.stats.totalFrames++;
-        this.stats.performanceAtTime = endTime;
-
-    }
-
-    tickInBrowser(f) {
-        if (!this.cpu.running) {
-            return;
-        }
-
-        if (this.cpu.running && !this.cpu.stepping) {
-            window.requestAnimationFrame(this.tick);
-        }
-
-        /*eslint-disable no-var, vars-on-top*/
-        var fudge = 1;
-        var msPerFrame = Math.floor(1000 / this.performance.FPSTargets[this.performance.targetFPSIdx]);
-
-        var startTime = this.now();
-        var deltaf = f - this.stats.oldf;
-        var curTime, stopTime, endTime, totalTime;
-
-        /*eslint-enable no-var, vars-on-top*/
-        this.stats.oldf = f;
-        this.stats.deltaf = deltaf;
-
-        // is there a beforeFrameUpdate callback? If so, call it
-        if (this.beforeFrameUpdate) {
-            this.beforeFrameUpdate(this, deltaf);
-        }
-
-        if (this.screen) {
-            // update the screen
-            this.screen.update();
-            this.screen.draw();
-        }
-
-
-        // we need to know how long that took so we can devote
-        // a safe amount of time to the processor
-        // and if we need to reduce our targetFPS
-        curTime = this.now();
-        if ((curTime - startTime) > msPerFrame + fudge) {
-            if (this.performance.targetFPSIdx < (this.performance.FPSTargets.length - 1)) {
-                this.performance.targetFPSIdx++;
-            }
-        } else if ((curTime - startTime) < (msPerFrame / 2) + fudge) {
-            if (this.performance.targetFPSIdx > 0) {
-                this.performance.targetFPSIdx--;
-            }
-        }
-
-        //stopTime = curTime + (this.performance.timeToDevoteToCPU);
-        stopTime = Math.min(startTime + (msPerFrame - fudge), curTime + this.performance.timeToDevoteToCPU);
-
-        // if the time to devote to the CPU is so small that we've already passed
-        // stop time, give it some more time
-        if (stopTime < this.now()) {
-            stopTime = this.now() + this.performance.minTimeToDevoteToCPU;
-        }
-
-        // send a frame interrupt to the CPU
-        this.cpu.sendTrap(TRAPS.FRAME);
-
-        // run the processor for a while
-        if (this.cpu.stepping) {
-            this.stats.lastFrameInstructions = 0;
-            this.cpu.step();
-            this.tickDevices();
-            this.stats.lastFrameInstructions++;
-            this.stats.totalInstructions++;
-        } else {
-            this.stats.lastFrameInstructions = 0;
-            if (this.cpu.running && !this.cpu.paused) {
-                while (this.now() < stopTime) {
-                    for (let i = this.performance.iterationsBetweenTimeCheck; i > 0; i--) {
-                        if (this.cpu.running && !this.cpu.paused) {
-                            this.cpu.step();
-                            this.stats.lastFrameInstructions++;
-                            this.stats.totalInstructions++;
-                        }
-                    }
-                    this.tickDevices();
-                }
-            }
-        }
-
-        // compute final stats and adjust performance
-        endTime = this.now();
-        totalTime = endTime - startTime;
-        this.stats.lastFrameTime = totalTime;
-        this.stats.totalTime += totalTime;
-        this.stats.totalFrames++;
-        this.stats.performanceAtTime = endTime;
-
-        /*
-                if (!this.cpu.stepping) {
-                    // only throttle when stepping
-                    if (totalTime > this.performance.throttlePoint) {
-                        // we need to limit processing time
-                        this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) - this.performance.finetuning) / 100;
-                        if (this.performance.timeToDevoteToCPU < this.performance.minTimeToDevoteToCPU) {
-                            this.performance.timeToDevoteToCPU = this.performance.minTimeToDevoteToCPU
-                        }
-                    } else if (totalTime < this.performance.maxTimeToDevoteToCPU) {
-                        // but we need to increase processing to use the most of the
-                        // available time as possible
-                        this.performance.timeToDevoteToCPU = Math.round((this.performance.timeToDevoteToCPU * 100) + this.performance.finetuning) / 100;
-                        if (this.performance.timeToDevoteToCPU > this.performance.maxTimeToDevoteToCPU) {
-                            this.performance.timeToDevoteToCPU = this.performance.maxTimeToDevoteToCPU;
-                        }
-                    }
-                }
-        */
-        if (this.debug) {
-            this.cpu.dump();
-            this.memory.dump();
-            this.dump();
-        }
-        if (this.cpu.stepping) {
-            this.cpu.stepping = false;
-            this.cpu.running = false;
-        }
-    }
-
-    tickOutsideBrowser() {
-        if (this.cpu.stepping) {
-            this.cpu.step();
-            this.stats.totalInstructions++;
-        } else {
-            if (this.cpu.running && !this.cpu.paused) {
-                this.cpu.step();
-                this.stats.totalInstructions++;
-            }
-        }
-        this.tickDevices();
-        if (this.debug) {
-            this.cpu.dump();
-            this.memory.dump();
-            this.dump();
-        }
-        if (this.cpu.stepping) {
-            this.cpu.stepping = false;
-            this.cpu.running = false;
-        }
-    }
-
-    tickDevices() {
-        let now = this.now();
-        for (let i = this.deviceTickFns.length - 1; i >= 0; i--) {
-            this.deviceTickFns[i](now);
-        }
-    }
-
-    resetStats() {
         this.stats = {
-            totalInstructions: 0,
-            lastFrameInstructions: 0,
-            totalFrames: 0,
-            totalTime: 0,
-            lastFrameTime: 0,
-            oldf: 0,
-            startTime: 0,
-            performanceAtTime: 0
+            time: 0,
+            ticks: 0,
+            slices: 0,
+            timeThisSlice: 0,
+            ticksThisSlice: 0,
+            ticksLastSlice: 0,
+            processorStats: { ... processor.stats },
+            processorStatsLastSlice: { ... processor.stats},
+            processorStatsThisSecond: { ... processor.stats },
+            processorStatsLastSecond: { ... processor.stats },
+            aluStats: { ... processor.alu.stats },
+            aluStatsLastSlice: { ... processor.alu.stats },
+            aluStatsThisSecond: { ... processor.alu.stats },
+            aluStatsLastSecond: { ... processor.alu.stats },
+            timeSinceLastSecond: 0,
         };
-        this.memory.resetStats();
-    }
 
-    dumpAll() {
-        if (!this.cpu.worker) { this.cpu.dump(); }
-        this.memory.dump();
-        this.dump();
-    }
-
-    dump() {
-        log(`cpu time per cycle (ms): ${this.performance.timeToDevoteToCPU} | instructions last cycle: ${this.stats.lastFrameInstructions} | total: ${this.stats.totalInstructions}`);
-
-        let lastFrameTime = Math.round(this.stats.lastFrameTime * 100) / 100;
-        let avgFrameTime = Math.round((this.stats.totalTime / this.stats.totalFrames) * 100) / 100;
-        let avgMIPS = Math.round(((this.stats.totalInstructions / this.stats.totalFrames) * 60) / 10000) / 100;
-        let secondsElapsed = (performance.now() - this.stats.startTime) / 1000;
-        let expectedFrames = secondsElapsed * 60;
-        let actMIPS = Math.round(((this.stats.totalInstructions / expectedFrames) * 60) / 10000) / 100;
-
-        log(`last frame ms: ${lastFrameTime} | avg frame ms: ${avgFrameTime} | total frames: ${this.stats.totalFrames} | hope avg MIPS: ${avgMIPS} | act avg MIPS: ${actMIPS}`)
-    }
-
-    start() {
-        this.stats.startTime = performance.now();
-
-        if (this.cpuWorker) {
-            this.cpu.working = true;
-            this.cpuWorker.postMessage({ cmd: "start" });
-            window.requestAnimationFrame(this.tick);
-            return;
+        this[_stopSignal] = false;
+        if (debugLine) {
+            debugLine.addReceiver(() => {
+                // stop any interval-based execution
+                this[_stopSignal] = true; // <-- kill any executing routines.
+                this.stop();
+            });
         }
 
-        if (this.cpu.stepping) {
-            this.cpu.stepping = false;
-        }
-        if (this.cpu.running) {
-            return;
-        }
-        this.cpu.running = true;
-        window.requestAnimationFrame(this.tick);
+
+        this[_clock] = clock;
+        this[_systemBus] = systemBus;
+        this[_memory] = memory;
+        this[_ioBus] = ioBus;
+        this[_debug] = debugLine;
+        this[_processor] = processor;
+        this[_controller] = controller;
+
+        const detectedTimingMethod = typeof requestAnimationFrame !== "undefined"
+            ? TIMING_METHODS.RAF
+            : TIMING_METHODS.TIMEOUT;
+
+        this.options = {
+            sliceTime,
+            sliceGranularity,
+            timingMethod: timingMethod === TIMING_METHODS.AUTO ? detectedTimingMethod : timingMethod,
+            performance
+        };
+
+        /* private */
+        this[_runID] = null;
     }
 
-    stop() {
-        if (this.cpuWorker) {
-            this.cpuWorker.postMessage({ cmd: "stop" });
-            this.getCPUAttention();
-            this.cpu.working = false;
-            return;
-        }
-
-        if (!this.cpu.running) {
-            return;
-        }
-        this.cpu.running = false;
+    /**
+     * @type {Bus}
+     */
+    get clock() {
+        return this[_clock];
     }
 
+    /**
+     * @type {SystemBus}
+     */
+    get systemBus() {
+        return this[_systemBus];
+    }
+
+    /**
+     * @type {Memory}
+     */
+    get memory() {
+        return this[_memory];
+    }
+
+    /**
+     * @type {IOBus}
+     */
+    get ioBus() {
+        return this[_ioBus];
+    }
+
+    /**
+     * @type {Controller}
+     */
+    get controller() {
+        return this[_controller];
+    }
+
+    /**
+     * @type {Bus}
+     */
+    get debugLine() {
+        return this[_debug];
+    }
+
+    /**
+     * @type {Processor}
+     */
+    get processor() {
+        return this[_processor];
+    }
+
+    /**
+     * Step the computer by sending a tick.
+     *
+     * NOTE: This is **not** the same as single-stepping an instruction. An instruction
+     * may in fact require multiple
+     */
+    tick() {
+        this.stats.ticksThisSlice++;
+        this.clock.signal();
+    }
+
+    /**
+     * Attempt to step the computer by a single instruction
+     * This can only be done if the computer has been initialized in debug mode
+     * If it hasn't been, we'll do the same thing as a clock signal (task step)
+     */
     step() {
-        if (this.cpuWorker) {
-            this.cpuWorker.postMessage({ cmd: "step" });
-            this.getCPUAttention();
-            return;
-        }
-
-        if (!this.cpu.running) {
-            this.start();
-        }
-        this.cpu.clrFlag(this.cpu.flagMap.I);   // kill interrupts while stepping
-        this.cpu.stepping = true;
-    }
-
-    reset() {
-        if (this.cpuWorker) {
-            this.cpuWorker.postMessage({ cmd: "softReset" });
-            this.getCPUAttention();
-            return;
-        }
-        // send reset trap
-        this.cpu.sendTrap(TRAPS.RESET);
-    }
-
-    hardReset() {
-        this.resetStats();
-        this.stats.startTime = performance.now();
-        if (this.cpuWorker) {
-            this.cpuWorker.postMessage({ cmd: "stop" });
-            this.getCPUAttention();
-            this.memory.init();
-            this.screen.init();
-            this.cpuWorker.postMessage({ cmd: "hardReset" });
+        if (this.debug) {
+            this.processor.registers.SINGLE_STEP = 1;
+            this.runSlice();
+            this._stopSignal = false;
         } else {
-            this.cpu.stepping = false;
-            //this.cpu.running = false;
-            this.cpu.init();
-            this.memory.init();
-            this.screen.init();
+            this.tick();  // without the debug signal, we can't effectively single step
+            this._updateStatsAfterSlice();
         }
+    }
 
-        // reload ROMs
-        this.roms.forEach((rom) => {
-            this.memory.loadFromJS(rom);
-        });
-        this.memory.protected = true;
-
-        // reset devices, if allowed
-        Object.keys(this.devices).forEach(deviceName => (typeof this.devices[deviceName].reset === "function" ? this.devices[deviceName].reset() : 0));
-
-        if (this.cpuWorker) {
-            if (this.cpu.working) {
-                setTimeout(() => {
-                    this.cpuWorker.postMessage({ cmd: "start" });
-                }, 100);
+    /**
+     * Run the computer in slice mode until the desired timeout has been passed
+     * If the computer is in debug mode, a BRK instruction will trigger single-step mode
+     * and stop execution early. If the computer is already in single step mode,
+     * only a single instruction will execute
+     */
+    runSlice() {
+        const { sliceTime: timeout, sliceGranularity: granularity, performance, timingMethod} = this.options;
+        this[_stopSignal] = false;       // clear any stop signal for this slice
+        this.stats.slices++;
+        const start = performance.now();
+        if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
+            let now = start;
+            let slice = now;
+            let delta = 0;
+            let c = 0;
+            if (timingMethod === TIMING_METHODS.FIXED) {
+                let ticks = 0;
+                while (!this[_stopSignal] && (ticks++ <= granularity)) {
+                    this.tick();
+                }
+            } else {
+                while (!this[_stopSignal]) {
+                    this.tick();
+                    if (c++ >= granularity) {
+                        c = 0;
+                        slice = now;
+                        now = performance.now();
+                        delta = now - slice;
+                        if ((now + delta) >= (start + timeout)) {
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            while (!this[_stopSignal]) {
+                this.tick();
             }
         }
-        //this.reset();
+        if (this[_stopSignal]) {
+            this.stop();
+        }
+        const end = performance.now();
+        const totalTime = end - start;
+        this.stats.timeThisSlice = totalTime;
+        this.stats.time += totalTime;
+        this._updateStatsAfterSlice();
+        return totalTime;             // used for next slice timing
     }
 
+    /**
+     * Run the computer indefinitely using the configured timing method.
+     */
+    run() {
+        const {timingMethod, sliceTime} = this.options;
+
+        if (this.running) this.stop();
+
+        switch (timingMethod) {
+            case TIMING_METHODS.TIMEOUT: {
+                this[_runID] = setTimeout((function slice() {
+                    const timeTaken = this.runSlice();
+                    if (this.running) {
+                        this[_runID] = setTimeout(slice.bind(this), sliceTime - timeTaken);
+                    }
+                }).bind(this), 0 );     // may as well start as soon as possible
+                break;
+            }
+            case TIMING_METHODS.FIXED:
+            case TIMING_METHODS.RAF: {
+                this[_runID] = requestAnimationFrame((function slice() {
+                    const timeTaken = this.runSlice();
+                    if (this.running) {
+                        this[_runID] = requestAnimationFrame(slice.bind(this));
+                    }
+                }).bind(this));
+                break;
+            }
+            case TIMING_METHODS.BLOCKING: {
+                this[_runID] = 1; // convince this.running we're really running
+                this.runSlice();
+                break;
+            }
+            case TIMING_METHODS.INTERVAL:
+            default: {
+                this[_runID] = setInterval(() => {
+                    this.runSlice();
+                }, sliceTime + 1); // give it time to breathe
+            }
+        }
+    }
+    stop() {
+        const {timingMethod} = this.options;
+        this[_stopSignal] = true;        // stop any running slice
+        if (this[_runID]) {
+            switch (timingMethod) {
+                case TIMING_METHODS.BLOCKING:
+                    break;
+                case TIMING_METHODS.TIMEOUT: {
+                    clearTimeout(this[_runID]);
+                    break;
+                }
+                case TIMING_METHODS.FIXED:
+                case TIMING_METHODS.RAF: {
+                    cancelAnimationFrame(this[_runID]);
+                    break;
+                }
+                case TIMING_METHODS.INTERVAL:
+                default: {
+                    clearInterval(this[_runID]);
+                }
+            }
+        }
+        this[_runID] = null;
+    }
+    get running() {
+        return this[_runID] !== null;
+    }
+
+    get stepping() {
+        return this.processor.registers.SINGLE_STEP;
+    }
+
+    _updateStatsAfterSlice() {
+        this.stats.ticksLastSlice = this.stats.ticksThisSlice;
+        this.stats.ticks += this.stats.ticksThisSlice;
+        this.stats.ticksThisSlice = 0;
+        this.stats.timeSinceLastSecond += this.stats.timeThisSlice;
+        
+        // update processor stats
+        for (let [k, v] of Object.entries(this.processor.stats)) {
+            this.stats.processorStats[k] += v;
+            this.stats.processorStatsThisSecond[k] += v;
+        }
+        this.stats.processorStatsLastSlice = { ... this.processor.stats };
+
+        // update alu stats
+        for (let [k, v] of Object.entries(this.processor.alu.stats)) {
+            this.stats.aluStats[k] += v;
+            this.stats.aluStatsThisSecond[k] += v;
+        }
+        this.stats.aluStatsLastSlice = { ... this.processor.alu.stats };
+
+        if (this.stats.timeSinceLastSecond >= 1000) {
+            this.stats.processorStatsLastSecond = { ... this.stats.processorStatsThisSecond };
+            for (let [k, v] of Object.entries(this.processor.stats)) {
+                this.stats.processorStatsThisSecond[k] = 0;
+            }
+            this.stats.aluStatsLastSecond = { ... this.stats.aluStatsThisSecond };
+            for (let [k, v] of Object.entries(this.processor.alu.stats)) {
+                this.stats.aluStatsThisSecond[k] = 0;
+            }
+            this.stats.timeSinceLastSecond -= 1000;
+        }
+
+        this.processor.resetStats();
+        this.processor.alu.resetStats();
+    }
 }

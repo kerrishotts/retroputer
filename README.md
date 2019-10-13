@@ -1,40 +1,20 @@
 # Retroputer
 
-Retroputer is intended as both a plaything and educational tool. It is intended to simulate what programming and using a computer from the late 1980s was like. Some liberties, however, are taken, including the following:
+Retroputer is an emulator for a computer system that resembles machines in the 80's and 90's. However, the machine as presented did not exist in this form -- rather, the emulator seeks only to emulate the look and feel of these machines, not replicate an actual machine from the era. There are plenty of emulators that do so excellently. Instead, Retroputer has these goals:
 
-* 256KiB is addressable; 256KiB is present -- in the 80s, this would have been pretty expensive
-* 64KiB devoted to 320x200 graphics
-* 256 color palette consisting of 8-bit r,g,b elements
-* 64KiB devoted to tile set definitions (4 sets x 16 KiB)
-* 16KiB devoted to up to four visible tile pages on screen at once (4 pages x 4KiB)
-* 16KiB of ROM
-* 256 traps or interrupts
-* A slightly larger register file than many CPUs of the time
-* 16-bit CPU with an 18-bit address bus
+- Be simple to learn
+- Encourage programming
+- Work in a web browser
+- Resemble 8 and 16-bit machines
+- Have a completely understandable architecture from low-level "hardware" to high-level software
 
-The above is to make programming for the Retroputer a little easier while also making it easy to translate the memory for screen graphics to an HTML5 canvas (which uses four bytes per pixel for RGBA). The tilesets are an affectation to make it easy to create levels and side-scrollers -- these are like (but not quite like) the character set definitions on many machines of the time.
+Retroputer V2 is intended to be a lower-level faux emulator than Retroputer v1 that incorporates low level technologies such as buses and clocks. This isn't intended to be a perfect representation of physical hardware, but makes interconnects between simulated devices much easier, and also simplifies the modeling of the overall structure of the computer.
+
+> **Important**: Retroputer V2 is *far* from complete, as is the documentation in [the wiki](https://www.notion.so/Retroputer-V2-b025c3b6c86c46c7b21f1e89ec7052d2). Take *everything* with huge grains of salt!
 
 ## Status
 
-Currently works:
-
-* Assembler
-* Fetch, decode and execute
-* Screen
-* Keyboard
-
-In Progress:
-
-* Timers (prep for sound)
-* ROM and KERNEL
-* Tests
-
-TODO:
-
-* Sprites
-* Sound
-* Other devices
-* Optimizations!
+See [status in the wiki](https://www.notion.so/Retroputer-V2-b025c3b6c86c46c7b21f1e89ec7052d2).
 
 ## Launching
 
@@ -44,11 +24,10 @@ You can launch the browser interface executing:
 
 ```
 $ npm install
-$ npm run webpack
-$ npm run serve
+$ npm run watch
 ```
 
-Then navigate to http://localhost:8080/src/www.
+Then navigate to http://localhost:1234
 
 ## Tests
 
@@ -56,7 +35,7 @@ You can run tests by executing `npm test`.
 
 ## Docs
 
-Documentation is available in the [docs](./docs) directory.
+(Out-of-date) Documentation is available in the [docs](./docs) directory. The more up-to-date stuff [is here](https://www.notion.so/Retroputer-V2-b025c3b6c86c46c7b21f1e89ec7052d2).
 
 ## License
 

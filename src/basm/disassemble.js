@@ -1,0 +1,216 @@
+import { REGISTER_NAMES, FLAG_NAMES, OPCODES } from "./constants.js";
+
+const toNum = (n, width, base) => 
+    (base === 16 ? "0x" : base === 2 ? "0b" : "") + 
+    (n || 0).toString(base).padStart(base === 16 ? width : base === 2 ? width*8 : 0, "0")
+    .toUpperCase();
+
+const address = ( {size, instruction, opcode, base} = {} ) => {
+    const modeByte = size === 3 ? (instruction & 0x0000FF00) >>> 8 : (instruction & 0x00FF0000) >>> 16;
+    const reg = size === 3 ? (instruction & 0x000F0000) >>> 16 : (instruction & 0x0F000000) >>> 24;
+    const flg = size === 3 ? (instruction & 0x00070000) >>> 16 : (instruction & 0x07000000) >>> 24;
+    const negate = !!(size === 3 ? (instruction & 0x00080000) : (instruction & 0x08000000));
+    const indirect =     !!(modeByte & 0b00100000);
+    const indexByX =     !!(modeByte & 0b00010000);
+    const indexByY =     !!(modeByte & 0b00001000);
+    const addressingMode = (modeByte & 0b11000000) >> 6;
+    const short =        !!(modeByte & 0b00000001);
+    const which =        !!(modeByte & 0b00000010);
+    const always =       !!(modeByte & 0b00000100);
+    const canBeRelative = !(opcode === OPCODES.LD || opcode === OPCODES.ST );
+    const usesFlags = opcode === OPCODES.BR || opcode === OPCODES.BRS || opcode === OPCODES.CALL || opcode === OPCODES.CALLS;
+    const isLoadOrStore = opcode === OPCODES.LD || opcode === OPCODES.ST;
+    let v = size === 3 ? (instruction & 0x000000FF) : (instruction & 0x0000FFFF);
+    if (isLoadOrStore) v |= size === 3 ? (instruction & 0x00000700) : (instruction & 0x00070000);
+
+    let out = `${opcode}`;
+    if (usesFlags) {
+        if (!always) {
+            out = `${out} ${negate ? "!" : ""}${FLAG_NAMES[flg]},`;
+        }
+    }  else {
+        if (opcode === OPCODES.LD || opcode === OPCODES.LOOP || opcode === OPCODES.LOOPS) {
+            out = `${out} ${REGISTER_NAMES[reg]},`;
+        }
+    }
+    switch (addressingMode) {
+        case 0b00:
+            if (indirect) {
+                out = `${out} ?${toNum(v, (size - 2) * 2, base)}?`;
+            } else {
+                out = `${out} ${toNum(v, (size - 2) * 2, base)} `;
+            }
+            break;
+        case 0b01:
+            if (indirect) {
+                out = `${out} <${toNum(v, (size - 2) * 2, base)}>`;
+            } else {
+                out = `${out} [${toNum(v, (size - 2) * 2, base)}]`;
+            }
+            break;
+        case 0b10:
+            if (indirect) {
+                out = `${out} <BP+${toNum(v, (size - 2) * 2, base)}>`;
+            } else {
+                out = `${out} [BP+${toNum(v, (size - 2) * 2, base)}]`;
+            }
+            break;
+        case 0b11:
+            if (indirect) {
+                out = `${out} <D+${toNum(v, (size - 2) * 2, base)}>`;
+            } else {
+                out = `${out} [D+${toNum(v, (size - 2) * 2, base)}]`;
+            }
+            break;
+    }
+    if (indexByX) {
+        out = `${out.substr(0, out.length - 1)}, X${out.substr(out.length - 1)}`;
+    }
+    if (indexByY) {
+        out = `${out}, Y`;
+    }
+
+    return out;
+}
+
+export function disassemble(bytes, { base = 16 } = {}) {
+    let complete = false;
+    let instruction = 0;
+    let byte = 0;
+    let size = 0
+    let idx = 0;
+    let code;
+    let op, p1;
+
+    while (!complete && idx < bytes.length) {
+        byte = bytes[idx];
+        idx += 1;
+        if (byte === undefined) { return null; }
+        instruction = (instruction << 8) | byte;
+        size = idx;
+        if (size > 4) { return null; }
+
+        op = (instruction >> ((size - 1) << 3)) & 0xFF;
+
+        if (size === 1) {
+            // one byte, single variant instructions
+            if (op === 0x00) { code = `${OPCODES.NOP}`; }
+            if (op === 0x3F) { code = `${OPCODES.BRK}`; }
+            if (op === 0xA0) { code = `${OPCODES.PUSHALL}`; }
+            if (op === 0xA1) { code = `${OPCODES.POPALL}`; }
+            if (op === 0xA2) { code = `${OPCODES.PUSHF}`; }
+            if (op === 0xA3) { code = `${OPCODES.POPF}`; }
+            if (op === 0xA4) { code = `${OPCODES.PUSHMM}`; }
+            if (op === 0xA5) { code = `${OPCODES.POPMM}`; }
+            if (op === 0xA7) { code = `${OPCODES.RET}`; }
+
+            // one byte, operand instructions
+            if (op >= 0x40 && op <= 0x47) { code = `${OPCODES.TRAP} ${REGISTER_NAMES[op & 0x07]}`; }
+            if (op >= 0xB0 && op <= 0xB7) { code = `${OPCODES.SET} ${FLAG_NAMES[op & 0x07]}`; }
+            if (op >= 0xB8 && op <= 0xBF) { code = `${OPCODES.CLR} ${FLAG_NAMES[op & 0x07]}`; }
+            if (op >= 0xC0 && op <= 0xCF) { code = `${OPCODES.INC} ${REGISTER_NAMES[op & 0x0F]}`; }
+            if (op >= 0xD0 && op <= 0xDF) { code = `${OPCODES.DEC} ${REGISTER_NAMES[op & 0x0F]}`; }
+            if (op >= 0xE0 && op <= 0xEF) { code = `${OPCODES.PUSH} ${REGISTER_NAMES[op & 0x0F]}`; }
+            if (op >= 0xF0 && op <= 0xFF) { code = `${OPCODES.POP} ${REGISTER_NAMES[op & 0x0F]}`; }
+        }
+
+        p1 = size > 1 ? ((instruction >> ((size - 2) << 3)) & 0xFF) : 0;
+
+        if (size === 2) {
+            if (op === 0x01) { code = `${OPCODES.ADD} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x02) { code = `${OPCODES.SUB} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x03) { code = `${OPCODES.CMP} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x04) { code = `${OPCODES.AND} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x05) { code = `${OPCODES.OR} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x06) { code = `${OPCODES.TEST} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x07) { code = `${OPCODES.XOR} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x08) { code = `${OPCODES.TRAP} ${toNum(p1, 2, base)}`; }
+            if (op === 0x09) {
+                if (p1 >= 0x00 && p1 <= 0x0F) { code = `${OPCODES.NOT} ${REGISTER_NAMES[(p1 & 0x0F)]}`; }
+                if (p1 >= 0x10 && p1 <= 0x1F) { code = `${OPCODES.NEG} ${REGISTER_NAMES[(p1 & 0x0F)]}`; }
+                if (p1 >= 0x20 && p1 <= 0x2F) { code = `${OPCODES.EXC} ${REGISTER_NAMES[(p1 & 0x0F)]}`; }
+            }
+            if (op === 0x0A) { code = `${OPCODES.SHL} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${toNum(p1 & 0x0F, 2, base)}`; }
+            if (op === 0x0B) { code = `${OPCODES.SHL} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x0C) { code = `${OPCODES.SHR} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${toNum(p1 & 0x0F, 2, base)}`; }
+            if (op === 0x0D) { code = `${OPCODES.SHR} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x0E) { code = `${OPCODES.SWAP} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x0F) { code = `${OPCODES.MOV} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0x38) { code = `${OPCODES.ENTER} ${toNum(p1, 2, base)}`; }
+            if (op === 0x39) { code = `${OPCODES.EXIT} ${toNum(p1, 2, base)}`; }
+            if (op === 0xA8) { code = `${OPCODES.MUL} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0xA9) { code = `${OPCODES.DIV} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0xAA) { code = `${OPCODES.MOD} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0xAB) { code = `${OPCODES.SMUL} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0xAC) { code = `${OPCODES.SDIV} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0xAD) { code = `${OPCODES.SMOD} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op >= 0x48 && op <= 0x4F && (op & 1) === 1) { code = `${OPCODES.ADD} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+            if (op >= 0x50 && op <= 0x57 && (op & 1) === 1) { code = `${OPCODES.SUB} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+            if (op >= 0x58 && op <= 0x5F && (op & 1) === 1) { code = `${OPCODES.CMP} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+            if (op >= 0x60 && op <= 0x67 && (op & 1) === 1) { code = `${OPCODES.AND} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+            if (op >= 0x68 && op <= 0x6F && (op & 1) === 1) { code = `${OPCODES.OR} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+            if (op >= 0x70 && op <= 0x77 && (op & 1) === 1) { code = `${OPCODES.TEST} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+            if (op >= 0x78 && op <= 0x7F && (op & 1) === 1) { code = `${OPCODES.XOR} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
+        }
+        const p2 = size > 2 ? ((instruction >> ((size - 3) << 3)) & 0xFF) : 0;
+
+        if (size === 3) {
+            if (op >= 0x48 && op <= 0x4F && (op & 1) === 0) { code = `${OPCODES.ADD} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1 << 8 | p2, 4, base)}`; }
+            if (op >= 0x50 && op <= 0x57 && (op & 1) === 0) { code = `${OPCODES.SUB} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1 << 8 | p2, 4, base)}`; }
+            if (op >= 0x58 && op <= 0x5F && (op & 1) === 0) { code = `${OPCODES.CMP} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1 << 8 | p2, 4, base)}`; }
+            if (op >= 0x60 && op <= 0x67 && (op & 1) === 0) { code = `${OPCODES.AND} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1 << 8 | p2, 4, base)}`; }
+            if (op >= 0x68 && op <= 0x6F && (op & 1) === 0) { code = `${OPCODES.OR} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1 << 8 | p2, 4, base)}`; }
+            if (op >= 0x70 && op <= 0x77 && (op & 1) === 0) { code = `${OPCODES.TEST} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1 << 8 | p2, 4, base)}`; }
+            if (op >= 0x78 && op <= 0x7F && (op & 1) === 0) { code = `${OPCODES.XOR} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p2 << 8 | p2, 4, base)}`; }
+            if (op >= 0x10 && op <= 0x1F && (op & 1) === 1 && p1 === 0x00) { code = address({size, instruction, base, opcode: OPCODES.LD}); }
+            if (op === 0x30) { code = `${OPCODES.IN} ${REGISTER_NAMES[p1 >>> 4]}, ${toNum(p2, 2, base)}`; }
+            if (op === 0x31) { code = `${OPCODES.OUT} ${toNum(p2, 2, base)}, ${REGISTER_NAMES[p1 >>> 4]}`; }
+            if ( op >= 0x80 && op <= 0x8F && (p1 & 1) === 1) { code = address({size, instruction, base,  opcode: OPCODES.LOOPS}); }
+            if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 1) { code = address({size, instruction, base, opcode: (p1 & 0b10) ? OPCODES.CALLS : OPCODES.BRS}); }
+        }
+
+        const p3 = size > 3 ? ((instruction >> ((size - 4) << 3)) & 0xFF) : 0;
+
+        if (size === 4) {
+            if (op >= 0x10 && op <= 0x1F && (op & 1) === 0 && p1 === 0x00) { code = address({size, instruction, base, opcode: OPCODES.LD}); }
+            if (op >= 0x10 && op <= 0x1F /*&& (op & 1) === 0*/ && p1 != 0x00) { code = address({size, instruction, base, opcode: OPCODES.LD}); }
+            if (op >= 0x20 && op <= 0x2F ) { code = address({size, instruction, base, opcode: OPCODES.ST}); }
+            if ( op >= 0x80 && op <= 0x8F && (p1 & 1) === 0) { code = address({size, instruction, base, opcode: OPCODES.LOOP}); }
+            if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 0) { code = address({size, instruction, base, opcode: (p1 & 0b10) ? OPCODES.CALL : OPCODES.BR}); }
+        }
+
+        complete = code !== undefined;
+
+    }
+    if (!complete) { return null; }
+    return { size, code, instruction };
+}
+
+export function disassembleAll(bytes, { base = 16, addr} = {}) {
+    const arr = bytes.map(i => i);
+    let out = "";
+    let offset = 0;
+    while (arr.length > 0) {
+        let result, idx = 1, code = "", size = 0;
+        do {
+            const tryBytes = arr.slice(0, idx + 1);
+            result = disassemble(tryBytes, base);
+            idx++;
+        } while (result === null && idx < arr.length && idx < 5 );
+        if (result) {
+            size = result.size;
+            code = result.code;
+        } else {
+            code = "???";
+            size = 1;
+        }
+        const used = arr.splice(0, size);
+        out += (addr !== undefined ? toNum(addr + offset, 5, 16).substr(2) + ": " : "") + 
+            used.map(b => toNum(b, 2, 16).substr(2)).join(" ").padEnd(11, " ") + 
+            "    " + 
+            code + 
+            "\n";
+        offset += size;
+    }
+    return out;
+}
