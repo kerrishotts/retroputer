@@ -93,6 +93,9 @@ export class Screen extends Device {
         this._ticksSinceRaster = 0;
         this._ticksPerSecond = 248000; /* guess; will revise */
         this._ticksThisSecond = 0;
+        this._ticksLastSecond = 0;
+
+        this._adjustPerformance = true;
 
         this._lastPerformance = performance.now();
         this._startTime = this._lastPerformance;
@@ -111,8 +114,22 @@ export class Screen extends Device {
 
     }
 
+    get adjustPerformance() {
+        return this._adjustPerformance;
+    }
+    set adjustPerformance(v) {
+        this._adjustPerformance = v;
+    }
+
     get frame() {
         return this._frame;
+    }
+
+    get ticksBetweenRasterLines() {
+        return this._ticksPerRaster;
+    }
+    set ticksBetweenRasterLines(v) {
+        this._ticksPerRaster = Number(v);
     }
 
     reset() {
@@ -276,10 +293,10 @@ export class Screen extends Device {
     tick() {
         super.tick();
         this._ticksThisSecond++;
-        this._ticksSinceRaster++;
         if (this._wait) return;
+        this._ticksSinceRaster++;
         if (this._ticksSinceRaster >= this._ticksPerRaster) {
-            this._ticksSinceRaster = 0;
+            this._ticksSinceRaster -= this._ticksPerRaster;
             //if (!this._wait) {
                 this._generateRasterLine();
                 this._raster++;
@@ -293,7 +310,7 @@ export class Screen extends Device {
                 if (this._raster === (this._read(TRAP_ON_RASTER) << 1)) {
                     this.requestService();
                 }
-           // }
+            //}
             this._write(CURRENT_RASTER, this._raster >> 1);
             this._adjustRasterSpeed();
         }
@@ -450,15 +467,18 @@ export class Screen extends Device {
     _adjustRasterSpeed() {
         const now = this._performance.now();
         if (now >= this._lastPerformance + MS_PER_SEC) {
-            const delta = now - this._lastPerformance;
+            const delta = (now - this._lastPerformance) / MS_PER_SEC;
             this._lastPerformance = now;
 
             //const numSeconds = (now - this._startTime) / MS_PER_SEC;
             //this._ticksPerSecond = ((this._ticksPerSecond * SAMPLES) + this._ticksThisSecond) / (SAMPLES + 1);
-            this._ticksPerSecond = (this._ticksPerSecond + this._ticksThisSecond) / 2;
-            this._ticksThisSecond = 0;
+            this._ticksPerSecond = (this._ticksLastSecond + (this._ticksThisSecond / delta)) / 2;
 
-            this._ticksPerRaster = Math.floor(this._ticksPerSecond / (TARGET_FPS * SCREEN_ROWS));
+            if (this.adjustPerformance) {
+                this._ticksPerRaster = Math.floor(this._ticksPerSecond / (TARGET_FPS * SCREEN_ROWS)) /// 2;
+            }
+            this._ticksLastSecond = this._ticksThisSecond / delta;
+            this._ticksThisSecond = 0;
         }
     }
 }

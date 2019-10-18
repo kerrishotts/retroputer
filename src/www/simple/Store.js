@@ -20,17 +20,19 @@ export class Store {
         screenFPS.dom.style.cssText = "";
         this.fps = screenFPS;
 
+        this.config = {};
+        this.load();
+console.log(this.config);
         const computer = new Computer({ 
             performance, 
             debug: true, 
-            timingMethod: TIMING_METHODS.FIXED, 
-            //timingMethod: TIMING_METHODS.AUTO, 
-            sliceTime: 16, 
-            sliceGranularity: 4096
-            //sliceGranularity: 0xFF 
+            timingMethod: this.config.options.timingMethod,
+            sliceTime: this.config.options.sliceTime, 
+            sliceGranularity: this.config.options.sliceGranularity
         });
         computer.memory.loadFromJS(rom, true);
         const diagnostics = new Diagnostics(computer);
+
         const simpleConsole = new SimpleConsoleDevice({
             device: 8,
             length: 16,
@@ -48,6 +50,10 @@ export class Store {
             performance,
             stats: this.fps
         });
+        screen.adjustPerformance = this.config.options.ticksBetweenRasterLines === "AUTO";
+        if (this.config.options.ticksBetweenRasterLines !== "AUTO") {
+            screen.ticksBetweenRasterLines = Number(this.config.options.ticksBetweenRasterLines);
+        }
 
         const dma = new DMA({
             device: 13,
@@ -66,7 +72,31 @@ export class Store {
             dma
         };
 
-        this.config = {
+    }
+
+    get code() {
+        return this.config.code;
+    }
+
+    set code(v) {
+        this.config.code = v;
+        this.save();
+    }
+
+    save() {
+        localStorage.setItem("config", JSON.stringify(this.config));
+    }
+
+    load() {
+        const savedConfigStr = localStorage.getItem("config");
+        const savedConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
+        this.config = Object.assign({}, {
+            options: {
+                timingMethod: TIMING_METHODS.FIXED,
+                sliceGranularity: 4096,
+                sliceTime: 16,
+                ticksBetweenRasterLines: "AUTO",
+            },
             panels: {
                 canvas: true,
                 state: true,
@@ -74,7 +104,7 @@ export class Store {
                 console: false,
                 control: true
             },
-            code: localStorage.getItem("code") || (`
+            code: (`
             .segment code 0x02000 {
                 ld al, 0
             top:
@@ -95,15 +125,6 @@ export class Store {
                 brk
             }
             `.split("\n").map(l => l.substr(12)).join("\n"))
-        }
-    }
-
-    get code() {
-        return this.config.code;
-    }
-
-    set code(v) {
-        this.config.code = v;
-        localStorage.setItem("code", v);
+        }, savedConfig);
     }
 }
