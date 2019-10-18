@@ -83,7 +83,7 @@ export class Computer {
             ? TIMING_METHODS.RAF
             : TIMING_METHODS.TIMEOUT;
 
-        this.options = {
+        this._options = {
             sliceTime,
             sliceGranularity,
             timingMethod: timingMethod === TIMING_METHODS.AUTO ? detectedTimingMethod : timingMethod,
@@ -177,7 +177,7 @@ export class Computer {
      * only a single instruction will execute
      */
     runSlice() {
-        const { sliceTime: timeout, sliceGranularity: granularity, performance, timingMethod} = this.options;
+        const { sliceTime: timeout, sliceGranularity: granularity, performance, timingMethod} = this._options;
         this[_stopSignal] = false;       // clear any stop signal for this slice
         this.stats.slices++;
         const start = performance.now();
@@ -225,7 +225,7 @@ export class Computer {
      * Run the computer indefinitely using the configured timing method.
      */
     run() {
-        const {timingMethod, sliceTime} = this.options;
+        const {timingMethod, sliceTime} = this._options;
 
         if (this.running) this.stop();
 
@@ -263,7 +263,7 @@ export class Computer {
         }
     }
     stop() {
-        const {timingMethod} = this.options;
+        const {timingMethod} = this._options;
         this[_stopSignal] = true;        // stop any running slice
         if (this[_runID]) {
             switch (timingMethod) {
@@ -292,6 +292,19 @@ export class Computer {
 
     get stepping() {
         return this.processor.registers.SINGLE_STEP;
+    }
+
+    get options() {
+        return this._options;
+    }
+
+    set options(options) {
+        const running = this.running;
+        this.stop();
+        this._options = options;
+        if (running) {
+            this.run();
+        }
     }
 
     _updateStatsAfterSlice() {
