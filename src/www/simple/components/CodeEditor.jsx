@@ -13,6 +13,8 @@ export class CodeEditor extends React.Component {
 
         this.codeChanged = this.codeChanged.bind(this);
         this.assembleClicked = this.assembleClicked.bind(this);
+
+        this.assembleClicked();
     }
     codeChanged(e) {
         const { store }  = this.props;
@@ -44,7 +46,7 @@ export class CodeEditor extends React.Component {
         return (
             <div className="panel column">
                 <button className="nogrow noshrink" onClick={this.assembleClicked}>Assemble</button>
-                <textarea className="grow shrink" onChange={this.codeChanged}>{code}</textarea>
+                <textarea className="grow shrink" onChange={this.codeChanged} defaultValue={code}></textarea>
                 <code className="nogrow noshrink" style={{whiteSpace: "pre-wrap"}}>{log}</code>
             </div>
         );

@@ -44,8 +44,8 @@ export class ComputerScreen extends React.Component {
         }
 
         const delta = now - this._lastTimestamp;
-        if (delta > 17) {
-            console.log("LONG FRAME", delta);
+        if (delta > 31) {
+            console.log("LONG WAIT", delta);
         } 
         this._lastTimestamp = now;
 

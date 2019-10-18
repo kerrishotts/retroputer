@@ -17,6 +17,7 @@ import { ComputerState } from "./components/ComputerState.jsx";
 import { FPS } from "./components/FPS.jsx";
 import { ComputerScreen } from "./components/ComputerScreen.jsx";
 import { ComputerControl } from "./components/ComputerControl.jsx";
+import { ComputerMemory } from "./components/ComputerMemory.jsx";
 
 window.React = React;
 window.ReactDOM = ReactDOM;
@@ -78,6 +79,13 @@ function initGoldenLayout() {
                             },
                             {
                                 type: 'react-component',
+                                title: 'Memory',
+                                component: 'computer-memory',
+                                width: 25,
+                                props: {store}
+                            },
+                            {
+                                type: 'react-component',
                                 title: 'Code',
                                 component: 'code-editor',
                                 width: 25,
@@ -94,6 +102,7 @@ function initGoldenLayout() {
     myLayout.registerComponent( 'fps', FPS);
     myLayout.registerComponent( 'computer-screen', ComputerScreen);
     myLayout.registerComponent( 'computer-state', ComputerState);
+    myLayout.registerComponent( 'computer-memory', ComputerMemory);
     myLayout.registerComponent( 'computer-console', ComputerConsole);
     myLayout.registerComponent( 'code-editor', CodeEditor);
     myLayout.init();
