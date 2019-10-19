@@ -18,6 +18,7 @@ import { FPS } from "./components/FPS.jsx";
 import { ComputerScreen } from "./components/ComputerScreen.jsx";
 import { ComputerControl } from "./components/ComputerControl.jsx";
 import { ComputerMemory } from "./components/ComputerMemory.jsx";
+import { ComputerIO } from "./components/ComputerIO.jsx";
 
 window.React = React;
 window.ReactDOM = ReactDOM;
@@ -86,6 +87,13 @@ function initGoldenLayout() {
                             },
                             {
                                 type: 'react-component',
+                                title: 'I/O',
+                                component: 'computer-io',
+                                width: 25,
+                                props: {store}
+                            },
+                            {
+                                type: 'react-component',
                                 title: 'Code',
                                 component: 'code-editor',
                                 width: 25,
@@ -103,6 +111,7 @@ function initGoldenLayout() {
     myLayout.registerComponent( 'computer-screen', ComputerScreen);
     myLayout.registerComponent( 'computer-state', ComputerState);
     myLayout.registerComponent( 'computer-memory', ComputerMemory);
+    myLayout.registerComponent( 'computer-io', ComputerIO);
     myLayout.registerComponent( 'computer-console', ComputerConsole);
     myLayout.registerComponent( 'code-editor', CodeEditor);
     myLayout.init();
