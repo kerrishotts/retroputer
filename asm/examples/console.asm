@@ -9,20 +9,23 @@
     ld sp, 0x02000
     ld bp, 0x02000
 
-    ld a, data.crlf
+    ld d, data.crlf >> 3
+    ld x, data.crlf & 0b111
     calls print
 
     # Write the string to the console a lot of times :-)
     ld c, 0x1000
 
-    ld a, data.str
+    ld d, data.str >> 3
+    ld x, data.str & 0b111
     {
     _loop:
         calls print
         loops _loop, c
     }
 
-    ld a, data.crlf
+    ld d, data.crlf >> 3
+    ld x, data.crlf & 0b111
     calls print
 
     brk
@@ -31,13 +34,13 @@ print:
     {
         push d                              # be nice citizens by saving values
         push x
+        push y
         push a
-        mov d, a                            # D must have the address to print
-        ld x, 0x0000                        # x is our index
-        ld a, 0x0000                        # zero A to get it ready for loding characters
+        ld y, 0x0000                        # y is our index
+        ld a, 0x0000                        # zero A to get it ready for loading characters
         {
         _loop:
-            ld al, [D,X]                        # A should be the desired character
+            ld al, [D,X,Y]                        # A should be the desired character
             cmp al, 0x00                        # check if NUL
             brs z _done                         # ... if NUL, we're done!
             out 0x82, al                        # write to CON:SEND
@@ -48,11 +51,12 @@ print:
                 in al, 0x83                     # wait for ACK
                 brs z _loop  {$90 $01 $FA}      # ...will be non-zero when ACK'd
             }
-            inc x                               # next character
+            inc y                               # next character
             brs _loop                           # go back for another round
         _done:
         }
         pop a
+        pop y
         pop x
         pop d                               # cleaned up, ready to go back
         ret

@@ -87,10 +87,10 @@
     brk                                 {$3F}
 }
 
-# test-load-and-store-dw-3.regs: A=0x1234 B=0x1234 D=0x1000
+# test-load-and-store-dw-3.regs: A=0x1234 B=0x1234 D=0x0010
 .segment test-load-and-store-dw-3 0x02000 {
     ld b, 0x1234                        {$12 $00 $12 $34}
-    ld d, 0x1000                        {$16 $00 $10 $00}
+    ld d, 0x0010                        {$16 $00 $00 $10}
     st [d], b                           {$22 $C0 $00 $00}
     ld a, [d]                           {$10 $C0 $00 $00}
     brk                                 {$3F}

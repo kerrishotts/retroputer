@@ -16,8 +16,12 @@
     }
 
     .namespace kernel {
-        .const data-start       0x01000 # kernel scratch data
-        .const data-size        0x00800 # kernel has 2K
+        .const data-start       0x01100 # kernel scratch data
+        .const data-size        0x00800 # 
+        .const rodata-start     0x78000 # read-only data
+        .const rodata-size      0x04000
+        .const sprite-start     0x01000 # kernel sprite data
+        .const sprite-size      0x00100
         .const code-start       0x7C000 # start of kernel code
         .const init-start       0x7FF00 # initialization code
     }

@@ -187,14 +187,15 @@ export class ALU {
             case COMMANDS.NOT: ret = ~a; break;
             case COMMANDS.NEG: ret = -a; break;
             case COMMANDS.SHL: ret = a << (b & 0x3F); break;
-            case COMMANDS.SHR:
+            case COMMANDS.SHR: /*ret = a >> (b & 0x3F); break;*/ 
+                ret = a;
                 for (let i = 0; i < (b & 0x3F); i++) {
-                    ret = a >> 1;
+                    ret = ret >> 1;
                     if (signA && carryIn) {
                         ret |= signBit[sizeOfRet];
                     }
                 }
-                break;
+                break; 
             default:
         }
 

@@ -97,6 +97,8 @@ export const TASKS = {
     RECOMPOSE_BYTES_TO_WORD:  0x11000000,      // [s0, s1] -> s0
     DECOMPOSE_BYTE_TO_NIBBLE: 0x12000000,     // s0 -> [s0, s1]
     RECOMPOSE_NIBBLE_TO_BYTE: 0x13000000,     // [s0, s1] -> s0
+    DECOMPOSE_ADDR:           0x30000000,
+    RECOMPOSE_ADDR:           0x31000000,
 
     // bit twiddling
     SET_BIT:         0x14000000,
@@ -217,6 +219,16 @@ export const TASK_FNS = new Array(256).fill(() => 0);
         const s0 = pop(stack);                                    // b = lo
         const s1 = pop(stack);                                    // a = hi
         push(stack, (s1 << 4) | s0, SIZE_BYTE);
+    }],
+    [TASKS.DECOMPOSE_ADDR, ({ stack }) => {
+        const addr = pop(stack);
+        push (stack, (addr >> 3), SIZE_WORD);
+        push (stack, (addr & 0x7), SIZE_WORD);
+    }],
+    [TASKS.RECOMPOSE_ADDR, ({ stack }) => {
+        const lo = pop(stack);
+        const hi = pop(stack);
+        push (stack, ((hi << 3) | lo), SIZE_ADDR);
     }],
     [TASKS.TRAP, ({ stack, ioBus }) => {
         const s0 = pop(stack) & 0x0F;                             // pop trap number
