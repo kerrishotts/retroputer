@@ -44,9 +44,6 @@ export class ComputerScreen extends React.Component {
         }
 
         const delta = now - this._lastTimestamp;
-        if (delta > 31) {
-            console.log("LONG WAIT", delta);
-        } 
         this._lastTimestamp = now;
 
         this._cancelRAF = requestAnimationFrame(this.renderFrame);

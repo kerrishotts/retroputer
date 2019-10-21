@@ -87,7 +87,7 @@ OPCODES["exc"] = {
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r,
         ((r & 0x01) ? TASKS.DECOMPOSE_BYTE_TO_NIBBLE : TASKS.DECOMPOSE_WORD_TO_BYTES),
-        TASKS.PUSH_BYTE | ((r & 0x01) ? 4 : 8),
+        TASKS.PUSH_WORD | ((r & 0x01) ? 4 : 8),
         TASKS.SHL,
         TASKS.OR | FLAGS_PULL_FROM_ALU,
         TASKS.POP_INTO_REGISTER | r
@@ -366,11 +366,16 @@ const addressingTasks = ({ m = 0, i = 0, x = 0, y = 0, a = 0 } = {}) => [
     // m: 0b01 === address, 0b10 === BP, 0b11 ==== D
     // i: 0b0 === absolute; 0b1 === indirect
     // if we're BP or D, we need that register added to the address on the stack
-    ...(m > 1 ? [
-        TASKS.GET_REGISTER_AND_PUSH | (m === 2 ? REGISTER_INDEX.BP : REGISTER_INDEX.D),
+    ...(m === 2 ? [
+        TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.BP,
         TASKS.ADD,
         TASKS.PUSH_WORD | 0xFFFF,
         TASKS.AND
+    ] : m === 3 ? [
+        TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.D,
+        TASKS.PUSH_WORD | 0,
+        TASKS.RECOMPOSE_ADDR,
+        TASKS.ADD,
     ] : []),
     // if indexing by x, do so
     ...(x === 1 ? [

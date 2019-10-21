@@ -19,6 +19,7 @@ import { ComputerScreen } from "./components/ComputerScreen.jsx";
 import { ComputerControl } from "./components/ComputerControl.jsx";
 import { ComputerMemory } from "./components/ComputerMemory.jsx";
 import { ComputerIO } from "./components/ComputerIO.jsx";
+import { Docs } from "./components/Docs.jsx";
 
 window.React = React;
 window.ReactDOM = ReactDOM;
@@ -33,19 +34,21 @@ function initGoldenLayout() {
             content:[{
                 type: 'row',
                 height: 10,
-                content: [{
-                    type: 'react-component',
-                    title: 'Control',
-                    component: 'computer-control',
-                    props: {store}
-                }, 
-                {
-                    type: 'react-component',
-                    width: 15,
-                    title: 'FPS',
-                    component: 'fps',
-                    props: {store}
-                }]
+                content: [
+                    {
+                        type: 'react-component',
+                        title: 'Control',
+                        component: 'computer-control',
+                        props: {store}
+                    }, 
+                    {
+                        type: 'react-component',
+                        width: 15,
+                        title: 'FPS',
+                        component: 'fps',
+                        props: {store}
+                    },
+                ]
             },
             {
                 type: 'row',
@@ -65,40 +68,58 @@ function initGoldenLayout() {
                                 component: 'computer-console',
                                 props: {store}
                             },
+                            {
+                                type: 'react-component',
+                                title: 'Documentation',
+                                component: 'docs',
+                                props: {store}
+                            },
                         ]
                     },
                     {
-                        type: 'stack',
+                        type: 'column',
                         width: 25,
                         content: [
                             {
-                                type: 'react-component',
-                                title: 'State',
-                                component: 'computer-state',
-                                width: 25,
-                                props: {store}
+                                type: 'stack', 
+                                height: 75,
+                                content: [
+                                    {
+                                        type: 'react-component',
+                                        title: 'State',
+                                        component: 'computer-state',
+                                        width: 25,
+                                        props: {store}
+                                    },
+                                    {
+                                        type: 'react-component',
+                                        title: 'Code',
+                                        component: 'code-editor',
+                                        width: 25,
+                                        props: {store}
+                                    },
+                                ]
                             },
                             {
-                                type: 'react-component',
-                                title: 'Memory',
-                                component: 'computer-memory',
-                                width: 25,
-                                props: {store}
-                            },
-                            {
-                                type: 'react-component',
-                                title: 'I/O',
-                                component: 'computer-io',
-                                width: 25,
-                                props: {store}
-                            },
-                            {
-                                type: 'react-component',
-                                title: 'Code',
-                                component: 'code-editor',
-                                width: 25,
-                                props: {store}
-                            },
+                                type: 'stack',
+                                height: 25,
+                                content: [
+                                    {
+                                        type: 'react-component',
+                                        title: 'Memory',
+                                        component: 'computer-memory',
+                                        width: 25,
+                                        props: {store}
+                                    },
+                                    {
+                                        type: 'react-component',
+                                        title: 'I/O',
+                                        component: 'computer-io',
+                                        width: 25,
+                                        props: {store}
+                                    },
+                                ]
+                            }
                         ]
                     }
                 ]
@@ -108,6 +129,7 @@ function initGoldenLayout() {
     const myLayout = new GoldenLayout( config );
     myLayout.registerComponent( 'computer-control', ComputerControl);
     myLayout.registerComponent( 'fps', FPS);
+    myLayout.registerComponent( 'docs', Docs);
     myLayout.registerComponent( 'computer-screen', ComputerScreen);
     myLayout.registerComponent( 'computer-state', ComputerState);
     myLayout.registerComponent( 'computer-memory', ComputerMemory);
