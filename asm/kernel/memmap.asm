@@ -23,6 +23,7 @@
         .const sprite-start     0x01000 # kernel sprite data
         .const sprite-size      0x00100
         .const code-start       0x7C000 # start of kernel code
+        .const vector-start     0x7FE00 # vectors containing jump codes
         .const init-start       0x7FF00 # initialization code
     }
 

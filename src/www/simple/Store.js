@@ -5,6 +5,7 @@ import { Computer, TIMING_METHODS } from "../../core/Computer.js";
 import { SimpleConsoleDevice } from "./SimpleConsole.js";
 import { Screen } from "../../devices/Screen.js";
 import { DMA } from "../../devices/DMA.js";
+import { Keyboard } from "../../devices/Keyboard.js";
 
 import rom from "../../roms/kernel.js";
 
@@ -22,7 +23,6 @@ export class Store {
 
         this.config = {};
         this.load();
-console.log(this.config);
         const computer = new Computer({ 
             performance, 
             debug: true, 
@@ -63,13 +63,21 @@ console.log(this.config);
             clock: computer.clock
         });
 
+        const keyboard = new Keyboard({
+            device: 3,
+            length: 16,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock
+        });
 
         this.computer = computer;
         this.diagnostics = diagnostics;
         this.devices = {
             console: simpleConsole,
             screen,
-            dma
+            dma,
+            keyboard
         };
 
     }

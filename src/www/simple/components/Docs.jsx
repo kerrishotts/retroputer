@@ -9,7 +9,7 @@ export class Docs extends React.Component {
             <div className="panel" style={{display: "flex", flexDirection: "column"}}>
                 <div className="toolbar" style={{flex: "0 0 auto"}}>
                     <button>Home</button>
-                    <span class="divider"></span>
+                    <span className="divider"></span>
                     <button>&lt;</button>
                     <button>&gt;</button>
                 </div>
