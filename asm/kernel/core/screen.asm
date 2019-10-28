@@ -26,6 +26,8 @@
         cursor-blink-toggle:  .byte 0x00
         cursor-blink-speed:   .byte 30
         cursor-blink-counter: .byte 30
+        screen-text-fg:       .byte 0xFF
+        screen-text-bg:       .byte 0x00
         screen-init-end:      .byte 00
     }
 
@@ -40,6 +42,8 @@
         cursor-blink-toggle:  .byte 0x00
         cursor-blink-speed:   .byte 00
         cursor-blink-counter: .byte 00
+        screen-text-fg:       .byte 0x00
+        screen-text-bg:       .byte 0x00
     }
 
     .segment kcode kmemmap.kernel.code-start .append {
@@ -74,6 +78,10 @@
                 st [screen.kdata.cursor-blink-speed], al
                 ld al, [screen.krodata.cursor-blink-counter]
                 st [screen.kdata.cursor-blink-counter], al
+                ld al, [screen.krodata.screen-text-fg]
+                st [screen.kdata.screen-text-fg], al
+                ld al, [screen.krodata.screen-text-bg]
+                st [screen.kdata.screen-text-bg], al
             }
 
             init-cursor-sprite: {
@@ -119,6 +127,13 @@
 
         }
 
+        ##
+        ## Vector: CLEAR_SCREEN
+        ## Parameters: None
+        ## Preserves: x, a
+        ##
+        ## Clears the screen (assuming it's at 0x10000)
+        #######################################################################
         clear-screen: {
             push x
             push a
@@ -127,12 +142,12 @@
             do {
                 ld al, 0x00
                 st [0x10000, x], al              # fill with null chars
-                ld al, [screen.kdata.cursor-fg]
+                ld al, [screen.kdata.screen-text-fg]
                 st [0x11000, x], al              # set foreground color
-                ld al, [screen.kdata.cursor-bg]
+                ld al, [screen.kdata.screen-text-bg]
                 st [0x12000, x], al              # set background color
                 dec x
-            } while !z
+            } while !c
         _out:
             pop a
             pop x
@@ -222,6 +237,291 @@
         _out:
             popf
             pop b
+            pop a
+            ret
+        }
+
+        ##
+        ## Vector: SET_CURSOR_POSITION
+        ## Parameters: DL - column
+        ##             DH - row
+        ## Returns: nothing
+        ## 
+        ## Sets the cursor to X (DL), Y (DH).
+        ##
+        #######################################################################
+        set-cursor-pos: {
+        _main:
+            st [screen.kdata.cursor-col], dl
+            exc d
+            st [screen.kdata.cursor-row], dl
+            exc d
+
+            # reset blink and toggle status
+            push a
+            ld al, 0x01
+            st [screen.kdata.cursor-blink-toggle], al
+            ld al, [screen.kdata.cursor-blink-speed]
+            st [screen.kdata.cursor-blink-counter], al
+            pop a
+        _out:
+            # return
+            ret
+        }
+
+        ##
+        ## Vector: GET_CURSOR_POSITION
+        ## Parameters: none
+        ## Returns: DL - column
+        ##          DH - row
+        ##
+        ## Returns the current cursor position.
+        #######################################################################
+        get-cursor-pos: {
+            ld dl, [screen.kdata.cursor-row]
+            exc d
+            ld dl, [screen.kdata.cursor-col]
+            ret
+        }
+
+        ##
+        ## Vector: GET_CURSOR_ADDR
+        ## Parameters: none
+        ## Returns: D - address representing cursor position
+        ##
+        ## Returns the screen address offset for the current cursor position
+        #######################################################################
+        get-cursor-addr: {
+            push x
+            pushf
+        _main:
+            call get-cursor-pos
+            exc d
+            mov x, dl
+            shl x, 5
+            exc d
+            or x, dl
+            mov d, x
+        _out:
+            popf
+            pop x
+            ret
+        }
+
+        ##
+        ## Vector: SCROLL_SCREEN_UP
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Scrolls the contents of the screen up by one row
+        #######################################################################
+        scroll-screen-up: {
+            push a
+            push x
+            pushf
+        _main:
+            ld x, 0
+            clr c
+            do {
+                ld al, [0x10020, x]              # get char a row down
+                st [0x10000, x], al              # and scroll it up
+                ld al, [0x11020, x]
+                st [0x11000, x], al              # set foreground color
+                ld al, [0x12020, x]
+                st [0x12000, x], al              # set background color
+                inc x
+                mov a, x
+                cmp a, 0x03E0
+            } while !z
+        _out:
+            popf
+            pop x
+            pop a
+            ret
+        }
+
+        ##
+        ## Vector: CURSOR_ADVANCE
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Advances the cursor by one to the right, wrapping and scrolling 
+        ## as necessary
+        #######################################################################
+        cursor-advance: {
+            push d
+            push c
+            pushf
+        _main:
+            call get-cursor-pos
+            exc d
+            mov cl, dl
+            exc d
+
+            # x is in dl
+            inc dl
+            cmp dl, 32   # right of screen
+            if z {
+                # reset column
+                ld dl, 0
+                # next row
+                inc cl
+            }
+            cmp cl, 24   # bottom of screen
+            if z {
+                ld cl, 23 # keep at the bottom
+                call scroll-screen-up
+            }
+
+            exc d
+            mov dl, cl
+            exc d
+            call set-cursor-pos
+
+        _out:
+            popf
+            pop c
+            pop d
+            ret
+        }
+
+        ##
+        ## Vector: CURSOR_NEWLINE
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Advances the cursor down a line and returns the cursor to the left
+        #######################################################################
+        cursor-newline: {
+            push d
+            push c
+            pushf
+        _main:
+            call get-cursor-pos
+            exc d
+            mov cl, dl
+            exc d
+
+            # x is in dl
+            ld dl, 0
+
+            # next row
+            inc cl
+            cmp cl, 24   # bottom of screen
+            if z {
+                ld cl, 23 # keep at the bottom
+                call scroll-screen-up
+            }
+
+            exc d
+            mov dl, cl
+            exc d
+            call set-cursor-pos
+
+        _out:
+            popf
+            pop c
+            pop d
+            ret
+        }
+
+        ##
+        ## Vector: CURSOR_BACKSPACE
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Advances the cursor back a character
+        #######################################################################
+        cursor-backspace: {
+            push d
+            push c
+            pushf
+        _main:
+            call get-cursor-pos
+            exc d
+            mov cl, dl
+            exc d
+
+            # x is in dl
+            dec dl
+            cmp dl, 0xFF
+            if z {
+                ld dl, 31  # back to the left
+                dec cl    # up a row
+            }
+            cmp cl, 0xFF
+            if z {
+                ld cl, 0  # can't go off screen
+                ld dl, 0
+            }
+
+            exc d
+            mov dl, cl
+            exc d
+            call set-cursor-pos
+
+        _out:
+            popf
+            pop c
+            pop d
+            ret
+        }
+
+        ##
+        ## Vector: put-char
+        ## Parameters: DL - character
+        ## Returns: none
+        ##
+        ## Displays a character on the screen and advances the cursor
+        #######################################################################
+        put-char: {
+            push a
+            push x
+        _main:
+            mov a, d
+
+            # if this is a control character, we don't print it
+            cmp al, 32
+            br c _put-char-control
+            br _put-non-control-char
+
+        _put-char-control:
+            # we're a control character
+            clr z
+            cmp al, 13
+            if z {
+                # ENTER
+                call cursor-newline
+            }
+            cmp al, 8
+            if z {
+                # BACKSPACE
+                call cursor-backspace
+                call get-cursor-addr
+                mov x, d
+                ld al, 32    # write a space to complete the back space
+                st [0x10000, x], al
+                ld al, [screen.kdata.screen-text-fg]
+                st [0x11000, x], al
+                ld al, [screen.kdata.screen-text-bg]
+                st [0x12000, x], al
+            }
+            br _out
+
+        _put-non-control-char:
+            # get the current cursor address offset
+            call get-cursor-addr
+            mov x, d
+            st [0x10000, x], al
+            ld al, [screen.kdata.screen-text-fg]
+            st [0x11000, x], al
+            ld al, [screen.kdata.screen-text-bg]
+            st [0x12000, x], al
+
+            # advance the cursor
+            call cursor-advance
+        _out:
+            pop x
             pop a
             ret
         }

@@ -26,13 +26,15 @@ export class ComputerIO extends React.Component {
     }
     cell({ columnIndex, rowIndex, style}) {
         const { store } = this.props;
-        const { screen, console, dma } = store.devices;
+        const { screen, console, dma, keyboard } = store.devices;
         const rowAddr = rowIndex * 8;
         const whichByte = (columnIndex % 9) - 1;
         const realAddr = rowAddr + Math.max(whichByte, 0);
-        const whichDevice = [null, screen, screen, null, null, null, null, null,
+        const whichDevice = [null, screen, screen, keyboard, null, null, null, null,
                              console, null, null, null, null, dma, null, null][rowIndex >> 1];
-        const byteAtAddr = (whichDevice && whichDevice._read(realAddr)) || 0;
+        const baseDevice = [0, 0, 16, 0, 0, 0, 0, 0,
+                             0, 0, 0, 0, 0, 0, 0, 0][rowIndex >> 1];
+        const byteAtAddr = (whichDevice && whichDevice._read(baseDevice + whichByte + (8 * (rowIndex & 1)))) || 0;
         const charAtAddr = byteAtAddr < 32 ? "." : String.fromCharCode(byteAtAddr);
         return (
             <div style={style}>
