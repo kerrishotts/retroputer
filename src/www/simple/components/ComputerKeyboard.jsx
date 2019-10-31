@@ -25,24 +25,29 @@ export class ComputerKeyboard extends React.Component {
 
     keyPressed(e) {
         if (e.target.tagName === "INPUT" && !e.target.classList.contains("keyboard")) { return; }
-        const { store } = this.props;
+        if (e.target.tagName === "TEXTAREA") { return; }
+        /*const { store } = this.props;
         const { keyboard } = store.devices;
-        keyboard.keyPressed(e.charCode);
+        keyboard.keyPressed(e.charCode); */
         e.preventDefault();
     }
 
     keyDown(e) {
         if (e.target.tagName === "INPUT" && !e.target.classList.contains("keyboard")) { return; }
+        if (e.target.tagName === "TEXTAREA") { return; }
         const { store } = this.props;
         const { keyboard } = store.devices;
         keyboard.keyDown(e.nativeEvent ? e.nativeEvent.code : e.code);
+        e.preventDefault();
     }
 
     keyUp(e) {
         if (e.target.tagName === "INPUT" && !e.target.classList.contains("keyboard")) { return; }
+        if (e.target.tagName === "TEXTAREA") { return; }
         const { store } = this.props;
         const { keyboard } = store.devices;
         keyboard.keyUp(e.nativeEvent ? e.nativeEvent.code : e.code);
+        e.preventDefault();
     }
 
     render() {
