@@ -51,7 +51,7 @@
     "basm": "node src/basm/index.js",
     "monitor": "node src/monitor/index.js",
     "build:basm": "pegjs --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
-    "build:kernel": "src/basm/index.js -d asm/kernel < asm/kernel/kernel.asm > src/roms/kernel.js",
+    "build:kernel": "src/basm/index.js -d asm/kernel -x vectors,kdata,krodata < asm/kernel/kernel.asm > src/roms/kernel.js",
     "inspect:monitor": "node --inspect src/monitor/index.js",
     "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
     "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
