@@ -1,7 +1,9 @@
 import React from 'react';
 
 import { parser } from "../../../basm/parser.js";
-import { assemble } from "../../../basm/assemble.js";
+import { assemble, createScope, SCOPE } from "../../../basm/assemble.js";
+
+import { vectors } from "../../../roms/kernel.js";
 
 export class CodeEditor extends React.Component {
     constructor(props) {
@@ -30,7 +32,9 @@ export class CodeEditor extends React.Component {
         const memory = computer.memory;
         try {
             const ast = parser.parse(asm);
-            const segments = assemble(ast);
+            const globals = createScope();
+            globals[SCOPE.CONTENTS] = Object.assign({}, vectors);
+            const segments = assemble(ast, globals);
             segments.forEach(segment => {
                 const data = segment.data;
                 const name = segment.name;
