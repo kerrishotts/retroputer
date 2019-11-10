@@ -1154,3 +1154,42 @@ export default [{addr: 0, data: [
  /*7ff00*/ 0x1c,0x00,0x20,0x00,0x0f,0xec,0x90,0x06,0xc0,0xf6,0x90,0x04,0x20,0xf2,
 ]},
 ];
+export const kdata = {
+  "screen-width": 4352,
+  "cursor-row": 4353,
+  "cursor-col": 4354,
+  "cursor-fg": 4355,
+  "cursor-bg": 4356,
+  "cursor-tile": 4357,
+  "cursor-visible": 4358,
+  "cursor-blink-toggle": 4359,
+  "cursor-blink-speed": 4360,
+  "cursor-blink-counter": 4361,
+  "screen-text-fg": 4362,
+  "screen-text-bg": 4363
+};
+export const krodata = {
+  "screen-init-start": 491520,
+  "screen-width": 491520,
+  "cursor-row": 491521,
+  "cursor-col": 491522,
+  "cursor-fg": 491523,
+  "cursor-bg": 491524,
+  "cursor-tile": 491525,
+  "cursor-visible": 491526,
+  "cursor-blink-toggle": 491527,
+  "cursor-blink-speed": 491528,
+  "cursor-blink-counter": 491529,
+  "screen-text-fg": 491530,
+  "screen-text-bg": 491531,
+  "screen-init-end": 491532
+};
+export const vectors = {
+  "CLEAR_SCREEN": 523776,
+  "SCROLL_SCREEN_UP": 523778,
+  "SET_CURSOR_POS": 523780,
+  "GET_CURSOR_POS": 523782,
+  "GET_CURSOR_ADDR": 523784,
+  "CURSOR_ADVANCE": 523786,
+  "PUT_CHAR": 523788
+};
