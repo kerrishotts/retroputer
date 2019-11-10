@@ -7,7 +7,7 @@ import { parser } from "./parser.js";
 
 import { MODES, TOKENS, OPCODES, DIRECTIVES, REGISTERS, FLAGS } from "./constants.js";
 
-const SCOPE = {
+export const SCOPE = {
     CONTENTS: Symbol("SCOPE.CONTENTS"),
     TYPE: Symbol("SCOPE.TYPE"),
     TYPES: {
@@ -46,7 +46,7 @@ function err(msg) {
  * @param {boolean} [append=false]             if append is false, reset address
  * @returns
  */
-function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, append = false) {
+export function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, append = false) {
     const scope = {
         [SCOPE.CONTENTS]: {},
         [SCOPE.TYPE]: type,
@@ -585,6 +585,7 @@ export function assemble(ast, global, context) {
     const segments = global[SCOPE.SEGMENTS];
     const code = segments.map(segment => {
         const data = segment[SCOPE.DATA];
+        const contents = segment[SCOPE.CONTENTS];
         const bytes = data.map((datum, idx) => {
             if (datum) {
                 const { asm, bytes, context, pc } = datum;
@@ -618,7 +619,7 @@ export function assemble(ast, global, context) {
             arr.push(...item.bytes);
             return arr;
         }, []);
-        return { name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr };
+        return { name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr, contents };
     });
 
     // return the segments

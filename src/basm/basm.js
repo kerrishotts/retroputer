@@ -14,7 +14,7 @@ import cvtDataToBin from "../util/cvtDataToBin.js";
 
 setImportProvider(nodeImportProvider);
 
-function write(segments, format = "js", newline) {
+function write(segments, { format = "js", newline, exports } = {}) {
     if (!newline) {
         newline = String.fromCharCode(13) + String.fromCharCode(10);
     }
@@ -26,13 +26,26 @@ function write(segments, format = "js", newline) {
     if (format !== "bin") {
         text += "];";
     }
+    if (format !== "bin") {
+        if (exports) {
+            const segmentsToExport = exports.split(",");
+            const exportSegments = segments.filter(segment => segmentsToExport.indexOf(segment.name) > -1);
+            for (let segment of exportSegments) {
+                const name = segment.name;
+                const contents = segment.contents;
+                text += newline;
+                text += `export const ${name} = ${JSON.stringify(contents, null, 2)};`;
+            }
+        }
+    }
     return text;
 }
 
 cli.enable("status");
 const options = cli.parse({
         format: [ "f", "Output format (js or bin)", "string", "js"],
-        basepath: [ "d", "Base directory (for imports)", "string", process.cwd()]
+        basepath: [ "d", "Base directory (for imports)", "string", process.cwd()],
+        exports: [ "x", "Export symbols in segments", "string", ""]
     });
 global.log = cli.debug;
 process.chdir(options.basepath);
@@ -42,5 +55,5 @@ cli.withStdinLines(function(lines, newline) {
     cli.debug("Results of parsing:\n" + util.inspect(ast, false, 10, true));
     const segments = assemble(ast);
     cli.debug("Assembled Segments:\n" + util.inspect(segments, false, 10, true));
-    cli.output(write(segments, cli.options.format, newline));
+    cli.output(write(segments, {format: cli.options.format, newline, exports: cli.options.exports}));
 });
