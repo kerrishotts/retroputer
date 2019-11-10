@@ -280,58 +280,75 @@ function peg$parse(input, options) {
       });
   };
   var peg$f9 = function(f, t, e) {
-      return tBlock([
+      newScope();
+      const THEN = uniqIdent("__then");
+      const ELSE = uniqIdent("__else");
+      const ENDIF = uniqIdent("__endif");
+      const ast = tBlock([
           tInstruction("br", {
               flag: f,
-              addr: addressingMode({ addr: tIdentifier("__then"), m: 0 })
+              addr: addressingMode({ addr: tIdentifier(THEN), m: 0 })
           }),
           tInstruction("br", {
               flag: null,
-              addr: addressingMode({ addr: e ? tIdentifier("__else") : tIdentifier("__endif"), m: 0 })
+              addr: addressingMode({ addr: e ? tIdentifier(ELSE) : tIdentifier(ENDIF), m: 0 })
           }),
-          tLabel(tIdentifier("__then")),
-          t,
+          tLabel(tIdentifier(THEN)),
+          rewriteIdents(t),
           ...(e ? [
               tInstruction("br", {
                   flag: null,
-                  addr: addressingMode({ addr: tIdentifier("__endif"), m: 0 })
+                  addr: addressingMode({ addr: tIdentifier(ENDIF), m: 0 })
               }),
-              tLabel(tIdentifier("__else")),
-              e
+              tLabel(tIdentifier(ELSE)),
+              rewriteIdents(e)
           ] : []),
-          tLabel(tIdentifier("__endif"))
+          tLabel(tIdentifier(ENDIF))
       ]);
+      exitScope();
+      return ast;
   };
   var peg$f10 = function(l, f) {
-      return tBlock([
-          tLabel(tIdentifier("__begin")),
-          l,
+      newScope();
+      const BEGIN = uniqIdent("__begin");
+      const END = uniqIdent("__end");
+      const ast = tBlock([
+          tLabel(tIdentifier(BEGIN)),
+          rewriteIdents(l),
           tInstruction("br", {
               flag: f,
-              addr: addressingMode({ addr: tIdentifier("__begin"), m: 0 })
+              addr: addressingMode({ addr: tIdentifier(BEGIN), m: 0 })
           }),
-          tLabel(tIdentifier("__end")),
+          tLabel(tIdentifier(END)),
       ]);
+      exitScope();
+      return ast;
   };
   var peg$f11 = function(f, l) {
-      return tBlock([
-          tLabel(tIdentifier("__begin")),
+      newScope();
+      const BEGIN = uniqIdent("__begin");
+      const END = uniqIdent("__end");
+      const DO = uniqIdent("__do");
+      const ast = tBlock([
+          tLabel(tIdentifier(BEGIN)),
           tInstruction("br", {
               flag: f,
-              addr: addressingMode({ addr: tIdentifier("__do"), m: 0 })
+              addr: addressingMode({ addr: tIdentifier(DO), m: 0 })
           }),
           tInstruction("br", {
               flag: null,
-              addr: addressingMode({ addr: tIdentifier("__end"), m: 0 })
+              addr: addressingMode({ addr: tIdentifier(END), m: 0 })
           }),
-          tLabel(tIdentifier("__do")),
-          l,
+          tLabel(tIdentifier(DO)),
+          rewriteIdents(l),
           tInstruction("br", {
               flag: null,
-              addr: addressingMode({ addr: tIdentifier("__begin"), m: 0 })
+              addr: addressingMode({ addr: tIdentifier(BEGIN), m: 0 })
           }),
-          tLabel(tIdentifier("__end")),
+          tLabel(tIdentifier(END)),
       ]);
+      exitScope();
+      return ast;
   };
   var peg$f12 = function(name, addr, append, block) {
       return tSegment(name, addr, !!append, block);
@@ -10962,6 +10979,77 @@ function peg$parse(input, options) {
               i,
               pos: location().start
           });
+      }
+
+      const hlScopes = [];
+      function newScope() {
+          hlScopes.unshift({});
+      } 
+      function exitScope() {
+          hlScopes.shift(); 
+      }
+
+      const uniqNames = {};
+      function uniqIdent(ident) {
+          if (!uniqIdent[ident]) {
+              uniqIdent[ident] = [];
+          }
+          if (!hlScopes[0][ident]) {
+              hlScopes[0][ident] = [];
+          }
+          const newIdent = `${ident}__${uniqIdent[ident].length.toString(16).padStart(8, "0")}`;
+          uniqIdent[ident].unshift(newIdent);
+          hlScopes[0][ident].unshift(newIdent);
+
+          return newIdent;
+      }
+
+      function getIdentInScope(ident) {
+      console.log(ident);
+          if (hlScopes.length < 1) {
+              error(`No current scope exists to perform rewrite; couldn't find ${ident}`);
+          }
+          for (let i = 0; i < hlScopes.length; i++) {
+          console.log(i);
+              const curScope = hlScopes[0];
+              const curIdents = curScope[ident];
+              if (curIdents) {
+                  return curIdents[0];
+              }
+          }
+          return ident;
+          error(`Rewrite failed; couldn't find ${ident} in scope.`);
+      }
+
+      function rewriteIdents(ast) {
+          if (!ast) return;
+
+          if (ast.type === TOKENS.IDENTIFIER) {
+              if (ast.ident.startsWith("__")) {
+                  ast.ident = getIdentInScope(ast.ident);
+              }
+              return ast;
+          }
+
+          if (Array.isArray(ast)) {
+              for (let i = 0; i < ast.length; i++) {
+                  rewriteIdents(ast[i]);
+              }
+              return ast;
+          }
+
+          if (typeof ast === "object") {
+              if (ast && ast.type) {
+                  for (let k of Object.keys(ast)) {
+                      if (typeof ast[k] === "object") {
+                          rewriteIdents(ast[k]);
+                      }
+                  }
+              }
+              return ast;
+          }
+
+          return ast;
       }
 
 
