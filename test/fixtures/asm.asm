@@ -47,6 +47,17 @@
     brk                                 {$3F}
 }
 
+# test-cmp-flags-1.regs: A=0x2000 B=0x2001
+# test-cmp-flags-1.flags: Z- N+
+.segment test-cmp-flags-1 0x02000 {
+    ld a, 0x2000
+    ld b, 0x2001
+
+    set c                              # set c -- cmp shouldn't be affected
+    cmp a, b                           # a is <= b, so N should be set, Z should be clear
+    brk
+}
+
 # test-load-and-add-dw-1.regs: A=0x0246 B=0x0123
 # test-load-and-add-dw-1.flags: C- Z- N- V-
 .segment test-load-and-add-dw-1 0x02000 {
@@ -128,4 +139,31 @@
     ld c, 0x8000                        {$14 $00 $80 $00}
     dec c                               {$D4}
     brk                                 {$3F}
+}
+
+# test-dec-with-carry.regs: A=0x0FFF
+# test-dec-with-carry.flags: Z-
+.segment test-dec-with-carry 0x02000 {
+    ld a, 0x1000
+    set c
+    dec a
+    brk
+}
+
+# test-inc-with-carry.regs: A=0x1001
+# test-inc-with-carry.flags: Z-
+.segment test-inc-with-carry 0x02000 {
+    ld a, 0x1000
+    set c
+    inc a
+    brk
+}
+
+# test-div-by-zero.regs: A=0x0 B=0
+# test-div-by-zero.flags: EX+
+.segment test-div-by-zero 0x02000 {
+    ld a, 0x1000
+    ld b, 0
+    div a, b
+    brk
 }

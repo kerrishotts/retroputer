@@ -1,4 +1,12 @@
 import React from 'react';
+import { Icon } from 'react-icons-kit';
+import { play2 } from 'react-icons-kit/icomoon/play2';
+import { forward2 } from 'react-icons-kit/icomoon/forward2';
+import { stop } from 'react-icons-kit/icomoon/stop';
+import { next } from 'react-icons-kit/icomoon/next';
+import { info } from 'react-icons-kit/icomoon/info';
+import { location2 } from 'react-icons-kit/icomoon/location2';
+import { shuffle } from 'react-icons-kit/icomoon/shuffle';
 
 import { TIMING_METHODS } from "../../../core/Computer.js";
 
@@ -129,14 +137,14 @@ export class ComputerControl extends React.Component {
             <div className="panel">
                 <label>Start Address: <input type="text" value={startAddress} onChange={this.startAddressChanged} /></label>
                 <span className="divider"/>
-                <button onClick={this.startClicked}>Start</button>
-                <button onClick={this.continueClicked}>Continue</button>
-                <button onClick={this.stopClicked}>Stop</button>
+                <button onClick={this.startClicked} title="Start"><Icon icon={play2} /></button>
+                <button onClick={this.continueClicked} title="Continue"><Icon icon={forward2} /></button>
+                <button onClick={this.stopClicked} title="Stop"><Icon icon={stop} /></button>
                 <span className="divider"/>
-                <button onClick={this.jumpClicked}>Jump</button>
-                <button onClick={this.stepClicked}>Step</button>
+                <button onClick={this.jumpClicked} title="Jump to address"><Icon icon={location2} /></button>
+                <button onClick={this.stepClicked} title="Single Step"><Icon icon={next} /></button>
                 <span className="divider"/>
-                <button onClick={this.randomizeClicked}>Randomize</button>
+                <button onClick={this.randomizeClicked} title="Randomize memory"><Icon icon={shuffle} /></button>
                 <br />
                 <label>Mode:
                     <select onChange={this.timingMethodChanged} value={timingMethod}>

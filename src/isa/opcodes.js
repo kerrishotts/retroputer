@@ -132,7 +132,7 @@ OPCODES["mov_ds"] = {
         operands: { r: [3, 0] },
         decode: ({ r = 0 } = {}) => [
             // clear carry bit; inc & dec should never be affected
-            TASKS.CLEAR_FLAG_IMM | FLAGS_INDEX.CARRY,
+            //TASKS.CLEAR_FLAG_IMM | FLAGS_INDEX.CARRY,
             // now do the real work
             TASKS.GET_REGISTER_AND_PUSH | r,
             ((r & 0b1) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | 1,
