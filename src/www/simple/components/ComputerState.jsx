@@ -1,4 +1,9 @@
 import React from 'react';
+import { Icon } from 'react-icons-kit';
+import { play2 } from 'react-icons-kit/icomoon/play2';
+import { stop } from 'react-icons-kit/icomoon/stop';
+import { info } from 'react-icons-kit/icomoon/info';
+
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics, numToString, round } from "../../../core/Diagnostics.js";
 
 export class ComputerState extends React.Component {
@@ -63,8 +68,8 @@ export class ComputerState extends React.Component {
                                                value={updateFrequency} 
                                                onChange={this.updateFrequencyChanged}/></label>
                     <span className="divider"/>
-                    <button onClick={this.refreshControlClicked}>{updating ? "█": "⮀" }</button>
-                    <button onClick={this.singleRefreshClicked}>↻</button>
+                    <button onClick={this.refreshControlClicked} title="Start/Stop Automatic Update"><Icon icon={updating ? stop : play2} /></button>
+                    <button onClick={this.singleRefreshClicked} title="Update"><Icon icon={info} /></button>
                 </div>
                 <table><tbody>
                     {Array.from({length: statsHeader.length}, (_, idx) => (

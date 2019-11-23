@@ -31,12 +31,16 @@
             --text-color: #DDDDDD;
             color: var(--text-color);
         }
-        .lm_content input[type=text], .lm_content textarea {
+        .lm_content input[type=text], .lm_content textarea, .lm_content select {
             background-color: transparent;
             border: 1px solid var(--border-color);
             border-radius: 2px;
             color: var(--text-color);
             margin: var(--half-padding);
+            line-height: 20px;
+        }
+        .lm_content textarea {
+            font-family: "Source Code Pro", "Menlo", monospace;
         }
         .lm_content button {
             background-color: var(--border-color);
@@ -44,6 +48,7 @@
             border: 1px solid var(--border-color);
             border-radius: 2px;
             margin: var(--half-padding);
+            line-height: 20px;
         }
         .lm_content button:hover {
             background-color: var(--text-color);
