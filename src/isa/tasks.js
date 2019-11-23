@@ -317,10 +317,17 @@ const makeArithOp = (command, eatReturn) => {
         alu.op1Bus.data = s1;
         alu.op2Bus.data = s0;
         alu.commandBus.data = (retSize << 8) | (sz1 << 6) | (sz0 << 4) | command;
-        alu.flagsBus.data = (arg & 0b1) ? (registerFile.FLAGS & 0xF) : 0;
+        alu.flagsBus.data = (arg & FLAGS_PUSH_TO_ALU) ? (registerFile.FLAGS & 0xF) : 0;
         alu.executeBus.signal();
-        if (arg & 0b10) {
+        if (arg & FLAGS_PULL_FROM_ALU) {
             registerFile.FLAGS = (registerFile.FLAGS & 0xF0) | alu.flagsBus.data;
+            // set exception when dividing by zero
+            if (command === COMMANDS.SDIV || command === COMMANDS.DIV ||
+                command === COMMANDS.SMOD || command === COMMANDS.MOD) {
+                if (s0 === 0) {
+                    registerFile.EXCEPTION = 1;
+                }
+            }
         }
         const ret = alu.retBus.data;
         if (!eatReturn) push(stack, ret, retSize);
