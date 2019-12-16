@@ -2,6 +2,7 @@
   "name": "retroputer",
   "version": "2.0.0",
   "description": "retroputer",
+  "type": "module",
   "esm": {
     "cjs": true,
     "mode": "all",
@@ -9,10 +10,17 @@
   },
   "main": "index.js",
   "browser": "index.js",
+  "browserslist": [
+    "node 12",
+    "last 2 chrome versions",
+    "last 2 safari versions",
+    "last 2 firefox versions"
+  ],
   "dependencies": {
     "assets": "^3.0.1",
     "cli": "^1.0.1",
     "cliffy": "^2.0.5",
+    "get-pixels": "^3.3.2",
     "golden-layout": "^1.5.9",
     "htm": "^2.2.1",
     "jquery": "^3.4.1",
@@ -53,6 +61,7 @@
     "monitor": "node src/monitor/index.js",
     "build:basm": "pegjs --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
     "build:kernel": "src/basm/index.js -d asm/kernel -x vectors,kdata,krodata < asm/kernel/kernel.asm > src/roms/kernel.js",
+    "build:font": "node --experimental-modules ./src/util/buildFont.js",
     "inspect:monitor": "node --inspect src/monitor/index.js",
     "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
     "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
