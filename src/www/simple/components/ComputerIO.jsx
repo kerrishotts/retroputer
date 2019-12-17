@@ -26,11 +26,11 @@ export class ComputerIO extends React.Component {
     }
     cell({ columnIndex, rowIndex, style}) {
         const { store } = this.props;
-        const { screen, console, dma, keyboard } = store.devices;
+        const { screen, console, dma, keyboard, timers } = store.devices;
         const rowAddr = rowIndex * 8;
         const whichByte = (columnIndex % 9) - 1;
         const realAddr = rowAddr + Math.max(whichByte, 0);
-        const whichDevice = [null, screen, screen, keyboard, null, null, null, null,
+        const whichDevice = [timers, screen, screen, keyboard, null, null, null, null,
                              console, null, null, null, null, dma, null, null][rowIndex >> 1];
         const baseDevice = [0, 0, 16, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0][rowIndex >> 1];

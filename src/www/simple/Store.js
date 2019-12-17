@@ -6,6 +6,7 @@ import { SimpleConsoleDevice } from "./SimpleConsole.js";
 import { Screen } from "../../devices/Screen.js";
 import { DMA } from "../../devices/DMA.js";
 import { Keyboard } from "../../devices/Keyboard.js";
+import { Timers } from "../../devices/Timers.js";
 
 import rom from "../../roms/kernel.js";
 
@@ -32,6 +33,15 @@ export class Store {
         });
         computer.memory.loadFromJS(rom, true);
         const diagnostics = new Diagnostics(computer);
+
+        const timers = new Timers({
+            device: 0,
+            length: 16,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock,
+            performance
+        });
 
         const simpleConsole = new SimpleConsoleDevice({
             device: 8,
@@ -77,7 +87,8 @@ export class Store {
             console: simpleConsole,
             screen,
             dma,
-            keyboard
+            keyboard,
+            timers
         };
 
     }
