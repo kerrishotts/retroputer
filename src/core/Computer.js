@@ -5,6 +5,8 @@ import { IOBus } from "../core/IOBus.js";
 import { Processor } from "../core/Processor.js";
 import { Controller } from "../core/Controller.js";
 
+import supportsSharedArrayBuffer from "../util/supportsSharedArrayBuffer.js";
+
 export const TIMING_METHODS = {
     AUTO: 0,
     INTERVAL: 1,
@@ -12,6 +14,12 @@ export const TIMING_METHODS = {
     RAF: 3,
     BLOCKING: 4,
     FIXED: 5
+};
+
+export const SHARED_MEMORY = {
+    AUTO: 0,
+    NOT_SHARED: 1,
+    SHARED: 2
 };
 
 const _clock = Symbol("_clock");
@@ -33,11 +41,26 @@ export class Computer {
      * @param {number} [config.sliceGranularity=4095] the granularity when checking for slice timing
      * @param {number} [config.timingMethod=0] the timing method to use
      */
-    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO} = {}) {
+    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO, shared = SHARED_MEMORY.AUTO} = {}) {
 
         const clock = new Bus(1, 0b1);
         const systemBus = new SystemBus();
-        const memory = new Memory({ systemBus });
+
+        let realShared = false;
+        switch (shared) {
+            case SHARED_MEMORY.AUTO:
+                realShared = supportsSharedArrayBuffer;
+                break;
+            case SHARED_MEMORY.SHARED:
+                realShared = true;
+                break;
+            default:
+            case SHARED_MEMORY.NOT_SHARED:
+                realShared = false;
+                break;
+        }
+
+        const memory = new Memory({ systemBus, shared: realShared });
         const ioBus = new IOBus();
         const debugLine = debug ? new Bus(1, 0b1) : null;
         const processor = new Processor({ memory, systemBus, ioBus, clock, debug: debugLine });
