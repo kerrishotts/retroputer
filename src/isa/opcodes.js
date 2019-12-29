@@ -45,6 +45,26 @@ OPCODES["nop"] = {
     ]
 };
 
+//FIXME: halt is currently doing the same thing as BRK
+OPCODES["halt"] = {
+    asm: "halt",
+    pattern: "0011_1110",
+    operands: {},
+    decode: () => [
+        TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
+    ]
+};
+
+//FIXME: wait is currently doing the same thing as BRK
+OPCODES["wait"] = {
+    asm: "wait $r",
+    pattern: "1010_1111",
+    operands: {b: [7, 0]},
+    decode: ({b = 0} = {}) => [
+        TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
+    ]
+};
+
 OPCODES["brk"] = {
     asm: "brk",
     pattern: "0011_1111",

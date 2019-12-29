@@ -75,6 +75,8 @@ export const OPCODES = {
     SET: "set",
     CLR: "clr",
     DEC: "dec",
+    HALT: "halt",
+    WAIT: "wait",
 };
 
 export const DIRECTIVES = {

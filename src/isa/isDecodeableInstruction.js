@@ -14,6 +14,7 @@ export function isDecodeableInstruction(bytes) { //eslint-disable-line complexit
                     if (lo === 0x0) { return true; } // NOP
                 }
                 if (hi === 0x3) {
+                    if (lo === 0xE) { return true; } // HALT
                     if (lo === 0xF) { return true; } // BRK
                 }
                 if (hi === 0x4) {
