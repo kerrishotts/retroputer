@@ -17,7 +17,7 @@ export class ComputerMemory extends React.Component {
         this.cell = this.cell.bind(this);
     }
     componentDidMount() {
-        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 1000);
+        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 250);
     }
     compontWillUnmount() {
         if (this.state.updating) {
@@ -57,6 +57,7 @@ export class ComputerMemory extends React.Component {
                         columnWidth = { index => columnWidths[index] }
                         rowCount={65536}
                         rowHeight = { () => 16 }
+                        estimatedRowHeight = {16}
                         height={height}
                         width={width}
                     >

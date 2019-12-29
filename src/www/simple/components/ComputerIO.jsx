@@ -17,7 +17,7 @@ export class ComputerIO extends React.Component {
         this.cell = this.cell.bind(this);
     }
     componentDidMount() {
-        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 1000);
+        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 250);
     }
     compontWillUnmount() {
         if (this.state.updating) {
@@ -63,6 +63,7 @@ export class ComputerIO extends React.Component {
                         columnWidth = { index => columnWidths[index] }
                         rowCount={32}
                         rowHeight = { () => 16 }
+                        estimatedRowHeight = {16}
                         height={height}
                         width={width}
                     >
