@@ -116,6 +116,59 @@
             image-rendering: pixelated;                 /* Awesome future-browsers       */
             -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
         }
+
+        .docs {
+            line-height: 1.25;
+        }
+
+        .docs .toc h1 {
+            display: none;
+        }
+
+        .docs .toc h2 {
+            font-size: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+
+        .docs .toc ul {
+            margin: 0;
+            padding: 0;
+            padding-left: 1em;
+        }
+
+        .docs .toc > ul {
+            padding: 0;
+        }
+        
+        .docs .toc ul li {
+            list-style: none;
+        }
+
+        .docs .toc ul li a {
+            text-decoration: none;
+            color: currentColor;
+        }
+
+        .docs .toc ul li a:hover {
+            text-decoration: underline;
+        }
+
+        .docs .toc, .docs .md {
+            padding: 1em;
+            overflow: auto;
+        }
+
+        .docs .md a {
+            color: currentColor;
+        }
+
+        .docs .md td, .docs .md th {
+            text-align: initial;
+            vertical-align: top;
+        }
+
         /*
         .panel-wrapper {
             display: flex;
