@@ -19,7 +19,7 @@ export class ComputerIO extends React.Component {
     componentDidMount() {
         this._cancelUpdate = setInterval(() => this.setState({updating: true}), 250);
     }
-    compontWillUnmount() {
+    componentWillUnmount() {
         if (this.state.updating) {
             clearInterval(this._cancelUpdate);
         }

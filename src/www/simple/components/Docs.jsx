@@ -16,8 +16,30 @@ export class Docs extends React.Component {
             },
             a: props => props.href.startsWith("http") 
                ? <a {...props} target="_blank">{props.children}</a>
-               : <a href="#" onClick={evt => this.navigate(props.href)}>{props.children}</a>
+               : <a href="#" onClick={evt => this.navigate(props.href)}>{props.children}</a>,
+            pre: ({children, ...props}) => 
+                <pre class="code">
+                    <div class="codebar">
+                        <button onClick={e => this.copyToEditor(e.target.parentNode.nextSibling.innerText)}>Copy to Editor</button>
+                    </div>
+                    <div class="codebody">
+                        {children}
+                    </div>
+                </pre>
         }
+    }
+
+    copyToEditor(text) {
+        let newCode = text;
+        if (newCode.indexOf(".segment") < 0 ) {
+            newCode = `.segment code 0x02000 {\n${newCode}\nbrk\n}`;
+        }
+        if (newCode.indexOf("brk") < 0) {
+            newCode = `${newCode.substr(0, newCode.length-2)}\nbrk\n${newCode.substr(newCode.length-2)}`;
+        }
+        const { store } = this.props;
+        store.code = newCode;
+        store.notify();
     }
 
     navigate(route) {

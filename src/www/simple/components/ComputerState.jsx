@@ -84,7 +84,6 @@ export class ComputerState extends React.Component {
                     <tr><th>Scr TPS</th><td>{numToString(round(screen._ticksPerSecond, 4), {padDecimal: 4})}</td>
                         <th>Scr TBR</th><td>{numToString(round(screen._ticksPerRaster, 4), {padDecimal: 4})}</td></tr>
                 </tbody></table>
-                <code>{diagnostics.disassembleMemory({start: computer.processor.registers.PC, length: 16}).split("\n").slice(0, 4).map(s => s.trim()).join("\n")}</code>
         </div>
         );
     }

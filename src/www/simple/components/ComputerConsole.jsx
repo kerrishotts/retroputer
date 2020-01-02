@@ -14,6 +14,7 @@ export class ComputerConsole extends React.Component {
         return (
             <div className="panel">
                 <code ref={this._console}/>
+
             </div>
         )
     }
