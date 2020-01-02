@@ -67,7 +67,14 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
         out = `${out.substr(0, out.length - 1)}, X${out.substr(out.length - 1)}`;
     }
     if (indexByY) {
-        out = `${out}, Y`;
+        if (!indirect) {
+            out = `${out.substr(0, out.length - 1)}, Y${out.substr(out.length - 1)}`;
+        } else out = `${out}, Y`;
+    }
+    if (!usesFlags) {
+        if (opcode === OPCODES.ST) {
+            out = `${out}, ${REGISTER_NAMES[reg]}`;
+        }
     }
 
     return out;
@@ -95,6 +102,7 @@ export function disassemble(bytes, { base = 16 } = {}) {
         if (size === 1) {
             // one byte, single variant instructions
             if (op === 0x00) { code = `${OPCODES.NOP}`; }
+            if (op === 0x3E) { code = `${OPCODES.HALT}`; }
             if (op === 0x3F) { code = `${OPCODES.BRK}`; }
             if (op === 0xA0) { code = `${OPCODES.PUSHALL}`; }
             if (op === 0xA1) { code = `${OPCODES.POPALL}`; }
@@ -144,6 +152,7 @@ export function disassemble(bytes, { base = 16 } = {}) {
             if (op === 0xAB) { code = `${OPCODES.SMUL} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
             if (op === 0xAC) { code = `${OPCODES.SDIV} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
             if (op === 0xAD) { code = `${OPCODES.SMOD} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
+            if (op === 0xAE) { code = `${OPCODES.WAIT} ${toNum(p1, 2, base)}`; }
             if (op >= 0x48 && op <= 0x4F && (op & 1) === 1) { code = `${OPCODES.ADD} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
             if (op >= 0x50 && op <= 0x57 && (op & 1) === 1) { code = `${OPCODES.SUB} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
             if (op >= 0x58 && op <= 0x5F && (op & 1) === 1) { code = `${OPCODES.CMP} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }

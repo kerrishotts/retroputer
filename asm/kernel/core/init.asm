@@ -10,6 +10,11 @@
         ld bp, kmemmap.stack.top
         mov sp, bp
 
+        # configure MM
+        ld a, 0x7C41
+        push a
+        popmm
+
         # configure the screen
         call screen.kcode.init
 
