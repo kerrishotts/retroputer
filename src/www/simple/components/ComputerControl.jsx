@@ -123,7 +123,7 @@ export class ComputerControl extends React.Component {
         const { store } = this.props;
         const { computer } = store;
         let byte = 0;
-        for (let addr = 0; addr < (computer.memory.size - 65536); addr++) {
+        for (let addr = 512; addr < (computer.memory.size - 65536); addr++) {
             do {
                 byte = Math.floor(Math.random() * 255);
             } while (byte === 0x3F)

@@ -14,6 +14,7 @@ window.store = store;
 import { ComputerConsole } from "./components/ComputerConsole.jsx";
 import { CodeEditor } from "./components/CodeEditor.jsx";
 import { ComputerState } from "./components/ComputerState.jsx";
+import { Disassembler } from "./components/Disassembler.jsx";
 import { FPS } from "./components/FPS.jsx";
 import { ComputerScreen } from "./components/ComputerScreen.jsx";
 import { ComputerControl } from "./components/ComputerControl.jsx";
@@ -106,6 +107,13 @@ const defaultConfig = {
                                     width: 25,
                                     props: {store}
                                 },
+                                {
+                                    type: 'react-component',
+                                    title: 'Disassembly',
+                                    component: 'disassembler',
+                                    width: 25,
+                                    props: {store}
+                                },
                             ]
                         },
                         {
@@ -185,6 +193,7 @@ function initGoldenLayout() {
     myLayout.registerComponent( 'docs', Docs);
     myLayout.registerComponent( 'computer-screen', ComputerScreen);
     myLayout.registerComponent( 'computer-state', ComputerState);
+    myLayout.registerComponent( 'disassembler', Disassembler);
     myLayout.registerComponent( 'computer-memory', ComputerMemory);
     myLayout.registerComponent( 'computer-io', ComputerIO);
     myLayout.registerComponent( 'computer-console', ComputerConsole);

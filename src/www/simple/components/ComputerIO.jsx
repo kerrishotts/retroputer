@@ -17,20 +17,20 @@ export class ComputerIO extends React.Component {
         this.cell = this.cell.bind(this);
     }
     componentDidMount() {
-        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 1000);
+        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 250);
     }
-    compontWillUnmount() {
+    componentWillUnmount() {
         if (this.state.updating) {
             clearInterval(this._cancelUpdate);
         }
     }
     cell({ columnIndex, rowIndex, style}) {
         const { store } = this.props;
-        const { screen, console, dma, keyboard } = store.devices;
+        const { screen, console, dma, keyboard, timers } = store.devices;
         const rowAddr = rowIndex * 8;
         const whichByte = (columnIndex % 9) - 1;
         const realAddr = rowAddr + Math.max(whichByte, 0);
-        const whichDevice = [null, screen, screen, keyboard, null, null, null, null,
+        const whichDevice = [timers, screen, screen, keyboard, null, null, null, null,
                              console, null, null, null, null, dma, null, null][rowIndex >> 1];
         const baseDevice = [0, 0, 16, 0, 0, 0, 0, 0,
                              0, 0, 0, 0, 0, 0, 0, 0][rowIndex >> 1];
@@ -63,6 +63,7 @@ export class ComputerIO extends React.Component {
                         columnWidth = { index => columnWidths[index] }
                         rowCount={32}
                         rowHeight = { () => 16 }
+                        estimatedRowHeight = {16}
                         height={height}
                         width={width}
                     >

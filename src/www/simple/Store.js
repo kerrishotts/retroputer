@@ -2,15 +2,18 @@ import Stats from 'stats.js';
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics, numToString, round } from "../../core/Diagnostics.js";
 
 import { Computer, TIMING_METHODS } from "../../core/Computer.js";
-import { SimpleConsoleDevice } from "./SimpleConsole.js";
+import { TerminalConsoleDevice } from "./TerminalConsole.js";
 import { Screen } from "../../devices/Screen.js";
 import { DMA } from "../../devices/DMA.js";
 import { Keyboard } from "../../devices/Keyboard.js";
+import { Timers } from "../../devices/Timers.js";
 
 import rom from "../../roms/kernel.js";
 
 export class Store {
     constructor() {
+        this.listeners = [];
+
         const stats = new Stats();
         stats.showPanel(0);
         stats.dom.style.cssText = "";
@@ -33,7 +36,16 @@ export class Store {
         computer.memory.loadFromJS(rom, true);
         const diagnostics = new Diagnostics(computer);
 
-        const simpleConsole = new SimpleConsoleDevice({
+        const timers = new Timers({
+            device: 0,
+            length: 16,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock,
+            performance
+        });
+
+        const simpleConsole = new TerminalConsoleDevice({
             device: 8,
             length: 16,
             controller: computer.controller,
@@ -77,7 +89,8 @@ export class Store {
             console: simpleConsole,
             screen,
             dma,
-            keyboard
+            keyboard,
+            timers
         };
 
     }
@@ -89,6 +102,19 @@ export class Store {
     set code(v) {
         this.config.code = v;
         this.save();
+    }
+
+    addListener(cb) {
+        if (this.listeners.indexOf(cb) < 0) {
+            this.listeners.push(cb);
+        }
+    }
+    removeListener(cb) {
+        this.listeners = this.listeners.filter(l => l !== cb);
+    }
+
+    notify() {
+        this.listeners.forEach(l => l(this));
     }
 
     save() {

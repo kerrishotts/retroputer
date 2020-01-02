@@ -13,16 +13,30 @@ export class CodeEditor extends React.Component {
             log: ""
         };
 
+        this.editor = React.createRef();
         this.codeChanged = this.codeChanged.bind(this);
+        this.codeChangedOutside = this.codeChangedOutside.bind(this);
         this.assembleClicked = this.assembleClicked.bind(this);
 
         this.assembleClicked();
+    }
+    componentDidMount() {
+        this.props.store.addListener(this.codeChangedOutside);
+    }
+    componentWillUnmount() {
+        this.props.store.removeListener(this.codeChangedOutside);
     }
     codeChanged(e) {
         const { store }  = this.props;
         const code = e.target.value;
         store.code = code;
         this.setState({code});
+    }
+    codeChangedOutside(store) {
+        const code = store.code;
+        this.setState({code});
+        this.editor.current.value = code;
+        this.assembleClicked();
     }
     assembleClicked() {
         const { store } = this.props;
@@ -50,7 +64,7 @@ export class CodeEditor extends React.Component {
         return (
             <div className="panel column">
                 <button className="nogrow noshrink" onClick={this.assembleClicked}>Assemble</button>
-                <textarea className="grow shrink" onChange={this.codeChanged} defaultValue={code}></textarea>
+                <textarea ref={this.editor} className="grow shrink" onChange={this.codeChanged} defaultValue={code}></textarea>
                 <code className="nogrow noshrink" style={{whiteSpace: "pre-wrap"}}>{log}</code>
             </div>
         );

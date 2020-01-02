@@ -51,6 +51,7 @@ function _decodeInstruction(bytes) {
         if (size === 1) {
             // one byte, single variant instructions
             if (op === 0x00) { opcode = OPCODES.nop; }
+            if (op === 0x3E) { opcode = OPCODES.halt; }
             if (op === 0x3F) { opcode = OPCODES.brk; }
             if (op === 0xA0) { opcode = OPCODES.pushall; }
             if (op === 0xA1) { opcode = OPCODES.popall; }
@@ -100,6 +101,7 @@ function _decodeInstruction(bytes) {
             if (op === 0xAB) { opcode = OPCODES.smul_ds; }
             if (op === 0xAC) { opcode = OPCODES.sdiv_ds; }
             if (op === 0xAD) { opcode = OPCODES.smod_ds; }
+            if (op === 0xAF) { opcode = OPCODES.wait; }
             if (op >= 0x48 && op <= 0x4F && (op & 1) === 1) { opcode = OPCODES.add_db; }
             if (op >= 0x50 && op <= 0x57 && (op & 1) === 1) { opcode = OPCODES.sub_db; }
             if (op >= 0x58 && op <= 0x5F && (op & 1) === 1) { opcode = OPCODES.cmp_db; }

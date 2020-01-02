@@ -233,7 +233,7 @@ export class Screen extends Device {
                 }
                 case LAYER_CFG: {
                     layer.cfg = data;
-                    layer.scale    = (layer.cfg & 0b11000000) >>> 6;
+                    layer.scale    = (layer.cfg & 0b11000000) >> 6;
                     layer.tilePage = (layer.cfg & 0b00011111);
                     return;
                 }
@@ -364,6 +364,34 @@ export class Screen extends Device {
         }
         return spritesByLayer;
     }
+    _drawPixel(x, y, scale, tilePixel) {
+        // v1
+        for (let sY = (1 << scale) - 1; sY >= 0; sY--) {
+            for (let sX = (1 << scale) - 1; sX >= 0; sX--) {
+                const offset = (y + sY) * SCREEN_COLUMNS + (x + sX);
+                this._pixelFrame[offset] = tilePixel;
+            }
+        }
+        return;
+
+        // with fill
+        /*
+        const size = 1 << scale;
+        for (let sY = size - 1; sY >= 0; sY--) {
+            const offset = (y + sY) * SCREEN_COLUMNS + (x);
+            this._pixelFrame.fill(tilePixel, offset, offset + size);
+        }
+        */
+        /* //hybrid
+        const size = 1 << scale;
+        for (let sY = (1 << scale) - 1; sY >= 0; sY--) {
+            let offset = (y + sY) * SCREEN_COLUMNS + (x);
+            for (let sX = (1 << scale) - 1; sX >= 0; sX--, offset++) {
+                this._pixelFrame[offset] = tilePixel;
+            }
+        }
+        */
+    }
 
     _generateScreen() {
         if (this._stats) this._stats.begin();
@@ -385,6 +413,7 @@ export class Screen extends Device {
         // draw the background
         this._pixelFrame.fill(bgColor);
 
+
         // draw each layer and attendant sprites
         for (let layerIdx = 0; layerIdx < 4; layerIdx++) {
             const layer = layers[layerIdx];
@@ -403,39 +432,61 @@ export class Screen extends Device {
                 const xRightCrop = maxWidth - xLeftCrop;
                 const yTopCrop = layer.yWindow << halfWidth;
                 const yBottomCrop = maxHeight - yTopCrop;
+                const scale = (layer.scale + 1) - (layer.mode & 1);
 
                 if (layer.mode >= 2) {
                     // hi-res modes
+                    // TODO: Mode 3 (512x384)
+                    // TODO: Cropping
+                    // BUG?: Scaling might overwrite unexpected places?
+                    const rows = ADDRESSABLE_ROWS / (2 - (layer.mode & 1));
+                    const cols = ADDRESSABLE_COLUMNS / (2 - (layer.mode & 1));
+                    const firstVisibleRow = (layer.yWindow) // << (scale - 1));
+                    const lastVisibleRow = rows - (layer.yWindow) // << (scale - 1)));
+                    const firstVisibleColumn = (layer.xWindow) // << (scale - 1));
+                    const lastVisibleColumn = cols - (layer.xWindow) // << (scale -1 ));
 
+                    for (let row = lastVisibleRow - 1; row >= firstVisibleRow; row--) {
+                        for (let col = lastVisibleColumn - 1; col >= firstVisibleColumn; col--) {
+                            const x = BORDER_WIDTH + ((col) << scale) + xOffset;
+                            const y = BORDER_HEIGHT + ((row) << scale) + yOffset;
+                            if (x >= 0 && y >= 0 && x < SCREEN_COLUMNS && y < SCREEN_ROWS) {
+                                let tilePixel = this.memory.readUnmappedByte(pageAddr + (row << 8) + col);
+                                if (tilePixel === 0x00) tilePixel = layer.bg;
+                                if (tilePixel === 0xFF) tilePixel = layer.fg;
+                                if (tilePixel !== 0) this._drawPixel(x, y, scale, tilePixel);
+                            }
+                        }
+                    }
                 } else {
                     // text modes
+                    // TODO: Cropping
+                    // BUG?: Scaling might overwrite unexpected places?
                     const rows = 24 * (layer.mode + 1);
                     const cols = 32 * (layer.mode + 1);
-                    for (let row = rows - 1; row >= 0; row--) {
-                        for (let col = cols - 1; col >= 0; col--) {
+                    const firstVisibleRow = (layer.yWindow) // << (scale - 1));
+                    const lastVisibleRow = rows - (layer.yWindow) // << (scale - 1)));
+                    const firstVisibleColumn = (layer.xWindow) // << (scale - 1));
+                    const lastVisibleColumn = cols - (layer.xWindow) // << (scale -1 ));
+                    for (let row = lastVisibleRow- 1; row >= firstVisibleRow; row--) {
+                        for (let col = lastVisibleColumn - 1; col >= firstVisibleColumn; col--) {
                             const tilePos = (row << (5 + (layer.mode !== 0))) + col;
                             const tile = this.memory.readUnmappedByte(pageAddr + tilePos)
                             const tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x1000);
                             const tileBgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x2000);
-                            const scale = halfWidth << layer.scale;
                             for (let _y = 7; _y >= 0; _y--) {
                                 for (let _x = 7; _x >= 0; _x--) {
                                     const x = BORDER_WIDTH + (((col * 8) + _x) << scale) + xOffset;
                                     const y = BORDER_HEIGHT + (((row * 8) + _y) << scale) + yOffset;
                                     const offset = y * SCREEN_COLUMNS + x;
-                                    let tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (_y << 3) + _x);
+                                    if (x >= 0 && y >= 0 && x < SCREEN_COLUMNS && y < SCREEN_ROWS) {
+                                        let tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (_y << 3) + _x);
 
-                                    if (tilePixel === 0x00) tilePixel = tileBgColor;
-                                    if (tilePixel === 0xFF) tilePixel = tileFgColor;
-                                    if (tilePixel === 0x00) tilePixel = layer.bg;
-                                    if (tilePixel === 0xFF) tilePixel = layer.fg;
-                                    if (tilePixel !== 0) {
-                                        for (let sY = (1 << scale) - 1; sY >= 0; sY--) {
-                                            for (let sX = (1 << scale) - 1; sX >= 0; sX--) {
-                                                const offset = (y + sY) * SCREEN_COLUMNS + (x + sX);
-                                                this._pixelFrame[offset] = tilePixel;
-                                            }
-                                        }
+                                        if (tilePixel === 0x00) tilePixel = tileBgColor;
+                                        if (tilePixel === 0xFF) tilePixel = tileFgColor;
+                                        if (tilePixel === 0x00) tilePixel = layer.bg;
+                                        if (tilePixel === 0xFF) tilePixel = layer.fg;
+                                        if (tilePixel !== 0) this._drawPixel(x, y, scale, tilePixel);
                                     }
                                 }
                             }
@@ -468,14 +519,7 @@ export class Screen extends Device {
                                     if (tilePixel === 0xFF) tilePixel = tileFgColor;
                                     if (tilePixel === 0x00) tilePixel = sprite.bg;
                                     if (tilePixel === 0xFF) tilePixel = sprite.fg;
-                                    if (tilePixel !== 0) {
-                                        for (let sY = (1 << scale) - 1; sY >= 0; sY--) {
-                                            for (let sX = (1 << scale) - 1; sX >= 0; sX--) {
-                                                const offset = (y + sY) * SCREEN_COLUMNS + (x + sX);
-                                                this._pixelFrame[offset] = tilePixel;
-                                            }
-                                        }
-                                    }
+                                    if (tilePixel !== 0) this._drawPixel(x, y, scale, tilePixel);
                                 }
                             }
                             
@@ -492,9 +536,9 @@ export class Screen extends Device {
             for (let x = SCREEN_COLUMNS - 1; x >= 0; x--) {
                 const offset = y * SCREEN_COLUMNS + x;
                 const curPixelColor = (y < BORDER_HEIGHT + extraBorderHeight) ||
-                                      (y > SCREEN_ROWS - (BORDER_HEIGHT + extraBorderHeight)) ||
+                                      (y >= SCREEN_ROWS - (BORDER_HEIGHT + extraBorderHeight)) ||
                                       (x < BORDER_WIDTH + extraBorderWidth) ||
-                                      (x > SCREEN_COLUMNS - (BORDER_WIDTH + extraBorderWidth)) ?
+                                      (x >= SCREEN_COLUMNS - (BORDER_WIDTH + extraBorderWidth)) ?
                                       borderColor : this._pixelFrame[offset];
                 const paletteOffset = curPixelColor << 2;
                 const r = this.memory.readUnmappedByte(paletteAddr + paletteOffset + 0);

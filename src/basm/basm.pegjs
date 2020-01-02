@@ -81,6 +81,8 @@
         SET: "set",
         CLR: "clr",
         DEC: "dec",
+        HALT: "halt",
+        WAIT: "wait",
     };
 
     const DIRECTIVES = {
@@ -566,6 +568,7 @@ Instruction "Instruction"
 ////////////////////////////////////////
 iNOP     "No Operation Instruction" = op:NOP { return tInstruction(op); }
 iBRK     "Break Instruction"        = op:BRK { return tInstruction(op); }
+iHALT    "Halt Instruction"         = op:HALT { return tInstruction(op); }
 iPUSHALL "Push All instruction"     = op:PUSHALL { return tInstruction(op); }
 iPOPALL  "Pop All Instruction"      = op:POPALL { return tInstruction(op); }
 iPUSHF   "Push Flags Instruction"   = op:PUSHF { return tInstruction(op); }
@@ -579,9 +582,12 @@ iLOAD "Load Instruction"
 / LD _ Register _ !COMMA { expectedComma() }
 / LD _ Register _ COMMA _ !MemoryAddressingMode { expectedMemoryAddress() }
 / op:LD _ dest:Register _ COMMA _ source:MemoryAddressingMode { return tInstruction(op, {dest, source}); }
+/ dest:Register _ OP_TAKES _ source:MemoryAddressingMode { return tInstruction(OPCODES.LD, {dest, source}); }
+
 
 iSTORE "Store Instruction"
 = op:ST _ dest:MemoryAddressingMode _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ dest:MemoryAddressingMode _ OP_TAKES _ source:Register { return tInstruction(OPCODES.ST, {dest, source}); }
 / ST _ MemoryAddressingMode _ COMMA _ !Register { expectedRegister() }
 / ST _ MemoryAddressingMode _ !COMMA { expectedRegister() }
 / ST _ !MemoryAddressingMode { expectedMemoryAddress() }
@@ -681,6 +687,9 @@ iSWAP "Swap Instruction"
 
 iMOV "Move Instruction"
 = op:MOV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ op:LD _ dest:Register _ COMMA _ source:Register { return tInstruction(OPCODES.MOV, {dest, source}); }
+/ op:ST _ dest:Register _ COMMA _ source:Register { return tInstruction(OPCODES.MOV, {dest, source}); }
+/ dest:Register _ OP_TAKES _ source:Register  { return tInstruction(OPCODES.MOV, {dest, source}); }
 
 iNOT "Not Instruction"
 = op:NOT _ reg:Register { return tInstruction(op, {reg}); }
@@ -707,6 +716,9 @@ iENTER "Enter Instruction"
 iEXIT "Exit Instruction"
 = op:EXIT _ imm:Immediate8 { return tInstruction(op, {imm}); }
 
+iWAIT "Wait Instruction"
+= op:WAIT _ imm:Immediate8 { return tInstruction(op, {imm}); }
+
 iSET "Set Instruction"   = op:SET _ flag:Flags { return tInstruction(op, {flag}); }
 iCLR "Clear Instruction" = op:CLR _ flag:Flags { return tInstruction(op, {flag}); }
 
@@ -732,6 +744,7 @@ DIV   "Divide"        = "DIV"i !IdentifierPart { return OPCODES.DIV; }
 ENTER "Enter Frame"   = "ENTER"i !IdentifierPart { return OPCODES.ENTER; }
 EXC   "Exchange"      = "EXC"i !IdentifierPart { return OPCODES.EXC; }
 EXIT  "Exit Frame"    = "EXIT"i !IdentifierPart { return OPCODES.EXIT; }
+HALT  "Halt"          = "HALT"i !IdentifierPart { return OPCODES.HALT; }
 LD    "Load"          = "LD"i !IdentifierPart { return OPCODES.LD; }
 LOOP  "Loop"          = "LOOP"i !IdentifierPart { return OPCODES.LOOP; }
 LOOPS "Loop Short"    = "LOOPS"i !IdentifierPart { return OPCODES.LOOPS; }
@@ -765,6 +778,7 @@ SUB   "Subtract"      = "SUB"i !IdentifierPart { return OPCODES.SUB; }
 SWAP  "Swap"          = "SWAP"i !IdentifierPart { return OPCODES.SWAP; }
 TEST  "Test"          = "TEST"i !IdentifierPart { return OPCODES.TEST; }
 TRAP  "Trap"          = "TRAP"i !IdentifierPart { return OPCODES.TRAP; }
+WAIT  "Wait"          = "WAIT"i !IdentifierPart { return OPCODES.WAIT; }
 XOR   "Exclusive Or"  = "XOR"i !IdentifierPart { return OPCODES.XOR; }
 IF    "IF"            = "IF"i !IdentifierPart { return "IF"; }
 ELSE  "ELSE"          = "ELSE"i !IdentifierPart { return "ELSE"; }
@@ -936,17 +950,18 @@ BranchAddressingMode "Branch Addressing Mode"
 // Expressions
 ////////////////////////////////////////
 
-OP_ADD "Addition Operator" = "+"
-OP_SUB "Subtraction Operator" = "-"
+OP_ADD "Addition Operator"       = "+"
+OP_SUB "Subtraction Operator"    = "-"
 OP_MUL "Multiplication Operator" = "*"
-OP_DIV "Division Operator" = "/"
-OP_MOD "Modulo Operator" = "%"
-OP_SHL "Shift Left Operator" = "<<"
-OP_SHR "Shift Right Operator" = ">>"
-OP_AND "And Operator" = "&"
-OP_OR "Or Operator" = "|"
-OP_NOT "Unary Not Operator" = "!"
-OP_XOR "XOR Operator" = "^"
+OP_DIV "Division Operator"       = "/"
+OP_MOD "Modulo Operator"         = "%"
+OP_SHL "Shift Left Operator"     = "<<"
+OP_SHR "Shift Right Operator"    = ">>"
+OP_AND "And Operator"            = "&"
+OP_OR "Or Operator"              = "|"
+OP_NOT "Unary Not Operator"      = "!"
+OP_XOR "XOR Operator"            = "^"
+OP_TAKES "Takes"                 = "<=" / ":="
 
 AdditiveOperator "Additive Operator"
 = OP_ADD
@@ -1017,7 +1032,9 @@ Literal
 / NegativeExpression
 / Integer
 / Identifier
-/ ReservedWord { error(`Literal can not be a reserved word: ${text()}`); }
+
+
+// / ReservedWord { error(`Literal can not be a reserved word: ${text()}`); }
 
 //
 // Primitives

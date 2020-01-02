@@ -196,11 +196,14 @@ function tryToAssemble(node, context, pc, fail = false) {
     try {
         switch (op) {
             case OPCODES.NOP: size = 1; bytes.push(0x00); break;
+            case OPCODES.HALT: size = 1; bytes.push(0x3E); break;
             case OPCODES.BRK: size = 1; bytes.push(0x3F); break;
             case OPCODES.PUSHALL: size = 1; bytes.push(0xA0); break;
             case OPCODES.POPALL: size = 1; bytes.push(0xA1); break;
             case OPCODES.PUSHF: size = 1; bytes.push(0xA2); break;
             case OPCODES.POPF: size = 1; bytes.push(0xA3); break;
+            case OPCODES.PUSHMM: size = 1; bytes.push(0xA4); break;
+            case OPCODES.POPMM: size = 1; bytes.push(0xA5); break;
             case OPCODES.RET: size = 1; bytes.push(0xA7); break;
             case OPCODES.SET: size = 1; bytes.push(0xB0 | flag.flag); break;
             case OPCODES.CLR: size = 1; bytes.push(0xB8 | flag.flag); break;
@@ -250,6 +253,7 @@ function tryToAssemble(node, context, pc, fail = false) {
                 size = 2;
                 bytes.push(op === OPCODES.ENTER ? 0x38 : 0x39, evaluate(imm, context) & 0xFF);
                 break;
+            case OPCODES.WAIT: size = 2; bytes.push(0xAF, evaluate(imm, context) & 0xFF); break;
             case OPCODES.LD:
                 {
                     size = source.m === MODES.IMMEDIATE ? 2 + dest.size : 4;
@@ -519,9 +523,8 @@ export function assemble(ast, global, context) {
                         err(`Unexpected data directive in ${context[SCOPE.NAME]} scope`);
                     }
                     const incAmount = node.type === TOKENS.WORD_DIRECTIVE ? 2 : 1;
-                    const size = node.size >= 0 ? evaluate(node.size, context) : -1;
-                    // TODO: this is broken if we just want to reserve space without defining the data
-                    const data = node.data.map(e => evaluate(e, context));
+                    const size = node.size ? evaluate(node.size, context) : -1;
+                    const data = (node.data || []).map(e => evaluate(e, context));
                     while (data.length < size) {
                         data.push(0);
                     }

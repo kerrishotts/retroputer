@@ -17,6 +17,11 @@
     .segment krodata kmemmap.kernel.rodata-start .append {
         screen-init-start:
         screen-width:         .byte 0x05       # amount to shift for (row << width) calculation 
+        screen-rows:          .byte 24         # number of rows
+        screen-cols:          .byte 32         # number of columns
+        screen-length:        .word 0xFFF
+        screen-part-length:   .word 0x3FF      # screen length for one component (text, color, etc.)
+        cursor-scale:         .byte 0x04       # shifter for determining cursor position
         cursor-row:           .byte 0x00
         cursor-col:           .byte 0x00
         cursor-fg:            .byte 0xFF
@@ -28,11 +33,20 @@
         cursor-blink-counter: .byte 30
         screen-text-fg:       .byte 0xFF
         screen-text-bg:       .byte 0x00
+        screen-page:          .word 0x10000 >> 3
         screen-init-end:      .byte 00
+
+        .const SCREEN-INIT-DATA-LENGTH ((screen.krodata.screen-init-end - screen.krodata.screen-init-start) - 1)
     }
 
     .segment kdata kmemmap.kernel.data-start .append {
+        screen-data-start:
         screen-width:         .byte 0x00
+        screen-rows:          .byte 0x00
+        screen-cols:          .byte 0x00
+        screen-length:        .word 0x0000
+        screen-part-length:   .word 0x0000
+        cursor-scale:         .byte 0x00
         cursor-row:           .byte 0x00
         cursor-col:           .byte 0x00
         cursor-fg:            .byte 0x00
@@ -44,6 +58,7 @@
         cursor-blink-counter: .byte 00
         screen-text-fg:       .byte 0x00
         screen-text-bg:       .byte 0x00
+        screen-page:          .word 0x0000
     }
 
     .segment kcode kmemmap.kernel.code-start .append {
@@ -54,34 +69,56 @@
             # initialize the screen
             ###################################################################
 
-            init-data: {
+            init-screen: {
                 #
                 # copy all defaults from ROM and store them into temp data
                 ###############################################################
-                ld al, [screen.krodata.screen-width]
-                st [screen.kdata.screen-width], al
-                ld al, [screen.krodata.cursor-row]
-                st [screen.kdata.cursor-row], al
-                ld al, [screen.krodata.cursor-col]
-                st [screen.kdata.cursor-col], al
-                ld al, [screen.krodata.cursor-tile]
-                st [screen.kdata.cursor-tile], al
-                ld al, [screen.krodata.cursor-fg]
-                st [screen.kdata.cursor-fg], al
-                ld al, [screen.krodata.cursor-bg]
-                st [screen.kdata.cursor-bg], al
-                ld al, [screen.krodata.cursor-visible]
-                st [screen.kdata.cursor-visible], al
-                ld al, [screen.krodata.cursor-blink-toggle]
-                st [screen.kdata.cursor-blink-toggle], al
-                ld al, [screen.krodata.cursor-blink-speed]
-                st [screen.kdata.cursor-blink-speed], al
-                ld al, [screen.krodata.cursor-blink-counter]
-                st [screen.kdata.cursor-blink-counter], al
-                ld al, [screen.krodata.screen-text-fg]
-                st [screen.kdata.screen-text-fg], al
-                ld al, [screen.krodata.screen-text-bg]
-                st [screen.kdata.screen-text-bg], al
+
+                # number of bytes we need to copy
+                ld y, screen.krodata.SCREEN-INIT-DATA-LENGTH
+                do {
+                # address of the starting point of screen init data in rom
+                    ld d, screen.krodata.screen-init-start >> 3
+                    ld x, screen.krodata.screen-init-start & 7
+                    ld al, [d, x, y]
+
+                    ld d, screen.kdata.screen-data-start >> 3
+                    ld x, screen.kdata.screen-data-start & 7
+                    st [d, x, y], al
+
+                    dec y
+                } while !c 
+
+                # set up the screen device to be what it would be at a cold
+                # start
+
+                ld al, 29
+                out 0x10, al        # palette should point at page 29
+                ld al, 9
+                out 0x11, al        # background color is a dark blue
+                ld al, 0x80
+                out 0x2B, al        # border config
+                out 0x2C, al        # and border color (light blue)
+                ld al, 0
+                out 0x2D, al        # trap-on-raster
+
+                # ensure layer zero is visible and pointing at page 0x10000
+
+                ld al, 0
+                out 0x12, al        # select layer zero
+                out 0x17, al        # x offset is zero
+                out 0x18, al        # y offset is zero
+                out 0x19, al        # x crop is zero
+                out 0x1A, al        # y crop is zero
+                out 0x1B, al        # screen mode is zero (32x24)
+                ld al, 0x84
+                out 0x13, al        # layer is visible, source is page 4 (0x10000)
+                ld al, 28
+                out 0x14, al        # tile page is from ROM
+                ld al, [screen.kdata.screen-text-bg]
+                out 0x15, al        # background color (transparent)
+                ld al, [screen.kdata.screen-text-fg]
+                out 0x16, al        # foreground color
             }
 
             init-cursor-sprite: {
@@ -137,18 +174,21 @@
         clear-screen: {
             push x
             push a
+            push d
         _main:
-            ld x, 0x00FFF
+            ld d, [screen.kdata.screen-page]
+            ld x, [screen.kdata.screen-length]
             do {
                 ld al, 0x00
-                st [0x10000, x], al              # fill with null chars
+                st [d + 0x0000, x], al              # fill with null chars
                 ld al, [screen.kdata.screen-text-fg]
-                st [0x11000, x], al              # set foreground color
+                st [d + 0x1000, x], al              # set foreground color
                 ld al, [screen.kdata.screen-text-bg]
-                st [0x12000, x], al              # set background color
+                st [d + 0x2000, x], al              # set background color
                 dec x
             } while !c
         _out:
+            pop d
             pop a
             pop x
             ret
@@ -176,6 +216,7 @@
             push a
             push b
             push c
+            push d
             pushf
         _main:
             # update cursor sprite visiblity
@@ -190,25 +231,28 @@
             or al, bl                                 # or in the right bit
             out PORT_SPRITE_SRC, al
 
+            ld dl, [screen.kdata.cursor-scale]
+
             # put the sprite at the correct location on screen
             ld a, 0
             ld al, [screen.kdata.cursor-row]         # a = current row
-            shl a, 4                                 #   * 16
-            add a, 48                                #   + 64 (top of screen)
+            shl a, dl                                #   * 16 (dl === multiplier)
+            add a, 48                                #   + 48 (top of screen)
             out PORT_SPRITE_Y_LO, al                 # update lo bits of sprite pos
             exc a
             out PORT_SPRITE_Y_HI, al                 # and high bits
 
             ld a, 0
             ld al, [screen.kdata.cursor-col]         # a = current col
-            shl a, 4                                 #   * 16
-            add a, 64                                #   + 48 (left of screen)
+            shl a, dl                                #   * 16 (dl === multiplier)
+            add a, 64                                #   + 64 (left of screen)
             out PORT_SPRITE_X_LO, al                 # update lo bits of sprite pos
             exc a
             out PORT_SPRITE_X_HI, al                 # and high bits
 
         _out:
             popf
+            pop d
             pop c
             pop b
             pop a
@@ -293,17 +337,20 @@
         #######################################################################
         get-cursor-addr: {
             push x
+            push a
             pushf
         _main:
             call get-cursor-pos
             exc d
             mov x, dl
-            shl x, 5
+            ld al, [screen.kdata.screen-width]
+            shl x, al
             exc d
             or x, dl
             mov d, x
         _out:
             popf
+            pop a
             pop x
             ret
         }
@@ -318,23 +365,34 @@
         scroll-screen-up: {
             push a
             push x
+            push d
+            push b
+            push y
             pushf
         _main:
-            ld x, 0
+            ld d, [screen.kdata.screen-page]     # get screen page
+            xor y, y
+            ld yl, [screen.kdata.screen-cols]     # # of screen columns
+            ld x, 0                              # x + y == a line down
+            ld b, [screen.kdata.screen-part-length]
+            sub b, y                             # needs to be one line less
             clr c
             do {
-                ld al, [0x10020, x]              # get char a row down
-                st [0x10000, x], al              # and scroll it up
-                ld al, [0x11020, x]
-                st [0x11000, x], al              # set foreground color
-                ld al, [0x12020, x]
-                st [0x12000, x], al              # set background color
+                ld al, [d, x, y]                 # get char a row down
+                st [d, x], al                    # and scroll it up
+                ld al, [d + 0x1000, x, y]
+                st [d + 0x1000, x], al           # set foreground color
+                ld al, [d + 0x2000, x, y]
+                st [d + 0x2000, x], al           # set background color
                 inc x
                 mov a, x
-                cmp a, 0x03E0
+                cmp a, b
             } while !z
         _out:
             popf
+            pop y
+            pop b
+            pop d
             pop x
             pop a
             ret
@@ -351,6 +409,7 @@
         cursor-advance: {
             push d
             push c
+            push a
             pushf
         _main:
             call get-cursor-pos
@@ -360,16 +419,18 @@
 
             # x is in dl
             inc dl
-            cmp dl, 32   # right of screen
+            ld al, [screen.kdata.screen-cols]
+            cmp dl, al   # right of screen
             if z {
                 # reset column
                 ld dl, 0
                 # next row
                 inc cl
             }
-            cmp cl, 24   # bottom of screen
+            ld al, [screen.kdata.screen-rows]
+            cmp cl, al   # bottom of screen
             if z {
-                ld cl, 23 # keep at the bottom
+                dec cl   # keep at the bottom
                 call scroll-screen-up
             }
 
@@ -380,6 +441,7 @@
 
         _out:
             popf
+            pop a
             pop c
             pop d
             ret
@@ -395,6 +457,7 @@
         cursor-newline: {
             push d
             push c
+            push a
             pushf
         _main:
             call get-cursor-pos
@@ -407,9 +470,10 @@
 
             # next row
             inc cl
-            cmp cl, 24   # bottom of screen
+            ld al, [screen.kdata.screen-rows]
+            cmp cl, al   # bottom of screen
             if z {
-                ld cl, 23 # keep at the bottom
+                dec cl   # keep at bottom
                 call scroll-screen-up
             }
 
@@ -420,6 +484,7 @@
 
         _out:
             popf
+            pop a
             pop c
             pop d
             ret
@@ -435,6 +500,7 @@
         cursor-backspace: {
             push d
             push c
+            push a
             pushf
         _main:
             call get-cursor-pos
@@ -446,7 +512,8 @@
             dec dl
             cmp dl, 0xFF
             if z {
-                ld dl, 31  # back to the left
+                ld dl, [screen.kdata.screen-cols]
+                dec dl    # back to the left
                 dec cl    # up a row
             }
             cmp cl, 0xFF
@@ -462,6 +529,7 @@
 
         _out:
             popf
+            pop a
             pop c
             pop d
             ret
@@ -477,6 +545,7 @@
         put-char: {
             push a
             push x
+            push d
         _main:
             mov a, d
 
@@ -499,12 +568,13 @@
                 call cursor-backspace
                 call get-cursor-addr
                 mov x, d
+                ld d, [screen.kdata.screen-page]
                 ld al, 32    # write a space to complete the back space
-                st [0x10000, x], al
+                st [d, x], al
                 ld al, [screen.kdata.screen-text-fg]
-                st [0x11000, x], al
+                st [d + 0x1000, x], al
                 ld al, [screen.kdata.screen-text-bg]
-                st [0x12000, x], al
+                st [d + 0x2000, x], al
             }
             br _out
 
@@ -512,15 +582,17 @@
             # get the current cursor address offset
             call get-cursor-addr
             mov x, d
-            st [0x10000, x], al
+            ld d, [screen.kdata.screen-page]
+            st [d, x], al
             ld al, [screen.kdata.screen-text-fg]
-            st [0x11000, x], al
+            st [d + 0x1000, x], al
             ld al, [screen.kdata.screen-text-bg]
-            st [0x12000, x], al
+            st [d + 0x2000, x], al
 
             # advance the cursor
             call cursor-advance
         _out:
+            pop d
             pop x
             pop a
             ret
