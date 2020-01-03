@@ -180,6 +180,7 @@ export class Keyboard extends Device {
         if (this._buffer.length < 255 ) {
             this._buffer += String.fromCharCode(which);
         }
+        this.requestService();
     }
     keyDown(which) {
         const { mask, port, bit, data } = mapKeyCode(which);
@@ -200,6 +201,7 @@ export class Keyboard extends Device {
             if ( isGr && !isShifted) { this.keyPressed(data.gru); return; }
             if ( isGr &&  isShifted) { this.keyPressed(data.grs); return; }
         }
+        this.requestService();
     }
     keyUp(which) {
         const { mask, port, data } = mapKeyCode(which);
@@ -207,6 +209,7 @@ export class Keyboard extends Device {
             const cur = this._read(port);
             this._write(port, (cur & mask)); // clear the bit to indicate key is not pressed
         }
+        this.requestService();
     }
 
     _read(address = 0) {

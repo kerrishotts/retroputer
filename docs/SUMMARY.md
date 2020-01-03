@@ -3,7 +3,7 @@
 * [Welcome to Retroputer](README.md)
 * [Using the Web Version](using-the-web-version.md)
 
-## Technical Details
+## Technical Details <a id="technical"></a>
 
 * [Technical Overview](technical/technical-overview/README.md)
   * [Memory Layout](technical/technical-overview/memory-layout.md)
@@ -31,14 +31,14 @@
 
 ## Programming Retroputer
 
-* [Assembler Language](assembly-language/untitled.md)
+* [Assembly Language](assembly-language/untitled.md)
   * [Numbers](assembly-language/numbers.md)
-  * [Identifiers](assembly-language/identifiers.md)
-  * [Directives](assembly-language/directives.md)
-  * [Subroutine Calling Convention](assembly-language/subroutine-calling-convention.md)
-  * [Assembler Error Messages](assembly-language/assembler-error-messages.md)
-  * [Accessing Memory](assembly-language/accessing-memory.md)
-  * [Instructions](assembly-language/instructions.md)
+  * [Identifiers](programming-retroputer/asm/identifiers.md)
+  * [Directives](programming-retroputer/asm/directives.md)
+  * [Calling Convention](programming-retroputer/asm/subroutine-calling-convention.md)
+  * [Accessing Memory](programming-retroputer/asm/accessing-memory.md)
+  * [Instructions](programming-retroputer/asm/instructions.md)
+  * [Error Messages](assembly-language/assembler-error-messages.md)
 * [The Kernel](kernel/what-is-the-kernel.md)
   * [Screen Routines](kernel/screen-routines.md)
 

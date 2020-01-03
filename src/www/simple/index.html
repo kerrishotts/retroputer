@@ -27,6 +27,7 @@
             --padding: 8px;
             --half-padding: 4px;
             --background: #222222;
+            --quote-background: rgba(255,255,255,0.0625);
             --border-color: #888888;
             --text-color: #DDDDDD;
             --text-heading-color: #FFFFFF;
@@ -172,21 +173,12 @@
             max-width: 40em;
             margin: 0 auto;
         }
-/*
-        .docs .md p, .docs .md ul, .docs .md h1, .docs .md h2, .docs .md h3 {
-            max-width: 30em;
-            margin: auto auto;
+
+        .docs .md th p, .docs .md td p {
+            margin: 0;
+            padding: 0;
         }
 
-        .docs .md p {
-            text-indent: 1em;
-        }
-
-        .docs .md p img {
-            margin-left: -1em;
-            margin-right: -1em;
-        }
-*/
         .docs .md a {
             color: var(--link-color);
         }
@@ -194,14 +186,16 @@
         .docs .md td, .docs .md th {
             text-align: initial;
             vertical-align: top;
+            width: 0;
         }
 
-        .docs .md h1, .docs .md h2, .docs .md h3, .docs .md th {
+        .docs .md h1, .docs .md h2, .docs .md h3, .docs .md h4, .docs .md th {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--text-heading-color);
+        }
+        .docs .md h1 {
             border-bottom: 1px solid var(--text-heading-color);
         }
-
         .docs .md img {
             max-width: 100%;
             background-color: white;
@@ -227,25 +221,21 @@
             border-bottom-right-radius: var(--padding);
         }
 
-        /*
-        .panel-wrapper {
-            display: flex;
-            flex-direction: row;
+        .docs .md blockquote {
+            margin: 0;
+            padding: 4px 1em;
+            border-left: 4px solid var(--border-color);
+            background-color: var(--quote-background);
         }
 
-        #asm {
-            display: flex;
-            flex-direction: column;
-            flex: 1 1 auto;
+        .docs .md blockquote h4 {
+            margin: 1em 0 -0.5em 0;
         }
 
-        #asm button {
-            flex: 0;
+        .docs .md table {
+            margin: 1em 0;
         }
-        #asm #code {
-            flex: 1 1 auto;
-        }
-        */
+
     </style>
     <!--<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
     <script type="text/javascript" src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>

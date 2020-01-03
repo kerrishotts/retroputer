@@ -10,17 +10,13 @@ Retroputer is an emulator for a computer system that resembles machines in the 8
 * Resemble 8 and 16-bit machines
 * Have a completely understandable architecture from low-level "hardware" to high-level software
 
-{% hint style="info" %}
-#### Note
+> #### Note
+>
+> Retroputer V2 is intended to be a lower-level faux emulator than Retroputer v1 that incorporates low level technologies such as buses and clocks. This isn't intended to be a perfect representation of physical hardware, but makes interconnects between simulated devices much easier, and also simplifies the modeling of the overall structure of the computer.
 
-Retroputer V2 is intended to be a lower-level faux emulator than Retroputer v1 that incorporates low level technologies such as buses and clocks. This isn't intended to be a perfect representation of physical hardware, but makes interconnects between simulated devices much easier, and also simplifies the modeling of the overall structure of the computer.
-{% endhint %}
-
-{% hint style="danger" %}
-#### Warning
-
-Retroputer V2 is _far_ from complete, as is the documentation in this wiki. Take _everything_ with huge grains of salt!
-{% endhint %}
+> #### Warning
+>
+> Retroputer V2 is _far_ from complete, as is the documentation in this wiki. Take _everything_ with huge grains of salt!
 
 The full project is available on Github:
 

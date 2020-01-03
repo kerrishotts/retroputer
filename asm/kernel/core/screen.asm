@@ -169,7 +169,7 @@
         ## Parameters: None
         ## Preserves: x, a
         ##
-        ## Clears the screen (assuming it's at 0x10000)
+        ## Clears the screen 
         #######################################################################
         clear-screen: {
             push x
@@ -187,6 +187,8 @@
                 st [d + 0x2000, x], al              # set background color
                 dec x
             } while !c
+            d := 0
+            call set-cursor-pos
         _out:
             pop d
             pop a
@@ -331,15 +333,16 @@
         ##
         ## Vector: GET_CURSOR_ADDR
         ## Parameters: none
-        ## Returns: D - address representing cursor position
+        ## Returns: D - screen page
+        ##          X - offset of cursor position
         ##
         ## Returns the screen address offset for the current cursor position
         #######################################################################
         get-cursor-addr: {
-            push x
             push a
             pushf
         _main:
+            # convert position to address
             call get-cursor-pos
             exc d
             mov x, dl
@@ -347,12 +350,101 @@
             shl x, al
             exc d
             or x, dl
-            mov d, x
+            # get the page
+            ld d, [screen.kdata.screen-page]
         _out:
             popf
             pop a
-            pop x
             ret
+        }
+
+        ##
+        ## Vector: CVT_ADDR_TO_POS
+        ## Parameters: D, x - address of cursor
+        ## Return: DH - row, DL - col
+        #######################################################################
+        cvt-addr-to-pos: {
+                push a
+            _main:
+                d := x
+                # calculate rows by shifting d >> width
+                al := [screen.kdata.screen-width]
+                shl d, al
+
+                # calculate cols by taking x & (cols-1)
+                exc d
+                al := [screen.kdata.screen-cols]
+                dec al
+                and x, al
+                dl := xl
+            _out:
+                pop a
+                ret
+        }
+
+        ##
+        ## Vector: GET_CHAR_UNDER_CURSOR
+        ## Parameters: none
+        ## Returns: DL - char
+        ##
+        ## Returns the character under the current character position
+        #######################################################################
+        get-char-under-cursor: {
+        _main:
+            call get-cursor-addr
+            ld dl, [d, x]
+        _out:
+            ret
+        }
+
+        ##
+        ## Vector: GET_LOGICAL_LINE_START_ADDR
+        ## Parameters: none
+        ## Returns: D, X - address of the start of the logical line
+        ##
+        #######################################################################
+        get-logical-line-start-addr: {
+                push a
+            _main:
+                call get-cursor-addr
+                do {
+                    ld al, [d, x]
+                    cmp al, 0x00
+                    if z {
+                        break
+                    }
+                    dec x
+                } while !n
+                inc x
+            _out:
+                pop a
+                ret
+        }
+
+        ##
+        ## Vector: GET_LOGICAL_LINE_END_ADDR
+        ## Parameters: none
+        ## Returns: D, X - address of the end of the logical line
+        ##
+        #######################################################################
+        get-logical-line-end-addr: {
+                push a
+            _main:
+                call get-cursor-addr
+                do {
+                    ld al, [d, x]
+                    cmp al, 0x00
+                    if z {
+                        break
+                    }
+                    inc x
+                    # note: if there's no ending 00 at the end of screen
+                    # memory, this will do strange things... ;-) 
+                } while !n
+                dec x
+            _out:
+                pop a
+                ret
         }
 
         ##
@@ -399,14 +491,84 @@
         }
 
         ##
-        ## Vector: CURSOR_ADVANCE
+        ## Vector: CURSOR_UP
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Moves the cursor up by 1 row; can't advance beyond row 0
+        #######################################################################
+        cursor-up: {
+            push d
+            push c
+            push a
+            pushf
+        _main:
+            call get-cursor-pos
+            exc d                              # need to work on row 
+            dec dl                             # up a row
+            if n {
+                inc dl                         # nope!
+            }
+            exc d                              # switch back for set
+            call set-cursor-pos
+        _out:
+            popf
+            pop a
+            pop c
+            pop d
+            ret
+        }
+        
+
+        ##
+        ## Vector: CURSOR_LEFT
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Moves the cursor 1 position to the left, moving up and to the
+        ## right if necessary
+        #######################################################################
+        cursor-left: {
+            push d
+            push c
+            push a
+            pushf
+        _main:
+            call get-cursor-pos
+            dec dl
+            if n {
+                # moved past left of screen, 
+                ld dl, [screen.kdata.screen-cols]
+                dec dl
+                exc d
+                dec dl
+                if n {
+                    inc dl
+                    # don't go to the right side if we're already at the top
+                    exc d
+                    dl := 0
+                    exc d
+                }
+                exc d
+            }
+            call set-cursor-pos
+        _out:
+            popf
+            pop a
+            pop c
+            pop d
+            ret
+        }
+
+        ##
+        ## Vector: CURSOR_RIGHT  
         ## Parameters: none
         ## Returns: none
         ##
         ## Advances the cursor by one to the right, wrapping and scrolling 
         ## as necessary
         #######################################################################
-        cursor-advance: {
+        cursor-right: {
             push d
             push c
             push a
@@ -436,6 +598,41 @@
 
             exc d
             mov dl, cl
+            exc d
+            call set-cursor-pos
+
+        _out:
+            popf
+            pop a
+            pop c
+            pop d
+            ret
+        }
+
+        ##
+        ## Vector: CURSOR_DOWN
+        ## Parameters: none
+        ## Returns: none
+        ##
+        ## Advances the cursor down a line, scrolling if necessary
+        #######################################################################
+        cursor-down: {
+            push d
+            push c
+            push a
+            pushf
+        _main:
+            call get-cursor-pos
+            exc d
+
+            inc dl
+            ld al, [screen.kdata.screen-rows]
+            cmp dl, al   # bottom of screen
+            if z {
+                dec dl   # keep at bottom
+                call scroll-screen-up
+            }
+
             exc d
             call set-cursor-pos
 
@@ -495,48 +692,84 @@
         ## Parameters: none
         ## Returns: none
         ##
-        ## Advances the cursor back a character
+        ## Backspace acts differently from a simple cursor-left;
+        ## we'll back up to the left, but only if the character is
+        ## non-zero. If it's zero, we'll search back to find the first
+        ## non-zero character and reset there. This ensures BKSP is
+        ## always operating on logical lines.
+        ## BKSP can't be used to navigate before 0,0.
         #######################################################################
         cursor-backspace: {
             push d
-            push c
+            push y
             push a
             pushf
         _main:
-            call get-cursor-pos
-            exc d
-            mov cl, dl
-            exc d
-
-            # x is in dl
-            dec dl
-            cmp dl, 0xFF
-            if z {
-                ld dl, [screen.kdata.screen-cols]
-                dec dl    # back to the left
-                dec cl    # up a row
-            }
-            cmp cl, 0xFF
-            if z {
-                ld cl, 0  # can't go off screen
-                ld dl, 0
-            }
-
-            exc d
-            mov dl, cl
-            exc d
-            call set-cursor-pos
+            call cursor-left
+            call get-cursor-addr
+            y := x
+            call get-logical-line-end-addr
+            cmp x, y
+            br n _out 
+            do {
+                al := [d+0x0001,y]
+                [d,y] := al
+                al := [d+0x1001,y]
+                [d+0x1000,y] := al
+                al := [d+0x2001,y]
+                [d+0x2000,y] := al
+                inc y
+                cmp x, y
+            } while !n
 
         _out:
             popf
             pop a
-            pop c
+            pop y
             pop d
             ret
         }
 
+        control-no-op: {
+            ret
+        }
+
+        control-vectors:
+            .word control-no-op       # 00 - NUL - 
+            .word control-no-op       # 01 - SOH - Home (top left)
+            .word control-no-op       # 02 - STX - Start of logical line
+            .word control-no-op       # 03 - ETX - Break (No visual)
+            .word control-no-op       # 04 - EOT - 
+            .word control-no-op       # 05 - ENQ - 
+            .word control-no-op       # 06 - ACK - 
+            .word control-no-op       # 07 - BEL - 
+            .word cursor-backspace    # 08 - BS  - Backspace
+            .word control-no-op       # 09 - HT  - Tab
+            .word cursor-down         # 10 - LF  - Line Feed
+            .word control-no-op       # 11 - VT  -
+            .word clear-screen        # 12 - FF  - Clear Screen
+            .word cursor-newline      # 13 - CR  - ENTER
+            .word control-no-op       # 14 - SO  - End of logical line
+            .word control-no-op       # 15 - SI  - 
+            .word cursor-right        # 16 - DLE - Cursor Right
+            .word cursor-left         # 17 - DC1 - Cursor Left
+            .word control-no-op       # 18 - DC2 - 
+            .word control-no-op       # 19 - DC3 - 
+            .word control-no-op       # 20 - DC4 - 
+            .word control-no-op       # 21 - NAK - 
+            .word control-no-op       # 22 - SYN - 
+            .word control-no-op       # 23 - ETB - 
+            .word control-no-op       # 24 - CAN - 
+            .word control-no-op       # 25 - EM  - 
+            .word control-no-op       # 26 - SUB - 
+            .word control-no-op       # 27 - ESC - 
+            .word control-no-op       # 28 - FS  -
+            .word control-no-op       # 29 - GS  - Delete
+            .word cursor-up           # 30 - RS  - Cursor Up
+            .word cursor-down         # 31 - MS  - Cursor Down
+
         ##
-        ## Vector: put-char
+        ## Vector: PUT_CHAR
         ## Parameters: DL - character
         ## Returns: none
         ##
@@ -546,6 +779,7 @@
             push a
             push x
             push d
+            pushf
         _main:
             mov a, d
 
@@ -555,34 +789,17 @@
             br _put-non-control-char
 
         _put-char-control:
-            # we're a control character
-            clr z
-            cmp al, 13
-            if z {
-                # ENTER
-                call cursor-newline
-            }
-            cmp al, 8
-            if z {
-                # BACKSPACE
-                call cursor-backspace
-                call get-cursor-addr
-                mov x, d
-                ld d, [screen.kdata.screen-page]
-                ld al, 32    # write a space to complete the back space
-                st [d, x], al
-                ld al, [screen.kdata.screen-text-fg]
-                st [d + 0x1000, x], al
-                ld al, [screen.kdata.screen-text-bg]
-                st [d + 0x2000, x], al
-            }
-            br _out
+            # we're a control character; look up the vector
+            d := control-vectors >> 3
+            x := control-vectors & 7
+            y := al
+            shl y, 1                   # shift to a word
+            call [d,x,y]               # perform the control char
+            br _out 
 
         _put-non-control-char:
             # get the current cursor address offset
             call get-cursor-addr
-            mov x, d
-            ld d, [screen.kdata.screen-page]
             st [d, x], al
             ld al, [screen.kdata.screen-text-fg]
             st [d + 0x1000, x], al
@@ -590,12 +807,32 @@
             st [d + 0x2000, x], al
 
             # advance the cursor
-            call cursor-advance
+            call cursor-right
         _out:
+            popf
             pop d
             pop x
             pop a
             ret
+        }
+
+        ##
+        ## Vector: GET_CHAR
+        ## Parameters: none
+        ## Returns: DL - char
+        ##
+        ## Waits for a character to be typed and returns it in DL
+        #######################################################################
+        get-char: {
+                pushf
+            _main:
+                do {
+                    in dl, 0x30
+                    cmp dl, 0
+                } while z
+            _out:
+                popf
+                ret
         }
 
     }

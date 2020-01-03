@@ -7,7 +7,7 @@ import { CLI } from "cliffy";
 import sade from "sade";
 
 import { parser } from "../basm/parser.js";
-import { assemble, setImportProvider } from "../basm/assemble.js";
+import { assemble, setImportProvider, createScope, SCOPE } from "../basm/assemble.js";
 import { nodeImportProvider } from "../basm/importProviders/node.js";
 setImportProvider(nodeImportProvider);
 
@@ -16,7 +16,7 @@ import { ConsoleDevice } from "../devices/Console.js";
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagnostics.js";
 
-import rom from "../roms/kernel.js";
+import rom, { vectors } from "../roms/kernel.js";
 
 import shell from "shelljs";
 
@@ -371,7 +371,9 @@ const commands = {
     ${instructions.join("\n")}
 }`;
                         const ast = parser.parse(asm);
-                        const segments = assemble(ast);
+                        const globals = createScope();
+                        globals[SCOPE.CONTENTS] = Object.assign({}, vectors);
+                        const segments = assemble(ast, globals);
                         segments.forEach(segment => {
                             const data = segment.data;
                             data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte, true));
@@ -413,7 +415,9 @@ const commands = {
                 if (verbose) report.info(`... parsing...`);
                 const ast = parser.parse(asm);
                 if (verbose) report.info(`... assembling...`);
-                const segments = assemble(ast);
+                const globals = createScope();
+                globals[SCOPE.CONTENTS] = Object.assign({}, vectors);
+                const segments = assemble(ast, globals);
                 if (verbose) report.info(`... writing...`);
                 segments.forEach(segment => {
                     const data = segment.data;

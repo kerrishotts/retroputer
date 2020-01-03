@@ -84,6 +84,7 @@ export class Timers extends Device {
                         timer.read = timer.cur;
                         timer.cur = 0;
                         timer.dur = 0;
+                        this.requestService();
                     }
                     break;
                 case TIMER_MODES.MULTI_SHOT:
@@ -91,6 +92,7 @@ export class Timers extends Device {
                     if (timer.cur >= timer.dur) {
                         timer.read = timer.cur;
                         timer.cur -= timer.dur;
+                        this.requestService();
                     }
                     break;
                 case TIMER_MODES.RANDOM:

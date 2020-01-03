@@ -39,6 +39,8 @@ export class ComputerControl extends React.Component {
         this.stepClicked = this.stepClicked.bind(this);
         this.jumpClicked = this.jumpClicked.bind(this);
         this.applyClicked = this.applyClicked.bind(this);
+        this.autoUpdateClicked = this.autoUpdateClicked.bind(this);
+        this.updateFrequencyChanged = this.updateFrequencyChanged.bind(this);
     }
     startAddressChanged(e) {
         this.setState({ startAddress: e.target.value });
@@ -130,12 +132,27 @@ export class ComputerControl extends React.Component {
             computer.memory.writeByte(addr, byte);
         };
     }
+    updateFrequencyChanged(e) {
+        const { store } = this.props;
+        const newFreq = Number(e.target.value) || 250;
+        store.updateInterval = newFreq;
+        store.notify();
+        this.setState({});
+    }
+    autoUpdateClicked() {
+        const { store } = this.props;
+        store.autoUpdate = !store.autoUpdate; 
+        store.notify();
+        this.setState({});
+    }
     render() {
         const { store } = this.props;
         const { startAddress, sliceGranularity, timingMethod, ticksBetweenRasterLines } = this.state;
+        const updateFrequency = store.updateInterval;
+        const updating = store.autoUpdate;
         return (
             <div className="panel">
-                <label>Start Address: <input type="text" value={startAddress} onChange={this.startAddressChanged} /></label>
+                <label>Start Address: <input size={10} type="text" value={startAddress} onChange={this.startAddressChanged} /></label>
                 <span className="divider"/>
                 <button onClick={this.startClicked} title="Start"><Icon icon={play2} /></button>
                 <button onClick={this.continueClicked} title="Continue"><Icon icon={forward2} /></button>
@@ -145,6 +162,11 @@ export class ComputerControl extends React.Component {
                 <button onClick={this.stepClicked} title="Single Step"><Icon icon={next} /></button>
                 <span className="divider"/>
                 <button onClick={this.randomizeClicked} title="Randomize memory"><Icon icon={shuffle} /></button>
+                <span className="divider"/>
+                <label>Update Freq: <input type="text" size={10} value={updateFrequency} onChange={this.updateFrequencyChanged}/></label>
+                <span className="divider"/>
+                <button onClick={this.autoUpdateClicked} title="Start/Stop Automatic Update"><Icon icon={updating ? stop : play2} /></button>
+                
                 <br />
                 <label>Mode:
                     <select onChange={this.timingMethodChanged} value={timingMethod}>

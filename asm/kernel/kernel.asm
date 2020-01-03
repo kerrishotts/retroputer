@@ -13,13 +13,22 @@
     }
 
     .segment vectors kmemmap.kernel.vector-start .append {
-        CLEAR_SCREEN:     .word core.screen.kcode.clear-screen         # 0x0FE00
-        SCROLL_SCREEN_UP: .word core.screen.kcode.scroll-screen-up     # 0x0FE02
-        SET_CURSOR_POS:   .word core.screen.kcode.set-cursor-pos       # 0x0FE04
-        GET_CURSOR_POS:   .word core.screen.kcode.get-cursor-pos       # 0x0FE06
-        GET_CURSOR_ADDR:  .word core.screen.kcode.get-cursor-addr      # 0x0FE08
-        CURSOR_ADVANCE:   .word core.screen.kcode.cursor-advance       # 0x0FE0A
-        PUT_CHAR:         .word core.screen.kcode.put-char             # 0x0FE0C
+        CLEAR_SCREEN:                .word core.screen.kcode.clear-screen
+        SCROLL_SCREEN_UP:            .word core.screen.kcode.scroll-screen-up
+        SET_CURSOR_POS:              .word core.screen.kcode.set-cursor-pos
+        GET_CURSOR_POS:              .word core.screen.kcode.get-cursor-pos
+        GET_CURSOR_ADDR:             .word core.screen.kcode.get-cursor-addr
+        CVT_ADDR_TO_POS:             .word core.screen.kcode.cvt-addr-to-pos
+        GET_CHAR_UNDER_CURSOR:       .word core.screen.kcode.get-char-under-cursor
+        GET_LOGICAL_LINE_START_ADDR: .word core.screen.kcode.get-logical-line-start-addr
+        GET_LOGICAL_LINE_END_ADDR:   .word core.screen.kcode.get-logical-line-end-addr
+        CURSOR_UP:                   .word core.screen.kcode.cursor-up
+        CURSOR_LEFT:                 .word core.screen.kcode.cursor-left
+        CURSOR_RIGHT:                .word core.screen.kcode.cursor-right
+        CURSOR_DOWN:                 .word core.screen.kcode.cursor-down
+        CURSOR_NEWLINE:              .word core.screen.kcode.cursor-newline
+        PUT_CHAR:                    .word core.screen.kcode.put-char
+        GET_CHAR:                    .word core.screen.kcode.get-char
     }
 
 #  .segment kcode kmemmap.kernel.code-start .append{

@@ -14,9 +14,12 @@ export class Docs extends React.Component {
             wrapper: ({children, ...props}) => {
                 return <>{children}</>;
             },
-            a: props => props.href.startsWith("http") 
+            a: props => props.href && props.href.startsWith("http") 
                ? <a {...props} target="_blank">{props.children}</a>
                : <a href="#" onClick={evt => this.navigate(props.href)}>{props.children}</a>,
+            img: ({src, ...props}) => <img {...props} src={src && src.replace(".gitbook/assets", "_assets")}/>,
+            th: ({style, children, ...props}) => <th {...props}>{children}</th>,
+            td: ({style, children, ...props}) => <td {...props}>{children}</td>,
             pre: ({children, ...props}) => 
                 <pre class="code">
                     <div class="codebar">

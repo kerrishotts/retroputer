@@ -42,203 +42,203 @@ The following maps the **CTRL** combination to the resulting control code.
 <table>
   <thead>
     <tr>
-      <th >CTRL +</th>
-      <th >RetSCII Code</th>
-      <th >Control Code</th>
+      <th style="text-align:left">CTRL +</th>
+      <th style="text-align:left">RetSCII Code</th>
+      <th style="text-align:left">Control Code</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td >A</td>
-      <td ><code>01</code>
+      <td style="text-align:left">A</td>
+      <td style="text-align:left"><code>01</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >B</td>
-      <td ><code>02</code>
+      <td style="text-align:left">B</td>
+      <td style="text-align:left"><code>02</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >C</td>
-      <td ><code>03</code>
+      <td style="text-align:left">C</td>
+      <td style="text-align:left"><code>03</code>
       </td>
-      <td >Break</td>
+      <td style="text-align:left">Break</td>
     </tr>
     <tr>
-      <td >D</td>
-      <td ><code>04</code>
+      <td style="text-align:left">D</td>
+      <td style="text-align:left"><code>04</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >E</td>
-      <td ><code>05</code>
+      <td style="text-align:left">E</td>
+      <td style="text-align:left"><code>05</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >F</td>
-      <td ><code>06</code>
+      <td style="text-align:left">F</td>
+      <td style="text-align:left"><code>06</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >G</td>
-      <td ><code>07</code>
+      <td style="text-align:left">G</td>
+      <td style="text-align:left"><code>07</code>
       </td>
-      <td >Bell</td>
+      <td style="text-align:left">Bell</td>
     </tr>
     <tr>
-      <td >H</td>
-      <td ><code>08</code>
+      <td style="text-align:left">H</td>
+      <td style="text-align:left"><code>08</code>
       </td>
-      <td >Backspace</td>
+      <td style="text-align:left">Backspace</td>
     </tr>
     <tr>
-      <td >I</td>
-      <td ><code>09</code>
+      <td style="text-align:left">I</td>
+      <td style="text-align:left"><code>09</code>
       </td>
-      <td >Tab</td>
+      <td style="text-align:left">Tab</td>
     </tr>
     <tr>
-      <td >J</td>
-      <td ><code>0A</code>
+      <td style="text-align:left">J</td>
+      <td style="text-align:left"><code>0A</code>
       </td>
-      <td >Line Feed</td>
+      <td style="text-align:left">Line Feed</td>
     </tr>
     <tr>
-      <td >K</td>
-      <td ><code>0B</code>
+      <td style="text-align:left">K</td>
+      <td style="text-align:left"><code>0B</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >L</td>
-      <td ><code>0C</code>
+      <td style="text-align:left">L</td>
+      <td style="text-align:left"><code>0C</code>
       </td>
-      <td >
+      <td style="text-align:left">
         <p>Form Feed /</p>
         <p>Clear Screen</p>
       </td>
     </tr>
     <tr>
-      <td >M</td>
-      <td ><code>0D</code>
+      <td style="text-align:left">M</td>
+      <td style="text-align:left"><code>0D</code>
       </td>
-      <td >
+      <td style="text-align:left">
         <p>Carriage Return /</p>
         <p>Enter</p>
       </td>
     </tr>
     <tr>
-      <td >N</td>
-      <td ><code>0E</code>
+      <td style="text-align:left">N</td>
+      <td style="text-align:left"><code>0E</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >O</td>
-      <td ><code>0F</code>
+      <td style="text-align:left">O</td>
+      <td style="text-align:left"><code>0F</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >P</td>
-      <td ><code>10</code>
+      <td style="text-align:left">P</td>
+      <td style="text-align:left"><code>10</code>
       </td>
-      <td >Cursor Right</td>
+      <td style="text-align:left">Cursor Right</td>
     </tr>
     <tr>
-      <td >Q</td>
-      <td ><code>11</code>
+      <td style="text-align:left">Q</td>
+      <td style="text-align:left"><code>11</code>
       </td>
-      <td >Cursor Left</td>
+      <td style="text-align:left">Cursor Left</td>
     </tr>
     <tr>
-      <td >R</td>
-      <td ><code>12</code>
+      <td style="text-align:left">R</td>
+      <td style="text-align:left"><code>12</code>
       </td>
-      <td >F1</td>
+      <td style="text-align:left">F1</td>
     </tr>
     <tr>
-      <td >S</td>
-      <td ><code>13</code>
+      <td style="text-align:left">S</td>
+      <td style="text-align:left"><code>13</code>
       </td>
-      <td >F2</td>
+      <td style="text-align:left">F2</td>
     </tr>
     <tr>
-      <td >T</td>
-      <td ><code>14</code>
+      <td style="text-align:left">T</td>
+      <td style="text-align:left"><code>14</code>
       </td>
-      <td >F3</td>
+      <td style="text-align:left">F3</td>
     </tr>
     <tr>
-      <td >U</td>
-      <td ><code>15</code>
+      <td style="text-align:left">U</td>
+      <td style="text-align:left"><code>15</code>
       </td>
-      <td >F4</td>
+      <td style="text-align:left">F4</td>
     </tr>
     <tr>
-      <td >V</td>
-      <td ><code>16</code>
+      <td style="text-align:left">V</td>
+      <td style="text-align:left"><code>16</code>
       </td>
-      <td >F5</td>
+      <td style="text-align:left">F5</td>
     </tr>
     <tr>
-      <td >W</td>
-      <td ><code>17</code>
+      <td style="text-align:left">W</td>
+      <td style="text-align:left"><code>17</code>
       </td>
-      <td >F6</td>
+      <td style="text-align:left">F6</td>
     </tr>
     <tr>
-      <td >X</td>
-      <td ><code>18</code>
+      <td style="text-align:left">X</td>
+      <td style="text-align:left"><code>18</code>
       </td>
-      <td >F7</td>
+      <td style="text-align:left">F7</td>
     </tr>
     <tr>
-      <td >Y</td>
-      <td ><code>19</code>
+      <td style="text-align:left">Y</td>
+      <td style="text-align:left"><code>19</code>
       </td>
-      <td >F8</td>
+      <td style="text-align:left">F8</td>
     </tr>
     <tr>
-      <td >Z</td>
-      <td ><code>1A</code>
+      <td style="text-align:left">Z</td>
+      <td style="text-align:left"><code>1A</code>
       </td>
-      <td >F9</td>
+      <td style="text-align:left">F9</td>
     </tr>
     <tr>
-      <td >0</td>
-      <td ><code>1B</code>
+      <td style="text-align:left">0</td>
+      <td style="text-align:left"><code>1B</code>
       </td>
-      <td >F10</td>
+      <td style="text-align:left">F10</td>
     </tr>
     <tr>
-      <td >1</td>
-      <td ><code>1C</code>
+      <td style="text-align:left">1</td>
+      <td style="text-align:left"><code>1C</code>
       </td>
-      <td >N/A</td>
+      <td style="text-align:left">N/A</td>
     </tr>
     <tr>
-      <td >2</td>
-      <td ><code>1D</code>
+      <td style="text-align:left">2</td>
+      <td style="text-align:left"><code>1D</code>
       </td>
-      <td >Delete</td>
+      <td style="text-align:left">Delete</td>
     </tr>
     <tr>
-      <td >3</td>
-      <td ><code>1E</code>
+      <td style="text-align:left">3</td>
+      <td style="text-align:left"><code>1E</code>
       </td>
-      <td >Cursor Up</td>
+      <td style="text-align:left">Cursor Up</td>
     </tr>
     <tr>
-      <td >4</td>
-      <td ><code>1F</code>
+      <td style="text-align:left">4</td>
+      <td style="text-align:left"><code>1F</code>
       </td>
-      <td >Cursor Down</td>
+      <td style="text-align:left">Cursor Down</td>
     </tr>
   </tbody>
 </table>### The Buffer
@@ -250,16 +250,16 @@ Because it's possible that the computer won't have a chance to check for a keybo
 <table>
   <thead>
     <tr>
-      <th >Port</th>
-      <th >Name</th>
-      <th >Notes</th>
+      <th style="text-align:left">Port</th>
+      <th style="text-align:left">Name</th>
+      <th style="text-align:left">Notes</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td >0x30</td>
-      <td >RetSCII code of key pressed</td>
-      <td >
+      <td style="text-align:left">0x30</td>
+      <td style="text-align:left">RetSCII code of key pressed</td>
+      <td style="text-align:left">
         <ul>
           <li>0x00 if no key pressed.</li>
           <li>Reading will clear the value.</li>
@@ -267,80 +267,80 @@ Because it's possible that the computer won't have a chance to check for a keybo
       </td>
     </tr>
     <tr>
-      <td >0x31</td>
-      <td >Buffer Remaining</td>
-      <td ># of characters remaining in the buffer</td>
+      <td style="text-align:left">0x31</td>
+      <td style="text-align:left">Buffer Remaining</td>
+      <td style="text-align:left"># of characters remaining in the buffer</td>
     </tr>
     <tr>
-      <td >0x32</td>
-      <td >r0:0-7 keys pressed</td>
-      <td >A set bit indicates the key is currently pressed. Zero indicates that
+      <td style="text-align:left">0x32</td>
+      <td style="text-align:left">r0:0-7 keys pressed</td>
+      <td style="text-align:left">A set bit indicates the key is currently pressed. Zero indicates that
         it is up.</td>
     </tr>
     <tr>
-      <td >0x33</td>
-      <td >r0:8-F keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x33</td>
+      <td style="text-align:left">r0:8-F keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x34</td>
-      <td >r1:0-7 keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x34</td>
+      <td style="text-align:left">r1:0-7 keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x35</td>
-      <td >r1:8-F keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x35</td>
+      <td style="text-align:left">r1:8-F keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x36</td>
-      <td >r2:0-7 keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x36</td>
+      <td style="text-align:left">r2:0-7 keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x37</td>
-      <td >r2:8-F keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x37</td>
+      <td style="text-align:left">r2:8-F keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x38</td>
-      <td >r3:0-7 keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x38</td>
+      <td style="text-align:left">r3:0-7 keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x39</td>
-      <td >r3:8-F keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x39</td>
+      <td style="text-align:left">r3:8-F keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x3A</td>
-      <td >r4:0-7 keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x3A</td>
+      <td style="text-align:left">r4:0-7 keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x3B</td>
-      <td >r4:8-F keys pressed</td>
-      <td ></td>
+      <td style="text-align:left">0x3B</td>
+      <td style="text-align:left">r4:8-F keys pressed</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x3C</td>
-      <td >&#x2013;</td>
-      <td ></td>
+      <td style="text-align:left">0x3C</td>
+      <td style="text-align:left">&#x2013;</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x3D</td>
-      <td >&#x2013;</td>
-      <td ></td>
+      <td style="text-align:left">0x3D</td>
+      <td style="text-align:left">&#x2013;</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x3E</td>
-      <td >&#x2013;</td>
-      <td ></td>
+      <td style="text-align:left">0x3E</td>
+      <td style="text-align:left">&#x2013;</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x3F</td>
-      <td >&#x2013;</td>
-      <td ></td>
+      <td style="text-align:left">0x3F</td>
+      <td style="text-align:left">&#x2013;</td>
+      <td style="text-align:left"></td>
     </tr>
   </tbody>
 </table>

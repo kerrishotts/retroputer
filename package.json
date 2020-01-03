@@ -63,6 +63,11 @@
     "lint": "eslint src/**/*.js test/**/*.js bin/**/*.js --ignore-pattern bundle.js",
     "basm": "node src/basm/index.js",
     "monitor": "node src/monitor/index.js",
+    "docs:clean": "rimraf docs/*",
+    "docs:mkdir": "mkdir docs",
+    "docs:update": "cp -r ../retroputer-docs/* ./docs && cp -r ../retroputer-docs/.gitbook/assets ./docs/_assets",
+    "docs:toc": "sh ./scripts/toc.sh > docs/SUMMARY.js",
+    "build:docs": "npm run docs:clean && npm run docs:update && npm run docs:toc",
     "build:basm": "pegjs --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
     "build:kernel": "src/basm/index.js -d asm/kernel -x vectors,kdata,krodata < asm/kernel/kernel.asm > src/roms/kernel.js",
     "build:font": "node --experimental-modules ./src/util/buildFont.js",
@@ -97,8 +102,8 @@
   "staticFiles": {
     "staticPath": [
       {
-        "staticPath": "docs/.gitbook/assets",
-        "staticOutDir": ".gitbook/assets"
+        "staticPath": "docs/_assets",
+        "staticOutDir": "_assets"
       }
     ]
   }

@@ -17,9 +17,9 @@ ld al, 65      # three bytes required for this instruction
 
 Relative addressing is used only for instructions that affect the program's control flow, namely `BR`, `CALL`, and `LOOP` \(and short variants\). The address is relative to the _next_ instruction.
 
-{% hint style="info" %}
-**Note:** PC will be pointing at the next instruction, so a `BR -4` will enter an infinite loop. \(For a short branch, `BRS -3` will do the same.\)
-{% endhint %}
+> #### **Note**
+>
+> PC will be pointing at the next instruction, so a `BR -4` will enter an infinite loop. \(For a short branch, `BRS -3` will do the same.\)
 
 A short branch can jump within -128 to 127 bytes from the next instruction. A long branch can jump within -32768 to 32767 bytes.
 
@@ -139,9 +139,9 @@ $$
 \end{alignedat}
 $$
 
-{% hint style="info" %}
-If `X` is not supplied, `0` is assumed. As such `ld al, [d]` will load from the address`d<<3`. 
-{% endhint %}
+> #### Note
+>
+> If `X` is not supplied, `0` is assumed. As such `ld al, [d]` will load from the address`d<<3`.
 
 There's no established requirement to determining which bits should go in `D` and which should go in `X`, so use whatever makes sense for the algorithm at hand. Typically, however, you'll usually load the top 16 bits of the address in `D` and the bottom three bits in `X` to ensure that you can continue to index by `X` should you need to do so.
 

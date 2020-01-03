@@ -2,13 +2,10 @@
 
 Identifiers can be used to label any address, whether it be for code or for data storage. Identifiers can consist of alphanumeric characters as well as underscores and dashes.
 
-{% hint style="info" %}
-An identifier must start with an alphabetic character or an underscore. It may not begin with a digit or a dash.
-{% endhint %}
-
-{% hint style="danger" %}
-An identifier may _not_ be a reserved word or register.
-{% endhint %}
+> #### Important
+>
+> * An identifier must start with an alphabetic character or an underscore. It may not begin with a digit or a dash.
+> * An identifier may _not_ be a reserved word or register.
 
 Identifiers are often defined by providing the name of the identifier followed by a colon \(`:`\). For example:
 

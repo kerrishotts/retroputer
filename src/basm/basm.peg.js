@@ -11296,12 +11296,10 @@ function peg$parse(input, options) {
       }
 
       function getIdentInScope(ident) {
-      console.log(ident);
           if (hlScopes.length < 1) {
               error(`No current scope exists to perform rewrite; couldn't find ${ident}`);
           }
           for (let i = 0; i < hlScopes.length; i++) {
-          console.log(i);
               const curScope = hlScopes[0];
               const curIdents = curScope[ident];
               if (curIdents) {

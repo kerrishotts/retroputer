@@ -1,8 +1,9 @@
 import React from 'react';
+import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
 import { Icon } from 'react-icons-kit';
 import { info } from 'react-icons-kit/icomoon/info';
 
-export class Disassembler extends React.Component {
+export class Disassembler extends AutoUpdateComponent {
     constructor(props) {
         super(props);
         this.state = {
@@ -14,13 +15,6 @@ export class Disassembler extends React.Component {
         this.countChanged = this.countChanged.bind(this);
         this.refreshClicked = this.refreshClicked.bind(this);
         this.refreshIfNeeded = this.refreshIfNeeded.bind(this);
-        this._timer = null;
-    }
-    componentDidMount() {
-        this._timer = setInterval(this.refreshIfNeeded, 100);
-    }
-    componentWillUnmount() {
-        clearInterval(this._timer);
     }
 
     jumpTo(address) {

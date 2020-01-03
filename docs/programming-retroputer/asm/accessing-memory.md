@@ -12,9 +12,9 @@ Let's say we wanted to change the value of `A` to the value of `0x1234`. We can 
 ld a, 0x1234
 ```
 
-{% hint style="info" %}
-The assembler allows expressions too! So you could use `ld a, 0x1200 + 0x34` to accomplish the same result.
-{% endhint %}
+> #### NOTE
+>
+> The assembler allows expressions too! So you could use `ld a, 0x1200 + 0x34` to accomplish the same result.
 
 ### Loading a Value from a Variable
 
@@ -40,11 +40,9 @@ To indicate that you're using **absolute addressing**, one uses square brackets 
 }
 ```
 
-{% hint style="danger" %}
-**Register width matters!**
-
-It's critical to match the register and the width of the data you're trying to access. `ld a, [0x00000]` will load the bytes at addresses `0x00000` and `0x00001` and deposit them into the high and low bytes of `A` respectively. `ld al, [0x00000]`, however will load only the byte at address `0x00000` and deposit it into the low byte of `A` \(known as `AL`\).
-{% endhint %}
+> #### IMPORTANT: Register Width Matters!
+>
+> It's critical to match the register and the width of the data you're trying to access. `ld a, [0x00000]` will load the bytes at addresses `0x00000` and `0x00001` and deposit them into the high and low bytes of `A` respectively. `ld al, [0x00000]`, however will load only the byte at address `0x00000` and deposit it into the low byte of `A` \(known as `AL`\).
 
 The above statement will actually be turned into `ld al, [0x03000]` by the assembler -- it will keep track of the fact that `data.lives` actually points to address `0x03000` for us.
 
@@ -61,11 +59,9 @@ st [data.lives], al
 
 This will write the new value in `AL` to memory address `0x03000` which happens to be the variable `lives`.
 
-{% hint style="danger" %}
-**Register width matters!**
-
-Just like the `LD` statement, the size of the register you're using with `ST` matters. If you want to write a single byte to memory, be sure to use a single-byte register. If you want to write two bytes at once, use a word-sized register. If you fail to use the correct width, you could inadvertently overwrite memory that you didn't intend to change.
-{% endhint %}
+> #### IMPORTANT: Register Width Matters!
+>
+> Just like the `LD` statement, the size of the register you're using with `ST` matters. If you want to write a single byte to memory, be sure to use a single-byte register. If you want to write two bytes at once, use a word-sized register. If you fail to use the correct width, you could inadvertently overwrite memory that you didn't intend to change.
 
 ### Loading Data from an Array
 

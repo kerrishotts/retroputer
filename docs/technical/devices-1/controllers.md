@@ -9,16 +9,16 @@ Retroputer supports two controllers.
 <table>
   <thead>
     <tr>
-      <th >Port</th>
-      <th >Name</th>
-      <th >Notes</th>
+      <th style="text-align:left">Port</th>
+      <th style="text-align:left">Name</th>
+      <th style="text-align:left">Notes</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td >0x40</td>
-      <td >Controller 0 Digital Controller Direction</td>
-      <td >
+      <td style="text-align:left">0x40</td>
+      <td style="text-align:left">Controller 0 Digital Controller Direction</td>
+      <td style="text-align:left">
         <p><code>....nsew</code> 
         </p>
         <p></p>
@@ -31,20 +31,20 @@ Retroputer supports two controllers.
       </td>
     </tr>
     <tr>
-      <td >0x41</td>
-      <td >Controller 0 Analog Stick Direction</td>
-      <td >Direction the analog stick is being pushed (0 - 179); shift left by one
+      <td style="text-align:left">0x41</td>
+      <td style="text-align:left">Controller 0 Analog Stick Direction</td>
+      <td style="text-align:left">Direction the analog stick is being pushed (0 - 179); shift left by one
         to obtain the degrees.</td>
     </tr>
     <tr>
-      <td >0x42</td>
-      <td >Controller 0 Analog Stick Strength</td>
-      <td >0 - 255; indicates the strength applied to the stick (255 = fully extended)</td>
+      <td style="text-align:left">0x42</td>
+      <td style="text-align:left">Controller 0 Analog Stick Strength</td>
+      <td style="text-align:left">0 - 255; indicates the strength applied to the stick (255 = fully extended)</td>
     </tr>
     <tr>
-      <td >0x43</td>
-      <td >Controller 0 Button States</td>
-      <td >
+      <td style="text-align:left">0x43</td>
+      <td style="text-align:left">Controller 0 Button States</td>
+      <td style="text-align:left">
         <p><code>..lrxyab</code>
         </p>
         <ul>
@@ -58,64 +58,64 @@ Retroputer supports two controllers.
       </td>
     </tr>
     <tr>
-      <td >0x44</td>
-      <td >-</td>
-      <td >-</td>
+      <td style="text-align:left">0x44</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left">-</td>
     </tr>
     <tr>
-      <td >0x45</td>
-      <td ></td>
-      <td ></td>
+      <td style="text-align:left">0x45</td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x46</td>
-      <td ></td>
-      <td ></td>
+      <td style="text-align:left">0x46</td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x47</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x47</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x48</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x48</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x59</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x59</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x4A</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x4A</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x4B</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x4B</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x4C</td>
-      <td >-</td>
-      <td >-</td>
+      <td style="text-align:left">0x4C</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left">-</td>
     </tr>
     <tr>
-      <td >0x4D</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x4D</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x4E</td>
-      <td >-</td>
-      <td ></td>
+      <td style="text-align:left">0x4E</td>
+      <td style="text-align:left">-</td>
+      <td style="text-align:left"></td>
     </tr>
     <tr>
-      <td >0x4F</td>
-      <td >Reset</td>
-      <td ></td>
+      <td style="text-align:left">0x4F</td>
+      <td style="text-align:left">Reset</td>
+      <td style="text-align:left"></td>
     </tr>
   </tbody>
 </table>
