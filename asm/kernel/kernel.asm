@@ -28,6 +28,7 @@
         CURSOR_DOWN:                 .word core.screen.kcode.cursor-down
         CURSOR_NEWLINE:              .word core.screen.kcode.cursor-newline
         PUT_CHAR:                    .word core.screen.kcode.put-char
+        GET_CHAR:                    .word core.screen.kcode.get-char
     }
 
 #  .segment kcode kmemmap.kernel.code-start .append{

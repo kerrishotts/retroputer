@@ -187,6 +187,8 @@
                 st [d + 0x2000, x], al              # set background color
                 dec x
             } while !c
+            d := 0
+            call set-cursor-pos
         _out:
             pop d
             pop a
@@ -542,6 +544,10 @@
                 dec dl
                 if n {
                     inc dl
+                    # don't go to the right side if we're already at the top
+                    exc d
+                    dl := 0
+                    exc d
                 }
                 exc d
             }
@@ -695,44 +701,75 @@
         #######################################################################
         cursor-backspace: {
             push d
-            push c
+            push y
             push a
             pushf
         _main:
-            call get-cursor-pos
-            exc d
-            mov cl, dl
-            exc d
-
-            # x is in dl
-            dec dl
-            cmp dl, 0xFF
-            if z {
-                ld dl, [screen.kdata.screen-cols]
-                dec dl    # back to the left
-                dec cl    # up a row
-            }
-            cmp cl, 0xFF
-            if z {
-                ld cl, 0  # can't go off screen
-                ld dl, 0
-            }
-
-            exc d
-            mov dl, cl
-            exc d
-            call set-cursor-pos
+            call cursor-left
+            call get-cursor-addr
+            y := x
+            call get-logical-line-end-addr
+            cmp x, y
+            br n _out 
+            do {
+                al := [d+0x0001,y]
+                [d,y] := al
+                al := [d+0x1001,y]
+                [d+0x1000,y] := al
+                al := [d+0x2001,y]
+                [d+0x2000,y] := al
+                inc y
+                cmp x, y
+            } while !n
 
         _out:
             popf
             pop a
-            pop c
+            pop y
             pop d
             ret
         }
 
+        control-no-op: {
+            ret
+        }
+
+        control-vectors:
+            .word control-no-op       # 00 - NUL - 
+            .word control-no-op       # 01 - SOH - Home (top left)
+            .word control-no-op       # 02 - STX - Start of logical line
+            .word control-no-op       # 03 - ETX - Break (No visual)
+            .word control-no-op       # 04 - EOT - 
+            .word control-no-op       # 05 - ENQ - 
+            .word control-no-op       # 06 - ACK - 
+            .word control-no-op       # 07 - BEL - 
+            .word cursor-backspace    # 08 - BS  - Backspace
+            .word control-no-op       # 09 - HT  - Tab
+            .word cursor-down         # 10 - LF  - Line Feed
+            .word control-no-op       # 11 - VT  -
+            .word clear-screen        # 12 - FF  - Clear Screen
+            .word cursor-newline      # 13 - CR  - ENTER
+            .word control-no-op       # 14 - SO  - End of logical line
+            .word control-no-op       # 15 - SI  - 
+            .word cursor-right        # 16 - DLE - Cursor Right
+            .word cursor-left         # 17 - DC1 - Cursor Left
+            .word control-no-op       # 18 - DC2 - 
+            .word control-no-op       # 19 - DC3 - 
+            .word control-no-op       # 20 - DC4 - 
+            .word control-no-op       # 21 - NAK - 
+            .word control-no-op       # 22 - SYN - 
+            .word control-no-op       # 23 - ETB - 
+            .word control-no-op       # 24 - CAN - 
+            .word control-no-op       # 25 - EM  - 
+            .word control-no-op       # 26 - SUB - 
+            .word control-no-op       # 27 - ESC - 
+            .word control-no-op       # 28 - FS  -
+            .word control-no-op       # 29 - GS  - Delete
+            .word cursor-up           # 30 - RS  - Cursor Up
+            .word cursor-down         # 31 - MS  - Cursor Down
+
         ##
-        ## Vector: put-char
+        ## Vector: PUT_CHAR
         ## Parameters: DL - character
         ## Returns: none
         ##
@@ -752,26 +789,13 @@
             br _put-non-control-char
 
         _put-char-control:
-            # we're a control character
-            clr z
-            cmp al, 13
-            if z {
-                # ENTER
-                call cursor-newline
-            }
-            cmp al, 8
-            if z {
-                # BACKSPACE
-                call cursor-backspace
-                call get-cursor-addr
-                ld al, 32    # write a space to complete the back space
-                st [d, x], al
-                ld al, [screen.kdata.screen-text-fg]
-                st [d + 0x1000, x], al
-                ld al, [screen.kdata.screen-text-bg]
-                st [d + 0x2000, x], al
-            }
-            br _out
+            # we're a control character; look up the vector
+            d := control-vectors >> 3
+            x := control-vectors & 7
+            y := al
+            shl y, 1                   # shift to a word
+            call [d,x,y]               # perform the control char
+            br _out 
 
         _put-non-control-char:
             # get the current cursor address offset
@@ -790,6 +814,25 @@
             pop x
             pop a
             ret
+        }
+
+        ##
+        ## Vector: GET_CHAR
+        ## Parameters: none
+        ## Returns: DL - char
+        ##
+        ## Waits for a character to be typed and returns it in DL
+        #######################################################################
+        get-char: {
+                pushf
+            _main:
+                do {
+                    in dl, 0x30
+                    cmp dl, 0
+                } while z
+            _out:
+                popf
+                ret
         }
 
     }
