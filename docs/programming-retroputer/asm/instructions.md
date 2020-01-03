@@ -1,10 +1,8 @@
 # Instructions
 
-{% hint style="info" %}
-#### Instruction Set Encodings
-
-If you want to see the entire instruction set and how it is encoded, [take a look at this reference](https://docs.google.com/spreadsheets/d/e/2PACX-1vSIMH-L17-UxNa2rhyLNF6gWUWPXic_-txike9oHIXu6zykN89dUTzA0-zNfKN-6toSEn6ox084nnId/pubhtml).
-{% endhint %}
+> #### Instruction Set Encodings
+>
+> If you want to see the entire instruction set and how it is encoded, [take a look at this reference](https://docs.google.com/spreadsheets/d/e/2PACX-1vSIMH-L17-UxNa2rhyLNF6gWUWPXic_-txike9oHIXu6zykN89dUTzA0-zNfKN-6toSEn6ox084nnId/pubhtml).
 
 ## ADD \(with Carry\)
 
@@ -680,7 +678,7 @@ LD AL, 65
 When loading data into the low portion of the register, the data in the high portion is not modified.
 {% endhint %}
 
-The other forms load data from memory into the destination register. There are several [addressing modes](../technical/technical-overview/6516-central-processing-unit/addressing-modes.md) available.
+The other forms load data from memory into the destination register. There are several [addressing modes](../../technical/technical-overview/6516-central-processing-unit/addressing-modes.md) available.
 
 ## LOOP
 

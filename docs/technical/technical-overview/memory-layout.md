@@ -9,14 +9,14 @@ Each bank is then split up into four pages of 16 kilobytes. The initial memory m
 <table>
   <thead>
     <tr>
-      <th>Bank</th>
-      <th>Role</th>
+      <th style="text-align:left">Bank</th>
+      <th style="text-align:left">Role</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>
+      <td style="text-align:left">0</td>
+      <td style="text-align:left">
         <p>Trap Vectors</p>
         <p>KERNEL Scratch and Sprite Data</p>
         <p>System Stack</p>
@@ -24,32 +24,32 @@ Each bank is then split up into four pages of 16 kilobytes. The initial memory m
       </td>
     </tr>
     <tr>
-      <td>1</td>
-      <td>Screen Memory (by default)</td>
+      <td style="text-align:left">1</td>
+      <td style="text-align:left">Screen Memory (by default)</td>
     </tr>
     <tr>
-      <td>2</td>
-      <td>General Purpose Data</td>
+      <td style="text-align:left">2</td>
+      <td style="text-align:left">General Purpose Data</td>
     </tr>
     <tr>
-      <td>3</td>
-      <td>General Purpose Data</td>
+      <td style="text-align:left">3</td>
+      <td style="text-align:left">General Purpose Data</td>
     </tr>
     <tr>
-      <td>4</td>
-      <td>General Purpose Data</td>
+      <td style="text-align:left">4</td>
+      <td style="text-align:left">General Purpose Data</td>
     </tr>
     <tr>
-      <td>5</td>
-      <td>General Purpose Data</td>
+      <td style="text-align:left">5</td>
+      <td style="text-align:left">General Purpose Data</td>
     </tr>
     <tr>
-      <td>6</td>
-      <td>General Purpose Data</td>
+      <td style="text-align:left">6</td>
+      <td style="text-align:left">General Purpose Data</td>
     </tr>
     <tr>
-      <td>7</td>
-      <td>ROM (Character, Palette, Kernel)</td>
+      <td style="text-align:left">7</td>
+      <td style="text-align:left">ROM (Character, Palette, Kernel)</td>
     </tr>
   </tbody>
 </table>Each bank is split into four pages, resulting in 32 addressable pages. Pages 28–31 are read-only \(being the entirety of bank 7\). Pages 1–3 in bank 0 can be remapped with the `MM` register. At startup, the first four pages are mapped as follows:
@@ -57,18 +57,18 @@ Each bank is then split up into four pages of 16 kilobytes. The initial memory m
 <table>
   <thead>
     <tr>
-      <th>Page</th>
-      <th>Mapping</th>
-      <th>Remappable?</th>
-      <th>Role</th>
+      <th style="text-align:left">Page</th>
+      <th style="text-align:left">Mapping</th>
+      <th style="text-align:left">Remappable?</th>
+      <th style="text-align:left">Role</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>0</td>
-      <td>0</td>
-      <td>No</td>
-      <td>
+      <td style="text-align:left">0</td>
+      <td style="text-align:left">0</td>
+      <td style="text-align:left">No</td>
+      <td style="text-align:left">
         <p>Trap Vectors</p>
         <p>Kernel Scratch and Sprite Data</p>
         <p>Stack</p>
@@ -76,22 +76,22 @@ Each bank is then split up into four pages of 16 kilobytes. The initial memory m
       </td>
     </tr>
     <tr>
-      <td>1</td>
-      <td>1</td>
-      <td>Yes</td>
-      <td>User Code and Data</td>
+      <td style="text-align:left">1</td>
+      <td style="text-align:left">1</td>
+      <td style="text-align:left">Yes</td>
+      <td style="text-align:left">User Code and Data</td>
     </tr>
     <tr>
-      <td>2</td>
-      <td>2</td>
-      <td>Yes</td>
-      <td>User Code and Data</td>
+      <td style="text-align:left">2</td>
+      <td style="text-align:left">2</td>
+      <td style="text-align:left">Yes</td>
+      <td style="text-align:left">User Code and Data</td>
     </tr>
     <tr>
-      <td>3</td>
-      <td>31</td>
-      <td>Yes</td>
-      <td>KERNEL (ROM)</td>
+      <td style="text-align:left">3</td>
+      <td style="text-align:left">31</td>
+      <td style="text-align:left">Yes</td>
+      <td style="text-align:left">KERNEL (ROM)</td>
     </tr>
   </tbody>
 </table>Because `MM` can be modified with the `PUSHMM` instruction, it is posible to map in code and data from any page in memory. This means that it is possible, with some clever programming, to write programs with much more code than 64 kilobytes.

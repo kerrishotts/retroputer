@@ -61,17 +61,17 @@ Imports a file into the current scope.
 
 Defines an identifier with a constant value. Once defined, the constant cannot be redefined.
 
-{% hint style="info" %}
-Constants are inlined into any assembly instructions that use them. As such, they don't consume additional memory space beyond that which the instruction itself uses.
-{% endhint %}
+> #### NOTE
+>
+> Constants are inlined into any assembly instructions that use them. As such, they don't consume additional memory space beyond that which the instruction itself uses.
 
 ```text
 .const MAX_PLAYERS 2
 ```
 
-{% hint style="danger" %}
-A constant must be defined within a `namespace` or `segment`.
-{% endhint %}
+> #### IMPORTANT
+>
+> A constant must be defined within a `namespace` or `segment`.
 
 #### Grammar
 
