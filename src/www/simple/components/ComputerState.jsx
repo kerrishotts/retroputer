@@ -1,4 +1,5 @@
 import React from 'react';
+import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
 import { Icon } from 'react-icons-kit';
 import { play2 } from 'react-icons-kit/icomoon/play2';
 import { stop } from 'react-icons-kit/icomoon/stop';
@@ -6,45 +7,13 @@ import { info } from 'react-icons-kit/icomoon/info';
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics, numToString, round } from "../../../core/Diagnostics.js";
 
-export class ComputerState extends React.Component {
+export class ComputerState extends AutoUpdateComponent {
     constructor(props) {
         super(props);
-        this.state = {
-            updateFrequency: 100,
-            updating: false
-        };
 
-        this._cancelUpdate = null;
-
-        this.updateFrequencyChanged = this.updateFrequencyChanged.bind(this);
-        this.refreshControlClicked = this.refreshControlClicked.bind(this);
         this.singleRefreshClicked = this.singleRefreshClicked.bind(this);
     }
-    compontWillUnmount() {
-        if (this.state.updating) {
-            clearInterval(this._cancelUpdate);
-        }
-    }
-    updateFrequencyChanged(e) {
-        let { updating, updateFrequency } = this.state;
-        updateFrequency = e.target.value;
-        if (updating) {
-            clearInterval(this._cancelUpdate);
-            this._cancelUpdate = setInterval(() => this.setState({}), Number(updateFrequency) || 1000);
-        }
-        this.setState({updateFrequency})
-    }
-    refreshControlClicked() {
-        let { updating, updateFrequency } = this.state;
-        if (updating) {
-            clearInterval(this._cancelUpdate);
-            updating = false;
-        } else {
-            this._cancelUpdate = setInterval(() => this.setState({}), Number(updateFrequency) || 1000);
-            updating = true;
-        }
-        this.setState({updating});
-    }
+
     singleRefreshClicked() {
         this.setState({});
     }
@@ -64,11 +33,6 @@ export class ComputerState extends React.Component {
         return (
             <div className="panel">
                 <div>
-                    <label>Update Freq: <input type="text" 
-                                               value={updateFrequency} 
-                                               onChange={this.updateFrequencyChanged}/></label>
-                    <span className="divider"/>
-                    <button onClick={this.refreshControlClicked} title="Start/Stop Automatic Update"><Icon icon={updating ? stop : play2} /></button>
                     <button onClick={this.singleRefreshClicked} title="Update"><Icon icon={info} /></button>
                 </div>
                 <table><tbody>

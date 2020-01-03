@@ -1,29 +1,19 @@
 import React from 'react';
+import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
+
 import { VariableSizeGrid as Grid } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics, numToString, round } from "../../../core/Diagnostics.js";
 
 const columnWidths = [ 48, ...Array.from({length: 8}, () => 24), 16, ...Array.from({length: 8}, () => 12)];
 
-export class ComputerIO extends React.Component {
+export class ComputerIO extends AutoUpdateComponent {
     constructor(props) {
         super(props);
-        this.state = {
-            updating: false
-        };
-
-        this._cancelUpdate = null;
 
         this.cell = this.cell.bind(this);
     }
-    componentDidMount() {
-        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 250);
-    }
-    componentWillUnmount() {
-        if (this.state.updating) {
-            clearInterval(this._cancelUpdate);
-        }
-    }
+
     cell({ columnIndex, rowIndex, style}) {
         const { store } = this.props;
         const { screen, console, dma, keyboard, timers } = store.devices;

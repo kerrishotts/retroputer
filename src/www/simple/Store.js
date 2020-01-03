@@ -104,6 +104,24 @@ export class Store {
         this.save();
     }
 
+    get updateInterval() {
+        return this.config.panels.updateInterval || 250;
+    }
+    
+    set updateInterval(ms) {
+        this.config.panels.updateInterval = ms;
+        this.save();
+    }
+
+    get autoUpdate() {
+        return this.config.panels.autoUpdate;
+    }
+
+    set autoUpdate(v) {
+        this.config.panels.autoUpdate = v;
+        this.save();
+    }
+
     addListener(cb) {
         if (this.listeners.indexOf(cb) < 0) {
             this.listeners.push(cb);
@@ -136,7 +154,9 @@ export class Store {
                 state: true,
                 code: true,
                 console: false,
-                control: true
+                control: true,
+                updateInterval: 250,
+                autoUpdate: true
             },
             code: (`
             .segment code 0x02000 {

@@ -1,29 +1,19 @@
 import React from 'react';
+import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
+
 import { VariableSizeGrid as Grid } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics, numToString, round } from "../../../core/Diagnostics.js";
 
 const columnWidths = [ 48, ...Array.from({length: 8}, () => 24), 16, ...Array.from({length: 8}, () => 12)];
 
-export class ComputerMemory extends React.Component {
+export class ComputerMemory extends AutoUpdateComponent {
     constructor(props) {
         super(props);
-        this.state = {
-            updating: false
-        };
-
-        this._cancelUpdate = null;
 
         this.cell = this.cell.bind(this);
     }
-    componentDidMount() {
-        this._cancelUpdate = setInterval(() => this.setState({updating: true}), 250);
-    }
-    compontWillUnmount() {
-        if (this.state.updating) {
-            clearInterval(this._cancelUpdate);
-        }
-    }
+
     cell({ columnIndex, rowIndex, style}) {
         const rowAddr = rowIndex * 8;
         const whichByte = (columnIndex % 9) - 1;
