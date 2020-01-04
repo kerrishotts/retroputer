@@ -407,6 +407,7 @@
                 push a
             _main:
                 call get-cursor-addr
+                dec x
                 do {
                     ld al, [d, x]
                     cmp al, 0x00
@@ -835,5 +836,102 @@
                 ret
         }
 
+        ##
+        ## Vector: PRINT
+        ## Parameters: D, X - NUL-terminated string to print on screen
+        ## Returns: none
+        ##
+        #######################################################################
+        print: {
+                pushf
+                push x
+                push a
+            _main:
+                al := [d, x]
+                cmp al, 0x00
+                while !z do {
+                    swap a, d
+                    call put-char
+                    swap a, d
+                    inc x
+                    al := [d, x]
+                    cmp al, 0x00
+                }
+            _out:
+                pop a
+                pop x
+                popf
+                ret
+        }
+
+        ##
+        ## Vector: INPUT
+        ## Parameters: D, X - Buffer for resulting user input
+        ##             C - maximum size of buffer
+        ## Returns: C - length of input
+        ##
+        #######################################################################
+        input: {
+                pushf
+                push a
+                push b
+                push y
+            _main:
+                a := d                               # need to save the buffer
+                y := x                               #  "
+                push y                               # save off the ptr to the buffer
+            _loop:
+                call get-char
+                cmp dl, 13    # ENTER
+                br z _done
+                call put-char
+                br _loop
+            _done:
+                call get-logical-line-end-addr       # d,x = end of line
+                y := x
+                b := y
+                call get-logical-line-start-addr     # d,x = start of line
+                sub b, x                             # b = # of chars in line
+                inc b                                # account for NUL
+                pop y                                # y needs to be the buffer again
+                cmp b, 0x0000
+                if z {
+                    c := 0                           # ENTER with no input.
+                    swap a, d
+                    swap x, y
+                    [d, x] := cl                     # write the NUL terminator
+                    br _out
+                }
+                cmp c, b                             # check if we have space
+                if n {
+                    c := 0                           # no? fail
+                    br _out
+                }
+                c := b                               # return the # of chars in the line
+                push c
+                do {
+                    cl := [d, x]                     # get char from screen
+                    swap a, d
+                    swap x, y
+                    [d, x] := cl                     # store to buffer
+                    swap a, d
+                    swap x, y
+                    inc x                            # move to next character
+                    inc y
+                    dec b                            # count down chars to copy
+                    cmp b, 0x00
+                } while !z
+                swap a, d
+                swap x, y
+                cl := 0
+                [d, x] := cl                         # write the NUL terminator
+                pop c
+            _out:
+                pop y
+                pop b
+                pop a
+                popf
+                ret
+        }
     }
 }
