@@ -1,3 +1,9 @@
+########################################
+#
+# Retroputer Kernel  : IO Map
+#
+########################################
+
 .namespace kiomap {
     .namespace rtc {
         # real time clock

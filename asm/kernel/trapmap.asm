@@ -1,3 +1,8 @@
+########################################
+#
+# Retroputer Kernel : Trap Mapping
+#
+########################################
 .namespace ktrapmap {
     .namespace rtc {
         .const root               0x80

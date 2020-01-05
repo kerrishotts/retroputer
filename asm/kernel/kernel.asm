@@ -1,3 +1,9 @@
+########################################
+#
+# Retroputer Kernel 
+#
+########################################
+
 .namespace kernel {
     .import "./trapmap.asm"
     .import "./iomap.asm"
@@ -6,6 +12,7 @@
     .import "./palette.asm"
 
     .import "./core/core.asm"
+
 
     .segment k-no-impl-trap kmemmap.traps.start {
         ret   # by storing RET in trap 0, any traps that point to 0
@@ -33,6 +40,8 @@
         INPUT:                       .word core.screen.kcode.input
     }
 
+    .import "./basic/basic.asm"
+    
 #  .segment kcode kmemmap.kernel.code-start .append{
 #      # init:
 #          ld bp, kmemmap.stack.top
