@@ -4,6 +4,7 @@ import { play2 } from 'react-icons-kit/icomoon/play2';
 import { forward2 } from 'react-icons-kit/icomoon/forward2';
 import { stop } from 'react-icons-kit/icomoon/stop';
 import { next } from 'react-icons-kit/icomoon/next';
+import { previous } from 'react-icons-kit/icomoon/previous';
 import { info } from 'react-icons-kit/icomoon/info';
 import { location2 } from 'react-icons-kit/icomoon/location2';
 import { shuffle } from 'react-icons-kit/icomoon/shuffle';
@@ -33,6 +34,7 @@ export class ComputerControl extends React.Component {
         this.timingMethodChanged = this.timingMethodChanged.bind(this);
         this.ticksChanged = this.ticksChanged.bind(this);
         this.randomizeClicked = this.randomizeClicked.bind(this);
+        this.resetClicked = this.resetClicked.bind(this);
         this.startClicked = this.startClicked.bind(this);
         this.stopClicked = this.stopClicked.bind(this);
         this.continueClicked = this.continueClicked.bind(this);
@@ -75,6 +77,14 @@ export class ComputerControl extends React.Component {
             screen.ticksBetweenRasterLines = 8;
         }
         store.save();
+    }
+    resetClicked() {
+        const { store } = this.props;
+        const { computer, diagnostics } = store;
+
+        computer.reset();
+        if (diagnostics.state == "running") return;
+        computer.run();
     }
     startClicked() {
         const { store } = this.props;
@@ -125,7 +135,7 @@ export class ComputerControl extends React.Component {
         const { store } = this.props;
         const { computer } = store;
         let byte = 0;
-        for (let addr = 512; addr < (computer.memory.size - 65536); addr++) {
+        for (let addr = 0; addr < (computer.memory.size - 65536); addr++) {
             do {
                 byte = Math.floor(Math.random() * 255);
             } while (byte === 0x3F)
@@ -154,6 +164,7 @@ export class ComputerControl extends React.Component {
             <div className="panel">
                 <label>Start Address: <input size={10} type="text" value={startAddress} onChange={this.startAddressChanged} /></label>
                 <span className="divider"/>
+                <button onClick={this.resetClicked} title="Reset"><Icon icon={previous} /></button>
                 <button onClick={this.startClicked} title="Start"><Icon icon={play2} /></button>
                 <button onClick={this.continueClicked} title="Continue"><Icon icon={forward2} /></button>
                 <button onClick={this.stopClicked} title="Stop"><Icon icon={stop} /></button>

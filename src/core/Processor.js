@@ -40,9 +40,6 @@ export class Processor {
     constructor({memory, systemBus, ioBus, clock, debug = null} = {}) {
         this[_alu] = new ALU();
         this[_registerFile] = new RegisterFile();
-        this[_registerFile].BP = 0x02000;
-        this[_registerFile].SP = 0x02000;
-        this[_registerFile].MM = 0b0111110001000001; // page 3 = page 31, page 2 = page 2, page 1 = page 1
 
         this[_memory] = memory;
         this[_systemBus] = systemBus;
@@ -81,6 +78,21 @@ export class Processor {
             ioBus: this[_ioBus]
         };
 
+        this.reset();
+    }
+
+    reset() {
+        this[_stack] = []; //new Stack(8, 4);
+        this[_taskQueue] = [];
+        this[_cache] = [];
+        this[_pendingServiceRequest] = -1;
+        this[_registerFile].PC = 0x0FF00;
+        this[_registerFile].MP = 0x0FF00;
+        this[_registerFile].BP = 0x02000;
+        this[_registerFile].SP = 0x02000;
+        this[_registerFile].MM = 0b0111110001000001; // page 3 = page 31, page 2 = page 2, page 1 = page 1
+        this.registers.SINGLE_STEP = 0;
+        this.registers.INTERRUPT_DISABLE = 1;
     }
 
     resetStats() {

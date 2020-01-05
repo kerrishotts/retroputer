@@ -93,6 +93,8 @@ export class Store {
             timers
         };
 
+        computer.reset();
+
     }
 
     get code() {

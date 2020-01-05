@@ -166,6 +166,11 @@ export class Computer {
         return this[_processor];
     }
 
+    reset() {
+        this.memory.reset(true);
+        this.processor.reset();
+    }
+
     /**
      * Step the computer by sending a tick.
      *

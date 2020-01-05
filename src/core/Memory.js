@@ -214,6 +214,11 @@ export class Memory {
     page.write(address, value, override);
   }
 
+  writeUnmappedByte(address, value) {
+    const page = this[_pages][(address & 0b1111100000000000000) >> 14];
+    return page.write(address, value);
+  }
+
   /**
    * @param {number} address
    * @param {number} value
@@ -273,5 +278,11 @@ export class Memory {
 
     this.setWithin(source, targetAddress);
     this.setWithin(target, sourceAddress);
+  }
+
+  reset(withPattern = false) {
+    for (let i = 0; i < this.size; i++) {
+      this.writeUnmappedByte(i, withPattern ? (i & 3) * 0x1F : 0x00);
+    }
   }
 }
