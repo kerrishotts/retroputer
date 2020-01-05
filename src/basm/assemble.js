@@ -73,6 +73,7 @@ export function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, appen
                     parent[name][SCOPE.ADDR] = addr;
                 }
             }
+            return parent[name];
         }
     }
     return scope;
