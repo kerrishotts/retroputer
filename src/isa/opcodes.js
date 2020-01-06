@@ -70,6 +70,7 @@ OPCODES["brk"] = {
     pattern: "0011_1111",
     operands: {},
     decode: () => [
+        TASKS.SET_FLAG_IMM | FLAGS_INDEX.INTERRUPT_DISABLE,
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
     ]
 };

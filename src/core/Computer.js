@@ -189,6 +189,8 @@ export class Computer {
      */
     step() {
         if (this.debug) {
+            if (this.running) this.stop();
+            this.processor.registers.INTERRUPT_DISABLE = 1;
             this.processor.registers.SINGLE_STEP = 1;
             this.runSlice();
             this._stopSignal = false;

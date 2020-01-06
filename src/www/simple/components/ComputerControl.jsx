@@ -108,6 +108,7 @@ export class ComputerControl extends React.Component {
 
         if (diagnostics.state == "running") return;
         computer.processor.registers.SINGLE_STEP = 0;
+        computer.processor.registers.INTERRUPT_DISABLE = 0;
         computer.run();
     }
     stepClicked() {
@@ -115,14 +116,14 @@ export class ComputerControl extends React.Component {
         const { diagnostics, computer } = store;
 
         if (diagnostics.state == "running") {
+            computer.processor.registers.INTERRUPT_DISABLE = 1;
             computer.processor.registers.SINGLE_STEP = 1;
-            return;
         };
-        const prevInterruptsDisabled = computer.processor.registers.INTERRUPT_DISABLE;
-        computer.processor.registers.INTERRUPT_DISABLE = 1;
-        computer.processor.registers.SINGLE_STEP = 0;
+        //const prevInterruptsDisabled = computer.processor.registers.INTERRUPT_DISABLE;
+        //computer.processor.registers.INTERRUPT_DISABLE = 1;
+        //computer.processor.registers.SINGLE_STEP = 0;
         computer.step();
-        computer.processor.registers.INTERRUPT_DISABLE = prevInterruptsDisabled;
+        //computer.processor.registers.INTERRUPT_DISABLE = prevInterruptsDisabled;
     }
     jumpClicked() {
         const { store } = this.props;

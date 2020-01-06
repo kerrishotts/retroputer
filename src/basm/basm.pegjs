@@ -554,7 +554,7 @@ Instruction "Instruction"
 / iCALL / iPUSHALL / iPOPALL / iPUSHF / iPOPMM / iPUSHMM
 / iPOPF / iPUSH / iPOP / iRET / iMUL
 / iMOD / iDIV / iSMUL / iSMOD / iSDIV
-/ iSET / iCLR / iDEC) _ bytes:ExpectedAssembly? {
+/ iSET / iCLR / iDEC / iHALT / iWAIT) _ bytes:ExpectedAssembly? {
     if (bytes) {
         ins.bytes = bytes;
     }

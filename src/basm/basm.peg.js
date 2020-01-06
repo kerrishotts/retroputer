@@ -1794,6 +1794,12 @@ function peg$parse(input, options) {
                                                                                           s1 = peg$parseiCLR();
                                                                                           if (s1 === peg$FAILED) {
                                                                                             s1 = peg$parseiDEC();
+                                                                                            if (s1 === peg$FAILED) {
+                                                                                              s1 = peg$parseiHALT();
+                                                                                              if (s1 === peg$FAILED) {
+                                                                                                s1 = peg$parseiWAIT();
+                                                                                              }
+                                                                                            }
                                                                                           }
                                                                                         }
                                                                                       }
