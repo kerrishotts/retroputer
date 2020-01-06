@@ -834,6 +834,7 @@
                 pushf
             _main:
                 do {
+                    halt
                     in dl, 0x30
                     cmp dl, 0
                 } while z
@@ -910,7 +911,7 @@
                 }
                 cmp c, b                             # check if we have space
                 if n {
-                    c := 0                           # no? fail
+                    c := -1                          # no? fail
                     br _out
                 }
                 c := b                               # return the # of chars in the line
