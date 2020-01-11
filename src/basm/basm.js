@@ -51,9 +51,24 @@ global.log = cli.debug;
 process.chdir(options.basepath);
 cli.debug("Using options: \n" + JSON.stringify(options, null, 2 ));
 cli.withStdinLines(function(lines, newline) {
-    const ast = parser.parse(lines.join(newline));
-    cli.debug("Results of parsing:\n" + util.inspect(ast, false, 10, true));
-    const segments = assemble(ast);
-    cli.debug("Assembled Segments:\n" + util.inspect(segments, false, 10, true));
-    cli.output(write(segments, {format: cli.options.format, newline, exports: cli.options.exports}));
+    try {
+        const ast = parser.parse(lines.join(newline));
+        cli.debug("Results of parsing:\n" + util.inspect(ast, false, 10, true));
+        const segments = assemble(ast);
+        cli.debug("Assembled Segments:\n" + util.inspect(segments, false, 10, true));
+        cli.output(write(segments, {format: cli.options.format, newline, exports: cli.options.exports}));
+    } catch (err) {
+        if (err.location) {
+            // a PEG error
+            const found = (err.found || "").split("\n").slice(0, 5).join("\n");
+            const location = `${err.location.start.line}:${err.location.start.column}`;
+            if (err.expected) {
+                cli.error(`Expected ${err.expected[0].description} at ${location}, but saw ${found}`);
+            } else {
+                cli.error(err.message);
+            }
+        } else {
+            cli.error(err.message);
+        }
+    }
 });
