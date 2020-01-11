@@ -6,6 +6,7 @@
     const expectedIdentifier = () => expected("IDENTIFIER");
     const expectedFlag = () => expected("FLAG");
     const expectedQuote = () => expected("QUOTE");
+    const expectedStringLiteral = () => expected("STRING");
 
     const REGISTERS = {
         A: 0,
@@ -137,7 +138,8 @@
         STRING_DIRECTIVE: "directive.string",
         LABEL: "label",
         MEMORY: "memory",
-        BLOCK: "block"
+        BLOCK: "block",
+        FUNCTION: "function"
     };
 
     function tBlock(block) {
@@ -190,6 +192,15 @@
             type: TOKENS.UNARY_EXPRESSION,
             op,
             r: v,
+            pos: location().start
+        };
+    }
+    
+    function tFunction(fn, param) {
+        return {
+            type: TOKENS.FUNCTION,
+            fn,
+            param,
             pos: location().start
         };
     }
@@ -783,7 +794,20 @@ ELSE  "ELSE"          = "ELSE"i !IdentifierPart { return "ELSE"; }
 DO    "DO"            = "DO"i !IdentifierPart { return "DO"; }
 WHILE "WHILE"         = "WHILE"i !IdentifierPart { return "WHILE"; }
 BREAK "BREAK"         = "BREAK"i !IdentifierPart { return "BREAK"; }
-CONTINUE "CONTINUE"         = "CONTINUE"i !IdentifierPart { return "CONTINUE"; }
+CONTINUE "CONTINUE"   = "CONTINUE"i !IdentifierPart { return "CONTINUE"; }
+ADDRBANK "ADDRBANK"   = "ADDRBANK"i !IdentifierPart { return "ADDRBANK"; }
+                      / "ADDRBH"i !IdentifierPart { return "ADDRBANK"; }
+ADDRBOFS "ADDRBOFS"   = "ADDRBOFS"i !IdentifierPart { return "ADDRBOFS"; }
+                      / "ADDRBL"i !IdentifierPart { return "ADDRBOFS"; }
+ADDRPAGE "ADDRPAGE"   = "ADDRPAGE"i !IdentifierPart { return "ADDRPAGE"; }
+                      / "ADDRPH"i !IdentifierPart { return "ADDRPAGE"; }
+ADDRPOFS "ADDRPOFS"   = "ADDRPOFS"i !IdentifierPart { return "ADDRPOFS"; }
+                      / "ADDRPL"i !IdentifierPart { return "ADDRPOFS"; }
+
+ASC "ASC"             = "ASC"i !IdentifierPart { return "ASC"; }
+NEXT "NEXT"           = "NEXT"i !IdentifierPart { return "NEXT"; }
+
+
 
 Keyword "Keyword"
 = ADD / AND / BRK / BRS / BR / CALLS / CALL
@@ -796,6 +820,12 @@ Keyword "Keyword"
 / SHL / SHR / ST / SUB / SWAP / TEST
 / TRAP / XOR
 / IF / ELSE / DO / WHILE / BREAK / CONTINUE
+/ WAIT / HALT
+/ Function
+
+Function "Function"
+= ADDRBANK / ADDRBOFS / ADDRPAGE / ADDRPOFS
+/ ASC / NEXT
 
 
 //
@@ -1033,10 +1063,20 @@ CommaSepStringOrConstantExpressions
 Expression
 = OrExpression
 
+ConstantFunction
+= fn:ADDRBANK _ LPAREN _ expr:Expression _ RPAREN { return tFunction(fn, expr); }
+/ fn:ADDRBOFS _ LPAREN _ expr:Expression _ RPAREN { return tFunction(fn, expr); }
+/ fn:ADDRPAGE _ LPAREN _ expr:Expression _ RPAREN { return tFunction(fn, expr); }
+/ fn:ADDRPOFS _ LPAREN _ expr:Expression _ RPAREN { return tFunction(fn, expr); }
+/ fn:NEXT _ LPAREN _ expr:Expression _ RPAREN { return tFunction(fn, expr); }
+/ fn:ASC _ LPAREN _ expr:StringLiteral _ RPAREN { return tFunction(fn, expr); }
+/ fn:ASC _ LPAREN _ expr:(Expression / Register / Flags) _ RPAREN { return expectedStringLiteral() }
+
 Literal
 = LPAREN _ expr:Expression _ RPAREN { return expr; }
 / NotExpression
 / NegativeExpression
+/ ConstantFunction
 / Integer
 / Identifier
 

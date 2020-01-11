@@ -133,6 +133,25 @@ function evaluate(node, context) {
     }
     lastPos = node.pos;
     switch (node.type) {
+        case TOKENS.FUNCTION: 
+            {
+                switch (node.fn) {
+                    case "ADDRBANK":
+                        return (evaluate(node.param, context) & 0x70000) >> 3;
+                    case "ADDRBOFS":
+                        return (evaluate(node.param, context) & 0x0FFFF);
+                    case "ADDRPAGE":
+                        return (evaluate(node.param, context) & 0x7C000) >> 3;
+                    case "ADDRPOFS":
+                        return (evaluate(node.param, context) & 0x03FFF);
+                    case "ASC":
+                        return (evaluate(node.param, context).charCodeAt(0));
+                    case "NEXT":
+                        
+                    default:
+                        err(`Unimplemented function: ${node.fn}`);
+                }
+            }
         case TOKENS.UNARY_EXPRESSION:
             {
                 switch (node.op) {

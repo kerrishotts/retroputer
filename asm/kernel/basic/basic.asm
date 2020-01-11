@@ -146,10 +146,10 @@
                 dec y                            # errors start at 0
                 shl y, 1                         # y *= 2
                 x := [d, x, y]                   # indirect
-                d := (brodata.error & 0x7_0000) >> 3       # PTR to error messages
+                d := addrbank(brodata.error)     # PTR to error messages
                 call [vectors.PRINT]             # print the error
-                d := brodata.error >> 3
-                x := brodata.error & 7
+                d := addrpage(brodata.error)     # >> 3
+                x := addrpofs(brodata.error)     # & 7
                 call [vectors.PRINT]             # " ERROR" + NEWLINE
                 cmp c, 0
                 if !z {

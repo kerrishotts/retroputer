@@ -109,7 +109,8 @@ export const TOKENS = {
     STRING_DIRECTIVE: "directive.string",
     LABEL: "label",
     MEMORY: "memory",
-    BLOCK: "block"
+    BLOCK: "block",
+    FUNCTION: "function"
 };
 
 export const MODES = {
