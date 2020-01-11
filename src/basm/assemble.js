@@ -554,7 +554,16 @@ export function assemble(ast, global, context) {
                     if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT && context[SCOPE.TYPE] !== SCOPE.TYPES.BLOCK) {
                         err(`Unexpected string directive in ${context[SCOPE.NAME]} scope`);
                     }
-                    const data = evaluate(node.data, context).split("").map(ch => ch.charCodeAt(0));
+                    const data = (node.data || []).map(el => evaluate(el, context))
+                        .reduce((bytes, data) => {
+                            if (typeof data === "string") {
+                                bytes.push(...data.split("").map(ch => ch.charCodeAt(0)));
+                            } else {
+                                bytes.push(data)
+                            }
+                            return bytes;
+                        }, []);
+                    //const data = evaluate(node.data, context).split("").map(ch => ch.charCodeAt(0));
                     context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                         asm: node,
                         bytes: data,

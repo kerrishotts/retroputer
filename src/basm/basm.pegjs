@@ -525,7 +525,7 @@ dWord "Word Directive"
 / WORD _ data:CommaSepExpressions       { return tDataDirective(TOKENS.WORD_DIRECTIVE, data); }
 
 dString "String Directive"
-= STRING _ data:StringLiteral {
+= STRING _ data:CommaSepStringOrConstantExpressions {
     return tDataDirective(TOKENS.STRING_DIRECTIVE, data);
 }
 
@@ -1018,6 +1018,15 @@ NegativeExpression "Negative Expression"
 
 CommaSepExpressions
 = head:Expression tail:(_ COMMA _ Expression)* {
+    return [ head, ...tail.map(([,,,expr]) => expr)];
+}
+
+StringOrConstantExpression
+= Expression
+/ StringLiteral
+
+CommaSepStringOrConstantExpressions
+= head:StringOrConstantExpression tail:(_ COMMA _ StringOrConstantExpression)* {
     return [ head, ...tail.map(([,,,expr]) => expr)];
 }
 
