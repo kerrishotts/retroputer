@@ -786,6 +786,7 @@
             push a
             push x
             push d
+            push y
             pushf
         _main:
             mov a, d
@@ -817,6 +818,7 @@
             call cursor-right
         _out:
             popf
+            pop y
             pop d
             pop x
             pop a
