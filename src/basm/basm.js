@@ -55,6 +55,7 @@ cli.withStdinLines(function(lines, newline) {
         const ast = parser.parse(lines.join(newline));
         cli.debug("Results of parsing:\n" + util.inspect(ast, false, 10, true));
         const segments = assemble(ast);
+        cli.info("Segment information:\n" + segments.map(seg => `${seg.adj ? "*" : " "}${seg.name.padEnd(32)} ${seg.addr.toString(16).padStart(5)} ${seg.length.toString(16).padStart(5)} ${seg.chain}`).join("\n"));
         cli.debug("Assembled Segments:\n" + util.inspect(segments, false, 10, true));
         cli.output(write(segments, {format: cli.options.format, newline, exports: cli.options.exports}));
     } catch (err) {

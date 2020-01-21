@@ -22,6 +22,7 @@ export const SCOPE = {
     ADDR: Symbol("SCOPE.ADDR"),
     DATA: Symbol("SCOPE.DATA"),
     PARENT: Symbol("SCOPE.PARENT"),
+    ADJUSTED: Symbol("SCOPE.ADJUSTED"),
     SEGMENTS: Symbol("SCOPE.SEGMENTS")
 };
 
@@ -32,6 +33,15 @@ let lastPos = {
 
 function err(msg) {
     throw new Error(`${msg} at ${lastPos.line}:${lastPos.column}`);
+}
+
+function getScopeChain(context, global) {
+    let str = ""
+    while (context && context !== global) {
+        str = str + "." + context[SCOPE.NAME];
+        context = context[SCOPE.PARENT];
+    }
+    return str.substr(1);
 }
 
 /**
@@ -55,6 +65,7 @@ export function createScope(type = SCOPE.TYPES.GLOBAL, parent, name, addr, appen
         [SCOPE.DATA]: [],
         [SCOPE.PARENT]: parent,
         [SCOPE.NAME]: name,
+        [SCOPE.ADJUSTED]: undefined,
         [SCOPE.SEGMENTS]: []
     };
     if (parent && type !== SCOPE.TYPES.BLOCK) {
@@ -484,7 +495,19 @@ export function assemble(ast, global, context) {
                 break;
             case TOKENS.SEGMENT_DIRECTIVE:
                 {
-                    const newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, evaluate(node.addr, context), node.append);
+                    let baseAddr = evaluate(node.addr, context);
+                    let matchingSegments = global[SCOPE.SEGMENTS]
+                        .filter(seg => (seg[SCOPE.BASE] === baseAddr || seg[SCOPE.ADJUSTED] === baseAddr) && 
+                                       getScopeChain(seg[SCOPE.PARENT], global) !== getScopeChain(context, global));
+                    let newContext;
+                    if (matchingSegments.length > 0) {
+                        matchingSegments= matchingSegments.sort((a, b) => a[SCOPE.ADDR] < b[SCOPE.ADDR] ? -1 : a[SCOPE.ADDR] > b[SCOPE.ADDR] ? 1 : 0);
+                        const nextAddr = matchingSegments[matchingSegments.length - 1][SCOPE.ADDR];
+                        newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, nextAddr, node.append);
+                        newContext[SCOPE.ADJUSTED] = baseAddr;
+                    } else {
+                        newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, baseAddr, node.append);
+                    }
                     if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
                         global[SCOPE.SEGMENTS].push(newContext);
                     }
@@ -651,8 +674,9 @@ export function assemble(ast, global, context) {
             arr.push(...item.bytes);
             return arr;
         }, []);
-        return { name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr, contents };
+        return { name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr, contents, chain: getScopeChain(segment, global), adj: !!segment[SCOPE.ADJUSTED] };
     });
+
 
     // return the segments
     return code.sort((a, b) => a.addr < b.addr ? -1 : a.addr > b.addr ? 1 : 0);
