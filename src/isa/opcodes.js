@@ -406,9 +406,10 @@ const addressingTasks = ({ m = 0, i = 0, x = 0, y = 0, a = 0 } = {}) => [
     ] : []),
     // if indirect, we need memory at location
     ...(i === 1 ? [
-        TASKS.GET_WORD_FROM_MEMORY,
-        TASKS.PUSH_ADDR | (a & 0x70000),
-        TASKS.OR
+        TASKS.GET_ADDR_FROM_MEMORY,
+        TASKS.RECOMPOSE_ADDR
+        //TASKS.PUSH_ADDR | (a & 0x70000),
+        //TASKS.OR
     ] : []),
     // index by y
     ...(y === 1 ? [
