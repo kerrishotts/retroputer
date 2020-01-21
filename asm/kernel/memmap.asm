@@ -23,7 +23,7 @@
 
     .namespace kernel {
         .const data-start       0x01100 # kernel scratch data
-        .const data-size        0x00400 # 
+        .const data-size        0x00700 # 
         .const rodata-start     0x78000 # read-only data
         .const rodata-size      0x02000
         .const sprite-start     0x01000 # kernel sprite data
@@ -34,10 +34,18 @@
     }
 
     .namespace basic {
-        .const data-start       0x01500 # BASIC scratch data
-        .const data-size        0x00300
+        .const data-start       0x0B000 # BASIC scratch data
+        .const data-size        0x00800
         .const code-start       0x7E000 # start of BASIC code
         .const rodata-start     0x7A000 # basic-rodata
+        .const rodata-size      0x02000
+    }
+
+    .namespace monitor {
+        .const data-start       0x0B800 # monitor scratch data
+        .const data-size        0x00800
+        .const code-start       0x7C800 # start of monitor code
+        .const rodata-start     0x76000 # read only data for monitor
         .const rodata-size      0x02000
     }
 

@@ -885,30 +885,30 @@
                 push a
                 push b
                 push y
+                enter 0
+                .const buffer -4
+                .const source -8
             _main:
-                a := d                               # need to save the buffer
-                y := x                               #  "
-                push y                               # save off the ptr to the buffer
+                push x
+                push d                                # put PTR TO BUFFER on stack
             _loop:
-                call get-char
-                cmp dl, 13    # ENTER
+                call get-char                         # get user input
+                cmp dl, 13                            # wait for ENTER 
                 br z _done
-                call put-char
+                call put-char                         # print any output
                 br _loop
             _done:
-                call get-logical-line-end-addr       # d,x = end of line
-                y := x
-                b := y
+                call get-logical-line-end-addr       # d,x = end of logical line
+                b := x
                 call get-logical-line-start-addr     # d,x = start of line
                 sub b, x                             # b = # of chars in line
                 inc b                                # account for NUL
-                pop y                                # y needs to be the buffer again
+                push x
+                push d                               # push PTR to SOURCE on stack
                 cmp b, 0x0000
                 if z {
                     c := 0                           # ENTER with no input.
-                    swap a, d
-                    swap x, y
-                    [d, x] := cl                     # write the NUL terminator
+                    <BP+buffer> := cl
                     br _out
                 }
                 cmp c, b                             # check if we have space
@@ -918,24 +918,19 @@
                 }
                 c := b                               # return the # of chars in the line
                 push c
+                y := 0
                 do {
-                    cl := [d, x]                     # get char from screen
-                    swap a, d
-                    swap x, y
-                    [d, x] := cl                     # store to buffer
-                    swap a, d
-                    swap x, y
-                    inc x                            # move to next character
+                    cl := <bp+source>, y             # get char from screen
+                    <bp+buffer>, y := cl
                     inc y
                     dec b                            # count down chars to copy
                     cmp b, 0x00
                 } while !z
-                swap a, d
-                swap x, y
                 cl := 0
-                [d, x] := cl                         # write the NUL terminator
+                <bp+buffer>, y := cl                 # write the NUL terminator
                 pop c
             _out:
+                exit 8
                 pop y
                 pop b
                 pop a

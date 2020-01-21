@@ -38,8 +38,11 @@
         GET_CHAR:                    .word core.screen.kcode.get-char
         PRINT:                       .word core.screen.kcode.print
         INPUT:                       .word core.screen.kcode.input
+        U16_TO_STR:                  .word core.stdlib.kcode.u16-to-str
+        I16_TO_STR:                  .word core.stdlib.kcode.i16-to-str
     }
 
+    .import "./monitor/monitor.asm"
     .import "./basic/basic.asm"
     
 #  .segment kcode kmemmap.kernel.code-start .append{
