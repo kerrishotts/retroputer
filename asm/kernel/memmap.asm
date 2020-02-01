@@ -44,7 +44,7 @@
     .namespace monitor {
         .const data-start       0x0B800 # monitor scratch data
         .const data-size        0x00800
-        .const code-start       0x7C800 # start of monitor code
+        .const code-start       0x7D800 # start of monitor code
         .const rodata-start     0x76000 # read only data for monitor
         .const rodata-size      0x02000
     }

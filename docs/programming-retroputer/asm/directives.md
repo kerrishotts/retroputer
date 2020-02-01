@@ -18,7 +18,7 @@ Defines a new namespace with the given name. In order to access any identifiers 
 
 Namespaces can be nested, and there is no practical limit on the number of namespaces you create.
 
-#### Grammar
+### Grammar
 
 ```text
 .namespace <name> <block>
@@ -37,7 +37,7 @@ Defines a new code or data segment with the given name, starting at the given ad
 }
 ```
 
-#### Grammar
+### Grammar
 
 ```text
 .segment <name> <address expression> [.append] <block>
@@ -51,7 +51,7 @@ Imports a file into the current scope.
 .import "another-file.asm"
 ```
 
-#### Grammar
+### Grammar
 
 ```text
 .import <path to file>
@@ -61,7 +61,7 @@ Imports a file into the current scope.
 
 Defines an identifier with a constant value. Once defined, the constant cannot be redefined.
 
-> #### NOTE
+> ### NOTE
 >
 > Constants are inlined into any assembly instructions that use them. As such, they don't consume additional memory space beyond that which the instruction itself uses.
 
@@ -69,11 +69,11 @@ Defines an identifier with a constant value. Once defined, the constant cannot b
 .const MAX_PLAYERS 2
 ```
 
-> #### IMPORTANT
+> ### IMPORTANT
 >
 > A constant must be defined within a `namespace` or `segment`.
 
-#### Grammar
+### Grammar
 
 ```text
 .const <identifier> <expression>
@@ -88,6 +88,4 @@ Specifies a word value to be placed at the current location in the segment. Typi
     count: .word 0x0002
 }
 ```
-
-
 

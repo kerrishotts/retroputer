@@ -1,6 +1,6 @@
 # Instructions
 
-> #### Instruction Set Encodings
+> ### Instruction Set Encodings
 >
 > If you want to see the entire instruction set and how it is encoded, [take a look at this reference](https://docs.google.com/spreadsheets/d/e/2PACX-1vSIMH-L17-UxNa2rhyLNF6gWUWPXic_-txike9oHIXu6zykN89dUTzA0-zNfKN-6toSEn6ox084nnId/pubhtml).
 
@@ -46,7 +46,7 @@ $$
 `ADD` always takes the carry flag in to account when performing addition. As such, you should always `CLR C` before any addition when you know that the carry flag should not be considered.
 {% endhint %}
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
@@ -54,26 +54,26 @@ $$
 | Data Register | Immediate 8-bit value |
 | Data Register | Immediate 16-bit value |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 ADD dest, src
 ADD dest, immediate
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
     ld a, 1234
     add a, 2345       # a is 3579
-    
+
     ld a, 0x5000
     ld b, 0x4000
     add a, b          # value in a is incorrect if this is signed
@@ -108,7 +108,7 @@ N_{out} = r_{[\text{msb}]}
 V_{out} = 0
 $$
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
@@ -116,26 +116,26 @@ $$
 | Data Register | Immediate 8-bit value |
 | Data Register | Immediate 16-bit value |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | 0 | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 AND dest, src
 AND dest, immediate
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
     ld al, 0b1111_0000
     and al, 0b0001_1000    # al is 0b0001_0000
-    
+
     ld a, 0x1234
     ld b, 0x00FF
     and a, b               # a is 0x0034
@@ -146,9 +146,9 @@ AND dest, immediate
 
 Sets `PC` to the specified value, causing a jump or branch to that location. Code execution continues from the new address. The width of the value determines if the branch is _short_ \(8 bits\) or _long_ \(16 bits\).
 
-Branches can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\). 
+Branches can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\).
 
-#### Forms
+### Forms
 
 A branch is _long_ unless `s` is added to the alias. That is, `br` is a long branch, whereas `brs` is a short branch.
 
@@ -185,13 +185,13 @@ For reference, the following conditions may prove useful when mapping flags to t
 | Less Than or Equal | Z, N |
 | Greater Than or Equal | Z, C |
 
-#### Grammar
+### Grammar
 
 ```text
-BR[S] [!][flag] 
+BR[S] [!][flag]
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment data 0x03000 {
@@ -212,15 +212,13 @@ game-over:
 
 Transitions the CPU to single-step mode. If a debugger is attached, this will cause the debugger to halt the processor until a single-step or continue signal is received.
 
-
-
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | + | - | - | - | - |
 
-#### Grammar
+### Grammar
 
 ```text
 BRK
@@ -230,9 +228,9 @@ BRK
 
 Pushes `PC` on to the stack, and then sets `PC` to the specified value, causing a jump or branch to that location. Code execution continues from the new address. The width of the value determines if the branch is _short_ \(8 bits\) or _long_ \(16 bits\).
 
-Calls can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\). 
+Calls can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\).
 
-#### Forms
+### Forms
 
 A call is _long_ unless `s` is added to the alias. That is, `call` is a long call, whereas `calls` is a short call.
 
@@ -261,13 +259,13 @@ _lte:
 call lte         # call lte if less than or equal
 ```
 
-#### Grammar
+### Grammar
 
 ```text
-CALL[S] [!][flag] 
+CALL[S] [!][flag]
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment data 0x03000 {
@@ -291,19 +289,19 @@ extra-life:
 
 Clears the specified flag.
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 CLR flag
 ```
 
-#### Example
+### Example
 
 ```text
 clr c        # clear the carry flag before addition
@@ -351,7 +349,7 @@ $$
 Unlike other arithmetic operations, `cmp` does not take the carry flag into consideration when performing a comparison.
 {% endhint %}
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
@@ -359,7 +357,7 @@ Unlike other arithmetic operations, `cmp` does not take the carry flag into cons
 | Data Register | Immediate 8-bit value |
 | Data Register | Immediate 16-bit value |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -376,14 +374,14 @@ Although the full contingent of ALU flags is calculated when `cmp` is executed, 
 | - | Set | - | Destination is less than Source |
 | - | - | Set | Destination is greater than Source |
 
-#### Grammar
+### Grammar
 
 ```text
 CMP dest, src
 CMP dest, immediate
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -409,19 +407,19 @@ Decrements the specified register by one, updating flags as appropriate:
 Unlike other arithmetic operations, `dec` does not take the carry flag into consideration when performing a comparison.
 {% endhint %}
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 DEC dest
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -464,32 +462,32 @@ If the operation would result in a division by zero, the `EX` flag will be set, 
 The `C`, `N`, `Z`, and `V` flags are also set. The return result will be `0`.
 {% endhint %}
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
 | Addressable Register | Addressable Register |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | ✓ | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 DIV dest, src
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
     ld a, 2000
     ld b, 20
     div a, b          # a is 100
-    
+
     ld a, 0x5000
     ld b, 0
     div a, b          # a is zero, and EX is set (divide by zero)
@@ -522,13 +520,13 @@ ld a, [BP+0]        # Previous BP
 ld a, [BP+-2]       # Reserved word on stack
 ```
 
-#### Grammar
+### Grammar
 
 ```text
 ENTER immediate
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -544,19 +542,19 @@ main:
 
 Exchanges the components of the register. Used to access the high portions of a 16-bit register, but also works to swap nybbles in an 8-bit register. Flags are updated as a result, although only `N` and `Z` have any real meaning.
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 EXC register
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -586,13 +584,13 @@ Specifically, the order of operations is as follows:
 Be sure there is a stack frame on the stack before using `EXIT`, otherwise a stack underflow could occur and memory outside of the stack could be overwritten.
 {% endhint %}
 
-#### Grammar
+### Grammar
 
 ```text
 EXIT immediate
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -608,13 +606,13 @@ main:
 
 Inputs a byte from a given port into the specified register. The size of the register doesn't matter—the low eight bits of the register will contain the value from the port.
 
-#### Grammar
+### Grammar
 
 ```text
 IN dest, port#
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -638,19 +636,19 @@ Increment the specified register by one, updating flags as appropriate:
 Unlike other arithmetic operations, `inc` does not take the carry flag into consideration when performing a comparison.
 {% endhint %}
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 INC dest
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -695,7 +693,7 @@ _loop:
 ```
 {% endhint %}
 
-#### Forms
+### Forms
 
 A loop is _long_ unless `s` is added to the alias. That is, `loop` is a long loop, whereas `loops` is a short loop.
 
@@ -704,13 +702,13 @@ loops c next-frame        # short loop to next-frame
 loop c next-game          # long loop to next-frame
 ```
 
-#### Grammar
+### Grammar
 
 ```text
 LOOP[S] target-address, loop-register
 ```
 
-#### Examples
+### Examples
 
 ```text
 todo
@@ -750,32 +748,32 @@ If the operation would result in a division by zero, the `EX` flag will be set, 
 The `C`, `N`, `Z`, and `V` flags are also set. The return result will be `0`.
 {% endhint %}
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
 | Addressable Register | Addressable Register |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | ✓ | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 MOD dest, src
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
     ld a, 2000
     ld b, 20
     mod a, b          # a is 0
-    
+
     ld a, 0x5000
     ld b, 0
     mod a, b          # a is zero, and EX is set (divide by zero)
@@ -786,13 +784,13 @@ MOD dest, src
 
 Transfers the value of one register into another register. Flags are not affected.
 
-#### Grammar
+### Grammar
 
 ```text
 MOV dest, srce
 ```
 
-#### Examples
+### Examples
 
 ```text
 ld a, 10
@@ -827,32 +825,32 @@ $$
 If the operation would result in a value too large for the destination register, the `C` flag is set.
 {% endhint %}
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
 | Addressable Register | Addressable Register |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | ✓ | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 MUL dest, src
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
     ld a, 2000
     ld b, 2
     mul a, b          # a is 4000
-    
+
     ld a, 0x5000
     ld b, 0
     mul a, b          # a is zero
@@ -863,19 +861,19 @@ MUL dest, src
 
 Negates \(two's complement\) the signed value in the register. If the register was originally `42`, it will now be `-42`.
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 NEG dest
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -914,19 +912,19 @@ N_{out} = r_{[\text{msb}]}
 V_{out} = 0
 $$
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 NOT dest
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -961,7 +959,7 @@ N_{out} = r_{[\text{msb}]}
 V_{out} = 0
 $$
 
-#### Forms
+### Forms
 
 | Destination | Source |
 | :--- | :--- |
@@ -969,26 +967,26 @@ $$
 | Data Register | Immediate 8-bit value |
 | Data Register | Immediate 16-bit value |
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | 0 | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 OR dest, src
 OR dest, immediate
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
     ld al, 0b1111_0000
     or al, 0b0001_1000    # al is 0b1111_1000
-    
+
     ld a, 0x1234
     ld b, 0x00FF
     or a, b               # a is 0x12FF
@@ -999,13 +997,13 @@ OR dest, immediate
 
 Outputs a byte to a given port from the specified register. The size of the register doesn't matter—the low eight bits of the register will be sent to the port.
 
-#### Grammar
+### Grammar
 
 ```text
 OUT port#, srce
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -1020,13 +1018,13 @@ Pops the top value from the stack and stores it in the specified register. The w
 
 `SP` is increased by the size of the data popped from the stack.
 
-#### Grammar
+### Grammar
 
 ```text
 POP dest
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -1050,13 +1048,13 @@ Pops the state of the addressable registers from the stack, in reverse order as 
 
 Unless you need to store all the above registers on the stack, it's better to push and pop only those registers that you need, as the `POPALL` command is very slow.
 
-#### Grammar
+### Grammar
 
 ```text
 POPALL
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -1072,19 +1070,19 @@ main:
 
 Pops the top byte off the stack and sets the processor status flags to the value popped.
 
-#### Flags
+### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-#### Grammar
+### Grammar
 
 ```text
 POPF
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {
@@ -1099,13 +1097,13 @@ main:
 
 Pops the top value on the stack and sets the memory map register to that value. Used to finish a page map operation.
 
-#### Grammar
+### Grammar
 
 ```text
 POPMM
 ```
 
-#### Examples
+### Examples
 
 ```text
 .segment code 0x02000 {

@@ -4,7 +4,7 @@ Retroputer has access to 512 kilobytes of memory, split up into eight banks of 6
 
 Each bank is then split up into four pages of 16 kilobytes. The initial memory map at boot-up looks like the following:
 
-![Memory Layout at boot-up](../../.gitbook/assets/image%20%289%29.png)
+![Memory Layout at boot-up](../../.gitbook/assets/image%20%2810%29.png)
 
 <table>
   <thead>
