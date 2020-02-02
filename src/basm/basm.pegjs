@@ -139,7 +139,9 @@
         LABEL: "label",
         MEMORY: "memory",
         BLOCK: "block",
-        FUNCTION: "function"
+        FUNCTION: "function",
+        MACRO_DIRECTIVE: "directive.macro",
+        MACRO_EXPANSION: "expand.macro",
     };
 
     function tBlock(block) {
@@ -313,6 +315,23 @@
             pos: location().start
         });
     }
+    
+    function tMacroDirective(name, params, ast) {
+    	return {
+        	type: TOKENS.MACRO_DIRECTIVE,
+            name,
+            params,
+            ast
+        };
+    }
+    
+    function tMacroExpansion(name, args) {
+    	return {
+        	type: TOKENS.MACRO_EXPANSION,
+            name,
+            args
+        };
+    }
 
     const hlScopes = [];
     function newScope() {
@@ -391,6 +410,8 @@ TopLevel
 = _ l:dSegment _ { return l; }
 / _ l:dImport _ { return l; }
 / _ l:dNamespace _ { return l; }
+/ _ l:dMacro _ { return l; }
+/ _ l:MacroExpansion _ { return l; }
 / _ l:COMMENT _ { return l; }
 / _ EOL _ { return null; }
 
@@ -401,7 +422,8 @@ Line "Line"
 = _ EOL _ { return null; }
 / Block
 / _ label:Label? _ content:(hlStatement/ Instruction / Directive / Block)? _ c:COMMENT? _ EOL _ { return [label, content, c].filter(e => e !== null); }
-/ !(RCURLY / EOL).+ { expected("BLOCK, LABEL, INSTRUCTION, DIRECTIVE, or COMMENT")}
+/ _ l:MacroExpansion _ { return l; }
+// / !(RCURLY / EOL).+ { expected("BLOCK, LABEL, INSTRUCTION, DIRECTIVE, or COMMENT")}
 
 //
 // High Level Statements
@@ -503,11 +525,35 @@ hlDO
 }
 
 //
+// AST for Macro handling
+AST
+= Register
+/ AllFlags
+/// / CommaSepStringOrConstantExpressions
+/ StringOrConstantExpression
+/ MemoryAddressingMode
+/ BranchAddressingMode
+/ Line
+/ Program
+
+ASTList = h:AST? _ t:(COMMA _ AST _)* {
+    return [h, ...t.map(([,,a,]) => a)].filter(n => n !== null);
+}
+
+IdentifierList = h:Identifier? _ t:(COMMA _ Identifier _)* {
+    return [h, ...t.map(([,,a,]) => a)].filter(n => n !== null);
+}
+
+MacroExpansion = name:Identifier _ LPAREN _ args:ASTList _ RPAREN {
+    return tMacroExpansion(name, args);
+}
+
+//
 // Directives
 ////////////////////////////////////////
 
 Directive "Directive"
-= dSegment / dByte / dWord / dString / dConstant / dImport / dNamespace
+= dSegment / dByte / dWord / dString / dConstant / dImport / dNamespace / dMacro
 
 dSegment "Segment Directive"
 = SEGMENT _ name:Identifier _ addr:Expression _ append:APPEND? _ block:Block
@@ -540,6 +586,11 @@ dString "String Directive"
     return tDataDirective(TOKENS.STRING_DIRECTIVE, data);
 }
 
+dMacro "Macro Directive"
+= MACRO _ name:Identifier _ LPAREN _ params:IdentifierList _ RPAREN _ ast:AST {
+	return tMacroDirective(name, params, ast);
+}
+
 
 SEGMENT "Segment"       = ".segment"i
 BYTE "Byte"             = ".byte"i
@@ -550,6 +601,10 @@ CONST "Constant"        = ".const"i
 IMPORT "Import"         = ".import"i
 NAMESPACE "Namespace"   = ".namespace"i
 ARRAY "Array" = LBRACKET _ size:Expression _ RBRACKET { return size; }
+MACRO "Macro"           = ".macro"i
+                        / ".define"i
+
+DirectiveKeywords = SEGMENT / BYTE / WORD / STRING / APPEND / CONST / IMPORT / NAMESPACE / ARRAY / MACRO
 
 ExpectedAssembly "Expected Assembly"
 = "{" bytes:(_ Integer)* "}" {
@@ -696,8 +751,8 @@ iSWAP "Swap Instruction"
 
 iMOV "Move Instruction"
 = op:MOV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
-/ op:LD _ dest:Register _ COMMA _ source:Register { return tInstruction(OPCODES.MOV, {dest, source}); }
-/ op:ST _ dest:Register _ COMMA _ source:Register { return tInstruction(OPCODES.MOV, {dest, source}); }
+// / op:LD _ dest:Register _ COMMA _ source:Register { return tInstruction(OPCODES.MOV, {dest, source}); }
+// / op:ST _ dest:Register _ COMMA _ source:Register { return tInstruction(OPCODES.MOV, {dest, source}); }
 / dest:Register _ OP_TAKES _ source:Register  { return tInstruction(OPCODES.MOV, {dest, source}); }
 
 iNOT "Not Instruction"
@@ -822,6 +877,7 @@ Keyword "Keyword"
 / IF / ELSE / DO / WHILE / BREAK / CONTINUE
 / WAIT / HALT
 / Function
+/ DirectiveKeywords
 
 Function "Function"
 = ADDRBANK / ADDRBOFS / ADDRPAGE / ADDRPOFS
@@ -852,30 +908,36 @@ rFLAGS "Flags"      = "FLAGS"i !IdentifierPart
 Register "Register"
 = rAL / rA / rBL / rB / rCL / rC / rDL
 / rD / rXL / rX / rYL / rY / rSP / rBP
+/ MacroExpansion
 
 Register16 "Word-sized Register"
 = rA / rB / rC / rD / rX / rY / rSP / rBP
+/ MacroExpansion
 
 Register8 "Byte-sized Register"
 = rAL / rBL / rCL / rDL / rXL / rYL
+/ MacroExpansion
 
 GeneralRegister "General Purpose Register"
 = rAL / rA / rBL / rB / rCL / rC / rDL / rD
+/ MacroExpansion
 
 MemoryRegister "Memory Register"
 = rD / rBP
+/ MacroExpansion
+
 
 //
 // Flags
 ////////////////////////////////////////
-fZERO              "Zero"              = "Z"i !IdentifierPart { return tFlag(FLAGS.ZERO); }
-fCARRY             "Carry"             = "C"i !IdentifierPart { return tFlag(FLAGS.CARRY); }
-fOVERFLOW          "Overflow"          = "V"i !IdentifierPart { return tFlag(FLAGS.OVERFLOW); }
-fNEGATIVE          "Negative"          = "N"i !IdentifierPart { return tFlag(FLAGS.NEGATIVE); }
-fEXCEPTION         "Exception"         = "X"i !IdentifierPart { return tFlag(FLAGS.EXCEPTION); }
-fINTERRUPT_DISABLE "Interrupt Disable" = "ID"i !IdentifierPart { return tFlag(FLAGS.INTERRUPT_DISABLE); }
-fINTERRUPT_SERVICE "Interrupt Service" = "IS"i !IdentifierPart { return tFlag(FLAGS.INTERRUPT_SERVICE); }
-fSINGLE_STEP       "Single Step"       = "SS"i !IdentifierPart { return tFlag(FLAGS.SINGLE_STEP); }
+fZERO              "Zero"              = ("Z"i/"flag:z"i) !IdentifierPart { return tFlag(FLAGS.ZERO); }
+fCARRY             "Carry"             = ("C"i/"flag:c"i) !IdentifierPart { return tFlag(FLAGS.CARRY); }
+fOVERFLOW          "Overflow"          = ("V"i/"flag:v"i) !IdentifierPart { return tFlag(FLAGS.OVERFLOW); }
+fNEGATIVE          "Negative"          = ("N"i/"flag:n"i) !IdentifierPart { return tFlag(FLAGS.NEGATIVE); }
+fEXCEPTION         "Exception"         = ("X"i/"flag:x"i) !IdentifierPart { return tFlag(FLAGS.EXCEPTION); }
+fINTERRUPT_DISABLE "Interrupt Disable" = ("ID"i/"flag:id"i) !IdentifierPart { return tFlag(FLAGS.INTERRUPT_DISABLE); }
+fINTERRUPT_SERVICE "Interrupt Service" = ("IS"i/"flag:is"i) !IdentifierPart { return tFlag(FLAGS.INTERRUPT_SERVICE); }
+fSINGLE_STEP       "Single Step"       = ("SS"i/"flag:ss"i) !IdentifierPart { return tFlag(FLAGS.SINGLE_STEP); }
 
 Flags "Flags"
 = fZERO / fCARRY / fOVERFLOW / fNEGATIVE
@@ -899,6 +961,7 @@ NotFlags "Not Flags"
 AllFlags "All Flags"
 = NotFlags
 / Flags
+/ MacroExpansion
 
 //
 // Addressing Modes
@@ -958,20 +1021,24 @@ IndirectRegister "Indirect BP"
 }
 
 MemoryAddressingMode "Memory Addressing Mode"
-= AbsoluteRegister
+= MacroExpansion
+/ AbsoluteRegister
 / IndirectRegister
 / Immediate16
 / Immediate8
 / Absolute18
 / Indirect18
+// / Identifier
 
 BranchAddressingMode "Branch Addressing Mode"
-= AbsoluteRegister
+= MacroExpansion
+/ AbsoluteRegister
 / IndirectRegister
 / Relative16
 / Relative8
 / Absolute18
 / Indirect18
+// / Identifier
 
 
 //
@@ -1078,6 +1145,7 @@ Literal
 / NegativeExpression
 / ConstantFunction
 / Integer
+/ MacroExpansion
 / Identifier
 
 
@@ -1088,7 +1156,7 @@ Literal
 ////////////////////////////////////////
 
 ReservedWord "Reserved Word"
-= Keyword / Register
+= Keyword 
 
 Label "Label"
 = name:Identifier ":" { return tLabel(name); }
@@ -1126,6 +1194,7 @@ Integer "Integer"
 StringLiteral "String Literal"
 = DQUOTE text:(!DQUOTE .)* DQUOTE { return tLiteral(text.map(([,ch]) => ch).join("")); }
 / DQUOTE (!DQUOTE .)* { expectedQuote() }
+/ MacroExpansion
 
 //
 // Delimiters

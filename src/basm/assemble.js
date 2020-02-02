@@ -138,6 +138,7 @@ function findIdent(ident, context = {}) {
 }
 
 function evaluate(node, context) {
+    if (node === undefined || node === null) return; //err("Encountered undefined node in AST");
     if (typeof node === "number" || typeof node === "string" || typeof node === "boolean") {
         // return the value as-is: nothing further can be done
         return node;
@@ -163,6 +164,30 @@ function evaluate(node, context) {
                         err(`Unimplemented function: ${node.fn}`);
                 }
             }
+        case TOKENS.MACRO_EXPANSION:
+            {
+                const macro = findIdent(node.name.ident, context);
+                const addr = context[SCOPE.ADDR];
+                const name = `macro-${++macro_id}`;
+                const newContext = createScope(SCOPE.TYPES.BLOCK, context, name, addr, false);
+
+                const argsArray = node.args; //Array.isArray(node.args[0]) ? node.args[0] : [node.args];
+
+                macro.params.forEach((param, idx) => {
+                    newContext[SCOPE.CONTENTS][param.ident] = {
+                        params: [],
+                        ast: argsArray[idx]
+                    };
+                });
+                if (macro.ast.type === TOKENS.MEMORY) {
+                    return macro.ast;
+                }
+    //console.info(`there2`, macro.ast)
+                const r = evaluate(macro.ast, newContext)
+    //console.info(`there3`, r)
+                return r;
+            }
+            break;
         case TOKENS.UNARY_EXPRESSION:
             {
                 switch (node.op) {
@@ -198,6 +223,9 @@ function evaluate(node, context) {
             return node.value;
         case TOKENS.MEMORY:
             return evaluate(node.addr, context);
+        case TOKENS.REGISTER:
+        case TOKENS.FLAG:
+            return node;
         default:
             err(`Unexpected token in expression ${node.type}`);
     }
@@ -219,7 +247,20 @@ function tryToAssemble(node, context, pc, fail = false) {
         err(`Tried to assemble an unexpected token: ${node}`);
     }
 
-    const { op, dest, source, reg, addr, flag, imm, x, y, i, m } = node;
+    let { op, dest, source, reg, addr, flag, imm, x, y, i, m } = node;
+
+
+    try {
+    let evalParts = 
+    [dest, source, reg, flag, imm].map(n => {
+        if ((n !== undefined && n !== null) && n.type === TOKENS.MACRO_EXPANSION) return evaluate(n, context);
+        return n;
+    });
+    //console.info(node, evalParts);
+    [dest, source, reg, flag, imm] = evalParts;
+    } catch (err) {
+        //console.error(err.message);
+    }
 
     let size = 0,
         bytes = [];
@@ -289,8 +330,9 @@ function tryToAssemble(node, context, pc, fail = false) {
                 {
                     size = source.m === MODES.IMMEDIATE ? 2 + dest.size : 4;
                     bytes.push(0x10 | dest.idx);
-                    if (source.m === MODES.IMMEDIATE) {
-                        const v = evaluate(source.addr, context);
+                    //console.info(source);
+                    if (source.m === MODES.IMMEDIATE || source.m === undefined) {
+                        const v = evaluate(source.addr !== undefined ? source.addr : source, context);
                         bytes.push(0x00);
                         if (dest.size === 1) {
                             bytes.push(v & 0xFF);
@@ -404,6 +446,7 @@ function tryToAssemble(node, context, pc, fail = false) {
             case OPCODES.OR:
             case OPCODES.TEST:
             case OPCODES.XOR: {
+                //console.info(`cmp`, dest, source)
                 size = imm ? 1 + dest.size : 2;
                 if (imm) {
                     bytes.push(({
@@ -450,6 +493,7 @@ function tryToAssemble(node, context, pc, fail = false) {
 }
 
 let block_id = 0;
+let macro_id = 0;
 export function assemble(ast, global, context) {
     global = global || createScope();
     if (!context) { context = global; }
@@ -519,16 +563,13 @@ export function assemble(ast, global, context) {
                     const addr = context[SCOPE.ADDR];
                     const name = `block-${++block_id}`;
                     const newContext = createScope(SCOPE.TYPES.BLOCK, context, name, addr, false);
-                    //console.log(`new ${name} ${addr}, {util.inspect(node)}`);
                     try {
                         assemble(node.block, global, newContext);
                     } catch(err) {
                         //console.log(`failed block ${addr}`);
                     }
-                    //console.log(`filling block ${addr}, ${util.inspect(node)}`);
                     // put the data back into the current context
                     newContext[SCOPE.DATA].forEach(data => {
-                        //console.log(util.inspect(data.bytes));
                         context[SCOPE.DATA][context[SCOPE.ADDR]] = {
                             asm: data.asm,
                             bytes: data.bytes,
@@ -538,7 +579,6 @@ export function assemble(ast, global, context) {
                         };
                         context[SCOPE.ADDR] += data.size;
                     });
-                    //console.log(`done ${name} ${addr}, ${util.inspect(newContext[SCOPE.CONTENTS])}`);
                 }
                 break;
             case TOKENS.CONST_DIRECTIVE:
@@ -547,6 +587,17 @@ export function assemble(ast, global, context) {
                         err(`Cannot redefine constant ${node.name.ident}`);
                     }
                     context[SCOPE.CONTENTS][node.name.ident] = node.value;
+                }
+                break;
+            case TOKENS.MACRO_DIRECTIVE:
+                {
+                    if (context[SCOPE.CONTENTS].hasOwnProperty(node.name.ident)) {
+                        err(`Cannot redefine macro ${node.name.ident}`);
+                    }
+                    context[SCOPE.CONTENTS][node.name.ident] = {
+                        params: node.params,
+                        ast: node.ast
+                    };
                 }
                 break;
             // the remaining tokens must be in a segment
@@ -617,6 +668,42 @@ export function assemble(ast, global, context) {
                     context[SCOPE.ADDR] += data.length;
                     break;
                 }
+            case TOKENS.MACRO_EXPANSION:
+                {
+                    //console.info(`In macro ${node.name.ident}`)
+                    const macro = findIdent(node.name.ident, context);
+                    const addr = context[SCOPE.ADDR];
+                    const name = `macro-${++macro_id}`;
+                    const newContext = createScope(SCOPE.TYPES.BLOCK, context, name, addr, false);
+                    //console.info(`... with ${macro.params.length} parameters...`, node.args);
+
+                    const argsArray = node.args; //Array.isArray(node.args[0]) ? node.args[0] : [node.args];
+
+                    //console.info(`... ... transformed`, argsArray);
+                    macro.params.forEach((param, idx) => {
+                        //console.info(`... ... ${param.ident} = ${JSON.stringify(argsArray[idx])}`)
+                        newContext[SCOPE.CONTENTS][param.ident] = {
+                            params: [],
+                            ast: argsArray[idx]
+                        }
+                    });
+
+                    try {
+                        assemble(macro.ast, global, newContext);
+                    } catch (err) {}
+
+                    newContext[SCOPE.DATA].forEach(data => {
+                        context[SCOPE.DATA][context[SCOPE.ADDR]] = {
+                            asm: data.asm,
+                            bytes: data.bytes,
+                            size: data.size,
+                            pc: data.pc,
+                            context: data.context
+                        };
+                        context[SCOPE.ADDR] += data.size;
+                    });
+                }
+                break;
             case TOKENS.INSTRUCTION:
                 {
                     if (context[SCOPE.TYPE] !== SCOPE.TYPES.SEGMENT && context[SCOPE.TYPE] !== SCOPE.TYPES.BLOCK) {
