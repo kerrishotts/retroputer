@@ -5,6 +5,10 @@
 ########################################
 
 .namespace kernel {
+    .import "./macros/pointers.asm"
+    .import "./macros/io.asm"
+
+
     .import "./trapmap.asm"
     .import "./iomap.asm"
     .import "./memmap.asm"
