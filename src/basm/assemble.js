@@ -328,10 +328,9 @@ function tryToAssemble(node, context, pc, fail = false) {
             case OPCODES.WAIT: size = 2; bytes.push(0xAF, evaluate(imm, context) & 0xFF); break;
             case OPCODES.LD:
                 {
-                    size = source.m === MODES.IMMEDIATE ? 2 + dest.size : 4;
                     bytes.push(0x10 | dest.idx);
-                    //console.info(source);
                     if (source.m === MODES.IMMEDIATE || source.m === undefined) {
+                        size = dest.size + 2;
                         const v = evaluate(source.addr !== undefined ? source.addr : source, context);
                         bytes.push(0x00);
                         if (dest.size === 1) {
@@ -341,6 +340,7 @@ function tryToAssemble(node, context, pc, fail = false) {
                             bytes.push(v & 0x00FF);
                         }
                     } else {
+                        size = 4;
                         const a = evaluate(source.addr, context) & 0x7FFFF;
                         bytes.push((source.m << 6) |
                             ((source.i ? 1 : 0) << 5) |
