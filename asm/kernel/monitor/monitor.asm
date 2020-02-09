@@ -75,25 +75,25 @@
             push x
             x := 10
             [mdata.state, x] := y
-            xl := 12
+            x := 12
             [mdata.state, x] := bp
-            xl := 14
+            x := 14
             [mdata.state, x] := sp
             pop x
             pop a                                # PC
             push x
-            xl := 16
+            x := 16
             [mdata.state, x] := a
             pop x
             push a
             push x
             pushmm                               # Memory Map
             pop a
-            xl := 18
+            x := 18
             [mdata.state, x] := a
             pushf                                # Flags
             pop a 
-            xl := 20
+            x := 20
             [mdata.state, x] := a
             pop x
             ret
