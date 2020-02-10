@@ -12,7 +12,7 @@ Launching the monitor can be done in one of several ways:
 
 Upon launch, the monitor will announce itself and display the current status of the machine by listing out several registers:
 
-![The Retroputer Monitor Welcome](../.gitbook/assets/image%20%283%29.png)
+![The Retroputer Monitor Welcome](../images/monitor-greeting.png)
 
 Whenever you see a `READY.` prompt, the monitor is waiting for your command. The monitor understands the following commands:
 

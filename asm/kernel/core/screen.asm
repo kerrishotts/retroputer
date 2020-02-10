@@ -40,8 +40,8 @@
         cursor-tile:          .byte 0xDB
         cursor-visible:       .byte 0x01
         cursor-blink-toggle:  .byte 0x00
-        cursor-blink-speed:   .byte 30
-        cursor-blink-counter: .byte 30
+        cursor-blink-speed:   .byte 19
+        cursor-blink-counter: .byte 19
         screen-text-fg:       .byte 0xFF
         screen-text-bg:       .byte 0x00
         screen-page:          .word 0x10000 >> 3

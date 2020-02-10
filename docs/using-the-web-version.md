@@ -2,13 +2,13 @@
 
 The Web Version of Retroputer makes it easy to get a feel for how Retroputer works. It's a completely integrated development environment, including the ability to see the current state of the machine, the contents of memory, the I/O bus, and an assembler. 
 
-![The web version of Retroputer](.gitbook/assets/image%20%287%29.png)
+![The web version of Retroputer](./images/web-interface.png)
 
-{% hint style="info" %}
-Retroputer's emulation speed depends upon the performance capabilities of your browser and computer processor. Code written for Retroputer assumes that it is running at roughly 1MHz and that the VGU is creating roughly 60 frames per second.
-
-If your browser does not match this performance, Retroputer may feel slow to you.
-{% endhint %}
+> **Note**
+>
+> Retroputer's emulation speed depends upon the performance capabilities of your browser and computer processor. Code written for Retroputer assumes that it is running at roughly 1MHz and that the VGU is creating roughly 60 frames per second.
+>
+> If your browser does not match this performance, Retroputer may feel slow to you.
 
 ## The Workspace
 
@@ -73,7 +73,7 @@ The **State** panel lets you take a look into the processor state. You can reque
 
 ## Starting Retroputer
 
-![Retroputer&apos;s Launch Screen with BASIC running](.gitbook/assets/image%20%284%29.png)
+![Retroputer&apos;s Launch Screen with BASIC running](./images/basic-greeting.png)
 
 
 

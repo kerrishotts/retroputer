@@ -3,9 +3,10 @@
 * [Welcome to Retroputer](README.md)
 * [Using the Web Version](using-the-web-version.md)
 
-## Technical Details <a id="technical"></a>
+## Technical Details
 
 * [Technical Overview](technical/technical-overview/README.md)
+  * [Block Diagram](technical/technical-overview/block-diagram.md)
   * [Memory Layout](technical/technical-overview/memory-layout.md)
   * [1125 Sound Generator](technical/technical-overview/1125-sound-generator.md)
   * [6516 Processor](technical/technical-overview/6516-central-processing-unit/README.md)
@@ -46,5 +47,6 @@
   * [Instructions](programming-retroputer/asm/instructions.md)
   * [Error Messages](programming-retroputer/asm/assembler-error-messages.md)
 * [The Kernel](programming-retroputer/what-is-the-kernel/README.md)
-  * [Screen Routines](programming-retroputer/what-is-the-kernel/screen-routines.md)
+  * [Standard Library](programming-retroputer/what-is-the-kernel/standard-library.md)
+  * [Screen and Editor](programming-retroputer/what-is-the-kernel/screen-routines.md)
 

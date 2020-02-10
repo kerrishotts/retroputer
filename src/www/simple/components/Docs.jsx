@@ -56,7 +56,7 @@ export class Docs extends React.Component {
         return (
             <div className="panel docs" style={{display: "flex", flexDirection: "row"}}>
                 <MDXProvider components={this.components}>
-                    <div className="toc" style={{flex: "0 0 auto"}}>
+                    <div className="toc" style={{flex: "0 1 auto", minWidth:"175px", maxWidth:"200px"}}>
                         <TOC />
                     </div>
                     <div className="md" style={{flex: "1 1 auto"}}>
