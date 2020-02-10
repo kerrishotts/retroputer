@@ -152,7 +152,7 @@ export class Screen extends Device {
         this._cfg = {
             layers: Array.from({length: 4}, (_, idx) => ({
                 src: (idx === 0 ? 0x80 : 0x00) | (idx + 4), // v_zz_ppppp / visible / z-order / page
-                cfg: 28, // ss_?_ttttt - scale / tile
+                cfg: 28, // ss_l_ttttt - scale / line-spacing / tile
                 bg: 0,
                 fg: 0xFF,
                 mode: 0, //screen mode
@@ -165,6 +165,7 @@ export class Screen extends Device {
                 xOffset: 0,
                 yWindow: 0,
                 xWindow: 0,
+                lineSpacing: 0
             })),
             sprites: Array.from({length: 16}, () => ({
                 src: 0,
@@ -234,6 +235,7 @@ export class Screen extends Device {
                 case LAYER_CFG: {
                     layer.cfg = data;
                     layer.scale    = (layer.cfg & 0b11000000) >> 6;
+                    layer.lineSpacing = (layer.cfg & 0b00100000) >> 5;
                     layer.tilePage = (layer.cfg & 0b00011111);
                     return;
                 }
@@ -460,27 +462,32 @@ export class Screen extends Device {
                     }
                 } else {
                     // text modes
-                    // TODO: Cropping
-                    // BUG?: Scaling might overwrite unexpected places?
                     const rows = 24 * (layer.mode + 1);
                     const cols = 32 * (layer.mode + 1);
                     const firstVisibleRow = (layer.yWindow) // << (scale - 1));
                     const lastVisibleRow = rows - (layer.yWindow) // << (scale - 1)));
                     const firstVisibleColumn = (layer.xWindow) // << (scale - 1));
                     const lastVisibleColumn = cols - (layer.xWindow) // << (scale -1 ));
+                    const lineSpacing = layer.lineSpacing;
+                    const rowMultiplier = 8 + lineSpacing;
+                    const rowHeight = rowMultiplier - 1;
                     for (let row = lastVisibleRow- 1; row >= firstVisibleRow; row--) {
                         for (let col = lastVisibleColumn - 1; col >= firstVisibleColumn; col--) {
                             const tilePos = (row << (5 + (layer.mode !== 0))) + col;
                             const tile = this.memory.readUnmappedByte(pageAddr + tilePos)
                             const tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x1000);
                             const tileBgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x2000);
-                            for (let _y = 7; _y >= 0; _y--) {
+                            for (let _y = rowHeight; _y >= 0; _y--) {
                                 for (let _x = 7; _x >= 0; _x--) {
                                     const x = BORDER_WIDTH + (((col * 8) + _x) << scale) + xOffset;
-                                    const y = BORDER_HEIGHT + (((row * 8) + _y) << scale) + yOffset;
+                                    const y = BORDER_HEIGHT + (((row * rowMultiplier) + _y) << scale) + yOffset;
                                     const offset = y * SCREEN_COLUMNS + x;
                                     if (x >= 0 && y >= 0 && x < SCREEN_COLUMNS && y < SCREEN_ROWS) {
                                         let tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (_y << 3) + _x);
+                                        if (_y > 7) {
+                                            if (tile < 128) { tilePixel = 0; } // let graphics characters connect, but not alpha chars
+                                            else { tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (7 << 3) + _x); }
+                                        }
 
                                         if (tilePixel === 0x00) tilePixel = tileBgColor;
                                         if (tilePixel === 0xFF) tilePixel = tileFgColor;

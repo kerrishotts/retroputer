@@ -166,6 +166,11 @@ export class Computer {
         return this[_processor];
     }
 
+    reset() {
+        this.memory.reset(true);
+        this.processor.reset();
+    }
+
     /**
      * Step the computer by sending a tick.
      *
@@ -184,6 +189,8 @@ export class Computer {
      */
     step() {
         if (this.debug) {
+            if (this.running) this.stop();
+            this.processor.registers.INTERRUPT_DISABLE = 1;
             this.processor.registers.SINGLE_STEP = 1;
             this.runSlice();
             this._stopSignal = false;

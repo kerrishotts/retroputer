@@ -2,95 +2,68 @@
 
 ## Volatile and Preserved Registers
 
-When calling a subroutine, it is expected that some registers will be preserved, whereas others will be destroyed. 
+When calling a subroutine, it is expected that some registers will be preserved, whereas others will be destroyed.
+
+| Register | Typical Use | Preserved? | By Whom? |
+| :--- | :--- | :--- | :--- |
+
+
+| A | General Purpose Register | Yes | Subroutine |
+| :--- | :--- | :--- | :--- |
+
+
+| B | General Purpose Register | Yes | Subroutine |
+| :--- | :--- | :--- | :--- |
+
+
+| C | Counter | No |  |
+| :--- | :--- | :--- | :--- |
+
+
+| D | Data Access Register & Return Value | No |  |
+| :--- | :--- | :--- | :--- |
+
 
 <table>
   <thead>
     <tr>
-      <th style="text-align:left">Register</th>
-      <th style="text-align:left">Typical Use</th>
-      <th style="text-align:left">Preserved?</th>
-      <th style="text-align:left">By Whom?</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left">A</td>
-      <td style="text-align:left">General Purpose Register</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">Subroutine</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">B</td>
-      <td style="text-align:left">General Purpose Register</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">Subroutine</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">C</td>
-      <td style="text-align:left">Counter</td>
-      <td style="text-align:left">No</td>
-      <td style="text-align:left"></td>
-    </tr>
-    <tr>
-      <td style="text-align:left">D</td>
-      <td style="text-align:left">Data Access Register &amp; Return Value</td>
-      <td style="text-align:left">No</td>
-      <td style="text-align:left"></td>
-    </tr>
-    <tr>
-      <td style="text-align:left">X</td>
-      <td style="text-align:left">
+      <th style="text-align:left">X</th>
+      <th style="text-align:left">
         <p>Index Register / Low Pointer Address /</p>
         <p>Low Pointer Address Return Value</p>
-      </td>
-      <td style="text-align:left">No</td>
-      <td style="text-align:left"></td>
+      </th>
+      <th style="text-align:left">No</th>
+      <th style="text-align:left"></th>
     </tr>
-    <tr>
-      <td style="text-align:left">Y</td>
-      <td style="text-align:left">Index Register / Low Pointer address</td>
-      <td style="text-align:left">No</td>
-      <td style="text-align:left"></td>
-    </tr>
-    <tr>
-      <td style="text-align:left">BP</td>
-      <td style="text-align:left">Base Pointer</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">Subroutine</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">SP</td>
-      <td style="text-align:left">Stack Pointer</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">Subroutine</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">Flags</td>
-      <td style="text-align:left">Processor Status</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">Subroutine</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">PC</td>
-      <td style="text-align:left">Program Counter</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">CPU</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">MM</td>
-      <td style="text-align:left">Memory Map</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">Subroutine</td>
-    </tr>
-    <tr>
-      <td style="text-align:left">MP</td>
-      <td style="text-align:left">Memory Pointer</td>
-      <td style="text-align:left">Yes</td>
-      <td style="text-align:left">CPU</td>
-    </tr>
-  </tbody>
-</table>## Integer Parameters
+  </thead>
+  <tbody></tbody>
+</table>| Y | Index Register / Low Pointer address | No |  |
+| :--- | :--- | :--- | :--- |
+
+
+| BP | Base Pointer | Yes | Subroutine |
+| :--- | :--- | :--- | :--- |
+
+
+| SP | Stack Pointer | Yes | Subroutine |
+| :--- | :--- | :--- | :--- |
+
+
+| Flags | Processor Status | Yes | Subroutine |
+| :--- | :--- | :--- | :--- |
+
+
+| PC | Program Counter | Yes | CPU |
+| :--- | :--- | :--- | :--- |
+
+
+| MM | Memory Map | Yes | Subroutine |
+| :--- | :--- | :--- | :--- |
+
+
+| MP | Memory Pointer | Yes | CPU |
+| :--- | :--- | :--- | :--- |
+
 
 Because the 6516 has several registers, the calling convention does use some of them when passing parameters to subroutines. Any remaining parameters are passed on the stack.
 
@@ -100,7 +73,7 @@ Because the 6516 has several registers, the calling convention does use some of 
 | 2 | C |
 | 3+ | BP+-2 \(...\) |
 
-> #### IMPORTANT
+> ### IMPORTANT
 >
 > Aggregates \(8-bit values\) are passed in using _both_ the low and high portions of the corresponding 16-bit register. As such, the parameter ordering changes to the following: DL, DH, CL, CH, _stack_.
 
@@ -120,7 +93,7 @@ The return value of a subroutine is returned through the `D` register for 16-bit
 
 ## Pointer Return Value
 
-Should a return value need to be a pointer to another memory address, the result must be in `D,X` where `D` contains the top 16-bits of the address and `X` contains the bottom 16-bits address such that `( D << 3 ) | X` results in the desired address. 
+Should a return value need to be a pointer to another memory address, the result must be in `D,X` where `D` contains the top 16-bits of the address and `X` contains the bottom 16-bits address such that `( D << 3 ) | X` results in the desired address.
 
 ## In Practice
 
@@ -162,7 +135,7 @@ Let's go over a few of some typical subroutines and how one calls them.
         clr c # clear carry, so shr isn't sign extending
         shr b, 8
         add a, b
-    
+
         mov y, a                 # y is used as the screen pos
         ld a, 0x00FF             # color
         ld bl, [D,X]             # load character        
@@ -194,6 +167,4 @@ Let's go over a few of some typical subroutines and how one calls them.
     }
 }
 ```
-
-
 

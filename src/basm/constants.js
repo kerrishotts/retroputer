@@ -87,6 +87,8 @@ export const DIRECTIVES = {
     APPEND: ".append",
     CONST: ".const",
     IMPORT: ".import",
+    MACRO: ".macro",
+    DEFINE: ".define",
 };
 
 export const TOKENS = {
@@ -109,7 +111,10 @@ export const TOKENS = {
     STRING_DIRECTIVE: "directive.string",
     LABEL: "label",
     MEMORY: "memory",
-    BLOCK: "block"
+    BLOCK: "block",
+    FUNCTION: "function",
+    MACRO_DIRECTIVE: "directive.macro",
+    MACRO_EXPANSION: "expand.macro",
 };
 
 export const MODES = {

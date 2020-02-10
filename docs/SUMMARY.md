@@ -3,9 +3,10 @@
 * [Welcome to Retroputer](README.md)
 * [Using the Web Version](using-the-web-version.md)
 
-## Technical Details <a id="technical"></a>
+## Technical Details
 
 * [Technical Overview](technical/technical-overview/README.md)
+  * [Block Diagram](technical/technical-overview/block-diagram.md)
   * [Memory Layout](technical/technical-overview/memory-layout.md)
   * [1125 Sound Generator](technical/technical-overview/1125-sound-generator.md)
   * [6516 Processor](technical/technical-overview/6516-central-processing-unit/README.md)
@@ -31,14 +32,21 @@
 
 ## Programming Retroputer
 
-* [Assembly Language](assembly-language/untitled.md)
-  * [Numbers](assembly-language/numbers.md)
+* [BASIC](programming-retroputer/basic/README.md)
+  * [Statement Reference](programming-retroputer/basic/statement-reference/README.md)
+    * [DEF](programming-retroputer/basic/statement-reference/def.md)
+    * [PRINT](programming-retroputer/basic/statement-reference/print.md)
+  * [Built-in Function Reference](programming-retroputer/basic/built-in-function-reference.md)
+* [The Monitor](programming-retroputer/the-monitor.md)
+* [Assembly Language](programming-retroputer/asm/README.md)
+  * [Numbers](programming-retroputer/asm/numbers.md)
   * [Identifiers](programming-retroputer/asm/identifiers.md)
   * [Directives](programming-retroputer/asm/directives.md)
   * [Calling Convention](programming-retroputer/asm/subroutine-calling-convention.md)
   * [Accessing Memory](programming-retroputer/asm/accessing-memory.md)
   * [Instructions](programming-retroputer/asm/instructions.md)
-  * [Error Messages](assembly-language/assembler-error-messages.md)
-* [The Kernel](kernel/what-is-the-kernel.md)
-  * [Screen Routines](kernel/screen-routines.md)
+  * [Error Messages](programming-retroputer/asm/assembler-error-messages.md)
+* [The Kernel](programming-retroputer/what-is-the-kernel/README.md)
+  * [Standard Library](programming-retroputer/what-is-the-kernel/standard-library.md)
+  * [Screen and Editor](programming-retroputer/what-is-the-kernel/screen-routines.md)
 

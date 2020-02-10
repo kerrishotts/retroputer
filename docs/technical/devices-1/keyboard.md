@@ -1,7 +1,3 @@
----
-description: The Keyboard (device 3) and how to use it.
----
-
 # Keyboard
 
 The keyboard device listens for user keypresses and then sends them to the processor for further handling.
@@ -10,7 +6,7 @@ The keyboard device listens for user keypresses and then sends them to the proce
 
 The physical layout is modern, especially when compared with typical computers of the era where it often seemed as every computer had a different location for various symbols. Retroputer does have a few custom keys, but nothing that would be surprising to modern users.
 
-![Physical key placement](../../.gitbook/assets/image%20%284%29.png)
+![Physical key placement](../../images/unshifted-keyboard.png)
 
 | Retroputer Key | macOS | Windows |
 | :--- | :--- | :--- |
@@ -23,7 +19,7 @@ The physical layout is modern, especially when compared with typical computers o
 
 Logically the keyboard is laid out in five rows of two quadrants. Each quadrant is represented by an I/O byte and can represent if a key is pressed by setting a bit \(or a key is not pressed by clearing the bit\).
 
-![Logical Keyboard Layout](../../.gitbook/assets/image%20%2814%29.png)
+![Logical Keyboard Layout](../../images/keyboard-scan-codes.png)
 
 This makes it possible to detect if multiple keys are _currently_ being pressed.
 
@@ -31,7 +27,9 @@ This makes it possible to detect if multiple keys are _currently_ being pressed.
 
 The **GR** key enables you to type graphical characters with the keyboard. You can access an alternate set by pressing **GR**+**SHIFT** at the same time.
 
-![Characters obtained with and without SHIFT and GR](../../.gitbook/assets/image%20%288%29.png)
+![Characters obtained with GR](../../images/keyboard-gr-unshifted.png)
+
+![Characters obtained with GR and SHIFT](../../images/keyboard-gr-shifted.png)
 
 ### The \[CTRL\] Key
 

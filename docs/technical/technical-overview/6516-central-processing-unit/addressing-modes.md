@@ -174,7 +174,7 @@ ld al, [d+1000, x]
 
 ## Indirect D,X
 
-It is possible to indirect through any word in memory space using **Indirect D,X**. Just like any mode of indirection, the resulting bank will always be the same as the original absolute address \(or `0` when branching\). The method for determining the initial absolute address is the same as **Absolute D,X**. 
+It is possible to indirect through any word in memory space using **Indirect D,X**. Just like any mode of indirection, the resulting bank will always be the same as the original absolute address \(or `0` when branching\). The method for determining the initial absolute address is the same as **Absolute D,X**.
 
 ```text
 .segment strings 0x50000 {
@@ -197,7 +197,7 @@ It is possible to indirect through any word in memory space using **Indirect D,X
 
 ### Indexing
 
-Indexing with Indirect D, X is similar to indirecting with any other addressing mode in that `Y` is applied after determining the indirect address. 
+Indexing with Indirect D, X is similar to indirecting with any other addressing mode in that `Y` is applied after determining the indirect address.
 
 ```text
 ld al, <d,x>, y
@@ -210,6 +210,4 @@ A constant offset can be added to `D`:
 ```text
 ld al, <d+2, x>
 ```
-
-
 

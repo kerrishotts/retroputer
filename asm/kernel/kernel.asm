@@ -1,4 +1,14 @@
+########################################
+#
+# Retroputer Kernel 
+#
+########################################
+
 .namespace kernel {
+    .import "./macros/pointers.asm"
+    .import "./macros/io.asm"
+
+
     .import "./trapmap.asm"
     .import "./iomap.asm"
     .import "./memmap.asm"
@@ -6,6 +16,7 @@
     .import "./palette.asm"
 
     .import "./core/core.asm"
+
 
     .segment k-no-impl-trap kmemmap.traps.start {
         ret   # by storing RET in trap 0, any traps that point to 0
@@ -29,8 +40,15 @@
         CURSOR_NEWLINE:              .word core.screen.kcode.cursor-newline
         PUT_CHAR:                    .word core.screen.kcode.put-char
         GET_CHAR:                    .word core.screen.kcode.get-char
+        PRINT:                       .word core.screen.kcode.print
+        INPUT:                       .word core.screen.kcode.input
+        U16_TO_STR:                  .word core.stdlib.kcode.u16-to-str
+        I16_TO_STR:                  .word core.stdlib.kcode.i16-to-str
     }
 
+    .import "./monitor/monitor.asm"
+    .import "./basic/basic.asm"
+    
 #  .segment kcode kmemmap.kernel.code-start .append{
 #      # init:
 #          ld bp, kmemmap.stack.top

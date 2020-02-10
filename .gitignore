@@ -10,3 +10,4 @@ src/www/bundle.js
 .cache
 .watch
 .watch-cache
+.DS_Store

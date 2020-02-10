@@ -4,7 +4,7 @@ The VGP can access tile sets at the base of any of the 32 available pages. Each 
 
 The second tile of the first tile set defaults to the following:
 
-![](../../../.gitbook/assets/image%20%282%29.png)
+![](../../../images/tile-definition.png)
 
 If you squint a little, you might be able to make out the shape of a smiley-face, which is the second defined tile in the first tile set.
 
@@ -18,5 +18,5 @@ A tile-based resource \(either tile pages or sprites\) can only use tiles from o
 
 Upon power-on, the system defaults to using the VGU's default tile set.
 
-![](../../../.gitbook/assets/charset-3x.png)
+![](../../../images/character-map.png)
 

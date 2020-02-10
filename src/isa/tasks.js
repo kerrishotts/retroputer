@@ -99,6 +99,7 @@ export const TASKS = {
     RECOMPOSE_NIBBLE_TO_BYTE: 0x13000000,     // [s0, s1] -> s0
     DECOMPOSE_ADDR:           0x30000000,
     RECOMPOSE_ADDR:           0x31000000,
+    GET_ADDR_FROM_MEMORY:     0x32000000,
 
     // bit twiddling
     SET_BIT:         0x14000000,
@@ -190,6 +191,11 @@ export const TASK_FNS = new Array(256).fill(() => 0);
     [TASKS.GET_WORD_FROM_MEMORY, ({ stack, memory }) => {
         push(stack, memory.readWord(pop(stack)), SIZE_WORD);
     }],
+    [TASKS.GET_ADDR_FROM_MEMORY, ({ stack, memory }) => {
+        const addr = pop(stack);
+        push(stack, memory.readWord(addr), SIZE_WORD);
+        push(stack, memory.readWord(addr+2), SIZE_WORD);
+    }],
     [TASKS.POP_BYTE_INTO_MEMORY, ({ stack, memory }) => {
         const byte = pop(stack);     // s0
         const addr = pop(stack);     // s1
@@ -228,7 +234,7 @@ export const TASK_FNS = new Array(256).fill(() => 0);
     [TASKS.RECOMPOSE_ADDR, ({ stack }) => {
         const lo = pop(stack);
         const hi = pop(stack);
-        push (stack, ((hi << 3) | lo), SIZE_ADDR);
+        push (stack, ((hi << 3) + lo), SIZE_ADDR);
     }],
     [TASKS.TRAP, ({ stack, ioBus }) => {
         const s0 = pop(stack) & 0x0F;                             // pop trap number

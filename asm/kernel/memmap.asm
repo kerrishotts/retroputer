@@ -1,3 +1,9 @@
+########################################
+#
+# Retroputer Kernel : Memory Map
+#
+########################################
+
 .namespace kmemmap {
     .const size                 0x80000 # size of memory
     .const start                0x00000 # bottom of memory
@@ -17,14 +23,30 @@
 
     .namespace kernel {
         .const data-start       0x01100 # kernel scratch data
-        .const data-size        0x00800 # 
+        .const data-size        0x00700 # 
         .const rodata-start     0x78000 # read-only data
-        .const rodata-size      0x04000
+        .const rodata-size      0x02000
         .const sprite-start     0x01000 # kernel sprite data
         .const sprite-size      0x00100
         .const code-start       0x7C000 # start of kernel code
         .const vector-start     0x7FE00 # vectors containing jump codes
         .const init-start       0x7FF00 # initialization code
+    }
+
+    .namespace basic {
+        .const data-start       0x0B000 # BASIC scratch data
+        .const data-size        0x00800
+        .const code-start       0x7E000 # start of BASIC code
+        .const rodata-start     0x7A000 # basic-rodata
+        .const rodata-size      0x02000
+    }
+
+    .namespace monitor {
+        .const data-start       0x0B800 # monitor scratch data
+        .const data-size        0x00800
+        .const code-start       0x7D800 # start of monitor code
+        .const rodata-start     0x76000 # read only data for monitor
+        .const rodata-size      0x02000
     }
 
     .namespace screen {

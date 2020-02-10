@@ -65,11 +65,12 @@
     "monitor": "node src/monitor/index.js",
     "docs:clean": "rimraf docs/*",
     "docs:mkdir": "mkdir docs",
-    "docs:update": "cp -r ../retroputer-docs/* ./docs && cp -r ../retroputer-docs/.gitbook/assets ./docs/_assets",
+    "docs:update": "cp -r ../retroputer-docs/* ./docs",
     "docs:toc": "sh ./scripts/toc.sh > docs/SUMMARY.js",
     "build:docs": "npm run docs:clean && npm run docs:update && npm run docs:toc",
     "build:basm": "pegjs --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
     "build:kernel": "src/basm/index.js -d asm/kernel -x vectors,kdata,krodata < asm/kernel/kernel.asm > src/roms/kernel.js",
+    "watch:kernel": "nodemon asm/kernel/**/* --exec 'npm run build:kernel'",
     "build:font": "node --experimental-modules ./src/util/buildFont.js",
     "inspect:monitor": "node --inspect src/monitor/index.js",
     "perf:test": "node --prof ./node_modules/.bin/ava && mv isolate*.log .perf",
@@ -102,8 +103,8 @@
   "staticFiles": {
     "staticPath": [
       {
-        "staticPath": "docs/_assets",
-        "staticOutDir": "_assets"
+        "staticPath": "docs/images",
+        "staticOutDir": "images"
       }
     ]
   }

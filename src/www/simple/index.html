@@ -166,7 +166,7 @@
 
         .docs .md {
             font-family:Georgia, 'Times New Roman', Times, serif;
-            font-size: 12pt;
+            font-size: 10pt;
             line-height: 1.33;
             flex: 0 1 auto;
             min-width: 10em;
@@ -196,6 +196,18 @@
         .docs .md h1 {
             border-bottom: 1px solid var(--text-heading-color);
         }
+        .docs .md h1 {
+            font-size:14pt;
+        }
+        .docs .md h2 {
+            font-size:12pt;
+        }
+        .docs .md h3 {
+            font-size:11pt;
+        }
+        .docs .md h4 {
+            font-size:10pt;
+        }
         .docs .md img {
             max-width: 100%;
             background-color: white;
@@ -206,6 +218,10 @@
             border-radius: var(--padding);
         }
 
+        .docs .md code {
+            font-size: 8pt;
+        }
+
         .docs .md .codebar {
             padding: var(--padding);
             border-bottom: 1px solid var(--border-color);
@@ -213,19 +229,40 @@
         }
 
         .docs .md .codebody {
-            font-size: 10pt;
+            font-size: 8pt;
             color: var(--text-color);
             background-color: black;
             padding: var(--padding);
             border-bottom-left-radius: var(--padding);
             border-bottom-right-radius: var(--padding);
+            overflow-x: scroll;
+        }
+
+        .docs .md .codebody code {
+            white-space: pre;
         }
 
         .docs .md blockquote {
             margin: 0;
-            padding: 4px 1em;
+            padding: .5em 1em;
             border-left: 4px solid var(--border-color);
             background-color: var(--quote-background);
+            border-radius: var(--padding);
+        }
+
+        .docs .md blockquote p {
+            margin: 0.5em 0;
+        }
+
+        .docs .md blockquote p strong {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: var(--text-heading-color);
+            font-size:11pt;
+            margin: 0;
+        }
+
+        .docs .md blockquote h3, .docs .md blockquote h2 {
+            margin: 0;
         }
 
         .docs .md blockquote h4 {

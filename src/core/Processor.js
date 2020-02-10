@@ -40,9 +40,6 @@ export class Processor {
     constructor({memory, systemBus, ioBus, clock, debug = null} = {}) {
         this[_alu] = new ALU();
         this[_registerFile] = new RegisterFile();
-        this[_registerFile].BP = 0x02000;
-        this[_registerFile].SP = 0x02000;
-        this[_registerFile].MM = 0b0111110001000001; // page 3 = page 31, page 2 = page 2, page 1 = page 1
 
         this[_memory] = memory;
         this[_systemBus] = systemBus;
@@ -81,6 +78,21 @@ export class Processor {
             ioBus: this[_ioBus]
         };
 
+        this.reset();
+    }
+
+    reset() {
+        this[_stack] = []; //new Stack(8, 4);
+        this[_taskQueue] = [];
+        this[_cache] = [];
+        this[_pendingServiceRequest] = -1;
+        this[_registerFile].PC = 0x0FF00;
+        this[_registerFile].MP = 0x0FF00;
+        this[_registerFile].BP = 0x02000;
+        this[_registerFile].SP = 0x02000;
+        this[_registerFile].MM = 0b0111110001000001; // page 3 = page 31, page 2 = page 2, page 1 = page 1
+        this.registers.SINGLE_STEP = 0;
+        this.registers.INTERRUPT_DISABLE = 1;
     }
 
     resetStats() {
@@ -221,15 +233,6 @@ export class Processor {
         this[_cache] = bytes; 
         this.registers.PC = mp;
         this.registers.MP = mp;
-
-/*
-        const cache = this[_cache];
-        if (cache.length < MAX_CACHE) {
-            const byte = this.memory.readByte(this.registers.MP);
-            this.inject(this.registers.MP, byte);
-            this.registers.MP += 1;
-        }
-*/
     }
 
     _decode() {
@@ -242,37 +245,6 @@ export class Processor {
             this[_taskQueue] = [];
         }
 
-/*
-
-        if (cache.length > 0 && taskQueue.length < MAX_TASKS) {
-            let pc = cache[0];
-            const bytes = Array(cache.length >> 1);
-            for (let i = 1, l = cache.length; i < l; i+=2 ) {
-                bytes[i >> 1] = cache[i]; // we want the byte, not its PC
-            }
-            const {size, tasks} = decodeInstruction(bytes);
-            if (tasks) {
-                this.stats.decodes++;
-                // remove the decoded instruction from the cache
-                //cache.splice(0, size << 1);
-                this[_cache] = cache.slice(size << 1);
-                pc += size;
-                pc &= 0xFFFF;
-                // add the tasks to the queue, with associated PC
-                for (let i = 0, l = tasks.length; i < l; i++) {
-                    taskQueue.push(pc, tasks[i]);
-                }
-                return;
-            } else {
-                if (cache.length > 8) {
-                    // failed to decode what was in the cache, and it's
-                    // long enough to have done so
-                    this[_cache] = cache.slice(8);
-                    //throw new Error(`Couldn't properly decode cache: ${this[_cache]}`);
-                }
-            }
-        }
-*/
     }
 
     _execute() {
@@ -301,12 +273,13 @@ export class Processor {
         }
 
         if (this.debug) {
-            // see if we've asserted the SINGLE STEP line
+            // see if we've asserted the SINGLE STEP line AND
+            // the INTERRUPT DISABLE line
             // if so, we see if PC has changed
             // send a signal on the debug line when
             // we've encountered a BRK or are in single step
             // mode.
-            if (this.registers.SINGLE_STEP) {
+            if (this.registers.SINGLE_STEP && this.registers.INTERRUPT_DISABLE) {
                 this.debug.signal();
             }
         }
@@ -315,64 +288,6 @@ export class Processor {
         this.registers.MP = mp;
         this[_cache] = [];
         this[_taskQueue] = [];
-/*
-
-        let taskQueueLength = this[_taskQueue].length;
-        let i = 0;
-        while (taskQueueLength > 0) {
-            // next task
-            const pc = this[_taskQueue][i++];
-            const task = this[_taskQueue][i++];
-            //this[_taskQueue] = this[_taskQueue].slice(2);
-            taskQueueLength -= 2;
-
-            if (this[_taskQueue][i] !== pc) { this.stats.insts++; }
-
-            // make sure PC is set to the address of the instruction
-            // we're executing
-            this.registers.PC = pc;
-
-            // also, assert MM on the system bus in case it's changed
-            this[_systemBus].map = this[_registerFile].MM;
-
-            // execute the task
-            this.stats.tasks++;
-            executeTask(task, this._context);
-
-            if (this.registers.PC !== pc) {
-                // we've jumped -- clear the cache and task queue
-                // and start fetching from the new location
-                this.stats.misses++;
-                this[_cache] = [];
-                this[_taskQueue] = [];
-                taskQueueLength = 0;
-                i = 0;
-                this.registers.MP = this.registers.PC;
-            }
-
-            if (this.debug) {
-                // see if we've asserted the SINGLE STEP line
-                // if so, we see if PC has changed
-                // send a signal on the debug line when
-                // we've encountered a BRK or are in single step
-                // mode.
-                if (this.registers.SINGLE_STEP) {
-                    let instructionOver = false;
-                    if (this.registers.PC !== pc) { instructionOver = true; }
-                    if (taskQueueLength > 0) {
-                        // next instruction has a different PC
-                        if (this[_taskQueue][i] !== pc) { instructionOver = true; }
-                    } else {
-                        instructionOver = true;
-                    }
-                    if (instructionOver) {
-                        this.debug.signal();
-                    }
-                }
-            }
-        }
-        this[_taskQueue] = [];
-*/
     }
 
     serviceDevices() {
@@ -394,6 +309,7 @@ export class Processor {
         const trapToTrigger = 0x80 | (whichDevice << 3);
         const trapVectorLookup = trapToTrigger << 1;
         const trapTarget = this.memory.readWord(trapVectorLookup);
+        if (!this.registers.INTERRUPT_DISABLE) this.registers.SINGLE_STEP = 0;
         this.registers.STATUS = (this.registers.STATUS & 0x00FF) | (trapToTrigger << 8);
         this.jump(trapTarget, true);
         this.controller.ackInterrupt(whichDevice);
@@ -402,6 +318,11 @@ export class Processor {
 
     tick() {
         this.stats.ticks++;
+        if (this.registers.SINGLE_STEP && !this.registers.INTERRUPT_DISABLE) {
+            // in HALT mode
+            this._reallyServiceDevices();
+            return;
+        }
         this._fetch();
         this._decode();
         this._execute();

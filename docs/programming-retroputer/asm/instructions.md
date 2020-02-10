@@ -1,6 +1,6 @@
 # Instructions
 
-> #### Instruction Set Encodings
+> ### Instruction Set Encodings
 >
 > If you want to see the entire instruction set and how it is encoded, [take a look at this reference](https://docs.google.com/spreadsheets/d/e/2PACX-1vSIMH-L17-UxNa2rhyLNF6gWUWPXic_-txike9oHIXu6zykN89dUTzA0-zNfKN-6toSEn6ox084nnId/pubhtml).
 
@@ -8,43 +8,43 @@
 
 Adds the source to the destination and stores the result in the destination register using the following algorithm \(here, `C` denotes the carry flag\).
 
-$$
-r = {C}_{in} + {source} + {dest}_{in} \\
-sign_{source} = {source}_{[\text{msb}]} \\
-sign_{dest} = {dest}_{[\text{msb}]} \\
-dest_{out} = r_{[\text{msb}:0]}
-$$
+```text
+r = carry_in + source + dest_in
+sign_source = source[msb]
+sign_dest = dest[msb]
+dest_out = r[msb:0]
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = \begin{cases} 
-      0 & r \texttt{>>} width = 0 \\
-      1 & r \texttt{>>} width \ge 0
-   \end{cases}
-,
-N_{out} = r_{[\text{msb}]}
-\\
-V_{out} = \begin{cases}
-0 & sign_{dest} = 0 & sign_{source} = 0 & N_{out} = 0\\
-1 & sign_{dest} = 0 & sign_{source} = 0 & N_{out} = 1\\
-0 & sign_{dest} = 0 & sign_{source} = 1 & N_{out} = 0\\
-0 & sign_{dest} = 0 & sign_{source} = 1 & N_{out} = 1\\
-0 & sign_{dest} = 1 & sign_{source} = 0 & N_{out} = 0\\
-0 & sign_{dest} = 1 & sign_{source} = 0 & N_{out} = 1\\
-1 & sign_{dest} = 1 & sign_{source} = 1 & N_{out} = 0\\
-0 & sign_{dest} = 1 & sign_{source} = 1 & N_{out} = 1\\
-\end{cases}
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
 
-{% hint style="danger" %}
-`ADD` always takes the carry flag in to account when performing addition. As such, you should always `CLR C` before any addition when you know that the carry flag should not be considered.
-{% endhint %}
+c_out = {
+    0 when r>>width = 0
+    1 when r>>width >= 0
+}
+
+n_out = r[msb]
+
+v_out = {
+    0 when sign_dest = 0, sign_source = 0, and n_out = 0
+    1 when sign_dest = 0, sign_source = 0, and n_out = 1
+    0 when sign_dest = 0, sign_source = 1, and n_out = 0
+    0 when sign_dest = 0, sign_source = 1, and n_out = 1
+    0 when sign_dest = 1, sign_source = 0, and n_out = 0
+    0 when sign_dest = 1, sign_source = 0, and n_out = 1
+    1 when sign_dest = 1, sign_source = 1, and n_out = 0
+    0 when sign_dest = 1, sign_source = 1, and n_out = 1
+}    
+```
+
+> **Warning**
+>
+> `ADD` always takes the carry flag in to account when performing addition. As such, you should always `CLR C` before any addition when you know that the carry flag should not be considered.
 
 #### Forms
 
@@ -73,7 +73,7 @@ ADD dest, immediate
 .segment code 0x02000 {
     ld a, 1234
     add a, 2345       # a is 3579
-    
+
     ld a, 0x5000
     ld b, 0x4000
     add a, b          # value in a is incorrect if this is signed
@@ -86,27 +86,24 @@ ADD dest, immediate
 
 Performs a bitwise AND on the source and destination operands, and stores the result in the destination.
 
-$$
-dest_{out} = dest_{in} \land source_{in}
-$$
+```text
+r = dest_out = dest_in AND source_in
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = \begin{cases} 
-      0 & r \texttt{>>} width = 0 \\
-      1 & r \texttt{>>} width \ge 0
-   \end{cases}
-,
-N_{out} = r_{[\text{msb}]}
-, 
-V_{out} = 0
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
+
+c_out = 0
+
+n_out = r[msb]
+
+v_out = 0
+```
 
 #### Forms
 
@@ -135,7 +132,7 @@ AND dest, immediate
 .segment code 0x02000 {
     ld al, 0b1111_0000
     and al, 0b0001_1000    # al is 0b0001_0000
-    
+
     ld a, 0x1234
     ld b, 0x00FF
     and a, b               # a is 0x0034
@@ -146,7 +143,7 @@ AND dest, immediate
 
 Sets `PC` to the specified value, causing a jump or branch to that location. Code execution continues from the new address. The width of the value determines if the branch is _short_ \(8 bits\) or _long_ \(16 bits\).
 
-Branches can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\). 
+Branches can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\).
 
 #### Forms
 
@@ -188,7 +185,7 @@ For reference, the following conditions may prove useful when mapping flags to t
 #### Grammar
 
 ```text
-BR[S] [!][flag] 
+BR[S] [!][flag]
 ```
 
 #### Examples
@@ -210,15 +207,13 @@ game-over:
 
 ## **BRK \(Break\)**
 
-Transitions the CPU to single-step mode. If a debugger is attached, this will cause the debugger to halt the processor until a single-step or continue signal is received.
-
-
+Transitions the CPU to single-step mode. This will cause the debugger to halt the processor until a single-step or continue signal is received.
 
 #### Flags
 
 | EX | ID | IS | SS | N | C | V | Z |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| - | - | - | + | - | - | - | - |
+| - | + | - | + | - | - | - | - |
 
 #### Grammar
 
@@ -230,7 +225,7 @@ BRK
 
 Pushes `PC` on to the stack, and then sets `PC` to the specified value, causing a jump or branch to that location. Code execution continues from the new address. The width of the value determines if the branch is _short_ \(8 bits\) or _long_ \(16 bits\).
 
-Calls can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\). 
+Calls can be unconditional \(the branch is taken every time\), or they can be conditional \(based upon if a flag is set or not\).
 
 #### Forms
 
@@ -264,7 +259,7 @@ call lte         # call lte if less than or equal
 #### Grammar
 
 ```text
-CALL[S] [!][flag] 
+CALL[S] [!][flag]
 ```
 
 #### Examples
@@ -278,6 +273,7 @@ CALL[S] [!][flag]
      cmp a, 10000
      call z extra-life
      # more code
+     brk
 extra-life:
      # bonus life!
      ld a, [score]
@@ -314,42 +310,42 @@ add a, b
 
 Compares the two values and sets the flags according to the results of the comparison.
 
-$$
-r = {dest}_{in} - source \\
-sign_{source} = {source}_{[\text{msb}]} \\
-sign_{dest} = {dest}_{[\text{msb}]}
-$$
+```text
+r = dest_in - source
+sign_source = source[msb]
+sign_dest = dest_in[msb]
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = \begin{cases} 
-      0 & r \texttt{>>} width = 0 \\
-      1 & r \texttt{>>} width \ge 0
-   \end{cases}
-,
-N_{out} = r_{[\text{msb}]}
-\\
-V_{out} = \begin{cases}
-0 & sign_{dest} = 0 & sign_{source} = 1 & N_{out} = 0\\
-1 & sign_{dest} = 0 & sign_{source} = 1 & N_{out} = 1\\
-0 & sign_{dest} = 0 & sign_{source} = 0 & N_{out} = 0\\
-0 & sign_{dest} = 0 & sign_{source} = 0 & N_{out} = 1\\
-0 & sign_{dest} = 1 & sign_{source} = 1 & N_{out} = 0\\
-0 & sign_{dest} = 1 & sign_{source} = 1 & N_{out} = 1\\
-1 & sign_{dest} = 1 & sign_{source} = 0 & N_{out} = 0\\
-0 & sign_{dest} = 1 & sign_{source} = 0 & N_{out} = 1\\
-\end{cases}
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
 
-{% hint style="warning" %}
-Unlike other arithmetic operations, `cmp` does not take the carry flag into consideration when performing a comparison.
-{% endhint %}
+c_out = {
+    0 when r>>width = 0
+    1 when r>>width >= 0
+}
+
+n_out = r[msb]
+
+v_out = {
+    0 when sign_dest = 0, sign_source = 1, and n_out = 0
+    1 when sign_dest = 0, sign_source = 1, and n_out = 1
+    0 when sign_dest = 0, sign_source = 0, and n_out = 0
+    0 when sign_dest = 0, sign_source = 0, and n_out = 1
+    0 when sign_dest = 1, sign_source = 1, and n_out = 0
+    0 when sign_dest = 1, sign_source = 1, and n_out = 1
+    1 when sign_dest = 1, sign_source = 0, and n_out = 0
+    0 when sign_dest = 1, sign_source = 0, and n_out = 1
+}   
+```
+
+> **Note**
+>
+> Unlike other arithmetic operations, `cmp` does not take the carry flag into consideration when performing a comparison.
 
 #### Forms
 
@@ -365,9 +361,9 @@ Unlike other arithmetic operations, `cmp` does not take the carry flag into cons
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | - | - | - | - | ✓ | ✓ | ✓ | ✓ |
 
-{% hint style="warning" %}
-Although the full contingent of ALU flags is calculated when `cmp` is executed, only `N` , `C`, and`Z` have any real meaning.
-{% endhint %}
+> **Note**
+>
+> Although the full contingent of ALU flags is calculated when `cmp` is executed, only `N` , `C`, and`Z` have any real meaning.
 
 | Z | N | C | Meaning |
 | :--- | :--- | :--- | :--- |
@@ -405,9 +401,9 @@ Decrements the specified register by one, updating flags as appropriate:
 | Result goes below zero | C is set |
 | Result goes below signed minimum | V is set |
 
-{% hint style="warning" %}
-Unlike other arithmetic operations, `dec` does not take the carry flag into consideration when performing a comparison.
-{% endhint %}
+> **Note**
+>
+> Unlike other arithmetic operations, `dec` does not take the carry flag into consideration when performing a comparison.
 
 #### Flags
 
@@ -434,35 +430,37 @@ DEC dest
 
 Divides the destination by the source, and stores the result in the destination.
 
-$$
-r = \frac {source}{{dest}_{in}} \\
-dest_{out} = r_{[\text{msb}:0]}
-$$
+```text
+r = source / dest_in
+dest_out = r[msb:0]
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = 0,
-N_{out} = r_{[\text{msb}]}
-, 
-V_{out} =0
-\\
-{EX}_{out} = \begin{cases}
-1 & source = 0 \\
-{EX}_{in} & source \ne 0
-\end{cases}
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
 
-{% hint style="info" %}
-If the operation would result in a division by zero, the `EX` flag will be set, indicating a processor exception. This flag is not cleared automatically—it must be cleared using `clr ex` manually.
+c_out = 0
 
-The `C`, `N`, `Z`, and `V` flags are also set. The return result will be `0`.
-{% endhint %}
+n_out = r[msb]
+
+v_out = 0
+
+EX_out = {
+    1 when dest_in = 0
+    EX_in when dest_in != 0
+}
+
+```
+
+> **Note**
+>
+> If the operation would result in a division by zero, the `EX` flag will be set, indicating a processor exception. This flag is not cleared automatically—it must be cleared using `clr ex` manually.
+>
+> The `C`, `N`, `Z`, and `V` flags are also set. The return result will be `0`.
 
 #### Forms
 
@@ -489,7 +487,7 @@ DIV dest, src
     ld a, 2000
     ld b, 20
     div a, b          # a is 100
-    
+
     ld a, 0x5000
     ld b, 0
     div a, b          # a is zero, and EX is set (divide by zero)
@@ -500,9 +498,9 @@ DIV dest, src
 
 Allocates the specified number of bytes on the stack and adjusts `SP` and `BP` to create a new stack frame.
 
-{% hint style="danger" %}
-The data allocated on the stack is _not zeroed_. You should initialize it with data before use.
-{% endhint %}
+> **Note**
+>
+> The data allocated on the stack is _not zeroed_. You should initialize it with data before use.
 
 Specifically, the order of operations is as follows:
 
@@ -510,9 +508,9 @@ Specifically, the order of operations is as follows:
 * `SP` is moved to `BP`
 * `SP` is decremented by the specified number of bytes
 
-{% hint style="danger" %}
-Be sure there is sufficient space on the stack before using `ENTER`, otherwise a stack overflow could occur and memory outside of the stack could be overwritten.
-{% endhint %}
+> **Warning**
+>
+> Be sure there is sufficient space on the stack before using `ENTER`, otherwise a stack overflow could occur and memory outside of the stack could be overwritten.
 
 In order to access the reserved data on the stack, one should use `BP`-relative addressing:
 
@@ -573,18 +571,18 @@ EXC register
 
 Exits from the current stack frame, deallocating the specified number of bytes.
 
-{% hint style="danger" %}
-The number of bytes to deallocate _must_ match the number of bytes allocated by the corresponding `ENTER` instruction. Otherwise the stack will become corrupted.
-{% endhint %}
+> **Warning**
+>
+> The number of bytes to deallocate _must_ match the number of bytes allocated by the corresponding `ENTER` instruction. Otherwise the stack will become corrupted.
 
 Specifically, the order of operations is as follows:
 
 * `SP` is incremented by the specified number of bytes
 * The next word on the stack \(previous `BP`\) is popped into `BP`
 
-{% hint style="danger" %}
-Be sure there is a stack frame on the stack before using `EXIT`, otherwise a stack underflow could occur and memory outside of the stack could be overwritten.
-{% endhint %}
+> **Warning**
+>
+> Be sure there is a stack frame on the stack before using `EXIT`, otherwise a stack underflow could occur and memory outside of the stack could be overwritten.
 
 #### Grammar
 
@@ -634,9 +632,9 @@ Increment the specified register by one, updating flags as appropriate:
 | Result goes above unsigned maximum | C is set |
 | Result goes below signed maximum | V is set |
 
-{% hint style="warning" %}
-Unlike other arithmetic operations, `inc` does not take the carry flag into consideration when performing a comparison.
-{% endhint %}
+> **Note**
+>
+> Unlike other arithmetic operations, `inc` does not take the carry flag into consideration when performing a comparison.
 
 #### Flags
 
@@ -663,9 +661,9 @@ INC dest
 
 Loads data from memory \(or immediately from the instruction\) into a destination register. The width of the destination determines how much data is loaded—if the destination is an eight-bit register, only one byte will be loaded, and if is a sixteen-bit register, two bytes will be loaded. Note that data is always stored and loaded in _big endian_.
 
-{% hint style="info" %}
-Loading data into a register does not affect the processor status flags.
-{% endhint %}
+> **Note**
+>
+> Loading data into a register does not affect the processor status flags.
 
 The immediate forms of this instruction allows direct assignment of a value to a register:
 
@@ -674,9 +672,9 @@ LD A, 1234
 LD AL, 65
 ```
 
-{% hint style="warning" %}
-When loading data into the low portion of the register, the data in the high portion is not modified.
-{% endhint %}
+> **Warning**
+>
+> When loading data into the low portion of the register, the data in the high portion is not modified.
 
 The other forms load data from memory into the destination register. There are several [addressing modes](../../technical/technical-overview/6516-central-processing-unit/addressing-modes.md) available.
 
@@ -684,16 +682,16 @@ The other forms load data from memory into the destination register. There are s
 
 Decrements the target register, and then if carry hasn't been set, loops back to the target address. The width of the value determines if the loop is _short_ \(8 bits\) or _long_ \(16 bits\).
 
-{% hint style="info" %}
-The body of the loop will always be taken at least once. Initialize the starting value of your loop register accordingly.
-
-```text
-    ld c, 0
-_loop:
-    out 0x80, cl      # executes once
-    loop _loop, c
-```
-{% endhint %}
+> **Note**
+>
+> The body of the loop will always be taken at least once. Initialize the starting value of your loop register accordingly.
+>
+> ```text
+>     ld c, 0
+> _loop:
+>     out 0x80, cl      # executes once
+>     loop _loop, c
+> ```
 
 #### Forms
 
@@ -720,35 +718,36 @@ todo
 
 Divides the destination by the source, and stores the remainder in the destination.
 
-$$
-r = {source} \ modulo \ {{dest}_{in}} \\
-dest_{out} = r_{[\text{msb}:0]}
-$$
+```text
+r = source mod dest_in
+dest_out = r[msb:0]
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = 0,
-N_{out} = r_{[\text{msb}]}
-, 
-V_{out} =0
-\\
-{EX}_{out} = \begin{cases}
-1 & source = 0 \\
-{EX}_{in} & source \ne 0
-\end{cases}
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
 
-{% hint style="info" %}
-If the operation would result in a division by zero, the `EX` flag will be set, indicating a processor exception. This flag is not cleared automatically—it must be cleared using `clr ex` manually.
+c_out = 0
 
-The `C`, `N`, `Z`, and `V` flags are also set. The return result will be `0`.
-{% endhint %}
+n_out = r[msb]
+
+v_out = 0
+
+EX_out = {
+    1 when dest_in = 0
+    EX_in when dest_in != 0
+}
+```
+
+> **Note**
+>
+> If the operation would result in a division by zero, the `EX` flag will be set, indicating a processor exception. This flag is not cleared automatically—it must be cleared using `clr ex` manually.
+>
+> The `C`, `N`, `Z`, and `V` flags are also set. The return result will be `0`.
 
 #### Forms
 
@@ -775,7 +774,7 @@ MOD dest, src
     ld a, 2000
     ld b, 20
     mod a, b          # a is 0
-    
+
     ld a, 0x5000
     ld b, 0
     mod a, b          # a is zero, and EX is set (divide by zero)
@@ -804,28 +803,29 @@ ld a, 20
 
 Multiples the destination by the source, and stores the result in the destination.
 
-$$
-r = {source} \times {{dest}_{in}} \\
-dest_{out} = r_{[\text{msb}:0]}
-$$
+```text
+r = source * dest_in
+dest_out = r[msb:0]
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = r > \texttt{max-unsigned-word},
-N_{out} = r_{[\text{msb}]}
-, 
-V_{out} =0
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
 
-{% hint style="info" %}
-If the operation would result in a value too large for the destination register, the `C` flag is set.
-{% endhint %}
+c_out = r > max-unsigned-word
+
+n_out = r[msb]
+
+v_out = 0
+```
+
+> **Note**
+>
+> If the operation would result in a value too large for the destination register, the `C` flag is set.
 
 #### Forms
 
@@ -852,7 +852,7 @@ MUL dest, src
     ld a, 2000
     ld b, 2
     mul a, b          # a is 4000
-    
+
     ld a, 0x5000
     ld b, 0
     mul a, b          # a is zero
@@ -892,27 +892,22 @@ Do nothing. Takes some time, so can be used to slow a process down slightly.
 
 Flips the bits in the register. If the register was originally `0b10010010`, it will now be `0b01101101`.
 
-$$
-dest_{out} = \lnot dest_{in}
-$$
+```text
+dest-out = !dest_in
+```
 
 Flags are computed as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = \begin{cases} 
-      0 & r \texttt{>>} width = 0 \\
-      1 & r \texttt{>>} width \ge 0
-   \end{cases}
-,
-N_{out} = r_{[\text{msb}]}
-, 
-V_{out} = 0
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
+
+c_out = 0
+n_out = r[msb]
+v_out = 0
+```
 
 #### Flags
 
@@ -939,27 +934,27 @@ NOT dest
 
 Performs a bitwise OR on the source and destination operands, and stores the result in the destination.
 
-$$
-dest_{out} = dest_{in} \lor source_{in}
-$$
+```text
+dest_out = dest_in OR source_in
+```
 
 Once the result of the operation is computed, the ALU computes the flags as follows:
 
-$$
-Z_{out} = \begin{cases}
-1 & r = 0 \\
-0 & r \ne 0
-\end{cases} 
-,
-C_{out} = \begin{cases} 
-      0 & r \texttt{>>} width = 0 \\
-      1 & r \texttt{>>} width \ge 0
-   \end{cases}
-,
-N_{out} = r_{[\text{msb}]}
-, 
-V_{out} = 0
-$$
+```text
+z_out = {
+    1 when r = 0
+    0 when r != 0
+}
+
+c_out = {
+    0 when r >> width = 0
+    1 when r >> width >= 0
+}
+
+n_out = r[msb]
+
+v_out = 0
+```
 
 #### Forms
 
@@ -988,7 +983,7 @@ OR dest, immediate
 .segment code 0x02000 {
     ld al, 0b1111_0000
     or al, 0b0001_1000    # al is 0b1111_1000
-    
+
     ld a, 0x1234
     ld b, 0x00FF
     or a, b               # a is 0x12FF
