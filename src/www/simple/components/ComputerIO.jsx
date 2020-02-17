@@ -26,8 +26,12 @@ export class ComputerIO extends AutoUpdateComponent {
                              0, 0, 0, 0, 0, 0, 0, 0][rowIndex >> 1];
         const byteAtAddr = (whichDevice && whichDevice._read(baseDevice + whichByte + (8 * (rowIndex & 1)))) || 0;
         const charAtAddr = byteAtAddr < 32 ? "." : String.fromCharCode(byteAtAddr);
+        const newStyle = Object.assign({}, style, {
+            opacity: (columnIndex > 0) ? (byteAtAddr === 0) ? "0.25" : (byteAtAddr < 32 ? "0.5" : "1")
+                                       : "1"
+        });
         return (
-            <div style={style}>
+            <div style={newStyle}>
                 {
                     columnIndex < 1 ? toHex5(realAddr)
                     : (columnIndex > 0) && (columnIndex < 9) ? toHex2(byteAtAddr)

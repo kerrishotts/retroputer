@@ -1,4 +1,6 @@
 import React from 'react';
+import scanlines from "../assets/scanlines.png";
+import shadowMask from "../assets/shadowmask.png";
 
 export class ComputerScreen extends React.Component {
     constructor(props) {
@@ -83,8 +85,12 @@ export class ComputerScreen extends React.Component {
     }
     render() {
         return (
-            <div className="panel row">
-                <canvas width={640} height={480} ref={this.canvas} className="screen nogrow noshrink center" />
+            <div className="panel row" style={{position: "relative"}}>
+                <div style={{width:"640px", height: "480px", position: "relative"}} className="nogrow noshrink center">
+                    <canvas width={640} height={480} ref={this.canvas} className="screen nogrow noshrink center" />
+                    <img src={scanlines} style={{position: "absolute", opacity: 0.25, left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
+                    <img src={shadowMask} style={{mixBlendMode: "overlay", opacity: 1, position: "absolute", left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
+                </div>
             </div>
         );
     }
