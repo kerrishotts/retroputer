@@ -150,6 +150,16 @@ export class Store {
         this.notify();
     }
 
+    get useGL() {
+        return this.config.options.useGL;
+    }
+
+    set useGL(v) {
+        this.config.options.useGL = v;
+        this.save();
+        this.notify();
+    }
+
     addListener(cb) {
         if (this.listeners.indexOf(cb) < 0) {
             this.listeners.push(cb);
@@ -192,6 +202,7 @@ export class Store {
                 sliceGranularity: 4096,
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",
+                useGL: true
             },
             panels: {
                 canvas: true,
