@@ -6,8 +6,23 @@ import shadowMask from "../assets/shadowmask.png";
  * Modified from 
  * https://gist.github.com/KHN190/d7c467a471b15e72302b16a9336440a5
  */
-function glresize(gl)
+
+function resizeCanvas(c) {
+    // assume that c's grandparent has the width and height we need
+    const width = c.parentElement.parentElement.clientWidth - 40;
+    const height = c.parentElement.parentElement.clientHeight - 40;
+    let aspectWidth = width;
+    let aspectHeight = Math.floor(width * 0.75);
+    if (aspectHeight > height) {
+        aspectHeight = height;
+        aspectWidth = height / 0.75;
+    }
+    c.style.width = `${aspectWidth}px`;
+    c.style.height = `${aspectHeight}px`;
+}
+function glresize(gl, program)
 {
+
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.uniform2f(gl.getUniformLocation(program, "u_canvasSize"), gl.canvas.width, gl.canvas.height);
 }
@@ -26,7 +41,8 @@ function compileShader(gl, source, type)
 
 function initGLCanvas(canvas, useGL) {
     if (!useGL) return [false, canvas.getContext("2d")];
-    const gl = canvas.getContext("webgl");
+    let gl = canvas.getContext("webgl2");
+    if (!gl) gl = canvas.getContext("webgl");
     if (!gl) return [false, canvas.getContext("2d")];
 
     var vs_script = document.getElementById("some-vertex-shader");
@@ -79,7 +95,7 @@ function initGLCanvas(canvas, useGL) {
     gl.uniform1i(gl.getUniformLocation(program, "u_texture0"), 0);
 
 
-    return [true, gl];
+    return [true, gl, program];
 }
 function gldraw(gl, source)
 {
@@ -105,6 +121,7 @@ export class ComputerScreen extends React.Component {
         this.canvas = React.createRef();
         this.ctx = null;
         this.isGL = false;
+        this.program = null;
 
         this._cancelRAF = null;
         this._lastTimestamp = 0;
@@ -120,7 +137,10 @@ export class ComputerScreen extends React.Component {
     componentDidMount() {
         this._cancelRAF = requestAnimationFrame(this.renderFrame);
         const useGL = this.props.store.useGL;
-        [this.isGL, this.ctx] = initGLCanvas(this.canvas.current, useGL);
+        [this.isGL, this.ctx, this.program] = initGLCanvas(this.canvas.current, useGL);
+        if (!this.isGL) {
+            this.ctx.scale(2, 2);
+        }
     }
     componentWillUnmount() {
         cancelAnimationFrame(this._cancelRAF);
@@ -132,13 +152,20 @@ export class ComputerScreen extends React.Component {
         this.canvas.current.replaceWith(newCanvas);
         this.canvas.current = newCanvas;
         const useGL = this.props.store.useGL;
-        [this.isGL, this.ctx] = initGLCanvas(this.canvas.current, useGL);
+        [this.isGL, this.ctx, this.program] = initGLCanvas(this.canvas.current, useGL);
+        if (!this.isGL) {
+            this.ctx.scale(2, 2);
+        }
     }
     renderFrame(now) {
         const { store } = this.props;
         const { computer, diagnostics, devices: { screen }, stats } = store;
 
         stats.begin();
+
+        // see if we need to resize...
+        resizeCanvas(this.canvas.current);
+        if (this.isGL) glresize(this.ctx, this.program);
 
         let { orphanedFrames, frames, frameBuffer, frameCtx, frameCanvas } = this.state;
         frames++;
@@ -192,8 +219,8 @@ export class ComputerScreen extends React.Component {
         return (
             <div className="panel column" style={{position: "relative"}}>
                 <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> Use GL</label>
-                <div style={{width:"640px", height: "480px", position: "relative"}} className="nogrow noshrink center">
-                    <canvas width={640} height={480} ref={this.canvas} className="screen nogrow noshrink center" />
+                <div style={{position: "relative"}} className="nogrow noshrink center">
+                    <canvas width={1280} height={960} ref={this.canvas} className="screen nogrow noshrink center" />
                     {/*
                     <img src={scanlines} style={{position: "absolute", opacity: 0.25, left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
                     <img src={shadowMask} style={{mixBlendMode: "overlay", opacity: 1, position: "absolute", left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
