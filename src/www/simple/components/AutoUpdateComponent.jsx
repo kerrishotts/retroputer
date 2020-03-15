@@ -23,6 +23,7 @@ export class AutoUpdateComponent extends React.Component {
     }
             
     componentDidMount() {
+        const { store } = this.props;
         store.addListener(this.setupUpdates);
         this.setupUpdates();
     }

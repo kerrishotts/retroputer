@@ -12,7 +12,9 @@ export const REGISTERS = {
     Y: 10,
     YL: 11,
     BP: 12,
-    SP: 14
+    BPL: 13,
+    SP: 14,
+    SPL: 15
 };
 
 export const REGISTER_NAMES = Object.entries(REGISTERS).reduce((o, [k, v]) => (o[v] = k, o), {});

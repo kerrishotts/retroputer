@@ -18,6 +18,7 @@
   ],
   "dependencies": {
     "@mdx-js/react": "^1.5.3",
+    "@monaco-editor/react": "^3.1.0",
     "assets": "^3.0.1",
     "cli": "^1.0.1",
     "cliffy": "^2.0.5",

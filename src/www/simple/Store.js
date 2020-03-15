@@ -113,6 +113,7 @@ export class Store {
     set updateInterval(ms) {
         this.config.panels.updateInterval = ms;
         this.save();
+        this.notify();
     }
 
     get autoUpdate() {
@@ -122,6 +123,41 @@ export class Store {
     set autoUpdate(v) {
         this.config.panels.autoUpdate = v;
         this.save();
+        this.notify();
+    }
+
+    get codes() {
+        return this.config.codes;
+    }
+
+    get memoryStart() {
+        return this.config.memoryPanel.start;
+    }
+
+    set memoryStart(v) {
+        this.config.memoryPanel.start = Number.isNaN(Number(v)) ? "0x00000" : v;
+        this.save();
+        this.notify();
+    }
+
+    get memoryEnd() {
+        return this.config.memoryPanel.end;
+    }
+
+    set memoryEnd(v) {
+        this.config.memoryPanel.end = Number.isNaN(Number(v)) ? "0x7FFFF" : v;
+        this.save();
+        this.notify();
+    }
+
+    get useGL() {
+        return this.config.options.useGL;
+    }
+
+    set useGL(v) {
+        this.config.options.useGL = v;
+        this.save();
+        this.notify();
     }
 
     addListener(cb) {
@@ -141,15 +177,32 @@ export class Store {
         localStorage.setItem("config", JSON.stringify(this.config));
     }
 
+    saveProgram(name) {
+        this.config.codes = [ ...this.config.codes.filter(({name:aName}) => aName !== name), {name, code: this.code} ];
+        this.save();
+        this.notify();
+    }
+
+    loadProgram(name) {
+        this.code = this.config.codes.find(({name:aName}) => name === aName).code;
+        this.save();
+        this.notify();
+    }
+
     load() {
         const savedConfigStr = localStorage.getItem("config");
         const savedConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
         this.config = Object.assign({}, {
+            memoryPanel: {
+                start: "0x00000",
+                end:   "0x000FF"
+            },
             options: {
                 timingMethod: TIMING_METHODS.FIXED,
                 sliceGranularity: 4096,
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",
+                useGL: true
             },
             panels: {
                 canvas: true,
@@ -160,6 +213,7 @@ export class Store {
                 updateInterval: 250,
                 autoUpdate: true
             },
+            codes: [],
             code: (`
             .segment code 0x02000 {
                 ld al, 0

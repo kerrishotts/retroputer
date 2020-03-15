@@ -1,8 +1,9 @@
 import { REGISTER_NAMES, FLAG_NAMES, OPCODES } from "./constants.js";
 
 const toNum = (n, width, base) => 
+    ((n < 0) ? "-" : "") +
     (base === 16 ? "0x" : base === 2 ? "0b" : "") + 
-    (n || 0).toString(base).padStart(base === 16 ? width : base === 2 ? width*8 : 0, "0")
+    (Math.abs(n) || 0).toString(base).padStart(base === 16 ? width : base === 2 ? width*8 : 0, "0")
     .toUpperCase();
 
 const address = ( {size, instruction, opcode, base} = {} ) => {
@@ -23,6 +24,10 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
     let v = size === 3 ? (instruction & 0x000000FF) : (instruction & 0x0000FFFF);
     if (isLoadOrStore) v |= size === 3 ? (instruction & 0x00000700) : (instruction & 0x00070000);
 
+    const relV19 = -(v & 0x40000) + (v & 0x3FFFF);
+    const relV16 = -(v & 0x8000) + (v & 0x7FFF);
+    const relV8 = -(v & 0x80) + (v & 0x7F);
+
     let out = `${opcode}`;
     if (usesFlags) {
         if (!always) {
@@ -38,7 +43,9 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
             if (indirect) {
                 out = `${out} ?${toNum(v, (size - 2) * 2, base)}?`;
             } else {
-                out = `${out} ${toNum(v, (size - 2) * 2, base)} `;
+                if (opcode === OPCODES.CALLS || opcode === OPCODES.BRS) out = `${out} ${toNum(relV8, (size - 2) * 2, base)} `;
+                else if (opcode === OPCODES.CALL || opcode === OPCODES.BR) out = `${out} ${toNum(relV16, (size - 2) * 2, base)} `;
+                else out = `${out} ${toNum(v, (size - 2) * 2, base)} `;
             }
             break;
         case 0b01:
@@ -50,9 +57,9 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
             break;
         case 0b10:
             if (indirect) {
-                out = `${out} <BP+${toNum(v, (size - 2) * 2, base)}>`;
+                out = `${out} <BP+${toNum(relV19, (size - 2) * 2, base)}>`;
             } else {
-                out = `${out} [BP+${toNum(v, (size - 2) * 2, base)}]`;
+                out = `${out} [BP+${toNum(relV19, (size - 2) * 2, base)}]`;
             }
             break;
         case 0b11:

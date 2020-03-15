@@ -1,10 +1,116 @@
 import React from 'react';
+import scanlines from "../assets/scanlines.png";
+import shadowMask from "../assets/shadowmask.png";
+
+/*
+ * Modified from 
+ * https://gist.github.com/KHN190/d7c467a471b15e72302b16a9336440a5
+ */
+
+function resizeCanvas(c) {
+    // assume that c's grandparent has the width and height we need
+    const width = c.parentElement.parentElement.clientWidth - 40;
+    const height = c.parentElement.parentElement.clientHeight - 40;
+    let aspectWidth = width;
+    let aspectHeight = Math.floor(width * 0.75);
+    if (aspectHeight > height) {
+        aspectHeight = height;
+        aspectWidth = height / 0.75;
+    }
+    c.style.width = `${aspectWidth}px`;
+    c.style.height = `${aspectHeight}px`;
+}
+function glresize(gl, program)
+{
+
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.uniform2f(gl.getUniformLocation(program, "u_canvasSize"), gl.canvas.width, gl.canvas.height);
+}
+function compileShader(gl, source, type)
+{
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+    {
+        var info = gl.getShaderInfoLog(shader);
+        throw ("could not compile shader:" + info);
+    }
+    return shader;
+};
+
+function initGLCanvas(canvas, useGL) {
+    if (!useGL) return [false, canvas.getContext("2d")];
+    let gl = canvas.getContext("webgl2");
+    if (!gl) gl = canvas.getContext("webgl");
+    if (!gl) return [false, canvas.getContext("2d")];
+
+    var vs_script = document.getElementById("some-vertex-shader");
+    var vs = compileShader(gl, vs_script.text, gl.VERTEX_SHADER);
+    var fs_script = document.getElementById("some-fragment-shader");
+    var fs = compileShader(gl, fs_script.text, gl.FRAGMENT_SHADER);
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+    {
+        var info = gl.getProgramInfoLog(program);
+        throw ("shader program failed to link:" + info);
+    }
+    gl.useProgram(program)
+
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.uniform3f(gl.getUniformLocation(program, "u_canvasSize"), gl.canvas.width, gl.canvas.height, 0.0 );
+
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.uniform2f(gl.getUniformLocation(program, "u_canvasSize"), gl.canvas.width, gl.canvas.height);
+
+    var texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1,0, 0,0, 0,1, 0,1, 1,1, 1,0]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(texCoordLocation);
+    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+    var positionLocation = gl.getAttribLocation(program, "a_position");
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1,1, -1,1, -1,-1, -1,-1, 1,-1, 1,1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+    const gltex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, gltex);
+    /*
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    */
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(gl.getUniformLocation(program, "u_texture0"), 0);
+
+
+    return [true, gl, program];
+}
+function gldraw(gl, source)
+{
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    //requestAnimationFrame(gldraw);
+}
+/* end of shader stuff */
 
 export class ComputerScreen extends React.Component {
     constructor(props) {
         super(props);
 
         this.renderFrame = this.renderFrame.bind(this);
+        this.glChecked = this.glChecked.bind(this);
 
         const frameCanvas = document.createElement("canvas");
         frameCanvas.setAttribute("width", "640");
@@ -13,6 +119,9 @@ export class ComputerScreen extends React.Component {
         const frameBuffer = frameCtx.createImageData(640, 480);
 
         this.canvas = React.createRef();
+        this.ctx = null;
+        this.isGL = false;
+        this.program = null;
 
         this._cancelRAF = null;
         this._lastTimestamp = 0;
@@ -27,15 +136,36 @@ export class ComputerScreen extends React.Component {
     }
     componentDidMount() {
         this._cancelRAF = requestAnimationFrame(this.renderFrame);
+        const useGL = this.props.store.useGL;
+        [this.isGL, this.ctx, this.program] = initGLCanvas(this.canvas.current, useGL);
+        if (!this.isGL) {
+            this.ctx.scale(2, 2);
+        }
     }
     componentWillUnmount() {
         cancelAnimationFrame(this._cancelRAF);
+    }
+    glChecked(e) {
+        this.props.store.useGL = e.target.checked;
+        this.setState({});
+        const newCanvas = this.canvas.current.cloneNode();
+        this.canvas.current.replaceWith(newCanvas);
+        this.canvas.current = newCanvas;
+        const useGL = this.props.store.useGL;
+        [this.isGL, this.ctx, this.program] = initGLCanvas(this.canvas.current, useGL);
+        if (!this.isGL) {
+            this.ctx.scale(2, 2);
+        }
     }
     renderFrame(now) {
         const { store } = this.props;
         const { computer, diagnostics, devices: { screen }, stats } = store;
 
         stats.begin();
+
+        // see if we need to resize...
+        resizeCanvas(this.canvas.current);
+        if (this.isGL) glresize(this.ctx, this.program);
 
         let { orphanedFrames, frames, frameBuffer, frameCtx, frameCanvas } = this.state;
         frames++;
@@ -63,9 +193,13 @@ export class ComputerScreen extends React.Component {
                 frameCtx.putImageData(frameBuffer, 0, 0);
 
                 const canvas = this.canvas.current;
-                const ctx = canvas.getContext("2d");
+                const ctx = this.ctx; //canvas.getContext("2d");
 
-                ctx.drawImage(frameCanvas, 0, 0);
+                if (this.isGL) {
+                    gldraw(ctx, frameCanvas);
+                } else {
+                    ctx.drawImage(frameCanvas, 0, 0);
+                }
             }
         }
 
@@ -83,8 +217,15 @@ export class ComputerScreen extends React.Component {
     }
     render() {
         return (
-            <div className="panel row">
-                <canvas width={640} height={480} ref={this.canvas} className="screen nogrow noshrink center" />
+            <div className="panel column" style={{position: "relative"}}>
+                <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> Use GL</label>
+                <div style={{position: "relative"}} className="nogrow noshrink center">
+                    <canvas width={1280} height={960} ref={this.canvas} className="screen nogrow noshrink center" />
+                    {/*
+                    <img src={scanlines} style={{position: "absolute", opacity: 0.25, left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
+                    <img src={shadowMask} style={{mixBlendMode: "overlay", opacity: 1, position: "absolute", left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
+                    */}
+                </div>
             </div>
         );
     }
