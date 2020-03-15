@@ -111,6 +111,7 @@ export class ComputerScreen extends React.Component {
 
         this.renderFrame = this.renderFrame.bind(this);
         this.glChecked = this.glChecked.bind(this);
+        this.accuracyChecked = this.accuracyChecked.bind(this);
 
         const frameCanvas = document.createElement("canvas");
         frameCanvas.setAttribute("width", "640");
@@ -144,6 +145,12 @@ export class ComputerScreen extends React.Component {
     }
     componentWillUnmount() {
         cancelAnimationFrame(this._cancelRAF);
+    }
+    accuracyChecked(e) {
+        const { computer, diagnostics, devices: { screen }, stats } = store;
+        this.props.store.accurateScreen = e.target.checked;
+        screen.mode = this.props.store.accurateScreen ? 2 : 1;
+        this.setState({});
     }
     glChecked(e) {
         this.props.store.useGL = e.target.checked;
@@ -218,7 +225,11 @@ export class ComputerScreen extends React.Component {
     render() {
         return (
             <div className="panel column" style={{position: "relative"}}>
-                <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> Use GL</label>
+                <div className="row">
+                    <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> CRT Effect </label>
+                    &nbsp;
+                    <label><input type="checkbox" checked={this.props.store.accurateScreen} onChange={this.accuracyChecked}/> Accurate</label>
+                </div>
                 <div style={{position: "relative"}} className="nogrow noshrink center">
                     <canvas width={1280} height={960} ref={this.canvas} className="screen nogrow noshrink center" />
                     {/*

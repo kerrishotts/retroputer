@@ -24,6 +24,11 @@ export class Store {
         screenFPS.dom.style.cssText = "";
         this.fps = screenFPS;
 
+        const cpuFPS = new Stats();
+        cpuFPS.showPanel(0);
+        cpuFPS.dom.style.cssText = "";
+        this.cpuStats = cpuFPS;
+
         this.config = {};
         this.load();
         const computer = new Computer({ 
@@ -31,7 +36,8 @@ export class Store {
             debug: true, 
             timingMethod: this.config.options.timingMethod,
             sliceTime: this.config.options.sliceTime, 
-            sliceGranularity: this.config.options.sliceGranularity
+            sliceGranularity: this.config.options.sliceGranularity,
+            stats: this.cpuStats
         });
         computer.memory.loadFromJS(rom, true);
         const diagnostics = new Diagnostics(computer);
@@ -66,6 +72,7 @@ export class Store {
         if (this.config.options.ticksBetweenRasterLines !== "AUTO") {
             screen.ticksBetweenRasterLines = Number(this.config.options.ticksBetweenRasterLines);
         }
+        screen.mode = this.accurateScreen ? 2 : 1;
 
         const dma = new DMA({
             device: 13,
@@ -160,6 +167,16 @@ export class Store {
         this.notify();
     }
 
+    get accurateScreen() {
+        return this.config.options.accurateScreen;
+    }
+
+    set accurateScreen(v) {
+        this.config.options.accurateScreen = v;
+        this.save();
+        this.notify();
+    }
+
     addListener(cb) {
         if (this.listeners.indexOf(cb) < 0) {
             this.listeners.push(cb);
@@ -202,7 +219,8 @@ export class Store {
                 sliceGranularity: 4096,
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",
-                useGL: true
+                useGL: true,
+                accurateScreen: false
             },
             panels: {
                 canvas: true,

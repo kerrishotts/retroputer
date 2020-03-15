@@ -30,6 +30,22 @@
         state-heading-2:
             .string CR, " BP   SP   PC   MM  XDSWNCVZ", CR, NUL
 
+        registers:
+            .string "A", 0, 0, 0, "AL", 0, 0, "B", 0, 0, 0, "BL", 0, 0
+            .string "C", 0, 0, 0, "CL", 0, 0, "D", 0, 0, 0, "DL", 0, 0
+            .string "X", 0, 0, 0, "XL", 0, 0, "Y", 0, 0, 0, "YL", 0, 0
+            .string "BP", 0, 0,   "BPL", 0,   "SP", 0, 0,   "SPL", 0
+            .string "ST", 0, 0,   "FLG", 0,   "PC", 0, 0,   "PCL", 0
+            .string "MP", 0, 0,   "MPL", 0,   "MM", 0, 0,   "MML", 0
+
+        flags:
+        flags-unset:
+            .string "e", 0, "d", 0, "s", 0, "w", 0
+            .string "n", 0, "c", 0, "v", 0, "z", 0
+        flags-set:
+            .string "E", 0, "D", 0, "S", 0, "W", 0
+            .string "N", 0, "C", 0, "V", 0, "Z", 0
+
     }
 
     #.import "./errors.asm"
