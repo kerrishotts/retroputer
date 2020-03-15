@@ -92,7 +92,7 @@ export class Screen extends Device {
         this._column = 0;
         this._delta  = 0;
         this._wait   = false;
-        this._mode   = MODES.FAST;
+        this._mode   = MODES.SLOW;
 
         this._performance = performance;
         this._ticksPerRaster = 8; /* good enough guess */
@@ -139,6 +139,14 @@ export class Screen extends Device {
     }
     set ticksBetweenRasterLines(v) {
         this._ticksPerRaster = Number(v);
+    }
+
+    get mode() {
+        return this._mode;
+    }
+
+    set mode(v) {
+        this._mode = v;
     }
 
     reset() {
@@ -309,7 +317,7 @@ export class Screen extends Device {
             this._ticksSinceRaster++;
             if (this._wait) {
                 if (this._ticksSinceRaster > this._ticksPerRaster) {
-                    this._ticksSinceRaster -= this._ticksPerRaster;
+                    this._ticksSinceRaster = 0; //-= this._ticksPerRaster;
                     this._raster++;
                     if (this._raster > 480) this._raster = 480;
                 }
@@ -326,13 +334,15 @@ export class Screen extends Device {
         } else {
             this._ticksSinceRaster++;
             if (this._wait) return;
+            if (this._raster === 0) {
+                if (this._stats) this._stats.begin();
+            }
             if (this._ticksSinceRaster >= this._ticksPerRaster) {
-                this._ticksSinceRaster -= this._ticksPerRaster;
+                this._ticksSinceRaster = 0 /*-= this._ticksPerRaster*/;
                     this._generateRasterLine();
                     this._raster++;
                     if (this._raster > SCREEN_ROWS) {
                         if (this._stats) this._stats.end();
-                        if (this._stats) this._stats.begin();
                         this._raster = 0;
                         this._wait = true;
                         this._spritesByLayer = this._getSprites();

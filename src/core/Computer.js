@@ -41,7 +41,7 @@ export class Computer {
      * @param {number} [config.sliceGranularity=4095] the granularity when checking for slice timing
      * @param {number} [config.timingMethod=0] the timing method to use
      */
-    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO, shared = SHARED_MEMORY.AUTO} = {}) {
+    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO, shared = SHARED_MEMORY.AUTO, stats} = {}) {
 
         const clock = new Bus(1, 0b1);
         const systemBus = new SystemBus();
@@ -83,6 +83,8 @@ export class Computer {
             aluStatsLastSecond: { ... processor.alu.stats },
             timeSinceLastSecond: 0,
         };
+
+        this._stats = stats;
 
         this[_stopSignal] = false;
         if (debugLine) {
@@ -207,6 +209,7 @@ export class Computer {
      * only a single instruction will execute
      */
     runSlice() {
+        if (this._stats) this._stats.begin();
         const { sliceTime: timeout, sliceGranularity: granularity, performance, timingMethod} = this._options;
         this[_stopSignal] = false;       // clear any stop signal for this slice
         this.stats.slices++;
@@ -248,6 +251,7 @@ export class Computer {
         this.stats.timeThisSlice = totalTime;
         this.stats.time += totalTime;
         this._updateStatsAfterSlice();
+        if (this._stats) this._stats.end();
         return totalTime;             // used for next slice timing
     }
 
