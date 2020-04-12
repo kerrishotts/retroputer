@@ -25,10 +25,13 @@
 * [Devices](technical/devices-1/README.md)
   * [I/O Bus](technical/devices-1/i-o-bus.md)
   * [Console](technical/devices-1/console.md)
-  * [Keyboard](technical/devices-1/keyboard.md)
-  * [Hardware Timers](technical/devices-1/hardware-timers.md)
-  * [Mouse](technical/devices-1/mouse.md)
   * [Controllers](technical/devices-1/controllers.md)
+  * [Debugger](technical/devices-1/debugger.md)
+  * [DMA](technical/devices-1/dma.md)
+  * [Hardware Timers](technical/devices-1/hardware-timers.md)
+  * [Keyboard](technical/devices-1/keyboard.md)
+  * [Mouse](technical/devices-1/mouse.md)
+  * [Power](technical/devices-1/power.md)
 
 ## Programming Retroputer
 

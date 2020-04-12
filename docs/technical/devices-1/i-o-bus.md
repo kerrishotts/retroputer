@@ -57,7 +57,7 @@ When the CPU is finished writing to the data, address, and command lines, the Ex
 | COM3 | 10 | 0xD0 | 5 |
 | COM4 | 11 | 0xD8 | 5 |
 | – | 12 | 0xE0 |  |
-| – | 13 | 0xE8 |  |
+| [DMA](dma.md) | 13 | 0xE8 |  |
 | Debugger | 14 | 0xF0 | 1 |
 | Power | 15 | 0xF8 | 0 |
 

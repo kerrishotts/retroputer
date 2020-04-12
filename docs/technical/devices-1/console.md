@@ -1,4 +1,4 @@
-# Console
+# Console (8)
 
 The console is a simple device that can be used to send and receive transmissions via a communication port instead of the keyboard and screen.
 
