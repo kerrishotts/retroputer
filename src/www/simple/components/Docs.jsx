@@ -46,6 +46,7 @@ export class Docs extends React.Component {
     }
 
     navigate(route) {
+        console.log(route, pages[route]);
         this.setState({
             Page: pages[route]
         });

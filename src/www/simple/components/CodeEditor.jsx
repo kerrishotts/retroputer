@@ -25,6 +25,7 @@ export class CodeEditor extends React.Component {
         this.editor = React.createRef();
         this.codeChanged = this.codeChanged.bind(this);
         this.codeChangedOutside = this.codeChangedOutside.bind(this);
+        this.storeChanged = this.storeChanged.bind(this);
         this.assembleClicked = this.assembleClicked.bind(this);
         this.showEditor = this.showEditor.bind(this);
         this.showLogs = this.showLogs.bind(this);
@@ -36,11 +37,18 @@ export class CodeEditor extends React.Component {
 
         this.assembleClicked();
     }
+
+    storeChanged() {
+        if (this.state.code !== this.props.store.code) {
+            this.codeChangedOutside();
+        }
+    }
+
     componentDidMount() {
-        this.props.store.addListener(this.codeChangedOutside);
+        this.props.store.addListener(this.storeChanged);
     }
     componentWillUnmount() {
-        this.props.store.removeListener(this.codeChangedOutside);
+        this.props.store.removeListener(this.storeChanged);
     }
     showEditor() {
         this.setState({
