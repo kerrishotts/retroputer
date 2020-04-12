@@ -1,2 +1,145 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="ie=edge"><title>Simple Retroputer</title><style>body{margin:0;font-family:sans-serif;font-size:75%}html *{box-sizing:border-box}.divider{border-left:1px solid var(--border-color);margin-left:var(--half-padding);margin-right:var(--half-padding)}.lm_content{--padding:8px;--half-padding:4px;--background:#222;--border-color:#888;--text-color:#ddd;color:var(--text-color)}.lm_content input[type=text],.lm_content textarea{background-color:transparent;color:var(--text-color)}.lm_content button,.lm_content input[type=text],.lm_content textarea{border:1px solid var(--border-color);border-radius:2px;margin:var(--half-padding)}.lm_content button{background-color:var(--border-color);color:var(--background)}.lm_content button:hover{background-color:var(--text-color)}.lm_content button:active{background-color:var(--background);color:var(--text-color)}.panel{padding:var(--padding);overflow:scroll;height:100%}.row{flex-direction:row}.column,.row{display:flex;flex-basis:auto}.column{flex-direction:column}.nogrow{flex-grow:0}.noshrink{flex-shrink:0}.grow{flex-grow:1}.shrink{flex-shrink:1}.center{margin:auto}.lm_content code{font-family:Menlo,monospace;white-space:pre-wrap}.lm_content table{width:100%}.lm_content td,.lm_content th{text-align:right;width:4em;padding:.5em}.lm_content th{font-weight:700}canvas.screen{image-rendering:optimizeSpeed;image-rendering:-moz-crisp-edges;image-rendering:-webkit-optimize-contrast;image-rendering:-o-crisp-edges;image-rendering:pixelated;-ms-interpolation-mode:nearest-neighbor}</style><link rel="stylesheet" href="/simple.7234aa7b.css"></head><body> <script src="/simple.271f0237.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="ie=edge"><title>Simple Retroputer</title><style>body{margin:0;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-size:75%}html *{box-sizing:border-box}.Io,.Memory{font-family:monospace;text-align:center}.divider{border-left:1px solid var(--border-color);margin-left:var(--half-padding);margin-right:var(--half-padding)}.lm_content{--padding:8px;--half-padding:4px;--background:#222;--quote-background:hsla(0,0%,100%,0.0625);--border-color:#888;--text-color:#ddd;--text-heading-color:#fff;--link-color:#dfd;color:var(--text-color)}.lm_content input[type=text],.lm_content select,.lm_content textarea{background-color:transparent;border:1px solid var(--border-color);border-radius:2px;color:var(--text-color);margin:var(--half-padding);line-height:20px}.lm_content textarea{font-family:Source Code Pro,Menlo,monospace}.lm_content button{background-color:var(--border-color);color:var(--background);border:1px solid var(--border-color);border-radius:2px;margin:var(--half-padding);line-height:20px}.lm_content button:hover{background-color:var(--text-color)}.lm_content button:active{background-color:var(--background);color:var(--text-color)}.panel{padding:var(--padding);overflow:scroll;height:100%}.row{flex-direction:row}.column,.row{display:flex;flex-basis:auto}.column{flex-direction:column}.nogrow{flex-grow:0}.noshrink{flex-shrink:0}.grow{flex-grow:1}.shrink{flex-shrink:1}.center{margin:auto}.lm_content code{font-family:Menlo,monospace;white-space:pre-wrap}.lm_content table{width:100%}.lm_content td,.lm_content th{text-align:right;width:4em;padding:.25em}.lm_content tr:nth-of-type(odd){background-color:rgba(0,0,0,.125)}.lm_content th{font-weight:700}canvas.zscreen{image-rendering:optimizeSpeed;image-rendering:-moz-crisp-edges;image-rendering:-webkit-optimize-contrast;image-rendering:-o-crisp-edges;image-rendering:pixelated;-ms-interpolation-mode:nearest-neighbor}.docs{line-height:1.25}.docs .toc h1{display:none}.docs .toc h2{font-size:100%;text-transform:uppercase;letter-spacing:1px;color:var(--text-heading-color)}.docs .toc ul{margin:0;padding:0 0 0 1em}.docs .toc>ul{padding:0}.docs .toc ul li{list-style:none}.docs .toc ul li a{text-decoration:none;color:var(--text-color)}.docs .toc ul li a:hover{text-decoration:underline}.docs .md,.docs .toc{padding:1em;overflow:auto}.docs .md{font-family:Georgia,Times New Roman,Times,serif;font-size:10pt;line-height:1.33;flex:0 1 auto;min-width:10em;max-width:40em;margin:0 auto}.docs .md td p,.docs .md th p{margin:0;padding:0}.docs .md a{color:var(--link-color)}.docs .md td,.docs .md th{text-align:initial;vertical-align:top;width:0}.docs .md h1,.docs .md h2,.docs .md h3,.docs .md h4,.docs .md th{font-family:Helvetica Neue,Helvetica,Arial,sans-serif;color:var(--text-heading-color)}.docs .md h1{border-bottom:1px solid var(--text-heading-color);font-size:14pt}.docs .md h2{font-size:12pt}.docs .md h3{font-size:11pt}.docs .md h4{font-size:10pt}.docs .md img{max-width:100%;background-color:#fff}.docs .md .code{border:1px solid var(--border-color);border-radius:var(--padding)}.docs .md code{font-size:8pt}.docs .md .codebar{padding:var(--padding);border-bottom:1px solid var(--border-color);text-align:right}.docs .md .codebody{font-size:8pt;color:var(--text-color);background-color:#000;padding:var(--padding);border-bottom-left-radius:var(--padding);border-bottom-right-radius:var(--padding);overflow-x:scroll}.docs .md .codebody code{white-space:pre}.docs .md blockquote{margin:0;padding:.5em 1em;border-left:4px solid var(--border-color);background-color:var(--quote-background);border-radius:var(--padding)}.docs .md blockquote p{margin:.5em 0}.docs .md blockquote p strong{font-family:Helvetica Neue,Helvetica,Arial,sans-serif;color:var(--text-heading-color);font-size:11pt;margin:0}.docs .md blockquote h2,.docs .md blockquote h3{margin:0}.docs .md blockquote h4{margin:1em 0 -.5em}.docs .md table{margin:1em 0}</style><link rel="stylesheet" href="/simple.7234aa7b.css"></head><body> <script src="/simple.dc143f41.js"></script>
+
+ 
+<script id="some-vertex-shader" type="x-shader/x-vertex">
+	attribute vec2 a_position;
+	attribute vec2 a_texCoord;
+	varying   vec2 v_texCoord;
+	void main()
+	{
+		gl_Position = vec4(a_position.x, a_position.y, 0, 1);
+		v_texCoord = a_texCoord;
+	}
+</script> 
+<script id="some-fragment-shader" type="x-shader/x-fragment">
+
+	precision mediump float;
+
+	varying vec2		v_texCoord;
+	uniform vec2		u_canvasSize;
+	uniform sampler2D	u_texture;
+
+	// PUBLIC DOMAIN CRT STYLED SCAN-LINE SHADER
+	//   by Timothy Lottes
+	// https://www.shadertoy.com/view/XsjSzR
+	//   modified (borked) by ultrabrite
+
+	// Emulated input resolution.
+	const vec2 texSize=vec2(640.0,480.0);
+
+	// Hardness of scanline.
+	//  -8.0 = soft
+	// -16.0 = medium
+	float hardScan=-6.0;
+
+	// Hardness of pixels in scanline.
+	// -2.0 = soft
+	// -4.0 = hard
+	const float hardPix=-1.5;
+
+	// Hardness of shadow mask in scanline.
+	// 0.5 = hard
+	// 3.0 = soft
+	const float hardMask=2.0;
+
+	const vec3 compos = vec3(1.0/6.0,1.0/2.0,5.0/6.0);
+
+	// Display warp.
+	// 0.0 = none
+	// 1.0/8.0 = extreme
+	//const vec2 warp=vec2(0,0);
+	const vec2 warp=vec2(1.0/48.0,1.0/48.0);
+
+	//------------------------------------------------------------------------
+
+	// Nearest emulated sample given floating point position and texel offset.
+	// Also zero's off screen.
+	vec3 Fetch(vec2 pos,vec2 off)
+	{
+		pos=floor(pos * texSize + off) / texSize;
+		if (pos.x<0.0 || pos.x>=1.0 || pos.y<0.0 || pos.y>=1.0)
+			return vec3(0.0,0.0,0.0);
+		return texture2D(u_texture,pos.xy).rgb;
+	}
+
+	// Distance in emulated pixels to nearest texel.
+	vec2 Dist(vec2 pos)
+	{
+		pos=pos * texSize;
+		return -((pos-floor(pos))-vec2(0.5));
+	}
+
+	// 1D Gaussian.
+	float Gaus(float pos,float scale)
+	{
+		return exp2(scale*pos*pos);
+	}
+
+	// 3-tap Gaussian filter along horz line.
+	vec3 Horz3(vec2 pos,float off)
+	{
+		mat3 m=mat3(Fetch(pos,vec2(-1.0,off)),
+					Fetch(pos,vec2( 0.0,off)),
+					Fetch(pos,vec2( 1.0,off)));
+		float dst=Dist(pos).x;
+		// Convert distance to weight.
+		vec3 v=vec3(Gaus(dst-1.0,hardPix),
+					Gaus(dst+0.0,hardPix),
+					Gaus(dst+1.0,hardPix));
+			// Return filtered sample.
+			return (m*v)/(v.x+v.y+v.z);
+	}
+
+	// 5-tap Gaussian filter along horz line.
+	vec3 Horz5(vec2 pos,float off)
+	{
+		vec3 a=Fetch(pos,vec2(-2.0,off));
+		vec3 b=Fetch(pos,vec2(-1.0,off));
+		vec3 c=Fetch(pos,vec2( 0.0,off));
+		vec3 d=Fetch(pos,vec2( 1.0,off));
+		vec3 e=Fetch(pos,vec2( 2.0,off));
+		float dstx=Dist(pos).x;
+		// Convert distance to weight.
+		float wa=Gaus(dstx-2.0,hardPix);
+		float wb=Gaus(dstx-1.0,hardPix);
+		float wc=Gaus(dstx+0.0,hardPix);
+		float wd=Gaus(dstx+1.0,hardPix);
+		float we=Gaus(dstx+2.0,hardPix);
+		// Return filtered sample.
+		return (a*wa+b*wb+c*wc+d*wd+e*we)/(wa+wb+wc+wd+we);
+	}
+
+	// Allow nearest three lines to effect pixel.
+	vec3 Tri(vec2 pos)
+	{
+		mat3 m=mat3(Horz3(pos,-1.0),
+					Horz5(pos, 0.0),
+					Horz3(pos, 1.0));
+		float dsty=Dist(pos).y;
+		vec3 v=vec3(Gaus(dsty-1.0,hardScan),
+					Gaus(dsty+0.0,hardScan),
+					Gaus(dsty+1.0,hardScan));
+		return m*v;
+	}
+
+	// Distortion of scanlines, and end of screen alpha.
+	vec2 Warp(vec2 pos)
+	{
+		pos=pos*2.0-1.0;
+		pos*=1.0+vec2(pos.y*pos.y,pos.x*pos.x)*warp;
+		return pos*0.5+0.5;
+	}
+
+	vec3 Mask(float x)
+	{
+		vec3 v  = clamp((fract(x)-compos)*hardMask,-1.0/3.0,1.0/3.0);
+		return 2.0/3.0+abs(v);
+	}
+
+	void main()
+	{
+		gl_FragColor.rgb = Tri(Warp(v_texCoord.xy))*Mask(v_texCoord.x*texSize.x);
+		gl_FragColor.a = 1.0;
+	}
+</script>
 </body></html>
