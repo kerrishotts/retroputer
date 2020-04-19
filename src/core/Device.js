@@ -9,6 +9,9 @@ export const _buffer = Symbol("_buffer");
 export const _device = Symbol("_device");
 export const _priority = Symbol("_priority");
 
+const _addrStart = Symbol("_addrStart");
+const _addrEnd = Symbol("_addrEnd");
+
 export class Device {
     /**
      * 
@@ -22,41 +25,34 @@ export class Device {
      */
     constructor({device = 0, length = 16, priority = 15, controller, memory = undefined, clock = undefined}) {
         this[_controller] = controller;
-        controller.register(this);
         this[_ioBus] = controller.ioBus;
         this[_memory] = memory;
         this[_device] = device;
         this[_priority] = priority;
+        this._length = length;
+        this[_addrStart] = device << 4;
+        this[_addrEnd] = (this[_addrStart] + length) - 1;
+
 
         this[_buffer] = new Uint8Array(new ArrayBuffer(length << 1));
-
-        this._length = length;
 
         this.putOnBus = this.putOnBus.bind(this);
         this.pullFromBus = this.pullFromBus.bind(this);
         this._read = this._read.bind(this);
         this._write = this._write.bind(this);
 
+        controller.register(this);
+
         this.ioBus.executeBus.addReceiver(() => {
             const ioBus = this[_ioBus];
             const selectedDevice = ioBus.deviceSelectBus.value;
-            if (selectedDevice === this.device) {
+            const baseAddress = selectedDevice << 4;
+            const busAddress = baseAddress + ioBus.addressSelectBus.value;
+            if (busAddress >= this[_addrStart] && busAddress <= this[_addrEnd]) {
                 const command = ioBus.commandBus.value;
-                const address = ioBus.addressSelectBus.value;
+                const address = busAddress - this[_addrStart];
                 const fn = command === 0 ? this.putOnBus : this.pullFromBus;
-                if (fn) {
-                    fn(address);
-                }
-            }
-            if (this._length === 32) {
-                if (selectedDevice === this.device + 1) {
-                    const command = ioBus.commandBus.value;
-                    const address = ioBus.addressSelectBus.value + 16;
-                    const fn = command === 0 ? this.putOnBus : this.pullFromBus;
-                    if (fn) {
-                        fn(address);
-                    }
-                }
+                if (fn) { fn(address); }
             }
         });
 
@@ -87,8 +83,16 @@ export class Device {
         this._write(address, data);
     }
 
+    get addrStart() {
+        return this[_addrStart];
+    }
+
+    get addrEnd() {
+        return this[_addrEnd];
+    }
+
     get mirrored() {
-        return {}
+        return {};
     }
 
     get device() {

@@ -57,18 +57,18 @@ const ARD = 31;
 const KEYBOARD_MAP = [
     /* Key        Unshifted Shf   GrU   GrS Ctl */
     [ ["Backquote",    "`", "~", 0xFF, 0x8E,  0], 
-      ["Digit1",       "1", "!", 0xE4, 0x86, 0x1C], 
-      ["Digit2",       "2", "@", 0xE5, 0x87, 0x1D], 
-      ["Digit3",       "3", "#", 0xFB, 0x88, 0x1E],      
-      ["Digit4",       "4", "$", 0xF0, 0x98, 0x1F], 
-      ["Digit5",       "5", "%", 0xF1, 0xA8,  0], 
-      ["Digit6",       "6", "^", 0xF2, 0x96,  0], 
-      ["Digit7",       "7", "&", 0xF3, 0x97,  0], 
-      ["Digit8",       "8", "*", 0xF4, 0xA6,  0], 
-      ["Digit9",       "9", "(", 0xF5, 0xA7,  0], 
-      ["Digit0",       "0", ")", 0xF6, 0x9E, 0x1B], 
-      ["Minus",        "-", "_", 0xED, 0x93,  0],       
-      ["Equal",        "=", "+", 0xEB, 0x95,  0], 
+      [["Digit1", "Numpad1"],       "1", "!", 0xE4, 0x86, 0x1C], 
+      [["Digit2", "Numpad2"],       "2", "@", 0xE5, 0x87, 0x1D], 
+      [["Digit3", "Numpad3"],       "3", "#", 0xFB, 0x88, 0x1E],      
+      [["Digit4", "Numpad4"],       "4", "$", 0xF0, 0x98, 0x1F], 
+      [["Digit5", "Numpad5"],       "5", "%", 0xF1, 0xA8,  0], 
+      [["Digit6", "Numpad6"],       "6", "^", 0xF2, 0x96,  0], 
+      [["Digit7", "Numpad7"],       "7", "&", 0xF3, 0x97,  0], 
+      [["Digit8", "Numpad8", "NumpadMultiply"],       "8", "*", 0xF4, 0xA6,  0], 
+      [["Digit9", "Numpad9"],       "9", "(", 0xF5, 0xA7,  0], 
+      [["Digit0", "Numpad0"],       "0", ")", 0xF6, 0x9E, 0x1B], 
+      [["Minus", "NumpadSubtract"],        "-", "_", 0xED, 0x93,  0],       
+      [["Equal", "NumpadEqual", "NumpadAdd"],        "=", "+", 0xEB, 0x95,  0], 
       ["Backspace",     BS, DEL, 0x7F,  DEL, FF], 
       ["F1",            F1,  F1,   F1,   F1, F1], 
       ["F2",            F2,  F2,   F2,   F2, F2]],
@@ -101,7 +101,7 @@ const KEYBOARD_MAP = [
       ["Semicolon",    ";", ":", 0xB0, 0xA3,  0], 
       ["Quote",        `'`, `"`, 0xB1, 0xA5,  0],
       undefined,                                  
-      ["Enter",         CR,  CR,  CR,   CR,  CR], 
+      [["Enter", "NumpadEnter"],         CR,  CR,  CR,   CR,  CR], 
       ["F5",            F5,  F5,  F5,   F5,  F5], 
       ["F6",            F6,  F6,  F6,   F6,  F6]],
     [ ["ShiftLeft",      0,   0,    0,    0,  0], 
@@ -113,16 +113,16 @@ const KEYBOARD_MAP = [
       ["KeyN",         "n", "N", 0xBC, 0xBD, "N".charCodeAt(0) - 64], 
       ["KeyM",         "m", "M", 0xE7, 0xE1, "M".charCodeAt(0) - 64],
       ["Comma",        ",", "<", 0xDC, 0xCD,  0], 
-      ["Period",       ".", ">", 0xE6, 0xE0,  0], 
-      ["Slash",        "/", "?", 0xEE, 0x8F,  0], 
+      [["Period", "NumpadDecimal"],       ".", ">", 0xE6, 0xE0,  0], 
+      [["Slash", "NumpadDivide"],        "/", "?", 0xEE, 0x8F,  0], 
       undefined,
       ["ArrowUp",      ARU, ARU,  ARU,  ARU,ARU], 
       ["ShiftRight",     0,   0,    0,    0,  0], 
       ["F7",            F7,  F7,   F7,   F7, F7], 
       ["F8",            F8,  F8,   F8,   F8, F8]],
-    [ ["MetaLeft",       0,   0,    0,    0,  0], 
-      ["AltLeft",        0,   0,    0,    0,  0], 
-      ["ControlLeft",    0,   0,    0,    0,  0], 
+    [ [["MetaLeft", "MetaRight"],       0,   0,    0,    0,  0], 
+      [["AltLeft", "AltRight"],        0,   0,    0,    0,  0], 
+      [["ControlLeft", "ControlRight"],    0,   0,    0,    0,  0], 
       undefined,
       undefined,                                  
       undefined,                
@@ -149,7 +149,13 @@ KEYBOARD_MAP.map((keys, row) => keys && keys.map((data, col) => {
         if (typeof tmp.gru === "string") tmp.gru = tmp.gru.charCodeAt(0);
         if (typeof tmp.grs === "string") tmp.grs = tmp.grs.charCodeAt(0);
         if (typeof tmp.ctl === "string") tmp.ctl = tmp.ctl.charCodeAt(0);
-        KEYCODE_MAP[key] = tmp;
+        if (Array.isArray(key)) {
+            for (let theKey of key) {
+                KEYCODE_MAP[theKey] = tmp;
+            }
+        } else {
+            KEYCODE_MAP[key] = tmp;
+        }
     }
 }));
 

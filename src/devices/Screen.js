@@ -16,6 +16,26 @@ import { Device } from "../core/Device.js";
  *
  */
 
+/*
+ * Known issues
+ * ------------
+ * 
+ * All:
+ * - Sprites can wrap around on the right side
+ * - Border can't be made transparent
+ * 
+ * Fast mode:
+ * - 
+ * 
+ * Accurate Mode 2:
+ * - Sprites take too long (ineffecient draw)
+ * - Y crop is not respected
+ * 
+ * Questions:
+ * - Should sprite dimensions be +1? 0x0 makes little sense!
+ * - Should Border width be extended? Can still see 8th pixel?
+ */
+
 const PALETTE_PAGE  = 0x00; // ???_ppppp
 const BG_COLOR      = 0x01;
 const LAYER_SEL     = 0x02; // Change this to select which layer to read from/write to
@@ -291,9 +311,9 @@ export class Screen extends Device {
 
     pullFromBus(address) {
         super.pullFromBus(address);
-        const selectedDevice = (this.ioBus.deviceSelectBus.value - this._baseDevice) << 4;
-        const port = address | selectedDevice;
-        switch(port) {
+        /*const selectedDevice = (this.ioBus.deviceSelectBus.value - this._baseDevice) << 4;
+        const port = address | selectedDevice;*/
+        switch(address) {
             case RESET_WAIT:
                 return this.resetWait();
         }
