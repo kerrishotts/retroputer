@@ -6,6 +6,7 @@ import { Bus } from "./Bus.js";
 const _processor = Symbol("_processor");
 const _ioBus = Symbol("_ioBus");
 const _devices = Symbol("_devices");
+const _deviceMap = Symbol("_deviceMap");
 
 export class Controller {
     /**
@@ -20,6 +21,7 @@ export class Controller {
         processor.registerController(this);
         this[_ioBus] = ioBus;
         this[_devices] = [];
+        this[_deviceMap] = [];
 
         this.tick = this.tick.bind(this);
         if (clock) {
@@ -45,6 +47,26 @@ export class Controller {
     register(device) {
         this[_devices].push(device);
         this[_devices].sort((a, b) => a.priority - b.priority);
+
+        this[_deviceMap] = this[_devices].reduce(
+            (m, device) => {
+                for (let addr = device.addrStart; addr <= device.addrEnd; addr += 16) {
+                    m[addr >> 4] = device;
+                }
+                return m;
+            }, []);
+    }
+
+    pureRead(address) {
+        const deviceSelection = address >> 4;
+        const actualDevice = this[_deviceMap][deviceSelection];
+        return (actualDevice ? actualDevice._read(address - actualDevice.addrStart) : 0) || 0;
+    }
+
+    pureWrite(address, value) {
+        const deviceSelection = address >> 4;
+        const actualDevice = this[_deviceMap][deviceSelection];
+        if (actualDevice) actualDevice._write(address - actualDevice.addrStart, value);
     }
 
     /**
