@@ -13,12 +13,18 @@ setImportProvider(nodeImportProvider);
 
 import { Computer, TIMING_METHODS } from "../core/Computer.js";
 import { ConsoleDevice } from "../devices/Console.js";
+import { Screen } from "../devices/Screen.js";
+import { DMA } from "../devices/DMA.js";
+import { Keyboard } from "../devices/Keyboard.js";
+import { Timers } from "../devices/Timers.js";
 
 import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagnostics.js";
 
 import rom, { vectors } from "../roms/kernel.js";
 
 import shell from "shelljs";
+
+import output from "image-output";
 
 const VERSION = "0.0.1";
 let verbose = false;
@@ -27,6 +33,8 @@ class Monitor {
     constructor() {
         this.computers = {};
         this.diagnostics = {};
+        this.devices = {};
+        this.intervals = {};
         this.default = "default";
     }
 
@@ -34,12 +42,49 @@ class Monitor {
         return Object.keys(this.computers).indexOf(name) > -1;
     }
 
-    create({name = this.default, debug = true, timingMethod = TIMING_METHODS.AUTO} = {}) {
+    dumpScreen({name = this.default, to = ""} = {}) {
+        if (!this.includes(name)) {
+            throw new Error(`A computer with the name "${name}" does not exist.`);
+        }
+
+        const screen = this.devices[name].screen;
+        console.log("\n");
+        output(screen.frame, (to === "" || to === "console" || to === true) ? null : to, {width: 640, height: 480});
+        if (screen._wait) {
+            screen.resetWait();
+        }
+
+    }
+
+    create({name = this.default, debug = true, timingMethod = TIMING_METHODS.AUTO, time = "16", granularity = "15"} = {}) {
         if (this.includes(name)) {
             throw new Error(`A computer with the name "${name}" already exists.`);
         }
-        const computer = new Computer({performance, debug, timingMethod});
+        const computer = new Computer({performance, debug, timingMethod, sliceTime: Number(time), sliceGranularity: Number(granularity)});
         computer.memory.loadFromJS(rom, true);
+
+        const timers = new Timers({
+            device: 0,
+            length: 16,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock,
+            performance
+        });
+
+        const screen = new Screen({
+            device: 1,
+            length: 32,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock,
+            performance,
+            stats: this.fps
+        });
+        screen.adjustPerformance = true; // no auto adjust of perf; may be < 60fps
+        screen.ticksBetweenRasterLines = 12; // 12 tics per line
+        screen.mode = 2; // accurate screen
+
         const console = new ConsoleDevice({
             device: 8,
             length: 16,
@@ -47,6 +92,31 @@ class Monitor {
             memory: computer.memory,
             clock: computer.clock
         });
+
+        const dma = new DMA({
+            device: 13,
+            length: 16,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock
+        });
+
+        const keyboard = new Keyboard({
+            device: 3,
+            length: 16,
+            controller: computer.controller,
+            memory: computer.memory,
+            clock: computer.clock
+        });
+        this.devices[name] = {
+            screen,
+            keyboard, 
+            timers,
+            dma,
+            console
+        };
+
+        this.intervals[name] = {};
         this.computers[name] = computer;
         this.diagnostics[name] = new Diagnostics(this.computers[name]);
     }
@@ -64,6 +134,16 @@ class Monitor {
         // start assumes we don't want to single step.
         computer.processor.registers.SINGLE_STEP = 0;
         computer.run();
+
+        if (this.intervals[name].screen) {
+            clearInterval(this.intervals[name].screen);
+        }
+        this.intervals[name].screen = setInterval(() => {
+            const screen = this.devices[name].screen;
+            if (screen._wait) {
+                screen.resetWait();
+            }
+        }, 1);
     }
     tick({name = this.default, at = undefined} = {}) {
         if (!this.includes(name)) {
@@ -96,6 +176,9 @@ class Monitor {
             throw new Error(`A computer with the name "${name}" doesn't exist.`);
         }
         this.computers[name].stop();
+        if (this.intervals[name].screen) {
+            clearInterval(this.intervals[name].screen);
+        }
     }
 
     memory({name = this.default} = {}) {
@@ -139,7 +222,7 @@ class Monitor {
 
     reportStatus({name = undefined, stack = false, tasks = false, cache = false, dump = false} = {}) {
         report.table(
-            ["Name", "Activity", "|", "#Ticks", "#µOPs", "#Insts", "#aOPs", "#Slices", "µOP/slice", "i/slice", "time(ms)", "mµOP/s", "mips", "maOP/s", "µOP/i" ,"|",
+            ["Name", "Activity", "|", "#Ticks", "#µOPs", "#Insts", "#aOPs", "#Slices", "µOP/slice", "i/slice", "time(ms)", "mµOP/s", "mips", "maOP/s", "µOP/i" ,"|\n               |",
              "r: A", "r: B", "r: C", "r: D", "r: X", "r: Y", "r:BP", "r:SP", "STAT", "r:PC", "r:MP", "r:MM"],
                     Object.entries(this.diagnostics)
                 .filter(([candidate]) => name !== undefined ? candidate === name : true)
@@ -151,7 +234,7 @@ class Monitor {
                     return [
                         name,
                         diag.state,
-                        "|", ...stats, "|",
+                        "|", ...stats, "|\n",
                         ...diag.dumpRegisters().map(toHex4)
                     ]})
         );
@@ -209,16 +292,17 @@ const commands = {
             {
                 label: "name", optional: true, type: "string",
                 description: `Name of the retroputer; defaults to current default`
-            }
+            },
+            { label: "timing", description: "Enables fixed or auto timing modes. AUTO, FIXED, INTERVAL, TIMEOUT, RAF, BLOCKING", optional: true, type: "string" },
+            { label: "time", description: "Amount of time for a slice, unless FIXED or BLOCKING.", optional: true, type: "string" },
+            { label: "granularity", description: "Instruction granularity in slice. If FIXED, number of instructions per slice. BLOCKING ignores.", optional: true, type: "string" }
         ],
         options: [
-            {
-                label: "blocking", description: "If set, computer execution is blocking until it voluntarily surrenders control via setting SS."
-            }
         ],
-        action: ({name = monitor.default}, {blocking = false, debug = true}) => {
+        action: ({name = monitor.default, timing = "AUTO", time = "16", granularity="255"}, {debug = true} = {}) => {
             try {
-                monitor.create({name, debug, timingMethod: blocking ? TIMING_METHODS.BLOCKING : TIMING_METHODS.AUTO});
+                const timingMethod = TIMING_METHODS[timing.toUpperCase()];
+                monitor.create({name, debug, timingMethod, time, granularity});
                 monitor.default = name; // this is the new default machine
                 if (verbose) report.info(`Created a computer with name "${name}"`);
             } catch (err) {
@@ -457,6 +541,22 @@ const commands = {
             }
         }
     },
+    dumpScreen: {
+        description: "Show computer screen",
+        parameters: [
+            {
+                label: "to", optional: true, type: "string",
+                description: "Location to dump screen to, or `console`."
+            },
+        ],
+        action: ({name = monitor.default, to = ""} = {}) => {
+            try {
+                monitor.dumpScreen({name, to});
+            } catch (err) {
+                report.error(err.message);
+            }
+        }
+    },
     disassemble: {
         description: "Disassemble computer memory contents",
         parameters: [
@@ -502,6 +602,22 @@ const commands = {
     }
 };
 
+function quitWithOptions({reason, dumpScreen, finishScreen}) {
+    if (dumpScreen) {
+        const screen = monitor.devices["local"].screen;
+        if (finishScreen) {
+            for (let frames = 0; frames < 3; frames++) { 
+                while (!screen._wait) screen.tick();
+                screen.resetWait();
+            }
+        }
+        commands.dumpScreen.action({to:dumpScreen});
+    }
+    if (verbose) commands.list.action();
+    if (verbose) report.info(reason);
+    process.exit(0);
+}
+
 const prog = sade("monitor");
 prog
     .version(VERSION)
@@ -509,16 +625,73 @@ prog
 
 prog
     .command("run <asmFile>")
-    .describe("Assemble the specified assembly file, and then execute it to completion.")
+    .describe("Assemble the specified assembly file, and then execute it to completion, or for a given time period.")
     .option("-g, --at", "Specify the starting address for execution", "0x02000")
+    .option("-t, --timeout", "Timeout for execution or (0) to completion", "0")
+    .option("-c, --cycles", "Stop after specified cycles or (0) to completion", "0")
+    .option("-s, --slices", "Stop after specified slices or (0) to completion", "0")
+    .option("-d, --screen", "Render the screen, either to the 'console' or to a file", "")
+    .option("-f, --finish", "If specified, allow the screen to render completely.", false)
+    .option("--timingMethod", "Specifies the timing method: (AUTO), FIXED, INTERVAL, TIMEOUT, RAF, BLOCKING", "AUTO")
+    .option("--timePerSlice", "Specifies the ms per slice", "16")
+    .option("--sliceGranularity", "Specifies the granularity per time check in a slice or # of instructions for FIXED", "15")
     .example("run asm/examples/console.asm -g 0x03000")
-    .action((asmFile, {g = "0x02000", level = "error"} = {}) => {
+    .action((asmFile, {g = "0x02000", t = "0", c = "0", s = "0", d = "", f = false, timingMethod = "AUTO", timePerSlice = "16", sliceGranularity = "15", level = "error"} = {}) => {
+        const name = "local";
+        let dumpScreen = d;
+        if (dumpScreen === true) {
+            dumpScreen = "console";
+        }
+        const finishScreen = f;
         verbose = level === "verbose";
-        commands.create.action({name:"local"}, {blocking: true});
-        commands.assemble.action({file: asmFile, name: "local"});
-        commands.start.action({at: g, name: "local"});
+        commands.create.action({name, timing: timingMethod, time: timePerSlice, granularity: sliceGranularity}, {debug: timingMethod.toUpperCase() !== "BLOCKING"});
+        if (timingMethod.toUpperCase() !== "BLOCKING") commands.start.action({name});
+        commands.assemble.action({file: asmFile, name});
+
+        const diag = monitor.diagnostics[name];
+
+        let cyclesAtStart = 0;
+        let totalTimeAtStart = 0;
+        let slicesAtStart = 0;
+        let startCounting = false;
+        setTimeout(() => {
+            commands.stop.action({name});
+            commands.start.action({at: g, name});
+            const stats = diag.dumpStatistics();
+            cyclesAtStart = stats.insts;
+            slicesAtStart = stats.slices;
+            totalTimeAtStart = stats.totalTime;
+            startCounting = true; 
+        }, timingMethod.toUpperCase() !== "BLOCKING" ? 1000 : 0);
+
         if (verbose) commands.list.action();
-        process.exit(0);
+
+        let cycles = Number(c);
+        if (Number.isNaN(cycles)) cycles = 0;
+
+        let slices = Number(s);
+        if (Number.isNaN(slices)) slices = 0;
+
+        let timeout  = Number(t);
+        if (Number.isNaN(timeout)) timeout = 0;
+
+        setInterval(() => {
+            if (diag.state !== "running") {
+                quitWithOptions({reason: "Program terminated.", dumpScreen, finishScreen});
+            }
+            if (!startCounting) return;
+
+            const stats = diag.dumpStatistics();
+            if (cycles > 0 && (stats.insts - cyclesAtStart) >= cycles) {
+                quitWithOptions({reason: "Program terminated early (cycles exceeded).", dumpScreen, finishScreen});
+            }
+            if (slices > 0 && (stats.slices - slicesAtStart) >= slices) {
+                quitWithOptions({reason: "Program terminated early (slices exceeded).", dumpScreen, finishScreen});
+            }
+            if (timeout > 0 && (stats.totalTime - totalTimeAtStart) >= timeout) {
+                quitWithOptions({reason: "Program terminated early (timed out).", dumpScreen, finishScreen});
+            }
+        }, 1);
     });
 
 prog
@@ -564,6 +737,9 @@ prog
             // dump
             .addCommand("d", commands.dump)
             .addCommand("dump", commands.dump)
+            // dumpScreen
+            .addCommand("ds", commands.dumpScreen)
+            .addCommand("screen", commands.dumpScreen)
             // disassemble
             .addCommand("u", commands.disassemble)
             .addCommand("disassemble", commands.disassemble)
