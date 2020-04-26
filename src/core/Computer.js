@@ -22,6 +22,10 @@ export const SHARED_MEMORY = {
     SHARED: 2
 };
 
+const detectedTimingMethod = typeof requestAnimationFrame !== "undefined"
+    ? TIMING_METHODS.RAF
+    : TIMING_METHODS.TIMEOUT;
+
 const _clock = Symbol("_clock");
 const _processor = Symbol("_processor");
 const _memory = Symbol("_memory");
@@ -104,9 +108,6 @@ export class Computer {
         this[_processor] = processor;
         this[_controller] = controller;
 
-        const detectedTimingMethod = typeof requestAnimationFrame !== "undefined"
-            ? TIMING_METHODS.RAF
-            : TIMING_METHODS.TIMEOUT;
 
         this._options = {
             sliceTime,
@@ -260,10 +261,11 @@ export class Computer {
      */
     run() {
         const {timingMethod, sliceTime} = this._options;
+        const realTimingMethod = timingMethod === TIMING_METHODS.FIXED ? detectedTimingMethod : timingMethod;
 
         if (this.running) this.stop();
 
-        switch (timingMethod) {
+        switch (realTimingMethod) {
             case TIMING_METHODS.TIMEOUT: {
                 this[_runID] = setTimeout((function slice() {
                     const timeTaken = this.runSlice();
@@ -273,7 +275,6 @@ export class Computer {
                 }).bind(this), 0 );     // may as well start as soon as possible
                 break;
             }
-            case TIMING_METHODS.FIXED:
             case TIMING_METHODS.RAF: {
                 this[_runID] = requestAnimationFrame((function slice() {
                     const timeTaken = this.runSlice();
@@ -298,16 +299,16 @@ export class Computer {
     }
     stop() {
         const {timingMethod} = this._options;
+        const realTimingMethod = timingMethod === TIMING_METHODS.FIXED ? detectedTimingMethod : timingMethod;
         this[_stopSignal] = true;        // stop any running slice
         if (this[_runID]) {
-            switch (timingMethod) {
+            switch (realTimingMethod) {
                 case TIMING_METHODS.BLOCKING:
                     break;
                 case TIMING_METHODS.TIMEOUT: {
                     clearTimeout(this[_runID]);
                     break;
                 }
-                case TIMING_METHODS.FIXED:
                 case TIMING_METHODS.RAF: {
                     cancelAnimationFrame(this[_runID]);
                     break;
