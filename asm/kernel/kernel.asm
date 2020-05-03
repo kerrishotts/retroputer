@@ -44,6 +44,7 @@
         INPUT:                       .word core.screen.kcode.input
         U16_TO_STR:                  .word core.stdlib.kcode.u16-to-str
         I16_TO_STR:                  .word core.stdlib.kcode.i16-to-str
+        STRCMP:                      .word core.stdlib.kcode.strcmp
     }
 
     .import "./monitor/monitor.asm"

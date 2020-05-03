@@ -131,5 +131,82 @@
             popf
             ret
         }
+
+        ########################################################################
+        #
+        # STRCMP
+        #
+        # Compares two strings and returns if the first string is equal to, 
+        # less than, or greater than the second string. Both strings must be NUL
+        # terminated.
+        #
+        # @param D,X            (PTR) String A      First string to compare
+        # @param [BP+4,BP+6]    (PTR) String B      Second string to compare
+        # @param FLAGS
+        #   @flag Z     if set, check for full equality (NULs must be in the same location)
+        #               if not set, bails with +Z/-N when first NUL is encountered (in string a)
+        # @return FLAGS
+        #   @flag Z     set when equal; clear when unequal
+        #   @flag N     set when less than; clear when equal or greater than
+        # @return C     number of characters compared
+        ########################################################################
+        strcmp: {
+            enter 0x00
+            push a
+            push b
+            push d
+            push y
+            pushf
+            if Z {
+                bl := 0x00                  # Checking for full equality
+            } else {
+                bl := 0x01                  # only checking for partial equality
+            }
+        _main:
+            y := 0                          # start of string
+        top:
+            cl := [d, x, y]                 # character in string A
+            al := <bp+4>,y                  # character in string B
+            cmp bl, 0x01                    # check if we're doing full equality
+            if Z {
+                cmp cl, 0                   # we're not, so check for an early nul in string b
+                brs Z strings-are-equal       # if it's NUL, we calling them equal
+            }
+            cmp cl, al                      # check character
+            if Z {
+                cmp cl, 0                   # equal, but check for NUL
+                brs Z strings-are-equal     # NUL reached, strings are equal
+                inc y                       # next character
+                brs top                     # not NUL, so keep going...
+            }
+
+            # if here, the strings aren't equal
+            if N {
+                popf                        # string is less than
+                set N
+                clr Z
+                brs _out
+            } else {
+                popf                        # string is greater than
+                clr N
+                clr Z
+                brs _out
+            }
+
+        strings-are-equal:
+            popf
+            clr N                           # Not less than
+            set Z                           # but Equal
+
+        _out:
+            c := y                          # make sure we know how many chars where compared
+            pop y
+            pop d
+            pop b
+            pop a
+            exit 0x00
+            ret
+        }
+
     }
 }

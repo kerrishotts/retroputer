@@ -29,6 +29,7 @@ export class ComputerState extends AutoUpdateComponent {
             dumpedStats.slices, dumpedStats.microOpsPerSlice, dumpedStats.instsPerSlice, dumpedStats.totalTime, dumpedStats.timeThisSlice,
             dumpedStats.MMOPs, dumpedStats.MIPs, dumpedStats.MAOPs, dumpedStats.microOpsPerInst ];
         const regs = [ "", ...diagnostics.dumpRegisters().map(toHex4) ];
+        const flags = diagnostics.dumpFlags();
 
         return (
             <div className="panel">
@@ -48,7 +49,29 @@ export class ComputerState extends AutoUpdateComponent {
                     <tr><th>Scr TPS</th><td>{numToString(round(screen._ticksPerSecond, 4), {padDecimal: 4})}</td>
                         <th>Scr TBR</th><td>{numToString(round(screen._ticksPerRaster, 4), {padDecimal: 4})}</td></tr>
                 </tbody></table>
-        </div>
+                <table>
+                    <thead>
+                        <th>7.EX</th>
+                        <th>6.ID</th>
+                        <th>5.IS</th>
+                        <th>4.SS</th>
+                        <th>3.N</th>
+                        <th>2.C</th>
+                        <th>1.V</th>
+                        <th>0.Z</th>
+                    </thead>
+                    <tbody>
+                        <td>{flags.EX ? "+" : "-"}</td>
+                        <td>{flags.ID ? "+" : "-"}</td>
+                        <td>{flags.IS ? "+" : "-"}</td>
+                        <td>{flags.SS ? "+" : "-"}</td>
+                        <td>{flags.N  ? "+" : "-"}</td>
+                        <td>{flags.C  ? "+" : "-"}</td>
+                        <td>{flags.V  ? "+" : "-"}</td>
+                        <td>{flags.Z  ? "+" : "-"}</td>
+                    </tbody>
+                </table>
+            </div>
         );
     }
 }

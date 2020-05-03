@@ -207,6 +207,7 @@
             _rbracket-token:     .string "]"               , NUL, TOK_RBRACKET
                                  .const TOK_END_OF_STMT                     220
             _end-of-stmt:        .string ":"               , NUL, TOK_END_OF_STMT
+            _end-of-token-table: .byte NUL
             token-vectors: 
                 .word _abs-keyword, _and-keyword, _asc-keyword, _atn-keyword, _at-keyword
                 .word _call-keyword, _catalog-keyword, _chr-keyword, _cls-keyword, _close-keyword
