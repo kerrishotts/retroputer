@@ -34,8 +34,56 @@
     }
 
     .namespace basic {
+        #
+        # BASIC MEMORY MAP
+        #######################################################################
+        #
+        # Scratch storage for BASIC, such as code being entered, as well as
+        # some variables to keep track of heaps and other things
+        #######################################################################
         .const data-start       0x0B000 # BASIC scratch data
         .const data-size        0x00800
+        #
+        # Variable Storage
+        #######################################################################
+        .const vars-start       0x02000           # Start of BASIC variable storage
+        .const ints-start       0x02000           # ... integers start at 0x02000
+        .const ints-length      26 * 37 * 2       # ... variables are [A-Z][A-Z0-9]?; storage is 2 bytes
+        .const strs-start       kmemmap.basic.ints-start + kmemmap.basic.ints-length 
+        .const strs-length      26 * 37 * 2       # ... string variables are [A-Z][A-Z0-9]?$; pointer is 2 bytes
+        .const dbls-start       kmemmap.basic.strs-start + kmemmap.basic.strs-length
+        .const dbls-length      26 * 37 * 8       # ... reals are [A-Z][A-Z0-9]?#; value is 8 bytes
+        .const arrs-start       kmemmap.basic.dbls-start + kmemmap.basic.dbls-length
+        .const arrs-length      26 * 37 * 4       # ... arrays are [A-Z][A-Z0-9]?[|#|$](#). Stored as:
+                                                  # ... 30:31 = type
+                                                  # ... 30:16 = dimension (max dim is 16,383)
+                                                  # ... 15:0  = pointer to object in heap
+        .const vars-length      kmemmap.basic.ints-length + kmemmap.basic.strs-length + kmemmap.basic.dbls-length + kmemmap.basic.arrs-length
+        .const vars-end         kmemmap.basic.vars-start + kmemmap.basic.vars-length
+                                                  # ... should be 0x5C20, leaving 0x5BE0 (~23k) bytes free
+        #
+        # String and Array Storage (Heap; will need GC'd)
+        #######################################################################
+        .const heap-start       0x20000           # Heap has room for 64k of strings or
+        .const heap-size        0x10000           # array data
+        #
+        # Code Line Pointer Storage
+        #######################################################################
+        .const lptr-start       0x30000           # We can store up to 32k two-byte pointers to prog space
+        .const lptr-size        0x10000           # so line #s can be 0 - 32767
+        #
+        # Code Line Storage (Another heap; will need GC'd)
+        #######################################################################
+        .const prog-start       0x40000           # Tokenized lines start here!
+        .const prog-size        0x10000           # A program can be up to 64k large
+        #
+        # Garbage Collection Bank
+        #######################################################################
+        .const gcol-start       0x50000           # We reserve an entire 64k bank for
+        .const gcol-size        0x10000           # garbage collection
+        #
+        # BASIC Executable Code and read-only data (ROM)
+        #######################################################################
         .const code-start       0x7E000 # start of BASIC code
         .const rodata-start     0x7A000 # basic-rodata
         .const rodata-size      0x02000

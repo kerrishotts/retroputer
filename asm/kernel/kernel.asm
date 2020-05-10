@@ -45,6 +45,9 @@
         U16_TO_STR:                  .word core.stdlib.kcode.u16-to-str
         I16_TO_STR:                  .word core.stdlib.kcode.i16-to-str
         STRCMP:                      .word core.stdlib.kcode.strcmp
+        SHOW_CURSOR:                 .word core.screen.kcode.show-cursor
+        HIDE_CURSOR:                 .word core.screen.kcode.hide-cursor
+        PRINT_RAW:                   .word core.screen.kcode.print-raw
     }
 
     .import "./monitor/monitor.asm"
