@@ -3,6 +3,16 @@ let importProvider = {
     importFinally() { }
 };
 
+let depth = 0;
+function debug(...args) {
+    const cli = globalThis.cli;
+    const str = Array.from({length: depth}, _ => ".").join("");
+    if (cli) {
+        cli.debug(str + args.join(" "));
+    }
+}
+
+
 import { parser } from "./parser.js";
 
 import { MODES, TOKENS, OPCODES, DIRECTIVES, REGISTERS, FLAGS } from "./constants.js";
@@ -495,6 +505,10 @@ function tryToAssemble(node, context, pc, fail = false) {
 let block_id = 0;
 let macro_id = 0;
 export function assemble(ast, global, context) {
+    try {
+    depth+=1;
+    debug(">");
+
     global = global || createScope();
     if (!context) { context = global; }
     if (!ast) {
@@ -506,7 +520,7 @@ export function assemble(ast, global, context) {
         }
         err(`Tried to assemble invalid AST ${JSON.stringify(ast)}`);
     }
-    ast.forEach(node => {
+    for (let node of ast) {
         lastPos = node.pos;             // always mark the last visited source
         // code position so we can display
         // meaningful error messages
@@ -520,19 +534,24 @@ export function assemble(ast, global, context) {
             case TOKENS.IMPORT_DIRECTIVE:
                 {
                     const name = node.path.value;
+                    debug(`IMPO ${name}...`)
                     const fileContents = importProvider.tryImport(name);
+                    debug(`PARS ${name}...`)
                     const ast = parser.parse(fileContents);
                     try {
+                        debug(`ASM  ${name}...`)
                         assemble(ast, global, context);
                     } catch (err) {
                         throw err;
                     } finally {
+                        debug(`DONE ${name}`)
                         importProvider.importFinally();
                     }
                 }
                 break;
             case TOKENS.NAMESPACE_DIRECTIVE:
                 {
+                    debug(`NSPC ${node.name.ident}...`)
                     const newContext = createScope(SCOPE.TYPES.NAMESPACE, context, node.name.ident);
                     assemble(node.block, global, newContext);
                 }
@@ -555,6 +574,7 @@ export function assemble(ast, global, context) {
                     if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
                         global[SCOPE.SEGMENTS].push(newContext);
                     }
+                    debug(`SEGM ${newContext[SCOPE.NAME]}...`)
                     assemble(node.block, global, newContext);
                 }
                 break;
@@ -562,6 +582,7 @@ export function assemble(ast, global, context) {
                 {
                     const addr = context[SCOPE.ADDR];
                     const name = `block-${++block_id}`;
+                    debug(`BLCK ${name}...`)
                     const newContext = createScope(SCOPE.TYPES.BLOCK, context, name, addr, false);
                     try {
                         assemble(node.block, global, newContext);
@@ -674,6 +695,7 @@ export function assemble(ast, global, context) {
                     const macro = findIdent(node.name.ident, context);
                     const addr = context[SCOPE.ADDR];
                     const name = `macro-${++macro_id}`;
+                    debug(`MCRO ${name}...`)
                     const newContext = createScope(SCOPE.TYPES.BLOCK, context, name, addr, false);
                     //console.info(`... with ${macro.params.length} parameters...`, node.args);
 
@@ -721,11 +743,15 @@ export function assemble(ast, global, context) {
                     break;
                 }
         }
-    });
+    }
 
     // retry any failed assembly instructions
     const segments = global[SCOPE.SEGMENTS];
-    const code = segments.map(segment => {
+
+    let code = [];
+    if (depth<2) {
+    debug ("CODE", segments.map(segment => segment[SCOPE.NAME]).join(", "));
+    for (let segment of segments) {
         const data = segment[SCOPE.DATA];
         const contents = segment[SCOPE.CONTENTS];
         const bytes = data.map((datum, idx) => {
@@ -733,6 +759,7 @@ export function assemble(ast, global, context) {
                 const { asm, bytes, context, pc } = datum;
                 if (bytes === undefined) {
                     try {
+                        debug("TTAS");
                         const { bytes: newBytes } = tryToAssemble(asm, context, pc, true);
                         if (newBytes) {
                             datum.bytes = newBytes;
@@ -761,12 +788,26 @@ export function assemble(ast, global, context) {
             arr.push(...item.bytes);
             return arr;
         }, []);
-        return { name: segment[SCOPE.NAME], addr: segment[SCOPE.BASE], length: arr.length, data: arr, contents, chain: getScopeChain(segment, global), adj: !!segment[SCOPE.ADJUSTED] };
-    });
-
-
+        code.push({ 
+            name: segment[SCOPE.NAME], 
+            addr: segment[SCOPE.BASE], 
+            length: arr.length, 
+            data: arr, 
+            contents, 
+            chain: getScopeChain(segment, global), 
+            adj: !!segment[SCOPE.ADJUSTED] 
+        });
+    }
+    }
     // return the segments
     return code.sort((a, b) => a.addr < b.addr ? -1 : a.addr > b.addr ? 1 : 0);
+
+
+    } finally {
+        debug("<");
+        depth-=1;
+    }
+
 }
 
 export const setImportProvider = theImportProvider => {
