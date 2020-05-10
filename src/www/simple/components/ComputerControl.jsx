@@ -166,7 +166,7 @@ export class ComputerControl extends React.Component {
                 <label>Start Address: <input size={10} type="text" value={startAddress} onChange={this.startAddressChanged} /></label>
                 <span className="divider"/>
                 <button onClick={this.resetClicked} title="Reset"><Icon icon={previous} /></button>
-                <button onClick={this.startClicked} title="Start"><Icon icon={play2} /></button>
+                <button onClick={this.startClicked} title="Start" id="start"><Icon icon={play2} /></button>
                 <button onClick={this.continueClicked} title="Continue"><Icon icon={forward2} /></button>
                 <button onClick={this.stopClicked} title="Stop"><Icon icon={stop} /></button>
                 <span className="divider"/>
