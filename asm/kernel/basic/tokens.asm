@@ -89,6 +89,8 @@
             _left-keyword:       .string "LEFT$"           , NUL, TOK_LEFT
                                  .const TOK_LEN                             163
             _len-keyword:        .string "LEN"             , NUL, TOK_LEN
+                                 .const TOK_LET                             223
+            _let-keyword:        .string "LET"             , NUL, TOK_LEN
                                  .const TOK_LIST                            164
             _list-keyword:       .string "LIST"            , NUL, TOK_LIST
                                  .const TOK_LOAD                            165
@@ -217,6 +219,7 @@
                                  .const TOK_DWORD                           253
                                  .const TOK_STRING                          252
                                  .const TOK_VARIABLE                        251
+                                 .const MAX_TOKEN                           223
             token-vectors: 
                 .word _abs-keyword, _and-keyword, _asc-keyword, _atn-keyword, _at-keyword
                 .word _call-keyword, _catalog-keyword, _chr-keyword, _cls-keyword, _close-keyword
@@ -234,5 +237,5 @@
                 .word _until-keyword, _usr-keyword, _val-keyword, _while-keyword, _add-operator, _sub-operator
                 .word _mul-operator, _div-operator, _mod-operator, _pow-operator, _neq-operator, _lte-operator
                 .word _gte-operator, _lt-operator, _gt-operator, _equ-operator, _lpar-token, _rpar-token
-                .word _lbracket-token, _rbracket-token, _end-of-stmt, _lower-keyword, _upper-keyword
+                .word _lbracket-token, _rbracket-token, _end-of-stmt, _lower-keyword, _upper-keyword, _let-keyword
 }
