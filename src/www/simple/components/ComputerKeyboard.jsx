@@ -7,6 +7,7 @@ export class ComputerKeyboard extends React.Component {
         this.keyPressed = this.keyPressed.bind(this);
         this.keyDown = this.keyDown.bind(this);
         this.keyUp = this.keyUp.bind(this);
+        this.handlePaste = this.handlePaste.bind(this);
 
         this._handlers = {};
     }
@@ -50,14 +51,41 @@ export class ComputerKeyboard extends React.Component {
         e.preventDefault();
     }
 
+    handlePaste(e) {
+        const target = e.target;
+        const data = target.value;
+        const { store } = this.props;
+        const { keyboard } = store.devices;
+        let l = 0;
+        const id = setInterval(() => {
+            if (l >= data.length) {
+                clearInterval(id);
+                target.value = "";
+            } else {
+                const c = data.charCodeAt(l);
+                switch (c) {
+                    case 8220:
+                    case 8221: 
+                        keyboard.keyPressed(34);
+                        break;
+                    case 10:
+                        keyboard.keyPressed(13);
+                        break;
+                    default:
+                        keyboard.keyPressed(c);
+                }
+                l++;
+            }
+        }, 16);
+    }
+
     render() {
         return (
             <div className="panel">
                 <label>
                     Input: 
-                    <input autoFocus={true} autoComplete="off" className="keyboard"
-                           type="text" size={1} 
-                           /*onKeyPress={this.keyPressed} onKeyDown={this.keyDown} onKeyUp={this.keyUp}*/ />
+                    <input autoFocus={true} autoComplete="off" className="keyboard" type="text" size={1} />
+                    <textarea onChange={this.handlePaste} rows={1} cols={1}></textarea>
                 </label>
             </div>
         )
