@@ -669,17 +669,19 @@ export class Screen extends Device {
                     const rowMultiplier = 8 + lineSpacing;
                     const rowHeight = rowMultiplier - 1;
                     //for (let row = lastVisibleRow- 1; row >= firstVisibleRow; row--) {
-                    let row = currentRaster;
+                    //let row = (currentRaster / rowMultiplier);
+                    let row = Math.floor(currentRaster / rowMultiplier);
                         for (let col = lastVisibleColumn - 1; col >= firstVisibleColumn; col--) {
                             const tilePos = (row << (5 + (layer.mode !== 0))) + col;
                             const tile = this.memory.readUnmappedByte(pageAddr + tilePos)
                             const tileFgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x1000);
                             const tileBgColor = this.memory.readUnmappedByte(pageAddr + tilePos + 0x2000);
-                            //let _y = row % rowHeight;
-                            for (let _y = rowHeight; _y >= 0; _y--) {
+                            let _y = currentRaster % rowMultiplier;
+                            //for (let _y = rowHeight; _y >= 0; _y--) {
+                                const y = BORDER_HEIGHT + (((row * rowMultiplier) + _y) << scale) + yOffset;
+                                //console.log(y, currentRaster);
                                 for (let _x = 7; _x >= 0; _x--) {
                                     const x = BORDER_WIDTH + (((col * 8) + _x) << scale) + xOffset;
-                                    const y = BORDER_HEIGHT + (((row * rowMultiplier) + _y) << scale) + yOffset;
                                     const offset = y * SCREEN_COLUMNS + x;
                                     if (x >= 0 && y >= 0 && x < SCREEN_COLUMNS && y < SCREEN_ROWS) {
                                         let tilePixel = this.memory.readUnmappedByte(tilePageAddr + (tile << 6) + (_y << 3) + _x);
@@ -694,7 +696,7 @@ export class Screen extends Device {
                                         if (tilePixel === 0xFF) tilePixel = layer.fg;
                                         if (tilePixel !== 0) this._drawPixel(x, y, scale, tilePixel);
                                     }
-                                }
+                            //    }
                            }
                             
                         }
@@ -715,9 +717,10 @@ export class Screen extends Device {
                             const tileBgColor = this.memory.readUnmappedByte(sprite.pageAddr + tilePos + 0x80);
                             const scale = sprite.scale;
                             for (let _y = 7; _y >= 0; _y--) {
+                                const y = (((row * 8) + _y) << scale) + sprite.yOffset;
+                                if (y !== currentRaster) continue;
                                 for (let _x = 7; _x >= 0; _x--) {
                                     const x = (((col * 8) + _x) << scale) + sprite.xOffset;
-                                    const y = (((row * 8) + _y) << scale) + sprite.yOffset;
                                     const offset = y * SCREEN_COLUMNS + x;
                                     let tilePixel = this.memory.readUnmappedByte(sprite.tilePageAddr + (tile << 6) + (_y << 3) + _x);
 
