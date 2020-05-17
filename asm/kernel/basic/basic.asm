@@ -58,6 +58,7 @@
         forsub-stack-ptr:    .byte 0             # pointer into forsub stack
         execution-mode:      .byte 0             # are we (1)running or (0)entering code? 
         current-line-number: .word 0             # current line number of execution (or entry)
+        current-line-ptr:
         current-line-bptr:   .word 0             # will point to the program bank
         current-line-aptr:   .word 0             # pointer to current program line
         
@@ -734,6 +735,218 @@
             ret
         }
 
+        token-not-impl: {
+        _main:
+            dl := brodata.NOT_IMPLEMENTED
+            ret
+        }
+
+        handler-clear-screen: {
+            call [vectors.CLEAR_SCREEN]
+            dl := 0
+            ret
+        }
+
+        handler-new: {
+            call new
+            dl := 0
+            ret
+        }
+
+        token-handlers:
+            .word token-not-impl                # 128, ABS
+            .word token-not-impl                # 129, AND
+            .word token-not-impl                # 130, ASC
+            .word token-not-impl                # 131, ATN
+            .word token-not-impl                # 132, AT
+            .word token-not-impl                # 133, CALL
+            .word token-not-impl                # 134, CATALOG
+            .word token-not-impl                # 135, CHR
+            .word handler-clear-screen          # 136, CLS
+            .word token-not-impl                # 137, CLOSE
+            .word token-not-impl                # 138, CONTINUE
+            .word token-not-impl                # 139, COS
+            .word token-not-impl                # 140, DATA
+            .word token-not-impl                # 141, DEFFN
+            .word token-not-impl                # 142, DEFSUB
+            .word token-not-impl                # 143, DIM
+            .word token-not-impl                # 144, DO
+            .word token-not-impl                # 145, ELSEIF
+            .word token-not-impl                # 146, ELSE
+            .word token-not-impl                # 147, ENDSUB
+            .word token-not-impl                # 148, ENDFN
+            .word token-not-impl                # 149, ENDIF
+            .word token-not-impl                # 150, END
+            .word token-not-impl                # 151, EXP
+            .word token-not-impl                # 152, FOR
+            .word token-not-impl                # 153, GETKEY
+            .word token-not-impl                # 154, GOSUB
+            .word token-not-impl                # 155, GOTO
+            .word token-not-impl                # 156, HEX
+            .word token-not-impl                # 157, HOME
+            .word token-not-impl                # 158, IF
+            .word token-not-impl                # 159, INPUT
+            .word token-not-impl                # 160, INT
+            .word token-not-impl                # 161, IN
+            .word token-not-impl                # 162, LEFT
+            .word token-not-impl                # 163, LEN
+            .word token-not-impl                # 164, LIST
+            .word token-not-impl                # 165, LOAD
+            .word token-not-impl                # 166, LOG
+            .word token-not-impl                # 167, LOOP
+            .word token-not-impl                # 168, MID
+            .word handler-new                   # 169, NEW
+            .word token-not-impl                # 170, NEXT
+            .word token-not-impl                # 171, NOT
+            .word token-not-impl                # 172, ON
+            .word token-not-impl                # 173, OPEN
+            .word token-not-impl                # 174, OR
+            .word token-not-impl                # 175, OUT
+            .word token-not-impl                # 176, PEEK
+            .word token-not-impl                # 177, POKE
+            .word token-not-impl                # 178, PRINT
+            .word token-not-impl                # 179, READ
+            .word token-not-impl                # 180, REM
+            .word token-not-impl                # 181, RETURN
+            .word token-not-impl                # 182, RIGHT
+            .word token-not-impl                # 183, RND
+            .word token-not-impl                # 184, RENAME
+            .word token-not-impl                # 185, REMOVE
+            .word token-not-impl                # 186, RESTORE
+            .word token-not-impl                # 187, RUN
+            .word token-not-impl                # 188, SAVE
+            .word token-not-impl                # 189, SGN
+            .word token-not-impl                # 190, SIN
+            .word token-not-impl                # 191, SPC
+            .word token-not-impl                # 192, SQR
+            .word token-not-impl                # 193, STEP
+            .word token-not-impl                # 194, STOP
+            .word token-not-impl                # 195, STR
+            .word token-not-impl                # 196, TAB
+            .word token-not-impl                # 197, TAN
+            .word token-not-impl                # 198, THEN
+            .word token-not-impl                # 199, TO
+            .word token-not-impl                # 200, UNTIL
+            .word token-not-impl                # 201, USR
+            .word token-not-impl                # 202, VAL
+            .word token-not-impl                # 203, WHILE
+            .word token-not-impl                # 204, +  
+            .word token-not-impl                # 205, -  
+            .word token-not-impl                # 206, *
+            .word token-not-impl                # 207, /
+            .word token-not-impl                # 208, %
+            .word token-not-impl                # 209, ^
+            .word token-not-impl                # 210, <>, !=
+            .word token-not-impl                # 211, <=
+            .word token-not-impl                # 212, >=
+            .word token-not-impl                # 213, <
+            .word token-not-impl                # 214, >
+            .word token-not-impl                # 215, =
+            .word token-not-impl                # 216, (
+            .word token-not-impl                # 217, )
+            .word token-not-impl                # 218, [
+            .word token-not-impl                # 219, ]
+            .word token-not-impl                # 220, :
+            .word token-not-impl                # 221, LOWER
+            .word token-not-impl                # 222, UPPER
+            .word token-not-impl                # 223, LET
+            .word token-not-impl                # 224
+            .word token-not-impl                # 225
+            .word token-not-impl                # 226
+            .word token-not-impl                # 227
+            .word token-not-impl                # 228
+            .word token-not-impl                # 229
+            .word token-not-impl                # 230
+            .word token-not-impl                # 231
+            .word token-not-impl                # 232
+            .word token-not-impl                # 233
+            .word token-not-impl                # 234
+            .word token-not-impl                # 235
+            .word token-not-impl                # 236
+            .word token-not-impl                # 237
+            .word token-not-impl                # 238
+            .word token-not-impl                # 239
+            .word token-not-impl                # 240
+            .word token-not-impl                # 241
+            .word token-not-impl                # 242
+            .word token-not-impl                # 243
+            .word token-not-impl                # 244
+            .word token-not-impl                # 245
+            .word token-not-impl                # 246
+            .word token-not-impl                # 247
+            .word token-not-impl                # 248
+            .word token-not-impl                # 249
+            .word token-not-impl                # 250
+            .word token-not-impl                # 251, TOK_VARIABLE
+            .word token-not-impl                # 252, TOK_STRING
+            .word token-not-impl                # 253, TOK_DWORD
+            .word token-not-impl                # 254, TOK_WORD
+            .word token-not-impl                # 255, TOK_BYTE
+
+        #
+        # gettok returns the next token, and advances
+        # 
+        # @returns DL: next token
+        #
+        #######################################################################
+        gettok: {
+        _main:
+            dl := <bdata.current-line-ptr>
+            push x
+            x := [bdata.current-line-aptr]
+            inc x
+            [bdata.current-line-aptr] := x
+            pop x
+        _out:
+            ret
+        }
+
+        #
+        # EVAL is responsible for evaluating the line at D,X
+        # 
+        # @param [D, X]: PTR to crunched line (either direct or run mode works)
+        # @returns DL: 0 if no error, or an error number if one occurred
+        #
+        #######################################################################
+        eval: {
+            enter 0x00
+            push x
+            push a
+            push y
+            push c
+        _main:
+            #@todo: handle end of statement/: correctly. Right now "clscls" is valid, even though it should be cls:cls
+            y := 0
+            do {
+                call gettok
+                c := dl
+                cmp c, 128
+                if n {
+                    # not an executable token
+                    cmp c, 0
+                    if z {
+                        dl := 0
+                        brs _out
+                    }
+                    dl := brodata.SYNTAX_ERROR
+                    brs _out
+                }
+                clr c
+                sub c, 128
+                shl c, 1
+                x := c
+                call [token-handlers, x]
+                cmp dl, 0
+            } while z
+        _out:
+            pop c
+            pop y
+            pop a
+            pop x
+            exit 0x00
+            ret
+        }
+
         #
         # The REPL is responsible for:
         # 
@@ -851,6 +1064,13 @@
 
         _eval:
             # @todo write this bit!
+            cl := 0
+            [bdata.execution-mode] := cl        # 0 = direct
+            c := 0xFFFF
+            [bdata.current-line-number] := c    # When executing direct, the current line number is always -1
+            [bdata.current-line-bptr] := d
+            [bdata.current-line-aptr] := x      
+            call eval                           # eval uses the above setup to execute code
             brs _display-errors                 # make sure we show any error messages
 
         _store:
@@ -908,6 +1128,11 @@
             #
             # STEP 4: Display errors
             #
+            c := 0
+            cmp dl, 0
+            if !z {
+                call print-error
+            }
 
             #
             # STEP 5: Do it again
