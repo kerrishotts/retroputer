@@ -29,7 +29,7 @@ call [PUT_CHAR]             # writes "A" on the screen
 
 #### Control Characters
 
-<table>
+<table class="htCore">
   <thead>
     <tr>
       <th style="text-align:left">Character Code</th>

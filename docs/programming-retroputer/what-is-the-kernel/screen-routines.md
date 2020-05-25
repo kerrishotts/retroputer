@@ -10,7 +10,7 @@ The screen module uses the following settings in memory \(starting at `0x01100`\
 >
 > Any mismatch between the following settings and the corresponding screen layer settings will result in misplacement of the screen cursor, incorrect rendering, and unexpected visual artifacts.
 
-<table>
+<table className="expand">
   <thead>
     <tr>
       <th style="text-align:left">Setting</th>
@@ -261,7 +261,9 @@ The screen module uses the following settings in memory \(starting at `0x01100`\
       <td style="text-align:left">Accumulator for the control code parameter.</td>
     </tr>
   </tbody>
-</table>## CLEAR\_SCREEN
+</table>
+
+## CLEAR\_SCREEN
 
 Clears the contents of the screen. The screen is filled with `0x00` bytes to ensure that the screen editor can detect the ends of lines. The foreground and background color are also copied to color memory.
 
@@ -509,7 +511,7 @@ call [PUT_CHAR]             # writes "A" on the screen
 
 #### Control Characters
 
-<table>
+<table className="expand">
   <thead>
     <tr>
       <th style="text-align:left">Character Code</th>
@@ -750,7 +752,9 @@ call [PUT_CHAR]             # writes "A" on the screen
       <td style="text-align:left">Moves the cursor down, scrolling if necessary</td>
     </tr>
   </tbody>
-</table>## SCROLL\_SCREEN\_UP
+</table>
+
+## SCROLL\_SCREEN\_UP
 
 Scrolls the contents of the screen up by one row. 
 

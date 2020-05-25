@@ -196,6 +196,7 @@ export class ComputerScreen extends React.Component {
         if (diagnostics.state === "running" || orphanedFrames < 3) {
             if (screen._wait) {
                 screen.resetWait();
+            }
                 frameBuffer.data.set(screen.frame);
                 frameCtx.putImageData(frameBuffer, 0, 0);
 
@@ -207,7 +208,7 @@ export class ComputerScreen extends React.Component {
                 } else {
                     ctx.drawImage(frameCanvas, 0, 0);
                 }
-            }
+            //}
         }
 
         if (diagnostics.state === "running") {

@@ -14,6 +14,7 @@
     * [Flags](technical/technical-overview/6516-central-processing-unit/flags.md)
     * [Addressing Modes](technical/technical-overview/6516-central-processing-unit/addressing-modes.md)
     * [System Bus](technical/technical-overview/6516-central-processing-unit/system-bus.md)
+    * [ISA](technical/technical-overview/6516-central-processing-unit/isa.mdx)
   * [6448 Video Generator](technical/technical-overview/6448-video-generator-1/README.md)
     * [Specifications](technical/technical-overview/6448-video-generator-1/specifications.md)
     * [Palette](technical/technical-overview/6448-video-generator-1/palette.md)

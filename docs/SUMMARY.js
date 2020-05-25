@@ -49,6 +49,7 @@ export const pages = {
     ["./technical/technical-overview/6516-central-processing-unit/addressing-modes.md".substr(2)]: React.lazy(() => import("./technical/technical-overview/6516-central-processing-unit/addressing-modes.md")),
     ["./technical/technical-overview/6516-central-processing-unit/flags.md".substr(2)]: React.lazy(() => import("./technical/technical-overview/6516-central-processing-unit/flags.md")),
     ["./technical/technical-overview/6516-central-processing-unit/system-bus.md".substr(2)]: React.lazy(() => import("./technical/technical-overview/6516-central-processing-unit/system-bus.md")),
+    ["./technical/technical-overview/6516-central-processing-unit/isa.mdx".substr(2)]: React.lazy(() => import("./technical/technical-overview/6516-central-processing-unit/isa.mdx")),
     ["./technical/technical-overview/memory-layout.md".substr(2)]: React.lazy(() => import("./technical/technical-overview/memory-layout.md")),
     ["./kernel/what-is-the-kernel.md".substr(2)]: React.lazy(() => import("./kernel/what-is-the-kernel.md")),
     ["./kernel/screen-routines.md".substr(2)]: React.lazy(() => import("./kernel/screen-routines.md")),
