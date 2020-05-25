@@ -343,7 +343,8 @@
 <!-- fragment shader -->
 <script id="some-fragment-shader" type="x-shader/x-fragment">
 
-	precision mediump float;
+    //precision mediump float;
+    precision highp float;
 
 	varying vec2		v_texCoord;
 	uniform vec2		u_canvasSize;
@@ -386,7 +387,7 @@
 	// Also zero's off screen.
 	vec3 Fetch(vec2 pos,vec2 off)
 	{
-		pos=floor(pos * texSize + off) / texSize;
+        pos=floor(pos * texSize + off) / texSize;
 		if (pos.x<0.0 || pos.x>=1.0 || pos.y<0.0 || pos.y>=1.0)
 			return vec3(0.0,0.0,0.0);
 		return texture2D(u_texture,pos.xy).rgb;
