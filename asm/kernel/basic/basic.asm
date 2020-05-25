@@ -46,24 +46,32 @@
 #
 ###############################################################################
     .segment bdata kmemmap.basic.data-start .append {
-        buffer:              .byte[256]          # (0x100) input buffer
-        crunch-buffer:       .byte[256]          # (0x100) line crunch buffer
-        forsub-stack:        .word[256]          # (0x200) stack for FOR/GOSUB/CALL. 128 4-byte entries
-                                                 #         31:30 = type (0=FOR, 1=GOSUB, 2=CALL) 
-                                                 #         29:16 = variable (for FOR)
-                                                 #         15:0  = line number to return to
-        expr-area:           .byte[256]          # (0x100) Area for evaluating expressions
+        buffer:              .byte[256]         # (0x100) input buffer
+        crunch-buffer:       .byte[256]         # (0x100) line crunch buffer
+        forsub-stack:        .word[256]         # (0x200) stack for FOR/GOSUB/CALL. 128 4-byte entries
+                                                #         31:30 = type (0=FOR, 1=GOSUB, 2=CALL) 
+                                                #         29:16 = variable (for FOR)
+                                                #         15:0  = line number to return to
+        expr-area:           .byte[256]         # (0x100) Area for evaluating expressions
 
         # 0x300 bytes remaining for non-array data
-        forsub-stack-ptr:    .byte 0             # pointer into forsub stack
-        execution-mode:      .byte 0             # are we (1)running or (0)entering code? 
-        current-line-number: .word 0             # current line number of execution (or entry)
+        forsub-stack-ptr:    .byte 0            # pointer into forsub stack
+        execution-mode:      .byte 0            # are we (1)running or (0)entering code? 
+        current-line-number: .word 0            # current line number of execution (or entry)
         current-line-ptr:
-        current-line-bptr:   .word 0             # will point to the program bank
-        current-line-aptr:   .word 0             # pointer to current program line
+        current-line-bptr:   .word 0            # will point to the program bank
+        current-line-aptr:   .word 0            # pointer to current program line
         
-        heap-next-free:      .word 0             # pointer to next free area in heap
-        prog-next-free:      .word 0             # pointer to next free area in program storage
+        heap-next-free:      .word 0            # pointer to next free area in heap
+        prog-next-free:      .word 0            # pointer to next free area in program storage 
+
+        accumulator-token:   .byte 0            # current accumulator type
+        accumulator:         .word 0, 0, 0, 0   # current accumulator value (or ptr, if string)
+
+        operand-token:       .byte 0            # second operand type
+        operand:             .word 0, 0, 0, 0   # value of second operand
+
+        itoa-buffer:         .byte[11]          # buffer for int-to-string ops
 
     }
 
@@ -582,7 +590,7 @@
                 #       A0      -> TOK_VARIABLE,0,  104, 2, "A0"     A0  -> 52 << 1
                 #       A$      -> TOK_VARIABLE,64, 0, 1, "A"        A   -> 0
                 #       NAME$   -> TOK_VARIABLE,67, 240, 4, "NAME"   NA  -> 504 << 1
-                #       AVG#    -> TOK_VARIABLE,131,0, 94, "AVG"     AV  -> 47 << 1
+                #       AVG#    -> TOK_VARIABLE,131,0, 3, "AVG"      AV  -> 47 << 1
                 ###############################################################
             check-variable:
                 call is-char-a-letter           # variables can only start with alphabetical characters
@@ -741,8 +749,505 @@
             ret
         }
 
+        handler-syntax-error: {
+            dl := brodata.SYNTAX_ERROR
+            ret
+        }
+
+
+
+        #
+        # gettok returns the next token, and advances
+        # 
+        # @returns DL: next token
+        #
+        #######################################################################
+        gettok: {
+        _main:
+            dl := <bdata.current-line-ptr>
+            push x
+            x := [bdata.current-line-aptr]
+            inc x
+            [bdata.current-line-aptr] := x
+            pop x
+        _out:
+            ret
+        }
+
+        backtok: {
+            push x
+            x := [bdata.current-line-aptr]
+            dec x
+            [bdata.current-line-aptr] := x
+            pop x
+        _out:
+            ret
+        }
+
+        gettok-word: {
+        _main:
+            d := <bdata.current-line-ptr>
+            push x
+            x := [bdata.current-line-aptr]
+            inc x
+            inc x
+            [bdata.current-line-aptr] := x
+            pop x
+        _out:
+            ret
+        }
+
+        #
+        # getvar looks up a variable and stores the value into the accumulator
+        # note: this only works while parsing a line (having already eaten the
+        # TOK_VARIABLE token)
+        #
+        #######################################################################
+        getvar: {
+            push d
+            push c
+            push x
+            push b
+            push y
+        _main:
+            # [c,d] = [type, index]
+            call gettok-word                    # get variable index & type
+            c := d
+            and c, 0b1100_0000_0000_0000        # just want the type
+            shr c, 14                           # in the lower bits
+            and d, 0b0011_1111_1111_1111        # for index, we don't want the type
+
+            # advance parser past variable name
+            call gettok                         # next byte is the length of the variable name
+            x := [bdata.current-line-aptr]
+            clr c
+            add x, dl                           # x += variable length
+            [bdata.current-line-aptr] := x      # and store it back
+
+            # index our variable correctly
+            x := d                              # use x so we can index in a bit
+            cmp c, 0
+            if z {                              # we're a word
+                dl := brodata.TOK_WORD
+                b := [kmemmap.basic.ints-start, x]
+                brs _write-to-accumulator       # break
+            }
+
+            cmp c, 1
+            if z {
+                dl := brodata.TOK_STRING        # we're a string!
+                b := [kmemmap.basic.strs-start, x]
+                brs _write-to-accumulator       # break
+            }
+
+            cmp c, 2
+            if z {
+                dl := brodata.TOK_REAL          # we're a real!
+                shl x, 2                        # multiply by eight instead (64 bits)
+                b := [kmemmap.basic.dbls-start, x]
+                brs _write-to-accumulator       # break
+            }
+
+            # @todo: handle array bits!
+
+            brs _write-to-accumulator
+
+        _write-real-to-accumulator:
+                [bdata.accumulator-token] := dl
+                [bdata.accumulator] := b        # write variable into accumulator
+                inc x
+                inc x
+                y := 2
+                b := [kmemmap.basic.dbls-start, x]
+                [bdata.accumulator, y] := b
+                inc x
+                inc x
+                y := 4
+                b := [kmemmap.basic.dbls-start, x]
+                [bdata.accumulator, y] := b
+                inc x
+                inc x 
+                y := 6
+                b := [kmemmap.basic.dbls-start, x]
+                [bdata.accumulator, y] := b
+                brs _out
+
+        _write-to-accumulator:
+                [bdata.accumulator-token] := dl
+                [bdata.accumulator] := b        # write variable into accumulator
+
+        _out:
+            pop y
+            pop b
+            pop x
+            pop c
+            pop d
+            ret
+        }
+
+        #
+        # Add accumulator and operand values together
+        #
+        # @return dl 0 if no error
+        handler-add-expr: {
+            enter 0x00
+            push a
+            push b
+            push c
+        _main:
+            al := [bdata.accumulator-token]
+            b  := [bdata.accumulator]
+            cl := [bdata.operand-token]
+            d  := [bdata.operand]
+
+            cmp al, cl
+            if !z {
+                dl := brodata.TYPE_MISMATCH_ERROR
+                brs _out
+            }
+            add b, d
+            [bdata.accumulator] := b
+            dl := 0
+
+        _out:
+            pop c
+            pop b
+            pop a
+            exit 0x00
+            ret
+        }
+
+
+
+        expression-handlers:        # vector, unary/binary (0/F), assoc (0=left,0F=right), precedence 
+            .word token-not-impl                ,0x0014 # 128, ABS
+            .word token-not-impl                ,0xF006 # 129, AND
+            .word token-not-impl                ,0x0014 # 130, ASC
+            .word token-not-impl                ,0x0014 # 131, ATN
+            .word handler-syntax-error          ,0x0000 # 132, AT
+            .word handler-syntax-error          ,0x0000 # 133, CALL
+            .word handler-syntax-error          ,0x0000 # 134, CATALOG
+            .word token-not-impl                ,0x0014 # 135, CHR
+            .word handler-syntax-error          ,0x0000 # 136, CLS
+            .word handler-syntax-error          ,0x0000 # 137, CLOSE
+            .word handler-syntax-error          ,0x0000 # 138, CONTINUE
+            .word token-not-impl                ,0x0014 # 139, COS
+            .word handler-syntax-error          ,0x0000 # 140, DATA
+            .word handler-syntax-error          ,0x0000 # 141, DEFFN
+            .word handler-syntax-error          ,0x0000 # 142, DEFSUB
+            .word handler-syntax-error          ,0x0000 # 143, DIM
+            .word handler-syntax-error          ,0x0000 # 144, DO
+            .word handler-syntax-error          ,0x0000 # 145, ELSEIF
+            .word handler-syntax-error          ,0x0000 # 146, ELSE
+            .word handler-syntax-error          ,0x0000 # 147, ENDSUB
+            .word handler-syntax-error          ,0x0000 # 148, ENDFN
+            .word handler-syntax-error          ,0x0000 # 149, ENDIF
+            .word handler-syntax-error          ,0x0000 # 150, END
+            .word token-not-impl                ,0x0014 # 151, EXP
+            .word handler-syntax-error          ,0x0000 # 152, FOR
+            .word token-not-impl                ,0x0014 # 153, GETKEY
+            .word handler-syntax-error          ,0x0000 # 154, GOSUB
+            .word handler-syntax-error          ,0x0000 # 155, GOTO
+            .word token-not-impl                ,0x0014 # 156, HEX
+            .word handler-syntax-error          ,0x0000 # 157, HOME
+            .word handler-syntax-error          ,0x0000 # 158, IF
+            .word handler-syntax-error          ,0x0000 # 159, INPUT
+            .word token-not-impl                ,0x0014 # 160, INT
+            .word token-not-impl                ,0x0014 # 161, IN
+            .word token-not-impl                ,0x0014 # 162, LEFT
+            .word token-not-impl                ,0x0014 # 163, LEN
+            .word handler-syntax-error          ,0x0000 # 164, LIST
+            .word handler-syntax-error          ,0x0000 # 165, LOAD
+            .word token-not-impl                ,0x0014 # 166, LOG
+            .word handler-syntax-error          ,0x0000 # 167, LOOP
+            .word token-not-impl                ,0x0014 # 168, MID
+            .word handler-syntax-error          ,0x0000 # 169, NEW
+            .word handler-syntax-error          ,0x0000 # 170, NEXT
+            .word token-not-impl                ,0x0F11 # 171, NOT (right assoc)
+            .word handler-syntax-error          ,0x0000 # 172, ON
+            .word handler-syntax-error          ,0x0000 # 173, OPEN
+            .word token-not-impl                ,0xF005 # 174, OR
+            .word handler-syntax-error          ,0x0000 # 175, OUT
+            .word token-not-impl                ,0x0014 # 176, PEEK
+            .word handler-syntax-error          ,0x0000 # 177, POKE
+            .word handler-syntax-error          ,0x0000 # 178, PRINT
+            .word handler-syntax-error          ,0x0000 # 179, READ
+            .word token-not-impl                ,0x0000 # 180, REM
+            .word handler-syntax-error          ,0x0000 # 181, RETURN
+            .word token-not-impl                ,0x0014 # 182, RIGHT
+            .word token-not-impl                ,0x0014 # 183, RND
+            .word handler-syntax-error          ,0x0000 # 184, RENAME
+            .word handler-syntax-error          ,0x0000 # 185, REMOVE
+            .word handler-syntax-error          ,0x0000 # 186, RESTORE
+            .word handler-syntax-error          ,0x0000 # 187, RUN
+            .word handler-syntax-error          ,0x0000 # 188, SAVE
+            .word token-not-impl                ,0x0014 # 189, SGN
+            .word token-not-impl                ,0x0014 # 190, SIN
+            .word token-not-impl                ,0x0014 # 191, SPC
+            .word token-not-impl                ,0x0014 # 192, SQR
+            .word handler-syntax-error          ,0x0000 # 193, STEP
+            .word handler-syntax-error          ,0x0000 # 194, STOP
+            .word token-not-impl                ,0x0014 # 195, STR
+            .word token-not-impl                ,0x0014 # 196, TAB
+            .word token-not-impl                ,0x0014 # 197, TAN
+            .word handler-syntax-error          ,0x0000 # 198, THEN
+            .word handler-syntax-error          ,0x0000 # 199, TO
+            .word handler-syntax-error          ,0x0000 # 200, UNTIL
+            .word token-not-impl                ,0x0014 # 201, USR
+            .word token-not-impl                ,0x0014 # 202, VAL
+            .word handler-syntax-error          ,0x0000 # 203, WHILE
+            .word handler-add-expr              ,0xF00E # 204, +  
+            .word token-not-impl                ,0xF00E # 205, -  
+            .word token-not-impl                ,0xF00F # 206, *
+            .word token-not-impl                ,0xF00F # 207, /
+            .word token-not-impl                ,0xF00F # 208, %
+            .word token-not-impl                ,0xFF10 # 209, ^        right associative
+            .word token-not-impl                ,0xF00B # 210, <>, !=
+            .word token-not-impl                ,0xF00C # 211, <=
+            .word token-not-impl                ,0xF00C # 212, >=
+            .word token-not-impl                ,0xF00C # 213, <
+            .word token-not-impl                ,0xF00C # 214, >
+            .word token-not-impl                ,0xF00B # 215, =
+            .word token-not-impl                ,0x0015 # 216, (
+            .word token-not-impl                ,0x0015 # 217, )
+            .word token-not-impl                ,0x0014 # 218, [
+            .word token-not-impl                ,0x0014 # 219, ]
+            .word token-not-impl                ,0x00FF # 220, :
+            .word token-not-impl                ,0x0014 # 221, LOWER
+            .word token-not-impl                ,0x0014 # 222, UPPER
+            .word handler-syntax-error          ,0x0000 # 223, LET
+            .word token-not-impl                ,0x0000 # 224
+            .word token-not-impl                ,0x0000 # 225
+            .word token-not-impl                ,0x0000 # 226
+            .word token-not-impl                ,0x0000 # 227
+            .word token-not-impl                ,0x0000 # 228
+            .word token-not-impl                ,0x0000 # 229
+            .word token-not-impl                ,0x0000 # 230
+            .word token-not-impl                ,0x0000 # 231
+            .word token-not-impl                ,0x0000 # 232
+            .word token-not-impl                ,0x0000 # 233
+            .word token-not-impl                ,0x0000 # 234
+            .word token-not-impl                ,0x0000 # 235
+            .word token-not-impl                ,0x0000 # 236
+            .word token-not-impl                ,0x0000 # 237
+            .word token-not-impl                ,0x0000 # 238
+            .word token-not-impl                ,0x0000 # 239
+            .word token-not-impl                ,0x0000 # 240
+            .word token-not-impl                ,0x0000 # 241
+            .word token-not-impl                ,0x0000 # 242
+            .word token-not-impl                ,0x0000 # 243
+            .word token-not-impl                ,0x0000 # 244
+            .word token-not-impl                ,0x0000 # 245
+            .word token-not-impl                ,0x0000 # 246
+            .word token-not-impl                ,0x0000 # 247
+            .word token-not-impl                ,0x0000 # 248
+            .word token-not-impl                ,0x0000 # 249
+            .word token-not-impl                ,0x00FF # 250, TOK_REAL
+            .word token-not-impl                ,0x00FF # 251, TOK_VARIABLE
+            .word token-not-impl                ,0x00FF # 252, TOK_STRING
+            .word token-not-impl                ,0x00FF # 253, TOK_DWORD
+            .word token-not-impl                ,0x00FF # 254, TOK_WORD
+            .word token-not-impl                ,0x00FF # 255, TOK_BYTE
+        #
+        # EVAL is responsible for evaluating the current expression
+        # 
+        # @returns DL: 0 if no error, or an error number if one occurred
+        #
+        #######################################################################
+        eval: {
+            enter 138
+            .const cur-precedence -2
+            .const maybe-unary -4
+            .const orig-sp -6
+            .const vector-bank -8
+            .const vector-offs -10
+            .const operator-stack -138          # operator stack has room for 32 ops (each op is 4 bytes)
+            push y
+            push x
+            push c
+            push b
+            push a
+            [bp+orig-sp] := sp                  # need a way to know when we've exhausted the stack
+        _main:
+            x := 128                            # x points at top of op stack (+1)
+            do {
+                call gettok                     # get the next token in the stream
+
+                cmp dl, 0
+                br z _finish-eval               # end-of-line, hope we're done!
+                cmp dl, asc(",")                # comma is a valid exit
+                br z _finish-eval
+                cmp dl, asc(";")                # as is a semicolon
+                br z _finish-eval
+                cmp dl, brodata.TOK_END_OF_STMT
+                br z _finish-eval               # end-of-statement, hope we're done!
+
+                # a,b = vector, metadata for the token
+                c := dl                         # need to compute lookup address
+                and cl, 0b0111_1111             # drop the top bit (subtract 128)
+                shl c, 2                        # * 4 (vector, metadata word)
+                push x                          # stash this....
+                x := c
+                a := [expression-handlers, x]   # a is now the handler vector
+                inc x
+                inc x
+                b := [expression-handlers, x]   # b is now the metadata
+                pop x                           # x is back to operator stack ptr
+                # is token of any value here? b will be non-zero
+                cmp b, 0
+                if z {
+                    dl := brodata.SYNTAX_ERROR  # Nope; bail!
+                    br _out
+                }
+
+                # token is of value, what is it?
+                cmp dl, brodata.TOK_VARIABLE    # is it a variable?
+                if z {
+                    call getvar                 # parse the variable. it'll be in the accumulator
+                    dl := [bdata.accumulator-token]
+                    push dl                     #push accumulator token on stack
+                    d := [bdata.accumulator]
+                    push d                      # push accumulator on sack (@todo: wrong for reals)
+                    continue
+                }
+
+                cmp dl, brodata.TOK_BYTE        # is it a byte?
+                if z {
+                    dl := brodata.TOK_WORD
+                    push dl                     # convert to word
+                    d := 0                      # clear d in prep for next token (which will be a byte)
+                    call gettok                 # next byte is our number
+                    push d                      # stack now has a word on it
+                    continue
+                }
+
+                cmp dl, brodata.TOK_WORD
+                if z {                          # it's a word
+                    push dl
+                    call gettok-word
+                    push d
+                    continue
+                }
+
+                cmp dl, brodata.TOK_STRING
+                if z {                          # it's a string
+                    push dl
+                    call gettok-word
+                    push d
+                    continue
+                }
+
+                cmp dl, brodata.TOK_LPAR
+                if z {
+                    call _push-operator
+                    continue
+                }
+
+                cmp dl, brodata.TOK_RPAR
+                if z {
+                    # @todo handle paranthetical
+                    continue
+                }
+
+                c := 128
+                cmp x, c
+                if n {
+                    # @todo handle precedence
+                    nop
+                }
+                call _push-operator
+                continue
+            } while z
+        _finish-eval:
+            call backtok    # need to walk back a token
+            # @todo handle eval
+            c := 128
+            cmp x, c
+            while n do {
+                call _pop-operator
+
+                d := b
+                and d, 0b1111_0000_0000_0000
+                shr d, 12
+                cmp dl, 0xF
+                if z {
+                    # pop off second value
+                    pop d
+                    [bdata.operand] := d
+                    pop dl
+                    [bdata.operand-token] := dl
+                }
+                # pop off first
+                pop d
+                [bdata.accumulator] := d
+                pop dl
+                [bdata.accumulator-token] := dl
+
+                d := 0
+                [bp+vector-bank] := d
+                [bp+vector-offs] := a
+                
+                call [bp+vector-offs]      # call the operator handler
+                cmp dl, 0
+                if !z {
+                    br _out                     # that didn't work!
+                }
+
+                # push value back on stack
+                dl := [bdata.accumulator-token]
+                push dl
+                d := [bdata.accumulator]
+                push d
+
+                cmp x, c
+            }
+        _done:
+            pop d
+            [bdata.accumulator] := d
+            pop dl
+            [bdata.accumulator-token] := dl
+            dl := 0                             # if we're here, we evaluated without issue
+        _out:
+            sp := [bp+orig-sp]                  # make sure stack is cleaned up if we exited early
+            pop a
+            pop b
+            pop c
+            pop x
+            pop y
+            exit 138
+            ret
+        _push-operator:
+            dec x
+            dec x
+            [bp+operator-stack, x] := a
+            dec x
+            dec x
+            if c {
+                dl := brodata.EXPRESSION_TOO_COMPLEX_ERROR
+                brs _out
+            }
+            [bp+operator-stack, x] := b
+            ret
+        _pop-operator:
+            b := [bp+operator-stack, x]
+            inc x
+            inc x
+            a := [bp+operator-stack, x]
+            inc x
+            inc x
+            ret
+        }
+
+
         handler-clear-screen: {
             call [vectors.CLEAR_SCREEN]
+            dl := 0
+            ret
+        }
+
+        handler-home: {
+            d := 0
+            call [vectors.SET_CURSOR_POS]
             dl := 0
             ret
         }
@@ -753,19 +1258,41 @@
             ret
         }
 
-        token-handlers:
-            .word token-not-impl                # 128, ABS
-            .word token-not-impl                # 129, AND
-            .word token-not-impl                # 130, ASC
-            .word token-not-impl                # 131, ATN
-            .word token-not-impl                # 132, AT
+        handler-print: {
+            enter 0x00
+        _main:
+            call eval
+            cmp dl, 0
+            if !z {
+                brs _out
+            }
+            b := 10
+            c := [bdata.accumulator]
+            LDPTR(d, x, bdata.itoa-buffer)
+            call [vectors.I16_TO_STR]
+            call [vectors.PRINT]
+            d := brodata.newline >> 3
+            x := brodata.newline & 7
+            call [vectors.PRINT]         # NEWLINE, to be neat
+            dl := 0
+        _out:
+            exit 0x00
+            ret
+        }
+
+        statement-handlers:
+            .word handler-syntax-error          # 128, ABS
+            .word handler-syntax-error          # 129, AND
+            .word handler-syntax-error          # 130, ASC
+            .word handler-syntax-error          # 131, ATN
+            .word handler-syntax-error          # 132, AT
             .word token-not-impl                # 133, CALL
             .word token-not-impl                # 134, CATALOG
-            .word token-not-impl                # 135, CHR
+            .word handler-syntax-error          # 135, CHR
             .word handler-clear-screen          # 136, CLS
             .word token-not-impl                # 137, CLOSE
             .word token-not-impl                # 138, CONTINUE
-            .word token-not-impl                # 139, COS
+            .word handler-syntax-error          # 139, COS
             .word token-not-impl                # 140, DATA
             .word token-not-impl                # 141, DEFFN
             .word token-not-impl                # 142, DEFSUB
@@ -777,78 +1304,78 @@
             .word token-not-impl                # 148, ENDFN
             .word token-not-impl                # 149, ENDIF
             .word token-not-impl                # 150, END
-            .word token-not-impl                # 151, EXP
+            .word handler-syntax-error          # 151, EXP
             .word token-not-impl                # 152, FOR
-            .word token-not-impl                # 153, GETKEY
+            .word handler-syntax-error          # 153, GETKEY
             .word token-not-impl                # 154, GOSUB
             .word token-not-impl                # 155, GOTO
-            .word token-not-impl                # 156, HEX
-            .word token-not-impl                # 157, HOME
+            .word handler-syntax-error          # 156, HEX
+            .word handler-home                  # 157, HOME
             .word token-not-impl                # 158, IF
             .word token-not-impl                # 159, INPUT
-            .word token-not-impl                # 160, INT
-            .word token-not-impl                # 161, IN
-            .word token-not-impl                # 162, LEFT
-            .word token-not-impl                # 163, LEN
+            .word handler-syntax-error          # 160, INT
+            .word handler-syntax-error          # 161, IN
+            .word handler-syntax-error          # 162, LEFT
+            .word handler-syntax-error          # 163, LEN
             .word token-not-impl                # 164, LIST
             .word token-not-impl                # 165, LOAD
-            .word token-not-impl                # 166, LOG
+            .word handler-syntax-error          # 166, LOG
             .word token-not-impl                # 167, LOOP
-            .word token-not-impl                # 168, MID
+            .word handler-syntax-error          # 168, MID
             .word handler-new                   # 169, NEW
             .word token-not-impl                # 170, NEXT
-            .word token-not-impl                # 171, NOT
+            .word handler-syntax-error          # 171, NOT
             .word token-not-impl                # 172, ON
             .word token-not-impl                # 173, OPEN
-            .word token-not-impl                # 174, OR
+            .word handler-syntax-error          # 174, OR
             .word token-not-impl                # 175, OUT
-            .word token-not-impl                # 176, PEEK
+            .word handler-syntax-error          # 176, PEEK
             .word token-not-impl                # 177, POKE
-            .word token-not-impl                # 178, PRINT
+            .word handler-print                 # 178, PRINT
             .word token-not-impl                # 179, READ
             .word token-not-impl                # 180, REM
             .word token-not-impl                # 181, RETURN
-            .word token-not-impl                # 182, RIGHT
-            .word token-not-impl                # 183, RND
+            .word handler-syntax-error          # 182, RIGHT
+            .word handler-syntax-error          # 183, RND
             .word token-not-impl                # 184, RENAME
             .word token-not-impl                # 185, REMOVE
             .word token-not-impl                # 186, RESTORE
             .word token-not-impl                # 187, RUN
             .word token-not-impl                # 188, SAVE
-            .word token-not-impl                # 189, SGN
-            .word token-not-impl                # 190, SIN
-            .word token-not-impl                # 191, SPC
-            .word token-not-impl                # 192, SQR
+            .word handler-syntax-error          # 189, SGN
+            .word handler-syntax-error          # 190, SIN
+            .word handler-syntax-error          # 191, SPC
+            .word handler-syntax-error          # 192, SQR
             .word token-not-impl                # 193, STEP
             .word token-not-impl                # 194, STOP
-            .word token-not-impl                # 195, STR
-            .word token-not-impl                # 196, TAB
-            .word token-not-impl                # 197, TAN
+            .word handler-syntax-error          # 195, STR
+            .word handler-syntax-error          # 196, TAB
+            .word handler-syntax-error          # 197, TAN
             .word token-not-impl                # 198, THEN
             .word token-not-impl                # 199, TO
             .word token-not-impl                # 200, UNTIL
-            .word token-not-impl                # 201, USR
-            .word token-not-impl                # 202, VAL
+            .word handler-syntax-error          # 201, USR
+            .word handler-syntax-error          # 202, VAL
             .word token-not-impl                # 203, WHILE
-            .word token-not-impl                # 204, +  
-            .word token-not-impl                # 205, -  
-            .word token-not-impl                # 206, *
-            .word token-not-impl                # 207, /
-            .word token-not-impl                # 208, %
-            .word token-not-impl                # 209, ^
-            .word token-not-impl                # 210, <>, !=
-            .word token-not-impl                # 211, <=
-            .word token-not-impl                # 212, >=
-            .word token-not-impl                # 213, <
-            .word token-not-impl                # 214, >
-            .word token-not-impl                # 215, =
-            .word token-not-impl                # 216, (
-            .word token-not-impl                # 217, )
-            .word token-not-impl                # 218, [
-            .word token-not-impl                # 219, ]
+            .word handler-syntax-error          # 204, +  
+            .word handler-syntax-error          # 205, -  
+            .word handler-syntax-error          # 206, *
+            .word handler-syntax-error          # 207, /
+            .word handler-syntax-error          # 208, %
+            .word handler-syntax-error          # 209, ^
+            .word handler-syntax-error          # 210, <>, !=
+            .word handler-syntax-error          # 211, <=
+            .word handler-syntax-error          # 212, >=
+            .word handler-syntax-error          # 213, <
+            .word handler-syntax-error          # 214, >
+            .word handler-syntax-error          # 215, =
+            .word handler-syntax-error          # 216, (
+            .word handler-syntax-error          # 217, )
+            .word handler-syntax-error          # 218, [
+            .word handler-syntax-error          # 219, ]
             .word token-not-impl                # 220, :
-            .word token-not-impl                # 221, LOWER
-            .word token-not-impl                # 222, UPPER
+            .word handler-syntax-error          # 221, LOWER
+            .word handler-syntax-error          # 222, UPPER
             .word token-not-impl                # 223, LET
             .word token-not-impl                # 224
             .word token-not-impl                # 225
@@ -876,46 +1403,28 @@
             .word token-not-impl                # 247
             .word token-not-impl                # 248
             .word token-not-impl                # 249
-            .word token-not-impl                # 250
+            .word handler-syntax-error          # 250, TOK_REAL
             .word token-not-impl                # 251, TOK_VARIABLE
-            .word token-not-impl                # 252, TOK_STRING
-            .word token-not-impl                # 253, TOK_DWORD
-            .word token-not-impl                # 254, TOK_WORD
-            .word token-not-impl                # 255, TOK_BYTE
+            .word handler-syntax-error          # 252, TOK_STRING
+            .word handler-syntax-error          # 253, TOK_DWORD
+            .word handler-syntax-error          # 254, TOK_WORD
+            .word handler-syntax-error          # 255, TOK_BYTE
+
 
         #
-        # gettok returns the next token, and advances
-        # 
-        # @returns DL: next token
-        #
-        #######################################################################
-        gettok: {
-        _main:
-            dl := <bdata.current-line-ptr>
-            push x
-            x := [bdata.current-line-aptr]
-            inc x
-            [bdata.current-line-aptr] := x
-            pop x
-        _out:
-            ret
-        }
-
-        #
-        # EVAL is responsible for evaluating the line at D,X
+        # EXEC is responsible for evaluating the line at D,X
         # 
         # @param [D, X]: PTR to crunched line (either direct or run mode works)
         # @returns DL: 0 if no error, or an error number if one occurred
         #
         #######################################################################
-        eval: {
+        exec: {
             enter 0x00
             push x
             push a
             push y
             push c
         _main:
-            #@todo: handle end of statement/: correctly. Right now "clscls" is valid, even though it should be cls:cls
             y := 0
             do {
                 call gettok
@@ -935,8 +1444,23 @@
                 sub c, 128
                 shl c, 1
                 x := c
-                call [token-handlers, x]
+                call [statement-handlers, x]
                 cmp dl, 0
+                brs !z _out  # an error occurred, get us out
+
+                call gettok
+                cmp dl, 0
+                if z {
+                    brs _out
+                } else {
+                    cmp dl, brodata.TOK_END_OF_STMT
+                    if z {
+                        continue
+                    } else {
+                        dl := brodata.SYNTAX_ERROR
+                        brs _out
+                    }
+                }
             } while z
         _out:
             pop c
@@ -1070,7 +1594,7 @@
             [bdata.current-line-number] := c    # When executing direct, the current line number is always -1
             [bdata.current-line-bptr] := d
             [bdata.current-line-aptr] := x      
-            call eval                           # eval uses the above setup to execute code
+            call exec                           # eval uses the above setup to execute code
             brs _display-errors                 # make sure we show any error messages
 
         _store:

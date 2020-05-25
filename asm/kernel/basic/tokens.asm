@@ -219,6 +219,7 @@
                                  .const TOK_DWORD                           253
                                  .const TOK_STRING                          252
                                  .const TOK_VARIABLE                        251
+                                 .const TOK_REAL                            250
                                  .const MAX_TOKEN                           223
             token-vectors: 
                 .word _abs-keyword, _and-keyword, _asc-keyword, _atn-keyword, _at-keyword
