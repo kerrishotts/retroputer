@@ -59,7 +59,7 @@ export class CodeEditor extends React.Component {
 
     storeChanged() {
         if (this.state.code !== this.props.store.code) {
-            this.codeChangedOutside();
+            this.codeChangedOutside(this.props.store);
         }
     }
 
