@@ -5,8 +5,10 @@
 ########################################
 
 .namespace kernel {
+    .import "./macros/procs.asm"
     .import "./macros/pointers.asm"
     .import "./macros/io.asm"
+    .import "./macros/stacks.asm"
 
 
     .import "./trapmap.asm"
@@ -48,6 +50,8 @@
         SHOW_CURSOR:                 .word core.screen.kcode.show-cursor
         HIDE_CURSOR:                 .word core.screen.kcode.hide-cursor
         PRINT_RAW:                   .word core.screen.kcode.print-raw
+        STACK_PUSH:                  .word core.stdlib.kcode.stack-push
+        STACK_POP:                   .word core.stdlib.kcode.stack-pop
     }
 
     .import "./monitor/monitor.asm"

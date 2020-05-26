@@ -79,9 +79,9 @@
                                     .const EXPECTED_A_QUOTE                  34
         expected-quote:             .string "EXPECTED A QUOTE"            , NUL
                                     .const EXPECTED_LEFT_PARENTHESIS         35
-        expected-left-paren:        .string "EXPECTED LEFT PARENTHESIS"   , NUL
+        expected-left-paren:        .string "EXPECTED LEFT PAREN"         , NUL
                                     .const EXPECTED_RIGHT_PARENTHESIS        36
-        expected-right-paren:       .string "EXPECTED RIGHT PARENTHESIS"  , NUL
+        expected-right-paren:       .string "EXPECTED RIGHT PAREN"        , NUL
                                     .const EXPECTED_LEFT_BRACKET             37
         expected-left-bracket:      .string "EXPECTED LEFT BRACKET"       , NUL
                                     .const EXPECTED_RIGHT_BRACKET            38

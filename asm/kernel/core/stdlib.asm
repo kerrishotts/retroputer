@@ -208,5 +208,97 @@
             ret
         }
 
+        ########################################################################
+        #
+        # STACK ROUTINES
+        #
+        # Stacks are simple structures constructed as follows:
+        #
+        # offset 0, 1: stack index (0-based, not adjusted for word)
+        # offset 2, 3: first word on stack
+        # offset 4, 5: second word on stack, etc.
+        #
+        # There are no bounds checks for going beyond the _length_ of the stack
+        # -- that's up to the developer to do, although the flags are left 
+        # unmodified from the stack index manipulation.
+        #
+        ########################################################################
+
+        ########################################################################
+        #
+        # STACK-POP 
+        #
+        # Pops a word from the stack pointed to by D,X
+        #
+        # @param D,X            (PTR) Stack         Stack
+        # @param @flag.Z        Peek or Pop?        if SET, PEEK
+        # @return C             Word                Word on top of stack
+        # @return FLAGS
+        #   @flag Z             if set, index is now at the beginning of the stack
+        #   @flag N / @flag C   if set, stack is underflowed
+        #   @flag EX            if set, stack was empty
+        ########################################################################
+        stack-pop: {
+            enter 0x00
+            push y
+            pushf                               # for later...
+        _main:
+            y := [d, x]                         # get stack index
+            dec y                               # is stack about to underflow?
+            if c {
+                popf                            # undo first push
+                set n                           # set negative
+                set c                           # and carry
+                set ex                          # and exception flag
+                brs _out                        # to indicate a bad pop
+            }
+            inc y                               # put y back where we need it
+            push y                              # push for later
+            shl y, 1                            # * 2 (dealing with words)
+            c := [d, x, y]                      # read word at index (this will be off by one, but that's what we want)
+            pop y                               # y is back to normal
+            popf                                # pop flags so we can see if we're peeking or popping
+            brs z _out                          # if zero was set at call, we're PEEKing, not POPping
+            dec y                               # reduce stack index
+            [d, x] := y                         # and store
+            clr ex
+        _out:
+            pop y
+            exit 0x00
+            ret
+        }
+
+        ########################################################################
+        #
+        # STACK-PUSH
+        #
+        # Pushes a word onto the stack pointed to by D,X
+        #
+        # @param D,X            (PTR) Stack         Stack
+        # @param C              Word                Word to push
+        # @return FLAGS
+        #   @flag Z             if set, index is now at the beginning of the stack
+        #   @flag N / @flag C   if set, stack is underflowed
+        ########################################################################
+        stack-push: {
+            enter 0x00
+            push y
+        _main:
+            y := [d, x]                         # get stack index
+            push y                              # push for later
+            shl y, 1                            # * 2 (dealing with words)
+            push x                              # stash...
+            inc x
+            inc x                               # advance x past the index
+            [d, x, y] := c                      # store word at index (not off-by-one as in pop)
+            pop x                               # back at the front
+            pop y                               # y is back to normal
+            inc y                               # increment stack index
+            [d, x] := y                         # and store
+        _out:
+            pop y
+            exit 0x00
+            ret
+        }
     }
 }

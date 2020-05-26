@@ -917,6 +917,68 @@
             ret
         }
 
+        #
+        # sub accumulator and operand values together
+        #
+        # @return dl 0 if no error
+        handler-sub-expr: {
+            enter 0x00
+            push a
+            push b
+            push c
+        _main:
+            al := [bdata.accumulator-token]
+            b  := [bdata.accumulator]
+            cl := [bdata.operand-token]
+            d  := [bdata.operand]
+
+            cmp al, cl
+            if !z {
+                dl := brodata.TYPE_MISMATCH_ERROR
+                brs _out
+            }
+            sub b, d
+            [bdata.accumulator] := b
+            dl := 0
+
+        _out:
+            pop c
+            pop b
+            pop a
+            exit 0x00
+            ret
+        }
+        #
+        # multiply accumulator and operand values together
+        #
+        # @return dl 0 if no error
+        handler-mul-expr: {
+            enter 0x00
+            push a
+            push b
+            push c
+        _main:
+            al := [bdata.accumulator-token]
+            b  := [bdata.accumulator]
+            cl := [bdata.operand-token]
+            d  := [bdata.operand]
+
+            cmp al, cl
+            if !z {
+                dl := brodata.TYPE_MISMATCH_ERROR
+                brs _out
+            }
+            mul b, d
+            [bdata.accumulator] := b
+            dl := 0
+
+        _out:
+            pop c
+            pop b
+            pop a
+            exit 0x00
+            ret
+        }
 
 
         expression-handlers:        # vector, unary/binary (0/F), assoc (0=left,0F=right), precedence 
@@ -997,8 +1059,8 @@
             .word token-not-impl                ,0x0014 # 202, VAL
             .word handler-syntax-error          ,0x0000 # 203, WHILE
             .word handler-add-expr              ,0xF00E # 204, +  
-            .word token-not-impl                ,0xF00E # 205, -  
-            .word token-not-impl                ,0xF00F # 206, *
+            .word handler-sub-expr              ,0xF00E # 205, -  
+            .word handler-mul-expr              ,0xF00F # 206, *
             .word token-not-impl                ,0xF00F # 207, /
             .word token-not-impl                ,0xF00F # 208, %
             .word token-not-impl                ,0xFF10 # 209, ^        right associative
@@ -1008,8 +1070,8 @@
             .word token-not-impl                ,0xF00C # 213, <
             .word token-not-impl                ,0xF00C # 214, >
             .word token-not-impl                ,0xF00B # 215, =
-            .word token-not-impl                ,0x0015 # 216, (
-            .word token-not-impl                ,0x0015 # 217, )
+            .word 0xFFFE                        ,0x0015 # 216, (
+            .word 0xFFFF                        ,0x0015 # 217, )
             .word token-not-impl                ,0x0014 # 218, [
             .word token-not-impl                ,0x0014 # 219, ]
             .word token-not-impl                ,0x00FF # 220, :
@@ -1055,13 +1117,15 @@
         #
         #######################################################################
         eval: {
-            enter 138
+            BIG_ENTER(270)
             .const cur-precedence -2
             .const maybe-unary -4
             .const orig-sp -6
             .const vector-bank -8
             .const vector-offs -10
-            .const operator-stack -138          # operator stack has room for 32 ops (each op is 4 bytes)
+            .const operator-stack -140          # operator stack has room for 32 ops (each op is 4 bytes)
+            .const value-stack -270             # value stack has room for 32 values
+            .const MAX_EXPR_SIZE 32 * 2         # 32 operations or values (each is four bytes)
             push y
             push x
             push c
@@ -1069,8 +1133,19 @@
             push a
             [bp+orig-sp] := sp                  # need a way to know when we've exhausted the stack
         _main:
-            x := 128                            # x points at top of op stack (+1)
+            INIT_STACK_BP(operator-stack)
+            INIT_STACK_BP(value-stack)
             do {
+                x := [bp+value-stack]
+                c := MAX_EXPR_SIZE
+                cmp x, c
+                br !n _too-complex              # too complex an operation!
+
+                x := [bp+operator-stack]
+                c := MAX_EXPR_SIZE
+                cmp x, c
+                br !n _too-complex              # it's too much, captain; the ship cannae take any more!
+
                 call gettok                     # get the next token in the stream
 
                 cmp dl, 0
@@ -1105,106 +1180,118 @@
                 if z {
                     call getvar                 # parse the variable. it'll be in the accumulator
                     dl := [bdata.accumulator-token]
-                    push dl                     #push accumulator token on stack
+                    STPUSH_BP(d, value-stack)   #push accumulator token on stack
                     d := [bdata.accumulator]
-                    push d                      # push accumulator on sack (@todo: wrong for reals)
+                    STPUSH_BP(d, value-stack)   # push accumulator on stack (@todo: wrong for reals)
                     continue
                 }
 
                 cmp dl, brodata.TOK_BYTE        # is it a byte?
                 if z {
                     dl := brodata.TOK_WORD
-                    push dl                     # convert to word
+                    STPUSH_BP(d, value-stack)   # convert to word and push
                     d := 0                      # clear d in prep for next token (which will be a byte)
                     call gettok                 # next byte is our number
-                    push d                      # stack now has a word on it
+                    STPUSH_BP(d, value-stack)   # stack has word on it
                     continue
                 }
 
                 cmp dl, brodata.TOK_WORD
                 if z {                          # it's a word
-                    push dl
+                    STPUSH_BP(d, value-stack)
                     call gettok-word
-                    push d
+                    STPUSH_BP(d, value-stack)
                     continue
                 }
 
                 cmp dl, brodata.TOK_STRING
                 if z {                          # it's a string
-                    push dl
-                    call gettok-word
-                    push d
+                    STPUSH_BP(d, value-stack)
+                    d := [bdata.current-line-aptr]
+                    STPUSH_BP(d, value-stack)   # push POINTER to string
+                    do {
+                        call gettok
+                        cmp dl, 0
+                    } while !z                  # eat the rest of the string
                     continue
                 }
 
                 cmp dl, brodata.TOK_LPAR
-                if z {
+                if z {                          # it's a left paren -- push and continue
                     call _push-operator
                     continue
                 }
 
                 cmp dl, brodata.TOK_RPAR
-                if z {
+                if z {                          # it's a right paren -- evaluate until we see a left paren
                     # @todo handle paranthetical
+                    x := [bp+operator-stack]
+                    c := 0   
+                    cmp x, c                            # is stack empty?
+                    while !z do {                       # keep going until it is...
+                        call _pop-operator
+                        cmp a, 0xFFFE                   # this is ('s pseudo-vector
+                        brs z _continue
+                        call _do-operator               # pull an op and execute it
+                        x := [bp+operator-stack]        # check stack size
+                        cmp x, c
+                    }
+                    dl := brodata.EXPECTED_LEFT_PARENTHESIS
+                    br _out                             # wow; forget something? A LPAREN!!!
+                _continue:
                     continue
                 }
 
-                c := 128
-                cmp x, c
-                if n {
-                    # @todo handle precedence
-                    nop
+                x := [bp+operator-stack]        # get current stack size
+                c := 0   
+                cmp x, c                        # is the stack empty?
+                x := a
+                y := b
+                while !z do {                   # no, precedence and associativity need to be handled
+                    call _pop-operator
+                    cmp bl, yl                  # does token take precedence?
+                    if n {                      # it doesn't
+                        call _push-operator     # (yeesh, don't eat it)
+                        break
+                    }
+                    cmp a, 0xFFFE               # don't execute a parenthesis
+                    if z {
+                        call _push-operator
+                        break
+                    }
+                    call _do-operator           # pull an op and execute it
+                    push x
+                    x := [bp+operator-stack]    # check stack size
+                    c := 0
+                    cmp x, c
+                    pop x
                 }
-                call _push-operator
+                a := x                          # make sure op is what it was originally
+                b := y                          # before precedence check
+                call _push-operator             # push op and continue
                 continue
             } while z
         _finish-eval:
-            call backtok    # need to walk back a token
-            # @todo handle eval
-            c := 128
-            cmp x, c
-            while n do {
+            call backtok                        # need to walk back a token
+
+            x := [bp+operator-stack]
+            c := 0   
+            cmp x, c                            # is stack empty?
+            while !z do {                       # keep going until it is...
                 call _pop-operator
-
-                d := b
-                and d, 0b1111_0000_0000_0000
-                shr d, 12
-                cmp dl, 0xF
+                cmp a, 0xFFFE                   # shouldn't have parens anymore
                 if z {
-                    # pop off second value
-                    pop d
-                    [bdata.operand] := d
-                    pop dl
-                    [bdata.operand-token] := dl
+                    dl := brodata.EXPECTED_RIGHT_PARENTHESIS
+                    brs _out
                 }
-                # pop off first
-                pop d
-                [bdata.accumulator] := d
-                pop dl
-                [bdata.accumulator-token] := dl
-
-                d := 0
-                [bp+vector-bank] := d
-                [bp+vector-offs] := a
-                
-                call [bp+vector-offs]      # call the operator handler
-                cmp dl, 0
-                if !z {
-                    br _out                     # that didn't work!
-                }
-
-                # push value back on stack
-                dl := [bdata.accumulator-token]
-                push dl
-                d := [bdata.accumulator]
-                push d
-
+                call _do-operator               # pull an op and execute it
+                x := [bp+operator-stack]        # check stack size
                 cmp x, c
             }
         _done:
-            pop d
+            STPOP_BP(d, value-stack)            # pop off the last value -- this is our return
             [bdata.accumulator] := d
-            pop dl
+            STPOP_BP(d, value-stack)
             [bdata.accumulator-token] := dl
             dl := 0                             # if we're here, we evaluated without issue
         _out:
@@ -1214,27 +1301,49 @@
             pop c
             pop x
             pop y
-            exit 138
+            BIG_EXIT(270)
             ret
+        _too-complex:
+            dl := brodata.EXPRESSION_TOO_COMPLEX_ERROR
+            brs _out
         _push-operator:
-            dec x
-            dec x
-            [bp+operator-stack, x] := a
-            dec x
-            dec x
-            if c {
-                dl := brodata.EXPRESSION_TOO_COMPLEX_ERROR
-                brs _out
-            }
-            [bp+operator-stack, x] := b
+            STPUSH_BP(a, operator-stack)
+            STPUSH_BP(b, operator-stack)
             ret
         _pop-operator:
-            b := [bp+operator-stack, x]
-            inc x
-            inc x
-            a := [bp+operator-stack, x]
-            inc x
-            inc x
+            STPOP_BP(b, operator-stack)
+            STPOP_BP(a, operator-stack)
+            ret
+        _do-operator:
+
+            d := b
+            and d, 0b1111_0000_0000_0000
+            shr d, 12
+            cmp dl, 0xF
+            if z {
+                # pop off second value
+                STPOP_BP(d, value-stack)
+                [bdata.operand] := d
+                STPOP_BP(d, value-stack)
+                [bdata.operand-token] := dl
+            }
+            # pop off first
+            STPOP_BP(d, value-stack)
+            [bdata.accumulator] := d
+            STPOP_BP(d, value-stack)
+            [bdata.accumulator-token] := dl
+
+            [bp+vector-offs] := a
+            call [bp+vector-offs]           # call the operator handler
+
+            cmp dl, 0
+            br !z _out                      # that didn't work
+
+            # push value back on stack
+            dl := [bdata.accumulator-token]
+            STPUSH_BP(d, value-stack)
+            d := [bdata.accumulator]
+            STPUSH_BP(d, value-stack)
             ret
         }
 
@@ -1259,25 +1368,71 @@
         }
 
         handler-print: {
-            enter 0x00
+            enter 0x02
+            .const emit-newline -2
         _main:
+
+            call gettok
+            cmp dl, 0
+            br z _bail                          # next token was an end of the line
+            cmp dl, brodata.TOK_END_OF_STMT
+            br z _bail                          # next token was an end of the statement
+            cmp dl, asc(";")
+            br z _maybe-no-newline              # semicolon suppresses CR at end of line
+            cmp dl, asc(",")
+            br z _tab                           # comma emits some tabs
+            call backtok                        # give eval a chance
+
             call eval
             cmp dl, 0
-            if !z {
-                brs _out
+            brs !z _out                         # an error happened, bail
+            dl := [bdata.accumulator-token]
+            cmp dl, brodata.TOK_STRING          # is the accumulator a string?
+            if z {
+                d := 0
+                x := [bdata.accumulator]
+                call [vectors.PRINT]
+            } else {                            # must be a number?
+                b := 10
+                c := [bdata.accumulator]
+                LDPTR(d, x, bdata.itoa-buffer)
+                call [vectors.I16_TO_STR]
+                call [vectors.PRINT]
             }
-            b := 10
-            c := [bdata.accumulator]
-            LDPTR(d, x, bdata.itoa-buffer)
-            call [vectors.I16_TO_STR]
-            call [vectors.PRINT]
-            d := brodata.newline >> 3
-            x := brodata.newline & 7
-            call [vectors.PRINT]         # NEWLINE, to be neat
-            dl := 0
+            call _reset-newline
+            br _main                            # back for more!
+
         _out:
-            exit 0x00
+            exit 0x02
             ret
+        _bail:
+            d := [bp+emit-newline]
+            cmp d, 1
+            if !z {
+                d := brodata.newline >> 3
+                x := brodata.newline & 7
+                call [vectors.PRINT]            # NEWLINE, to be neat
+            }
+            dl := 0
+
+            call backtok
+            brs _out
+        _reset-newline:
+            d := 0
+            [bp+emit-newline] := d
+            ret
+        _maybe-no-newline:
+            d := 1
+            [bp+emit-newline] := d
+            br _main 
+        _tab:
+            x := 8
+            do {
+                dl := asc(" ")
+                call [vectors.PUT_CHAR]
+                dec x
+            } while !z
+            br _main
         }
 
         statement-handlers:
