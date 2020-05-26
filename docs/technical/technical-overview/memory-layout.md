@@ -52,7 +52,9 @@ Each bank is then split up into four pages of 16 kilobytes. The initial memory m
       <td style="text-align:left">ROM (Character, Palette, Kernel)</td>
     </tr>
   </tbody>
-</table>Each bank is split into four pages, resulting in 32 addressable pages. Pages 28–31 are read-only \(being the entirety of bank 7\). Pages 1–3 in bank 0 can be remapped with the `MM` register. At startup, the first four pages are mapped as follows:
+</table>
+
+Each bank is split into four pages, resulting in 32 addressable pages. Pages 28–31 are read-only \(being the entirety of bank 7\). Pages 1–3 in bank 0 can be remapped with the `MM` register. At startup, the first four pages are mapped as follows:
 
 <table>
   <thead>
@@ -94,7 +96,9 @@ Each bank is then split up into four pages of 16 kilobytes. The initial memory m
       <td style="text-align:left">KERNEL (ROM)</td>
     </tr>
   </tbody>
-</table>Because `MM` can be modified with the `PUSHMM` instruction, it is posible to map in code and data from any page in memory. This means that it is possible, with some clever programming, to write programs with much more code than 64 kilobytes.
+</table>
+
+Because `MM` can be modified with the `PUSHMM` instruction, it is posible to map in code and data from any page in memory. This means that it is possible, with some clever programming, to write programs with much more code than 64 kilobytes.
 
 
 

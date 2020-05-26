@@ -89,6 +89,8 @@
             _left-keyword:       .string "LEFT$"           , NUL, TOK_LEFT
                                  .const TOK_LEN                             163
             _len-keyword:        .string "LEN"             , NUL, TOK_LEN
+                                 .const TOK_LET                             223
+            _let-keyword:        .string "LET"             , NUL, TOK_LEN
                                  .const TOK_LIST                            164
             _list-keyword:       .string "LIST"            , NUL, TOK_LIST
                                  .const TOK_LOAD                            165
@@ -98,7 +100,7 @@
                                  .const TOK_LOOP                            167
             _loop-keyword:       .string "LOOP"            , NUL, TOK_LOOP
                                  .const TOK_LOWER                           221
-            _lower-keyword:      .string "LOWER"           , NUL, TOK_LOWER
+            _lower-keyword:      .string "LOWER$"           , NUL, TOK_LOWER
                                  .const TOK_MID                             168
             _mid-keyword:        .string "MID$"            , NUL, TOK_MID
                                  .const TOK_NEW                             169
@@ -121,10 +123,12 @@
             _poke-keyword:       .string "POKE"            , NUL, TOK_POKE
                                  .const TOK_PRINT                           178
             _print-keyword:      .string "PRINT"           , NUL, TOK_PRINT
+                                 .string "?"               , NUL, TOK_PRINT
                                  .const TOK_READ                            179
             _read-keyword:       .string "READ"            , NUL, TOK_READ
                                  .const TOK_REM                             180
             _rem-keyword:        .string "REM"             , NUL, TOK_REM
+                                 .string "'"               , NUL, TOK_REM
                                  .const TOK_RETURN                          181
             _return-keyword:     .string "RETURN"          , NUL, TOK_RETURN
                                  .const TOK_RIGHT                           182
@@ -166,7 +170,7 @@
                                  .const TOK_UNTIL                           200
             _until-keyword:      .string "UNTIL"           , NUL, TOK_UNTIL
                                  .const TOK_UPPER                           222
-            _upper-keyword:      .string "UPPER"           , NUL, TOK_UPPER
+            _upper-keyword:      .string "UPPER$"           , NUL, TOK_UPPER
                                  .const TOK_USR                             201
             _usr-keyword:        .string "USR"             , NUL, TOK_USR
                                  .const TOK_VAL                             202
@@ -189,8 +193,10 @@
             _neq-operator:       .string "<>"              , NUL, TOK_NEQ
                                  .const TOK_LTE                             211
             _lte-operator:       .string "<="              , NUL, TOK_LTE
+                                 .string "=<"              , NUL, TOK_LTE
                                  .const TOK_GTE                             212
             _gte-operator:       .string ">="              , NUL, TOK_GTE
+                                 .string "=>"              , NUL, TOK_GTE
                                  .const TOK_LT                              213
             _lt-operator:        .string "<"               , NUL, TOK_LT
                                  .const TOK_GT                              214
@@ -207,6 +213,14 @@
             _rbracket-token:     .string "]"               , NUL, TOK_RBRACKET
                                  .const TOK_END_OF_STMT                     220
             _end-of-stmt:        .string ":"               , NUL, TOK_END_OF_STMT
+            _end-of-token-table: .byte NUL
+                                 .const TOK_BYTE                            255
+                                 .const TOK_WORD                            254
+                                 .const TOK_DWORD                           253
+                                 .const TOK_STRING                          252
+                                 .const TOK_VARIABLE                        251
+                                 .const TOK_REAL                            250
+                                 .const MAX_TOKEN                           223
             token-vectors: 
                 .word _abs-keyword, _and-keyword, _asc-keyword, _atn-keyword, _at-keyword
                 .word _call-keyword, _catalog-keyword, _chr-keyword, _cls-keyword, _close-keyword
@@ -224,5 +238,5 @@
                 .word _until-keyword, _usr-keyword, _val-keyword, _while-keyword, _add-operator, _sub-operator
                 .word _mul-operator, _div-operator, _mod-operator, _pow-operator, _neq-operator, _lte-operator
                 .word _gte-operator, _lt-operator, _gt-operator, _equ-operator, _lpar-token, _rpar-token
-                .word _lbracket-token, _rbracket-token, _end-of-stmt, _lower-keyword, _upper-keyword
+                .word _lbracket-token, _rbracket-token, _end-of-stmt, _lower-keyword, _upper-keyword, _let-keyword
 }

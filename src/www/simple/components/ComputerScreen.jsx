@@ -6,16 +6,16 @@ import shadowMask from "../assets/shadowmask.png";
  * Modified from 
  * https://gist.github.com/KHN190/d7c467a471b15e72302b16a9336440a5
  */
-
+const ASPECT = .936; //91/100;
 function resizeCanvas(c) {
     // assume that c's grandparent has the width and height we need
     const width = c.parentElement.parentElement.clientWidth - 40;
     const height = c.parentElement.parentElement.clientHeight - 40;
     let aspectWidth = width;
-    let aspectHeight = Math.floor(width * 0.75);
+    let aspectHeight = Math.floor(width * ASPECT);
     if (aspectHeight > height) {
         aspectHeight = height;
-        aspectWidth = height / 0.75;
+        aspectWidth = height / ASPECT;
     }
     c.style.width = `${aspectWidth}px`;
     c.style.height = `${aspectHeight}px`;
@@ -81,12 +81,8 @@ function initGLCanvas(canvas, useGL) {
 
     const gltex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, gltex);
-    /*
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    */
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT );
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -196,6 +192,7 @@ export class ComputerScreen extends React.Component {
         if (diagnostics.state === "running" || orphanedFrames < 3) {
             if (screen._wait) {
                 screen.resetWait();
+            }
                 frameBuffer.data.set(screen.frame);
                 frameCtx.putImageData(frameBuffer, 0, 0);
 
@@ -207,7 +204,7 @@ export class ComputerScreen extends React.Component {
                 } else {
                     ctx.drawImage(frameCanvas, 0, 0);
                 }
-            }
+            //}
         }
 
         if (diagnostics.state === "running") {

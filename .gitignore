@@ -11,3 +11,6 @@ src/www/bundle.js
 .watch
 .watch-cache
 .DS_Store
+flamegraph.html
+.clinic
+.perf

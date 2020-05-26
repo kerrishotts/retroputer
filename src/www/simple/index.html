@@ -43,7 +43,7 @@
             --link-color: #DDFFDD;
             color: var(--text-color);
         }
-        .lm_content input[type=text], .lm_content textarea, .lm_content select {
+        .lm_content input[type=text]:not(.handsontableInput), .lm_content textarea:not(.handsontableInput), .lm_content select:not(.handsontableInput) {
             background-color: transparent;
             border: 1px solid var(--border-color);
             border-radius: 2px;
@@ -119,18 +119,28 @@
             font-family: 'Menlo', monospace;
             white-space: pre-wrap;
         }
-        .lm_content table {
+        .lm_content table.htCore {
+            color: var(--background);
+        }
+        .handsontable .htDimmed {
+            color: var(--background) !important;
+        }
+        .handsontable .a { background-color: rgba(0, 0, 0, 0.033)}
+        .handsontable .b { background-color: rgba(0, 0, 0, 0.100)}
+        .handsontable .c { background-color: rgba(0, 0, 0, 0.066)}
+        .handsontable .d { background-color: rgba(0, 0, 0, 0.133)}
+        .lm_content table:not(.htCore) {
             width: 100%;
         }
-        .lm_content th, .lm_content td {
+        .lm_content table:not(.htCore) th, .lm_content table:not(.htCore) td {
             text-align: right;
             width: 4em;
             padding: 0.25em;
         }
-        .lm_content tr:nth-of-type(odd) {
+        .lm_content table:not(.htCore) tr:nth-of-type(odd) {
             background-color: rgba(0, 0, 0, 0.125);
         }
-        .lm_content th {
+        .lm_content table:not(.htCore) th {
             font-weight: bold;
         }
 
@@ -187,17 +197,26 @@
             overflow: auto;
         }
 
+        .docs .toc a.active {
+            font-weight: bold;
+        }
+
         .docs .md {
             font-family:Georgia, 'Times New Roman', Times, serif;
             font-size: 10pt;
             line-height: 1.33;
             flex: 0 1 auto;
-            min-width: 10em;
-            max-width: 40em;
             margin: 0 auto;
         }
 
-        .docs .md th p, .docs .md td p {
+        .docs .md p, .docs .md ul, .docs .md blockquote, .docs .md pre.code, .docs .md h2, .docs .md h3, .docs .md h4, .docs .md table:not(.htCore):not(.expand) {
+            min-width: 10em;
+            max-width: 40em;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .docs .md table:not(.htCore) th p, .docs .md table:not(.htCore) td p {
             margin: 0;
             padding: 0;
         }
@@ -206,13 +225,13 @@
             color: var(--link-color);
         }
 
-        .docs .md td, .docs .md th {
+        .docs .md table:not(.htCore) td, .docs .md table:not(.htCore) th {
             text-align: initial;
             vertical-align: top;
             width: 0;
         }
 
-        .docs .md h1, .docs .md h2, .docs .md h3, .docs .md h4, .docs .md th {
+        .docs .md h1, .docs .md h2, .docs .md h3, .docs .md h4, .docs .md table:not(.htCore) th {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--text-heading-color);
         }
@@ -258,7 +277,7 @@
             padding: var(--padding);
             border-bottom-left-radius: var(--padding);
             border-bottom-right-radius: var(--padding);
-            overflow-x: scroll;
+            overflow-x: auto;
         }
 
         .docs .md .codebody code {
@@ -266,7 +285,8 @@
         }
 
         .docs .md blockquote {
-            margin: 0;
+            margin-top: 0;
+            margin-bottom: 0;
             padding: .5em 1em;
             border-left: 4px solid var(--border-color);
             background-color: var(--quote-background);
@@ -292,7 +312,7 @@
             margin: 1em 0 -0.5em 0;
         }
 
-        .docs .md table {
+        .docs .md table:not(.htCore) {
             margin: 1em 0;
         }
 
@@ -323,7 +343,8 @@
 <!-- fragment shader -->
 <script id="some-fragment-shader" type="x-shader/x-fragment">
 
-	precision mediump float;
+    //precision mediump float;
+    precision highp float;
 
 	varying vec2		v_texCoord;
 	uniform vec2		u_canvasSize;
@@ -366,7 +387,7 @@
 	// Also zero's off screen.
 	vec3 Fetch(vec2 pos,vec2 off)
 	{
-		pos=floor(pos * texSize + off) / texSize;
+        pos=floor(pos * texSize + off) / texSize;
 		if (pos.x<0.0 || pos.x>=1.0 || pos.y<0.0 || pos.y>=1.0)
 			return vec3(0.0,0.0,0.0);
 		return texture2D(u_texture,pos.xy).rgb;

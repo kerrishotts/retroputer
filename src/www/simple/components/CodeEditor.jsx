@@ -32,15 +32,34 @@ export class CodeEditor extends React.Component {
         this.selectProgram = this.selectProgram.bind(this);
         this.saveProgram = this.saveProgram.bind(this);
         this.saveProgramAs = this.saveProgramAs.bind(this);
+        this.editorDidMount = this.editorDidMount.bind(this);
 
         this.program = React.createRef();
 
         this.assembleClicked();
     }
 
+    editorDidMount() {
+        // so, apparently the Monaco editor loader does all sorts of annoying things that break HMR in our docs.
+        // so fix that.
+
+        if (window.define && window.define.amd) {
+            // if this is true, this breaks documentation navigation when watching.
+            window.define.amd = false;
+            /*window._define = define;
+
+            // somehow, this works!? I think because other generated code actually checks things like define.amd
+            // which this would break, and so don't even bother. But if something calls define() with checking
+            // this should still work.
+            window.define = (...args) => {
+                try { return window._define(...args) } catch (err) { console.error(err.message); }
+            }*/
+        }
+    }
+
     storeChanged() {
         if (this.state.code !== this.props.store.code) {
-            this.codeChangedOutside();
+            this.codeChangedOutside(this.props.store);
         }
     }
 
@@ -139,6 +158,7 @@ export class CodeEditor extends React.Component {
                         language="asm"
                         value={code}
                         theme="dark"
+                        editorDidMount={this.editorDidMount}
                         onChange={this.codeChanged}
                         options={{
                             lineNumbersMinChars: 3,

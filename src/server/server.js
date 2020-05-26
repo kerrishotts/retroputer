@@ -21,6 +21,9 @@ import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagn
 
 import rom, { vectors } from "../roms/kernel.js";
 
+const START_TIMEOUT = 3000;
+const DEFAULT_TIMEOUT = 6000;
+
 function createComputer({timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2} = {}) {
     const computer = new Computer({performance, debug: true, timingMethod, sliceTime, sliceGranularity});
     computer.memory.loadFromJS(rom, true);
@@ -116,7 +119,7 @@ function startComputer({computer, screen, diag, timeout = 3000, finishScreen = f
     let forceKill, interval;
 
     // time out after the desired interval (+1s, since we have to INIT)
-    forceKill = setTimeout(() => { stopComputer({computer, screen, finishScreen, interval, forceKill, recordBuffer, onStop}); }, timeout + 1000);
+    forceKill = setTimeout(() => { stopComputer({computer, screen, finishScreen, interval, forceKill, recordBuffer, onStop}); }, timeout + START_TIMEOUT);
 
     // Handle screen frames, and early stop
     interval = setInterval(() => {
@@ -140,7 +143,7 @@ function run(cb, {asm, at = 0x02000, timeout = 3000, finishScreen = false, timin
     startComputer({computer, screen, timeout, diag, finishScreen, recordBuffer, onStop: frame => cb(null, frame)});
     
     // start the actual requested assembly
-    setTimeout(() => { if (at !== undefined) computer.processor.jump(at); }, 1000);
+    setTimeout(() => { if (at !== undefined) computer.processor.jump(at); }, START_TIMEOUT);
 
 }
 
@@ -158,14 +161,14 @@ const defaultAsm = `.segment data 0x03000 {
     brk
 }`;
 
-const editor = ({asm, finishScreen = "yes"} = {}) => `
+const editor = ({asm, finishScreen = true} = {}) => `
         <form method="POST" action="/">
             <textarea name="asm" rows=25 cols=80>${asm || defaultAsm}</textarea><br/>
-            <input type="checkbox" ${finishScreen === "yes" ? "checked" : ""} name="finishScreen" value="yes"> Finish Screen?<br/>
+            <input type="checkbox" ${finishScreen ? "checked" : ""} name="finishScreen" value="yes"> Finish Screen?<br/>
             <input type="submit"/>
         </form>`;
 
-const renderPage = ({asm, finishScreen = "yes", frame, err, recordBuffer} = {}) => {
+const renderPage = ({asm, finishScreen = true, frame, err, recordBuffer} = {}) => {
     let base64;
     if (!err) {
         if (Array.isArray(recordBuffer)) {
@@ -213,8 +216,8 @@ app.route("/")
         // get all the parameters and options
 
         // timeout
-        const requestedTimeout = Number(req.body.timeout || req.query.timeout || "3000");
-        const timeout = Math.max(Math.min(Number.isNaN(requestedTimeout) ? 3000 : requestedTimeout, 10000), 1);
+        const requestedTimeout = Number(req.body.timeout || req.query.timeout || `${DEFAULT_TIMEOUT}`);
+        const timeout = Math.max(Math.min(Number.isNaN(requestedTimeout) ? DEFAULT_TIMEOUT : requestedTimeout, 10000), 1);
 
         // assembly code
         const asm = req.body.asm || req.body; // (if content type is text, asm will be in the body)
@@ -258,7 +261,7 @@ app.route("/")
                 "json": () => {
                     res.send({
                         error: err && err.message,
-                        frame,
+                        frame: Array.from(frame || []),
                         asm
                     });
                     next();

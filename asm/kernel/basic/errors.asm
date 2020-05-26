@@ -79,13 +79,15 @@
                                     .const EXPECTED_A_QUOTE                  34
         expected-quote:             .string "EXPECTED A QUOTE"            , NUL
                                     .const EXPECTED_LEFT_PARENTHESIS         35
-        expected-left-paren:        .string "EXPECTED LEFT PARENTHESIS"   , NUL
+        expected-left-paren:        .string "EXPECTED LEFT PAREN"         , NUL
                                     .const EXPECTED_RIGHT_PARENTHESIS        36
-        expected-right-paren:       .string "EXPECTED RIGHT PARENTHESIS"  , NUL
+        expected-right-paren:       .string "EXPECTED RIGHT PAREN"        , NUL
                                     .const EXPECTED_LEFT_BRACKET             37
         expected-left-bracket:      .string "EXPECTED LEFT BRACKET"       , NUL
                                     .const EXPECTED_RIGHT_BRACKET            38
         expected-right-bracket:     .string "EXPECTED RIGHT BRACKET"      , NUL
+                                    .const NOT_IMPLEMENTED                   39
+        not-implemented:            .string "NOT IMPLEMENTED"             , NUL
         error-prefix:               .string CR, "?", NUL
         error:                      .string " ERROR", CR, NUL
         at-line:                    .string " AT LINE ", NUL
@@ -97,6 +99,6 @@
             .word file-not-found-err, unexpected-return-err, out-of-disk-space-err, file-exists-err, stopped-err, string-too-long-err
             .word line-too-long-err, next-without-for-err, while-without-loop-err, until-without-loop-err, loop-without-do-err
             .word expression-too-complex-err, stack-overflow-err, expected-quote, expected-left-paren, expected-right-paren
-            .word expected-left-bracket, expected-right-bracket, error-prefix, error, at-line
+            .word expected-left-bracket, expected-right-bracket, not-implemented, error-prefix, error, at-line
 
 }

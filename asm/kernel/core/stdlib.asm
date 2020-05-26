@@ -131,5 +131,174 @@
             popf
             ret
         }
+
+        ########################################################################
+        #
+        # STRCMP
+        #
+        # Compares two strings and returns if the first string is equal to, 
+        # less than, or greater than the second string. Both strings must be NUL
+        # terminated.
+        #
+        # @param D,X            (PTR) String A      First string to compare
+        # @param [BP+4,BP+6]    (PTR) String B      Second string to compare
+        # @param FLAGS
+        #   @flag Z     if set, check for full equality (NULs must be in the same location)
+        #               if not set, bails with +Z/-N when first NUL is encountered (in string a)
+        # @return FLAGS
+        #   @flag Z     set when equal; clear when unequal
+        #   @flag N     set when less than; clear when equal or greater than
+        # @return C     number of characters compared
+        ########################################################################
+        strcmp: {
+            enter 0x00
+            push a
+            push b
+            push d
+            push y
+            pushf
+            if Z {
+                bl := 0x00                  # Checking for full equality
+            } else {
+                bl := 0x01                  # only checking for partial equality
+            }
+        _main:
+            y := 0                          # start of string
+        top:
+            cl := [d, x, y]                 # character in string A
+            al := <bp+4>,y                  # character in string B
+            cmp bl, 0x01                    # check if we're doing full equality
+            if Z {
+                cmp cl, 0                   # we're not, so check for an early nul in string b
+                brs Z strings-are-equal       # if it's NUL, we calling them equal
+            }
+            cmp cl, al                      # check character
+            if Z {
+                cmp cl, 0                   # equal, but check for NUL
+                brs Z strings-are-equal     # NUL reached, strings are equal
+                inc y                       # next character
+                brs top                     # not NUL, so keep going...
+            }
+
+            # if here, the strings aren't equal
+            if N {
+                popf                        # string is less than
+                set N
+                clr Z
+                brs _out
+            } else {
+                popf                        # string is greater than
+                clr N
+                clr Z
+                brs _out
+            }
+
+        strings-are-equal:
+            popf
+            clr N                           # Not less than
+            set Z                           # but Equal
+
+        _out:
+            c := y                          # make sure we know how many chars where compared
+            pop y
+            pop d
+            pop b
+            pop a
+            exit 0x00
+            ret
+        }
+
+        ########################################################################
+        #
+        # STACK ROUTINES
+        #
+        # Stacks are simple structures constructed as follows:
+        #
+        # offset 0, 1: stack index (0-based, not adjusted for word)
+        # offset 2, 3: first word on stack
+        # offset 4, 5: second word on stack, etc.
+        #
+        # There are no bounds checks for going beyond the _length_ of the stack
+        # -- that's up to the developer to do, although the flags are left 
+        # unmodified from the stack index manipulation.
+        #
+        ########################################################################
+
+        ########################################################################
+        #
+        # STACK-POP 
+        #
+        # Pops a word from the stack pointed to by D,X
+        #
+        # @param D,X            (PTR) Stack         Stack
+        # @param @flag.Z        Peek or Pop?        if SET, PEEK
+        # @return C             Word                Word on top of stack
+        # @return FLAGS
+        #   @flag Z             if set, index is now at the beginning of the stack
+        #   @flag N / @flag C   if set, stack is underflowed
+        #   @flag EX            if set, stack was empty
+        ########################################################################
+        stack-pop: {
+            enter 0x00
+            push y
+            pushf                               # for later...
+        _main:
+            y := [d, x]                         # get stack index
+            dec y                               # is stack about to underflow?
+            if c {
+                popf                            # undo first push
+                set n                           # set negative
+                set c                           # and carry
+                set ex                          # and exception flag
+                brs _out                        # to indicate a bad pop
+            }
+            inc y                               # put y back where we need it
+            push y                              # push for later
+            shl y, 1                            # * 2 (dealing with words)
+            c := [d, x, y]                      # read word at index (this will be off by one, but that's what we want)
+            pop y                               # y is back to normal
+            popf                                # pop flags so we can see if we're peeking or popping
+            brs z _out                          # if zero was set at call, we're PEEKing, not POPping
+            dec y                               # reduce stack index
+            [d, x] := y                         # and store
+            clr ex
+        _out:
+            pop y
+            exit 0x00
+            ret
+        }
+
+        ########################################################################
+        #
+        # STACK-PUSH
+        #
+        # Pushes a word onto the stack pointed to by D,X
+        #
+        # @param D,X            (PTR) Stack         Stack
+        # @param C              Word                Word to push
+        # @return FLAGS
+        #   @flag Z             if set, index is now at the beginning of the stack
+        #   @flag N / @flag C   if set, stack is underflowed
+        ########################################################################
+        stack-push: {
+            enter 0x00
+            push y
+        _main:
+            y := [d, x]                         # get stack index
+            push y                              # push for later
+            shl y, 1                            # * 2 (dealing with words)
+            push x                              # stash...
+            inc x
+            inc x                               # advance x past the index
+            [d, x, y] := c                      # store word at index (not off-by-one as in pop)
+            pop x                               # back at the front
+            pop y                               # y is back to normal
+            inc y                               # increment stack index
+            [d, x] := y                         # and store
+        _out:
+            pop y
+            exit 0x00
+            ret
+        }
     }
 }

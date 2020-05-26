@@ -40,6 +40,8 @@ OPCODES["nop"] = {
     asm: "nop",
     pattern: "0000_0000",
     operands: {},
+    description: "Performs no operation",
+    flags: "xdshncvz",
     decode: () => [
         TASKS.NOP
     ]
@@ -50,6 +52,8 @@ OPCODES["halt"] = {
     asm: "halt",
     pattern: "0011_1110",
     operands: {},
+    description: "Halts the processor until an interrupt occurs",
+    flags: "xdshncvz",
     decode: () => [
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
     ]
@@ -58,8 +62,10 @@ OPCODES["halt"] = {
 //FIXME: wait is currently doing the same thing as BRK
 OPCODES["wait"] = {
     asm: "wait $r",
-    pattern: "1010_1111",
+    pattern: "1010_1111 bbbb_bbbb",
     operands: {b: [7, 0]},
+    description: "[TODO] Waits until a specific interrupt occurs",
+    flags: "xdshncvz",
     decode: ({b = 0} = {}) => [
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
     ]
@@ -69,6 +75,8 @@ OPCODES["brk"] = {
     asm: "brk",
     pattern: "0011_1111",
     operands: {},
+    description: "Halts the processor if a debugger is attached",
+    flags: "xdshncvz",
     decode: () => [
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.INTERRUPT_DISABLE,
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
@@ -79,6 +87,8 @@ OPCODES["not"] = {
     asm: "not $r",
     pattern: "0000_1001 0000_rrrr",
     operands: { r: [3, 0] },
+    description: "!reg",
+    flags: "xdshNcvZ",
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b, op2
@@ -91,6 +101,8 @@ OPCODES["neg"] = {
     asm: "neg $r",
     pattern: "0000_1001 0001_rrrr",
     operands: { r: [3, 0] },
+    description: "-1 * reg",
+    flags: "xdshNcvZ",
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r, // a
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b
@@ -105,6 +117,8 @@ OPCODES["exc"] = {
     asm: "exc $r",
     pattern: "0000_1001 0010_rrrr",
     operands: { r: [3, 0] },
+    description: "Swaps high and low regions of the register",
+    flags: "xdshNcvZ",
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r,
         ((r & 0x01) ? TASKS.DECOMPOSE_BYTE_TO_NIBBLE : TASKS.DECOMPOSE_WORD_TO_BYTES),
@@ -119,6 +133,8 @@ OPCODES["swap_ds"] = {
     asm: "swap $d, $s",
     pattern: "0000_1110 dddd_ssss",
     operands: { s: [3, 0], d: [7, 4] },
+    description: "Swaps register values",
+    flags: "xdshncvz",
     decode: ({ d = 0, s = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | d,
         TASKS.GET_REGISTER_AND_PUSH | s,
@@ -131,6 +147,8 @@ OPCODES["mov_ds"] = {
     asm: "mov $d, $s",
     pattern: "0000_1111 dddd_ssss",
     operands: { s: [3, 0], d: [7, 4] },
+    description: "Moves value of source to dest",
+    flags: "xdshncvz",
     decode: ({ d = 0, s = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | s,
         TASKS.POP_INTO_REGISTER | d
@@ -151,6 +169,8 @@ OPCODES["mov_ds"] = {
         asm: `${opcode} $r`,
         pattern,
         operands: { r: [3, 0] },
+    description: `${opcode}rements register`,
+    flags: "xdshNCVZ",
         decode: ({ r = 0 } = {}) => [
             // clear carry bit; inc & dec should never be affected
             //TASKS.CLEAR_FLAG_IMM | FLAGS_INDEX.CARRY,
@@ -172,6 +192,8 @@ OPCODES["mov_ds"] = {
         asm: `${opcode} $f`,
         pattern,
         operands: { f: [2, 0] },
+    description: `${opcode}s specified flag`,
+    flags: "XDSHNCVZ",
         decode: ({ f = 0 } = {}) => [
             task | f,
         ]
@@ -187,11 +209,13 @@ OPCODES["mov_ds"] = {
     ["or", TASKS.OR, "0000_0101", "0110_1dd1", "0110_1dd0"],
     ["test", TASKS.TEST, "0000_0110", "0111_0dd1", "0111_0dd0"],    // TODO: incorrect; the alu doesn't support test ATM
     ["xor", TASKS.XOR, "0000_0111", "0111_1dd1", "0111_1dd0"],
-].forEach(([opcode, task, ds, db, dw]) => {
+].forEach(([opcode, task, ds, db, dw], idx) => {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
         pattern: `${ds} dddd_ssss`,
         operands: { s: [3, 0], d: [7, 4] },
+    description: `${opcode}s dest and source, storing result in dest`,
+    flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
         decode: (
             opcode === "cmp"
                 ? ({ d = 0, s = 0 } = {}) => [
@@ -211,6 +235,8 @@ OPCODES["mov_ds"] = {
         asm: `${opcode} $d, $b`,
         pattern: `${db} bbbb_bbbb`,
         operands: { d: [10, 9], b: [7, 0] },
+    description: `${opcode}s dest and imm8, storing result in dest`,
+    flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
         decode: (
             opcode === "cmp"
                 ? ({ d = 0, b = 0 } = {}) => [
@@ -230,6 +256,8 @@ OPCODES["mov_ds"] = {
         asm: `${opcode} $d, $w`,
         pattern: `${dw} wwww_wwww wwww_wwww`,
         operands: { d: [18, 17], w: [15, 0] },
+    description: `${opcode}s dest and imm16, storing result in dest`,
+    flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
         decode: (
             opcode === "cmp"
                 ? ({ d = 0, w = 0 } = {}) => [
@@ -252,6 +280,8 @@ OPCODES["trap_b"] = {
     asm: "trap $b",
     pattern: "0000_1000 bbbb_bbbb",
     operands: { b: [7, 0] },
+    description: "Executes the specified trap",
+    flags: "xdshncvz",
     decode: ({ b = 0 } = {}) => [
         ...OPCODES["br_call_f"].decode({w: 1, i: 1, m: 1, a: b})
     ]
@@ -262,6 +292,8 @@ OPCODES["trap_r"] = {
     asm: "trap $r",
     pattern: "0100_0rrr",
     operands: { r: [2, 0] },
+    description: "[TODO] Executes the specified trap in the given register",
+    flags: "xdshncvz",
     decode: ({ r = 0 } = {}) => [
         TASKS.NOP
     ]
@@ -272,6 +304,8 @@ OPCODES["enter_n"] = {
     asm: "enter $n",
     pattern: "0011_1000 nnnn_nnnn",
     operands: { n: [7, 0] },
+    description: "Enters a stack frame",
+    flags: "xdshncvz",
     decode: ({ n = 0} = {}) => [
         ...OPCODES["push_r"].decode({r: REGISTER_INDEX.BP}),
         ...OPCODES["mov_ds"].decode({d: REGISTER_INDEX.BP, s: REGISTER_INDEX.SP}),
@@ -286,6 +320,8 @@ OPCODES["exit_n"] = {
     asm: "exit $n",
     pattern: "0011_1001 nnnn_nnnn",
     operands: { n: [7, 0] },
+    description: "Leaves a stack frame",
+    flags: "xdshncvz",
     decode: ({ n = 0} = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.SP,
         TASKS.PUSH_WORD | n,
@@ -305,11 +341,13 @@ OPCODES["exit_n"] = {
     ["smul", TASKS.SMUL, "1010_1011 dddd_ssss"],
     ["sdiv", TASKS.SDIV, "1010_1100 dddd_ssss"],
     ["smod", TASKS.SMOD, "1010_1101 dddd_ssss"]
-].forEach(([opcode, task, pattern]) => {
+].forEach(([opcode, task, pattern], idx) => {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
         pattern,
         operands: { s: [3, 0], d: [7, 4] },
+    description: `${opcode} dest and source, storing result in dest`,
+    flags: idx < 2 ? "xdshNCvZ" : (opcode.indexOf("mul") > -1 ? "x" : "X") + "dshNCVZ",
         decode: ({ d = 0, s = 0 } = {}) => [
             TASKS.GET_REGISTER_AND_PUSH | d, // a
             TASKS.GET_REGISTER_AND_PUSH | s, // b
@@ -328,6 +366,8 @@ OPCODES["exit_n"] = {
         asm: `${opcode} $r, $n`,
         pattern,
         operands: { n: [3, 0], r: [7, 4] },
+    description: `${opcode} reg by specified bits`,
+    flags: "xdshNCvZ",
         decode: ({ r = 0, n = 0 } = {}) => [
             TASKS.GET_REGISTER_AND_PUSH | r, // a
             TASKS.PUSH_BYTE | n, // b
@@ -341,6 +381,8 @@ OPCODES["in_rp"] = {
     asm: "in $r, $p",
     pattern: "0011_0000 rrrr_0000 pppppppp",
     operands: { r: [15, 12], p: [7, 0] },
+    description: "Reads a value from port and stores in reg",
+    flags: "xdshncvz",
     decode: ({ r = 0, p = 0 } = {}) => [
         TASKS.PUSH_BYTE | p,
         TASKS.IO_IN,
@@ -352,6 +394,8 @@ OPCODES["out_rp"] = {
     asm: "out $r, $p",
     pattern: "0011_0001 rrrr_0000 pppppppp",
     operands: { r: [15, 12], p: [7, 0] },
+    description: "Writes value in reg to port",
+    flags: "xdshncvz",
     decode: ({ r = 0, p = 0 } = {}) => [
         TASKS.PUSH_BYTE | p,
         TASKS.GET_REGISTER_AND_PUSH | r,
@@ -366,6 +410,8 @@ OPCODES["ld_dw"] = {
     asm: "ld $d, $w",
     pattern: "0001_ddd0 0000_0000 wwww_wwww wwww_wwww",
     operands: { d: [27, 25], w: [15, 0] },
+    description: "Loads an immediate word into dest",
+    flags: "xdshncvz",
     decode: ({ d = 0, w = 0 } = {}) => [
         TASKS.PUSH_WORD | w,
         TASKS.POP_INTO_REGISTER | (d << 1)
@@ -377,6 +423,8 @@ OPCODES["ld_db"] = {
     asm: "ld $d, $b",
     pattern: "0001_ddd1 0000_0000 bbbb_bbbb",
     operands: { d: [19, 17], b: [7, 0] },
+    description: "Loads an immediate byte into dest",
+    flags: "xdshncvz",
     decode: ({ d = 0, b = 0 } = {}) => [
         TASKS.PUSH_BYTE | b,
         TASKS.POP_INTO_REGISTER | ((d << 1) | 1)
@@ -424,6 +472,8 @@ OPCODES["ld"] = {
     asm: "ld $d, $a $x $y $m:$i",
     pattern: "0001_dddd mmix_yaaa aaaa_aaaa aaaa_aaaa",
     operands: { d: [27, 24], m: [23, 22], i: [21, 21], x: [20, 20], y: [19, 19], a: [18, 0] },
+    description: "Loads a value from memory",
+    flags: "xdshncvz",
     decode: ({ d = 0, m = 0, i = 0, x = 0, y = 0, a = 0 } = {}) => [
         TASKS.PUSH_ADDR | a,
         ...addressingTasks({ m, i, x, y, a }),
@@ -441,6 +491,8 @@ OPCODES["st"] = {
     asm: "st $a, $s $x $y $m:$i",
     pattern: "0010_ssss mmix_yaaa aaaa_aaaa aaaa_aaaa",
     operands: { s: [27, 24], m: [23, 22], i: [21, 21], x: [20, 20], y: [19, 19], a: [18, 0] },
+    description: "Stores a value to memory",
+    flags: "xdshncvz",
     decode: ({ s = 0, m = 0, i = 0, x = 0, y = 0, a = 0 } = {}) => [
         TASKS.PUSH_ADDR | a,
         ...addressingTasks({ m, i, x, y, a }),
@@ -458,6 +510,8 @@ OPCODES["push_r"] = {
     asm: `push $r`,
     pattern: "1110_rrrr",
     operands: { r: [3, 0] },
+    description: "Push the register on stack",
+    flags: "xdshncvz",
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.SP,
         TASKS.PUSH_WORD | ((r & 0b1) ? 1 : 2),
@@ -474,6 +528,8 @@ OPCODES["pop_r"] = {
     asm: `pop $r`,
     pattern: "1111_rrrr",
     operands: { r: [3, 0] },
+    description: "Pop top of stack into register",
+    flags: "xdshncvz",
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | REGISTER_INDEX.SP,
         TASKS.DUP,
@@ -491,6 +547,8 @@ OPCODES["pushall"] = {
     asm: `pushall`,
     pattern: "1010_0000",
     operands: {},
+    description: "Pushes SP, A, B, C, D, X, Y, and BP",
+    flags: "xdshncvz",
     decode: () => [
         ...OPCODES["push_r"].decode({r: REGISTER_INDEX.SP}),
         ...OPCODES["push_r"].decode({r: REGISTER_INDEX.A}),
@@ -506,6 +564,8 @@ OPCODES["popall"] = {
     asm: `popall`,
     pattern: "1010_0001",
     operands: {},
+    description: "Reverse of pushall",
+    flags: "xdshncvz",
     decode: () => [
         ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.BP}),
         ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.Y}),
@@ -523,6 +583,8 @@ OPCODES["pushf"] = {
     asm: `pushf`,
     pattern: "1010_0010",
     operands: {},
+    description: "Push flags onto stack",
+    flags: "xdshncvz",
     decode: () => [
         ...OPCODES["push_r"].decode({r: REGISTER_INDEX.STATUS})
     ]
@@ -532,6 +594,8 @@ OPCODES["popf"] = {
     asm: `popf`,
     pattern: "1010_0011",
     operands: {},
+    description: "Pops flags from stack",
+    flags: "XDSHNCVZ",
     decode: () => [
         ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.STATUS})
     ]
@@ -541,6 +605,8 @@ OPCODES["pushmm"] = {
     asm: `pushmm`,
     pattern: "1010_0100",
     operands: {},
+    description: "Push memory map register to stack",
+    flags: "xdshncvz",
     decode: () => [
         ...OPCODES["push_r"].decode({r: REGISTER_INDEX.MM})
     ]
@@ -550,6 +616,8 @@ OPCODES["popmm"] = {
     asm: `popmm`,
     pattern: "1010_0101",
     operands: {},
+    description: "Pops value on stack into memory map register",
+    flags: "xdshncvz",
     decode: () => [
         ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.MM})
     ]
@@ -559,6 +627,8 @@ OPCODES["ret"] = {
     asm: `ret`,
     pattern: "1010_0111",
     operands: {},
+    description: "Return from subroutine",
+    flags: "xdshncvz",
     decode: () => [
         ...OPCODES["pop_r"].decode({r: REGISTER_INDEX.PC})
     ]
@@ -583,6 +653,8 @@ OPCODES["ret"] = {
             s: [16 - offset, 16 - offset],
             a: [15 - offset, 0]
         },
+    description: "Conditional branch/call to address (U=unconditional; N=Not; W=Call)",
+    flags: "xdshncvz",
         decode: ({ n = 0, f = 0, m = 0, i = 0, x = 0, y = 0, u = 0, w = 0, s = 0, a = 0 } = {}) => [
             // value to use if branch is taken
             // m: 0b00 === relative, 0b01 === address,
@@ -655,6 +727,8 @@ OPCODES["ret"] = {
                 s: [16 - offset, 16 - offset],
                 a: [15 - offset, 0]
             },
+    description: "Decrements register and branches if carry is not set",
+    flags: "xdshncvz",
             decode: (
                 // LOOP(s) DECrements the selected register
                 // then, if CARRY is set, it branches to the

@@ -63,6 +63,20 @@ export class Diagnostics {
         ];
     }
 
+    dumpFlags() {
+        const reg = this.computer.processor.registers;
+        return {
+            N: reg.NEGATIVE,
+            V: reg.OVERFLOW,
+            Z: reg.ZERO,
+            C: reg.CARRY,
+            EX: reg.EXCEPTION,
+            ID: reg.INTERRUPT_DISABLE,
+            IS: reg.INTERRUPT_SERVICE,
+            SS: reg.SINGLE_STEP
+        };
+    }
+
     dumpMemory({start = 0, length = 256, width = 16} = {}) {
         const numRows = Math.ceil(length / width);
         const numCols = width;

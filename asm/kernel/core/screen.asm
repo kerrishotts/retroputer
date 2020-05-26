@@ -38,7 +38,7 @@
         cursor-fg:            .byte 0xFF
         cursor-bg:            .byte 0x00
         cursor-tile:          .byte 0xDB
-        cursor-visible:       .byte 0x01
+        cursor-visible:       .byte 0x00
         cursor-blink-toggle:  .byte 0x00
         cursor-blink-speed:   .byte 19
         cursor-blink-counter: .byte 19
@@ -202,6 +202,36 @@
         _out:
             ret
 
+        }
+
+        ##
+        ## Vector: SHOW_CURSOR
+        ##
+        ## Enables the cursor to become visible (next frame)
+        #######################################################################
+        show-cursor: {
+            push a
+        _main:
+            al := 1
+            [screen.kdata.cursor-visible] := al
+        _out:
+            pop a
+            ret
+        }
+
+        ##
+        ## Vector: HIDE_CURSOR
+        ##
+        ## Causes the cursor to disappear (next frame)
+        #######################################################################
+        hide-cursor: {
+            push a
+        _main:
+            al := 0
+            [screen.kdata.cursor-visible] := al
+        _out:
+            pop a
+            ret
         }
 
         ##
@@ -1004,6 +1034,28 @@
         }
 
         ##
+        ## Vector: PRINT_RAW
+        ## Parameters: D, X - NUL-terminated string to print on screen
+        ## Returns: none
+        ##
+        #######################################################################
+        print-raw: {
+                pushf
+                push a
+            _main:
+                al := PRINT_MODE_RAW
+                [screen.kdata.print-mode] := al
+                call print
+                al := PRINT_MODE_NORMAL
+                [screen.kdata.print-mode] := al
+            _out:
+                pop a
+                popf
+                ret
+        }
+
+
+        ##
         ## Vector: INPUT
         ## Parameters: D, X - Buffer for resulting user input
         ##             C - maximum size of buffer
@@ -1021,13 +1073,29 @@
             _main:
                 push x
                 push d                                # put PTR TO BUFFER on stack
+
+                call show-cursor
             _loop:
                 call get-char                         # get user input
                 cmp dl, 13                            # wait for ENTER 
                 br z _done
                 call put-char                         # print any output
+                cmp dl, 34                            # is it a quote? If so, switch modes
+                if z {
+                    al := [screen.kdata.print-mode]
+                    cmp al, PRINT_MODE_QUOTE
+                    if z {
+                        al := PRINT_MODE_NORMAL
+                    } else {
+                        al := PRINT_MODE_QUOTE
+                    }
+                    [screen.kdata.print-mode] := al
+                }
                 br _loop
             _done:
+                call hide-cursor
+                al := PRINT_MODE_NORMAL             # reset print mode, in case we were in a quote
+                [screen.kdata.print-mode] := al
                 call get-logical-line-end-addr       # d,x = end of logical line
                 b := x
                 call get-logical-line-start-addr     # d,x = start of line

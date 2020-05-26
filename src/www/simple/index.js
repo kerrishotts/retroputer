@@ -223,3 +223,5 @@ function initGoldenLayout() {
 }
 
 initGoldenLayout();
+
+setTimeout(() => document.getElementById("start").click(), 250);

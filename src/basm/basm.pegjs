@@ -935,6 +935,7 @@ fCARRY             "Carry"             = ("C"i/"flag:c"i) !IdentifierPart { retu
 fOVERFLOW          "Overflow"          = ("V"i/"flag:v"i) !IdentifierPart { return tFlag(FLAGS.OVERFLOW); }
 fNEGATIVE          "Negative"          = ("N"i/"flag:n"i) !IdentifierPart { return tFlag(FLAGS.NEGATIVE); }
 fEXCEPTION         "Exception"         = ("X"i/"flag:x"i) !IdentifierPart { return tFlag(FLAGS.EXCEPTION); }
+                                       / ("EX"i/"flag:ex"i) !IdentifierPart { return tFlag(FLAGS.EXCEPTION); }
 fINTERRUPT_DISABLE "Interrupt Disable" = ("ID"i/"flag:id"i) !IdentifierPart { return tFlag(FLAGS.INTERRUPT_DISABLE); }
 fINTERRUPT_SERVICE "Interrupt Service" = ("IS"i/"flag:is"i) !IdentifierPart { return tFlag(FLAGS.INTERRUPT_SERVICE); }
 fSINGLE_STEP       "Single Step"       = ("SS"i/"flag:ss"i) !IdentifierPart { return tFlag(FLAGS.SINGLE_STEP); }
