@@ -36,7 +36,7 @@
         .word handler-syntax-error          # 161, IN
         .word handler-syntax-error          # 162, LEFT
         .word handler-syntax-error          # 163, LEN
-        .word token-not-impl                # 164, LIST
+        .word handler-list                  # 164, LIST
         .word token-not-impl                # 165, LOAD
         .word handler-syntax-error          # 166, LOG
         .word token-not-impl                # 167, LOOP

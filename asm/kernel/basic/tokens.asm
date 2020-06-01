@@ -90,7 +90,7 @@
                                  .const TOK_LEN                             163
             _len-keyword:        .string "LEN"             , constants.NUL, TOK_LEN
                                  .const TOK_LET                             223
-            _let-keyword:        .string "LET"             , constants.NUL, TOK_LEN
+            _let-keyword:        .string "LET"             , constants.NUL, TOK_LET
                                  .const TOK_LIST                            164
             _list-keyword:       .string "LIST"            , constants.NUL, TOK_LIST
                                  .const TOK_LOAD                            165

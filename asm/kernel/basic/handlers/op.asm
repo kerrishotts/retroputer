@@ -9,18 +9,19 @@
         push b
         push c
     _main:
-        al := [bdata.accumulator-token]
-        b  := [bdata.accumulator]
-        cl := [bdata.operand-token]
-        d  := [bdata.operand]
+        call pop-param
+        a := c
+        b := d
+        call pop-param
 
-        cmp al, cl
+        cmp bl, dl
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             brs _out
         }
-        add b, d
-        [bdata.accumulator] := b
+        add a, c
+        c := a
+        call push-param
         dl := 0
 
     _out:
@@ -41,18 +42,19 @@
         push b
         push c
     _main:
-        al := [bdata.accumulator-token]
-        b  := [bdata.accumulator]
-        cl := [bdata.operand-token]
-        d  := [bdata.operand]
+        call pop-param
+        a := c
+        b := d
+        call pop-param
 
-        cmp al, cl
+        cmp bl, dl
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             brs _out
         }
-        sub b, d
-        [bdata.accumulator] := b
+        sub a, c
+        c := a
+        call push-param
         dl := 0
 
     _out:
@@ -72,18 +74,19 @@
         push b
         push c
     _main:
-        al := [bdata.accumulator-token]
-        b  := [bdata.accumulator]
-        cl := [bdata.operand-token]
-        d  := [bdata.operand]
+        call pop-param
+        a := c
+        b := d
+        call pop-param
 
-        cmp al, cl
+        cmp bl, dl
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             brs _out
         }
-        mul b, d
-        [bdata.accumulator] := b
+        mul a, c
+        c := a
+        call push-param
         dl := 0
 
     _out:

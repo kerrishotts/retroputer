@@ -7,8 +7,7 @@
         enter 0x00
         push c
     _main:
-        dl := [bdata.accumulator-token]
-        c  := [bdata.accumulator]
+        call pop-param
 
         cmp dl, brodata.TOK_WORD
         if !z {
@@ -16,7 +15,7 @@
             brs _out
         }
         call bdata._in-port
-        [bdata.accumulator] := c
+        call push-param
         dl := 0
 
     _out:
@@ -35,28 +34,29 @@
         push c
         push x
     _main:
-        al := [bdata.accumulator-token]
-        b  := [bdata.accumulator]
-        cl := [bdata.operand-token]
-        d  := [bdata.operand]
+        call pop-param
+        a := c
+        b := d
+        call pop-param
 
-        cmp al, brodata.TOK_WORD
+        cmp bl, brodata.TOK_WORD
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             brs _out
         }
-        cmp cl, brodata.TOK_WORD
+        cmp dl, brodata.TOK_WORD
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             brs _out
         }
 
-        x := d 
-        d := b
+        x := c 
+        d := a
         shl d, 13                               # convert bank # to address we expect
         c := 0
         cl := [d, x]
-        [bdata.accumulator] := c
+        dl := brodata.TOK_WORD
+        call push-param
         dl := 0
 
     _out:

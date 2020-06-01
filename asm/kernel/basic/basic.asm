@@ -57,6 +57,10 @@
         heap-next-free:      .word 0            # pointer to next free area in heap
         prog-next-free:      .word 0            # pointer to next free area in program storage 
 
+        param-length:        .byte 0            # number of items on the parameter queue
+        param-types:         .byte[10]          # tracks the types of each parameter on the queue
+        params:              .byte[80]          # Up to 10 parameters (8 bytes)
+
         accumulator-token:   .byte 0            # current accumulator type
         accumulator:         .word 0, 0, 0, 0   # current accumulator value (or ptr, if string)
 
@@ -185,93 +189,6 @@
         }
 
 
-        #
-        # getvar looks up a variable and stores the value into the accumulator
-        # note: this only works while parsing a line (having already eaten the
-        # TOK_VARIABLE token)
-        #
-        #######################################################################
-        getvar: {
-            push d
-            push c
-            push x
-            push b
-            push y
-        _main:
-            # [c,d] = [type, index]
-            call gettok-word                    # get variable index & type
-            c := d
-            and c, 0b1100_0000_0000_0000        # just want the type
-            shr c, 14                           # in the lower bits
-            and d, 0b0011_1111_1111_1111        # for index, we don't want the type
-
-            # advance parser past variable name
-            call gettok                         # next byte is the length of the variable name
-            x := [bdata.current-line-aptr]
-            clr c
-            add x, dl                           # x += variable length
-            [bdata.current-line-aptr] := x      # and store it back
-
-            # index our variable correctly
-            x := d                              # use x so we can index in a bit
-            cmp c, 0
-            if z {                              # we're a word
-                dl := brodata.TOK_WORD
-                b := [kmemmap.basic.ints-start, x]
-                brs _write-to-accumulator       # break
-            }
-
-            cmp c, 1
-            if z {
-                dl := brodata.TOK_STRING        # we're a string!
-                b := [kmemmap.basic.strs-start, x]
-                brs _write-to-accumulator       # break
-            }
-
-            cmp c, 2
-            if z {
-                dl := brodata.TOK_REAL          # we're a real!
-                shl x, 2                        # multiply by eight instead (64 bits)
-                b := [kmemmap.basic.dbls-start, x]
-                brs _write-to-accumulator       # break
-            }
-
-            # @todo: handle array bits!
-
-            brs _write-to-accumulator
-
-        _write-real-to-accumulator:
-                [bdata.accumulator-token] := dl
-                [bdata.accumulator] := b        # write variable into accumulator
-                inc x
-                inc x
-                y := 2
-                b := [kmemmap.basic.dbls-start, x]
-                [bdata.accumulator, y] := b
-                inc x
-                inc x
-                y := 4
-                b := [kmemmap.basic.dbls-start, x]
-                [bdata.accumulator, y] := b
-                inc x
-                inc x 
-                y := 6
-                b := [kmemmap.basic.dbls-start, x]
-                [bdata.accumulator, y] := b
-                brs _out
-
-        _write-to-accumulator:
-                [bdata.accumulator-token] := dl
-                [bdata.accumulator] := b        # write variable into accumulator
-
-        _out:
-            pop y
-            pop b
-            pop x
-            pop c
-            pop d
-            ret
-        }
 
         #
         # The REPL is responsible for:
@@ -432,6 +349,8 @@
             add a, bl
             [bdata.prog-next-free] := a
 
+            a := addrbank(kmemmap.basic.prog-start)
+            [bdata.current-line-bptr] := a      # make sure we always write to program memory!
             # d,x is now at the portion where we can copy to the correct location
             # and bl has the number of crunched characters to copy (plus 1)
             y := bl

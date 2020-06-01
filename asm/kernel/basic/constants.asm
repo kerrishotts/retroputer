@@ -7,4 +7,9 @@
 
     .const MODE_DIRECT 0x00
     .const MODE_RUN    0x01
+
+    .const TYPE_WORD   0x00
+    .const TYPE_STRING 0x01
+    .const TYPE_REAL   0x10
+    .const TYPE_ARRAY  0x11
 }
