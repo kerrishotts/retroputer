@@ -76,7 +76,7 @@ export class ComputerKeyboard extends React.Component {
                 }
                 l++;
             }
-        }, 16);
+        }, 4/*16*/);
     }
 
     render() {
