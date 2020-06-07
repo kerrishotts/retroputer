@@ -551,31 +551,41 @@ export function assemble(ast, global, context) {
                 break;
             case TOKENS.NAMESPACE_DIRECTIVE:
                 {
-                    debug(`NSPC ${node.name.ident}...`)
-                    const newContext = createScope(SCOPE.TYPES.NAMESPACE, context, node.name.ident);
-                    assemble(node.block, global, newContext);
+                    const name = node.name.ident;
+                    if (name !== "__current__") {
+                        debug(`NSPC ${node.name.ident}...`)
+                        const newContext = createScope(SCOPE.TYPES.NAMESPACE, context, name);
+                        assemble(node.block, global, newContext);
+                    } else {
+                        assemble(node.block, global, context);
+                    }
                 }
                 break;
             case TOKENS.SEGMENT_DIRECTIVE:
                 {
-                    let baseAddr = evaluate(node.addr, context);
-                    let matchingSegments = global[SCOPE.SEGMENTS]
-                        .filter(seg => (seg[SCOPE.BASE] === baseAddr || seg[SCOPE.ADJUSTED] === baseAddr) && 
-                                       getScopeChain(seg[SCOPE.PARENT], global) !== getScopeChain(context, global));
-                    let newContext;
-                    if (matchingSegments.length > 0) {
-                        matchingSegments= matchingSegments.sort((a, b) => a[SCOPE.ADDR] < b[SCOPE.ADDR] ? -1 : a[SCOPE.ADDR] > b[SCOPE.ADDR] ? 1 : 0);
-                        const nextAddr = matchingSegments[matchingSegments.length - 1][SCOPE.ADDR];
-                        newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, nextAddr, node.append);
-                        newContext[SCOPE.ADJUSTED] = baseAddr;
+                    const name = node.name.ident;
+                    if (name !== "__current__") {
+                        let baseAddr = evaluate(node.addr, context);
+                        let matchingSegments = global[SCOPE.SEGMENTS]
+                            .filter(seg => (seg[SCOPE.BASE] === baseAddr || seg[SCOPE.ADJUSTED] === baseAddr) && 
+                                        getScopeChain(seg[SCOPE.PARENT], global) !== getScopeChain(context, global));
+                        let newContext;
+                        if (matchingSegments.length > 0) {
+                            matchingSegments= matchingSegments.sort((a, b) => a[SCOPE.ADDR] < b[SCOPE.ADDR] ? -1 : a[SCOPE.ADDR] > b[SCOPE.ADDR] ? 1 : 0);
+                            const nextAddr = matchingSegments[matchingSegments.length - 1][SCOPE.ADDR];
+                            newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, nextAddr, node.append);
+                            newContext[SCOPE.ADJUSTED] = baseAddr;
+                        } else {
+                            newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, baseAddr, node.append);
+                        }
+                        if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
+                            global[SCOPE.SEGMENTS].push(newContext);
+                        }
+                        debug(`SEGM ${newContext[SCOPE.NAME]}...`)
+                        assemble(node.block, global, newContext);
                     } else {
-                        newContext = createScope(SCOPE.TYPES.SEGMENT, context, node.name.ident, baseAddr, node.append);
+                        assemble(node.block, global, context);
                     }
-                    if (global[SCOPE.SEGMENTS].indexOf(newContext) < 0) {
-                        global[SCOPE.SEGMENTS].push(newContext);
-                    }
-                    debug(`SEGM ${newContext[SCOPE.NAME]}...`)
-                    assemble(node.block, global, newContext);
                 }
                 break;
             case TOKENS.BLOCK:
