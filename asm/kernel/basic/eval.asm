@@ -159,11 +159,13 @@
         and d, 0b0011_1111_1111_1111        # for index, we don't want the type
 
         # advance parser past variable name
-        call gettok                         # next byte is the length of the variable name
+        push d                              # save variable index
+        call gettok-raw                     # next byte is the length of the variable name
         x := [bdata.current-line-aptr]
         clr c
         add x, dl                           # x += variable length
         [bdata.current-line-aptr] := x      # and store it back
+        pop d                               # get variable index back
 
         # index our variable correctly
         x := d                              # use x so we can index in a bit

@@ -175,10 +175,21 @@
             call _adv-source-index
 
             # crunching works in a few ways:
-            # 0. we don't want to encode spaces
+            # 0. we don't want to encode more than one SPACE at a time
             ###############################################################
             cmp dl, constants.SPACE         # we won't encode spaces; instead
-            br z bottom                     # we'll print them during listing instead
+            if z {
+    _eat-space:
+                dl := <BP+source>,y         # read next char from our source string
+                cmp dl, constants.SPACE
+                if z {
+                    inc y
+                    brs _eat-space          # back for more
+                }
+                call _set-source-index
+                dl := constants.SPACE           # make sure we store a SPACE
+                br everything-else
+            }
 
             # 1. numbers are tokenized into their byte forms (TOK_BYTE|TOK_WORD|TOK_DWORD, hi, lo)
             # @todo bytes and double words

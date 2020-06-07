@@ -50,6 +50,7 @@
         forsub-stack-ptr:    .byte 0            # pointer into forsub stack
         execution-mode:      .byte 0            # are we (1)running or (0)entering code? 
         current-line-number: .word 0            # current line number of execution (or entry)
+        maximum-line-number: .word 0            # max line we've seen
         current-line-ptr:
         current-line-bptr:   .word 0            # will point to the program bank
         current-line-aptr:   .word 0            # pointer to current program line
@@ -156,6 +157,7 @@
         _main:
             d := 0
             [bdata.forsub-stack-ptr] := d       # forsub stack pointer is reset
+            [bdata.maximum-line-number] := d    # max line is zero too
             [bdata.current-line-number] := d    # current line number is zero
             d := 1
             [bdata.heap-next-free] := d         # heap starts at 1 (so we avoid NUL)
@@ -302,13 +304,18 @@
             #
             LDPTR(d, x, bdata.crunch-buffer)
             al := [d, x]                        # check the first byte of our crunch
+            cmp al, constants.SPACE
+            if z {
+                inc x                           # it is, go past
+                dec bl
+                al := [d, x]                    # get next byte
+            }
             cmp al, brodata.TOK_BYTE            # if it's a byte
             brs z _store                        # ... store the line!
             cmp al, brodata.TOK_WORD            # or if it's a word 
             brs z _store                        # ... store the line
 
         _eval:
-            # @todo write this bit!
             cl := 0
             [bdata.execution-mode] := cl        # 0 = direct
             c := 0xFFFF
@@ -316,7 +323,7 @@
             [bdata.current-line-bptr] := d
             [bdata.current-line-aptr] := x      
             call exec                           # eval uses the above setup to execute code
-            brs _display-errors                 # make sure we show any error messages
+            br _display-errors                 # make sure we show any error messages
 
         _store:
             c := 0                              # "c" will be the current line number
@@ -336,10 +343,30 @@
                 inc x
                 dec bl                          # reduce # of chars to copy
             }
-
-            # @todo handle DELETING lines instead (bl is 0)
+            al := [d, x]                        # check if next char is a space
+            cmp al, constants.SPACE
+            if z {
+                inc x                           # it is, go past
+                dec bl
+            }
 
             [bdata.current-line-number] := c
+
+            push b                              # check max line number
+            b := [bdata.maximum-line-number]
+            cmp c, b
+            if !n {                             # gte, set new max
+                [bdata.maximum-line-number] := c
+            }
+            pop b
+
+            cmp bl, 1                           # if no characters (NUL = one to copy), we're deleting!
+            if z {
+                b := 0                          # this will store NULL in the line pointer
+                [bdata.current-line-aptr] := b
+                br _write-address
+            }
+
             a := [bdata.prog-next-free]         # get next free address so we can write to it
             [bdata.current-line-aptr] := a
 
@@ -361,6 +388,7 @@
                 dec y
             } while !c
 
+        _write-address:
             # write the address to our line # pointer 
             LDPTR(d, x, kmemmap.basic.lptr-start)
             shl c, 1                            # multiply by two, since it's now becoming a pointer
@@ -379,6 +407,66 @@
             cmp dl, 0
             if !z {
                 call print-error
+            }
+
+        _check-run:
+            dl := [bdata.execution-mode]            # did something put us into exec mode?
+            cmp dl, 0                               # check it!
+            if !z {
+            _run:
+                c := [bdata.current-line-number]    # get the line number
+                in dl, 0x38                         # Check for CTRL+C
+                and dl, 0b0000_1000
+                cmp dl, 0
+                if !z {                             # Got CTRL
+                    in dl, 0x3A
+                    and dl, 0b0000_0100
+                    cmp dl, 0
+                    if !z {                         # Got C
+                        dl := 0                     # HALT!
+                        [bdata.execution-mode] := dl
+                        dl := brodata.STOPPED_ERROR # with appropriate error
+                        call print-error
+                        br _run-bail
+                    }
+                }
+                LDPTR(d, x, kmemmap.basic.lptr-start)
+                shl c, 1                            # multiply by two, since it's now becoming a pointer
+                y := c                              # move ahead the right amount
+
+                c := [bdata.current-line-number]    # get the line number
+                inc c                               # move c along in prep for next line
+                [bdata.current-line-number] := c    # and store
+
+                b := [d, x, y]                      # get the pointer into program space
+                cmp b, 0
+                br z _run-continue
+
+
+                a := addrbank(kmemmap.basic.prog-start)
+                [bdata.current-line-bptr] := a      # make sure we always read from program memory!
+                [bdata.current-line-aptr] := b      # point at the line in program memory
+                call exec
+
+                cmp dl, 0                           # did an error happen?
+                if !z {
+                    a := 0
+                    [bdata.execution-mode] := al    # drop out of execution mode
+                    dec c                           # put back to failing line
+                    call print-error                # and print error
+                }
+
+            _run-continue:
+                dl := [bdata.execution-mode]        # still in execution mode?
+                cmp dl, 0
+                if !z {
+                    c := [bdata.current-line-number]    # check current line number
+                    b := [bdata.maximum-line-number]    # against ending number
+                    cmp c, b
+                    br z _run                           # equal, keep going
+                    br n _run                           # less-than, keep going
+                }
+            _run-bail:
             }
 
             #

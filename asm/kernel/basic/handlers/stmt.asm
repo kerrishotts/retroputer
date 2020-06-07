@@ -20,6 +20,207 @@
     }
 
     #
+    # [LET] var=expr
+    #
+    # Assigns expression to variable
+    ###########################################################################
+    handler-assignment: {
+        enter 0x00
+        push a
+        push b
+        push c
+        push x
+        push y
+    _main:
+        call backtok                            # by the time we're here, we're too far ahead
+        call gettok
+        cmp dl, brodata.TOK_VARIABLE            # is next token a variable?
+        if !z {
+            dl := brodata.SYNTAX_ERROR          # No; bail!
+            br _out
+        }
+
+        call gettok-word                        # get index
+        b := d
+        shr b, 14                               # need the type of variable
+        and d, 0b0011_1111_1111_1111            # mask off the type for index
+        y := d
+
+        d := 0                                  # coming from bank 0
+        cmp bl, constants.TYPE_WORD             # is this a word variable?
+        if z {
+            bl := brodata.TOK_WORD              # enable type match
+            x := kmemmap.basic.ints-start       # set base
+            br _continue
+        }
+
+        cmp bl, constants.TYPE_STRING           # is it a string?
+        if z {
+            bl := brodata.TOK_STRING            # enable type match
+            x := kmemmap.basic.strs-start
+            br _continue
+        }
+
+        cmp bl, constants.TYPE_REAL             # is it a real?
+        if z {
+            bl := brodata.TOK_REAL              # enable type match
+            x := kmemmap.basic.dbls-start
+            shl y, 2                            # advance y correctly
+            br _continue
+        }
+
+        # must be an array @TODO
+        dl := brodata.NOT_IMPLEMENTED
+        br _out
+
+    _continue:
+
+        a := d                                  # preserve bank
+
+        call gettok-raw                         # get length of variable name to skip
+        do {
+            call gettok-raw                     # but we actually don't care about it...
+            cmp dl, 0                           # end of line? That's bad.
+            if z {
+                dl := brodata.SYNTAX_ERROR
+                br _out
+            }
+            cmp dl, brodata.TOK_END_OF_STMT     # end of statement?
+            if z {
+                dl := brodata.SYNTAX_ERROR      # also bad
+                br _out
+            }
+            cmp dl, brodata.TOK_EQU             # keep going til we see an equal sign
+        } while !z
+
+
+        call eval                               # evaluate expression
+        cmp dl, 0                               # was there an error?
+        br !z _out                              # ... bail
+
+        call pop-param                          # get the result of the expression
+        cmp dl, bl                              # do types match?
+        if !z {
+            # @TODO check for string and code strings
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out                             # NOPE
+        }
+
+        swap a, d                               # need d to be the bank
+        [d, x, y] := c                          # store value (WRONG FOR STRINGS and REALS, @FIXME)
+
+        dl := 0                                 # no error
+
+    _out:
+        pop y
+        pop x
+        pop c
+        pop b
+        pop a
+        exit 0x00
+        ret
+    }
+
+    handler-let: {
+        enter 0x00
+    _main:
+        call gettok                             # simulate advancement past variable
+        call handler-assignment                 # We're just eating LET
+    _out:
+        exit 0x00
+        ret
+    }
+
+
+    #
+    # GOTO line
+    #
+    # Moves execution to the given line number. If execution isn't in progress,
+    # execution begins from the given line number (equivalent to `RUN line`).
+    ###########################################################################
+    handler-goto: {
+        enter 0x00
+        push c
+    _main:
+        call gettok                             # check if we have a number to parse
+        cmp dl, 0                               # End of line?
+        if z {
+            dl := brodata.SYNTAX_ERROR          # that's a syntax error
+            br _out
+        }
+        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        if z {
+            dl := brodata.SYNTAX_ERROR          # that's a syntax error
+            br _out
+        }
+        call backtok                            # put the token back so we can eval
+        call eval                               # it to get the line #
+        cmp dl, 0                               # error?
+        br !z _out
+
+        call pop-param                          # get starting line number
+        cmp dl, brodata.TOK_WORD                # is it a word?
+        if !z {                                 # If not, it's a type mismatch
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        [bdata.current-line-number] := c        # store the line number
+
+        dl := 0
+        cl := 1
+        [bdata.execution-mode] := cl            # put us in run mode
+    _out:
+        pop c
+        exit 0x00
+        ret
+    }
+    #
+    # RUN [start]
+    #
+    # Starts program execution from the first line, unless a starting line
+    # number is supplied
+    ###########################################################################
+    handler-run: {
+        enter 0x00
+        push c
+    _main:
+        c := 0
+        [bdata.current-line-number] := c        # start at line zero
+
+        call gettok                             # check if we have a number to parse
+        cmp dl, 0                               # End of line?
+        if z {
+            call backtok
+            br _do-run
+        }
+        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        if z {
+            call backtok
+            br _do-run
+        }
+        call backtok                            # put the token back so we can eval
+        call eval                               # it to get the line #
+        cmp dl, 0                               # error?
+        br !z _out
+
+        call pop-param                          # get starting line number
+        cmp dl, brodata.TOK_WORD                # is it a word?
+        if !z {                                 # If not, it's a type mismatch
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        [bdata.current-line-number] := c        # store the line number
+    _do-run:
+        dl := 0
+        cl := 1
+        [bdata.execution-mode] := cl            # put us in run mode
+    _out:
+        pop c
+        exit 0x00
+        ret
+    }
+
+    #
     # LIST [start,[end]]
     #
     # List takes an option start value, and an optional end value.
@@ -36,8 +237,9 @@
     _main:
         c := 0
         [bp+start-line] := c                # default is to start at line 0
-        c := 0x7FFF
-        [bp+end-line] := c                  # default is to end at line 32767
+        c := [bdata.maximum-line-number]    
+        inc c                               # our list algo isn't inclusive, so fake it
+        [bp+end-line] := c                  # default is to end at the highest we've seen
         call gettok                         # we want to see if the next token is
         cmp dl, 0                           # a number or not. This here means it
         if z {
@@ -66,6 +268,8 @@
 
     _get-end:
         call gettok                         # we may be looking at the ending number
+        cmp dl, brodata.TOK_COMMA           # ... but also a comma
+        brs z _get-end                      # eat commas 
         cmp dl, 0                           # end of line?
         if z {
             call backtok
@@ -88,6 +292,7 @@
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
+        inc c                                   # we need +1, since list is not inclusive
         [bp+end-line] := c                      # store 
 
     _do-list:
@@ -129,7 +334,7 @@
                             a := 0
                             al := [d, x]
                             call _print-word
-                            br _continue_with_space
+                            br _continue
                         }
                         cmp al, brodata.TOK_WORD
                         if z {
@@ -137,7 +342,7 @@
                             a := [d, x]
                             inc x
                             call _print-word
-                            br _continue_with_space
+                            br _continue
                         }
                         cmp al, brodata.TOK_CODE_STRING
                         if z {
@@ -151,7 +356,7 @@
                         if z {
                             inc x
                             call _print-variable
-                            br _continue_with_space
+                            br _continue
                         }
 
                         # it's a keyword -- look it up
@@ -167,11 +372,6 @@
                         pop x
                         pop d
 
-                    _continue_with_space:
-                        push d
-                        dl := constants.SPACE
-                        call [vectors.PUT_CHAR] # always a space after the token
-                        pop d
                     _continue:
                     }
                     inc x
@@ -182,6 +382,21 @@
                 push d 
                 dl := constants.CR
                 call [vectors.PUT_CHAR]         # print NEWLINE
+
+                # do we need to pause for a second?
+                in dl, 0x38                         # left SHIFT will be here
+                and dl, 0b0000_0001                 # only care about left SHIFT
+                cmp dl, 1                           # it'll be 1 if set
+                if z {
+                    push c
+                    in dl, 0x02
+                    do {
+                        in cl, 0x02
+                        cmp dl, cl
+                    } while z                       # wait a second
+                    pop c
+                }
+
                 pop d
             }
 
@@ -235,6 +450,9 @@
         ret
     _print-variable:
         # @todo: need to get the sigil so we can print it!
+        push b
+        b := [d, x]                             # get the index so we can get sigil
+        shr b, 14                               # only care about top two bits
         inc x
         inc x
         al := [d, x]                            # length of variable name
@@ -246,6 +464,22 @@
             pop d
             dec al
         } while !z
+        cmp bl, constants.TYPE_STRING
+        if z {
+            push d
+            dl := ASC("$")
+            call [vectors.PUT_CHAR]
+            pop d
+        } else {
+            cmp bl, constants.TYPE_REAL
+            if z {
+                push d
+                dl := ASC("#")
+                call [vectors.PUT_CHAR]
+                pop d
+            }
+        }
+        pop b
         ret
     }
 
@@ -271,7 +505,13 @@
         call pop-param
         cmp dl, brodata.TOK_CODE_STRING     # is the accumulator a code string?
         if z {
-            d := 0
+            dl := [bdata.execution-mode]        # make sure we select the right bank
+            cmp dl, 0
+            if z {
+                d := 0                          # for direct mode, it's zero bank
+            } else {                            # but in run mode, it comes from code
+                d := addrbank(kmemmap.basic.prog-start)
+            }
             x := c
             call [vectors.PRINT]
         } else {                            # must be a string in the heap or number?
@@ -321,7 +561,7 @@
             call [vectors.PUT_CHAR]
             dec x
         } while !z
-        br _main
+        br _maybe-no-newline
     }
 }
 

@@ -27,7 +27,7 @@
         .word token-not-impl                # 152, FOR
         .word handler-syntax-error          # 153, GETKEY
         .word token-not-impl                # 154, GOSUB
-        .word token-not-impl                # 155, GOTO
+        .word handler-goto                  # 155, GOTO
         .word handler-syntax-error          # 156, HEX
         .word handler-home                  # 157, HOME
         .word token-not-impl                # 158, IF
@@ -59,7 +59,7 @@
         .word token-not-impl                # 184, RENAME
         .word token-not-impl                # 185, REMOVE
         .word token-not-impl                # 186, RESTORE
-        .word token-not-impl                # 187, RUN
+        .word handler-run                   # 187, RUN
         .word token-not-impl                # 188, SAVE
         .word handler-syntax-error          # 189, SGN
         .word handler-syntax-error          # 190, SIN
@@ -95,7 +95,7 @@
         .word token-not-impl                # 220, :
         .word handler-syntax-error          # 221, LOWER
         .word handler-syntax-error          # 222, UPPER
-        .word token-not-impl                # 223, LET
+        .word handler-let                   # 223, LET
         .word token-not-impl                # 224, COMMA
         .word token-not-impl                # 225, SEMICOLON
         .word token-not-impl                # 226
@@ -122,7 +122,7 @@
         .word token-not-impl                # 247
         .word token-not-impl                # 248
         .word handler-syntax-error          # 249, TOK_REAL
-        .word token-not-impl                # 250, TOK_VARIABLE
+        .word handler-assignment            # 250, TOK_VARIABLE
         .word handler-syntax-error          # 251, TOK_CODE_STRING
         .word handler-syntax-error          # 252, TOK_STRING
         .word handler-syntax-error          # 253, TOK_DWORD
