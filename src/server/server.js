@@ -21,8 +21,8 @@ import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagn
 
 import rom, { vectors } from "../roms/kernel.js";
 
-const START_TIMEOUT = 3000;
 const DEFAULT_TIMEOUT = 6000;
+const MAX_FRAMES = 180; // roughly three seconds
 
 function createComputer({timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2} = {}) {
     const computer = new Computer({performance, debug: true, timingMethod, sliceTime, sliceGranularity});
@@ -110,22 +110,34 @@ function stopComputer({computer, screen, finishScreen = false, interval, forceKi
     onStop(screen.frame);
 }
 
-function startComputer({computer, screen, diag, timeout = 3000, finishScreen = false, recordBuffer = null, onStop}) {
-    // start the computer (we need to call INIT, so this will launch BASIC for 1s)
+function startComputer({computer, screen, diag, timeout = DEFAULT_TIMEOUT, finishScreen = false, recordBuffer = null, onHalt, onStop}) {
+    // start the computer (we need to call INIT, so this will launch BASIC initially )
     computer.processor.jump(0x0FF00);
     computer.processor.registers.SINGLE_STEP = 0;
     computer.run();
 
-    let forceKill, interval;
+    let forceKill, interval, halts = 0;
 
-    // time out after the desired interval (+1s, since we have to INIT)
-    forceKill = setTimeout(() => { stopComputer({computer, screen, finishScreen, interval, forceKill, recordBuffer, onStop}); }, timeout + START_TIMEOUT);
 
     // Handle screen frames, and early stop
     interval = setInterval(() => {
         if (screen._wait) {
             screen.resetWait();
-            if (recordBuffer) { recordBuffer.push(Uint8Array.from(screen.frame)); }
+            if (recordBuffer) { 
+                recordBuffer.push(Uint8Array.from(screen.frame)); 
+                if (recordBuffer.length > MAX_FRAMES) recordBuffer.shift();
+            }
+        }
+        if (computer.processor.registers.SINGLE_STEP !== 0 && computer.processor.registers.INTERRUPT_DISABLE === 0) {
+            // halted, but not BRK
+            if (onHalt) onHalt();
+            if (halts===0) {
+                halts++;
+                // time out after the desired interval (At this point, we're halted, so BASIC has booted)
+                forceKill = setTimeout(() => { 
+                    stopComputer({computer, screen, finishScreen, interval, forceKill, recordBuffer, onHalt, onStop}); 
+                }, timeout);
+            }
         }
         if (diag.state !== "running") stopComputer({computer, screen, finishScreen, interval, forceKill, recordBuffer, onStop});
     }, 1);
@@ -135,15 +147,52 @@ function startComputer({computer, screen, diag, timeout = 3000, finishScreen = f
 function run(cb, {asm, at = 0x02000, timeout = 3000, finishScreen = false, timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2, recordBuffer = null} = {}) {
     const {computer, memory, console, dma, keyboard, times, screen} = createComputer({timingMethod, sliceTime, sliceGranularity, adjustPerformance, ticksBetweenRasterLines, mode});
     const diag = new Diagnostics(computer);
+    let halts = 0;
 
-    // assemble incoming
-    try { assembleCode({asm, computer}); } 
-    catch (err) { return cb(err, null); }
-
-    startComputer({computer, screen, timeout, diag, finishScreen, recordBuffer, onStop: frame => cb(null, frame)});
+    startComputer({
+        computer, screen, timeout, diag, finishScreen, recordBuffer, 
+        onHalt: () => {
+            if (halts === 0) {
+                halts++;
+                // assemble incoming. It could either be assembly language, or it could be BASIC
+                if (!Number.isNaN(parseInt(asm, 10)) ) {
+                    let idx = 0;
+                    const CR = String.fromCharCode(13);
+                    const basicCode = `${asm}${CR}${CR}run${CR}`
+                    const typingTimer = setInterval(() => {
+                        if (idx >= basicCode.length) {
+                            clearInterval(typingTimer);
+                        } else {
+                            // type it in
+                            const code = basicCode.charCodeAt(idx);
+                            switch (code) {
+                                case 8220:
+                                case 8221: 
+                                    keyboard.keyPressed(34);
+                                    break;
+                                case 10:
+                                    keyboard.keyPressed(13);
+                                    break;
+                                default:
+                                    keyboard.keyPressed(code);
+                            }
+                            idx++;
+                        }
+                    }, 1);
+                } else {
+                    // it's probably assembler
+                    try { 
+                        assembleCode({asm, computer}); 
+                        // only jump if successful!
+                        computer.processor.jump(at);
+                    } 
+                    catch (err) { return cb(err, null); }
+                }
+            }
+        },
+        onStop: frame => cb(null, frame)
+    });
     
-    // start the actual requested assembly
-    setTimeout(() => { if (at !== undefined) computer.processor.jump(at); }, START_TIMEOUT);
 
 }
 
