@@ -415,21 +415,6 @@
             if !z {
             _run:
                 c := [bdata.current-line-number]    # get the line number
-                in dl, 0x38                         # Check for CTRL+C
-                and dl, 0b0000_1000
-                cmp dl, 0
-                if !z {                             # Got CTRL
-                    in dl, 0x3A
-                    and dl, 0b0000_0100
-                    cmp dl, 0
-                    if !z {                         # Got C
-                        dl := 0                     # HALT!
-                        [bdata.execution-mode] := dl
-                        dl := brodata.STOPPED_ERROR # with appropriate error
-                        call print-error
-                        br _run-bail
-                    }
-                }
                 LDPTR(d, x, kmemmap.basic.lptr-start)
                 shl c, 1                            # multiply by two, since it's now becoming a pointer
                 y := c                              # move ahead the right amount
