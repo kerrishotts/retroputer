@@ -49,7 +49,7 @@
         .word handler-syntax-error          # 174, OR
         .word token-not-impl                # 175, OUT
         .word handler-syntax-error          # 176, PEEK
-        .word token-not-impl                # 177, POKE
+        .word handler-poke                  # 177, POKE
         .word handler-print                 # 178, PRINT
         .word token-not-impl                # 179, READ
         .word token-not-impl                # 180, REM
@@ -146,6 +146,20 @@
     _main:
         y := 0
         do {
+            in dl, 0x38                         # Check for CTRL+C
+            and dl, 0b0000_1000
+            cmp dl, 0
+            if !z {                             # Got CTRL
+                in dl, 0x3A
+                and dl, 0b0000_0100
+                cmp dl, 0
+                if !z {                         # Got C
+                    dl := 0                     # HALT!
+                    [bdata.execution-mode] := dl
+                    dl := brodata.STOPPED_ERROR # with appropriate error
+                    br _out
+                }
+            }
             call gettok
             c := dl
             cmp c, 128
