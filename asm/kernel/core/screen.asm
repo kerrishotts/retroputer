@@ -872,6 +872,22 @@
             ret
         }
 
+        control-tab: {
+            pushf
+            push d
+        _main:
+            do {
+                call cursor-right
+                call get-cursor-pos
+                and dl, 0b0000_0111
+            } while !z
+
+        _out:
+            pop d
+            popf
+            ret
+        }
+
         control-vectors:
             .word control-no-op         # 00 - NUL - 
             .word control-no-op         # 01 - SOH - Home (top left)
@@ -882,7 +898,7 @@
             .word control-no-op         # 06 - ACK - 
             .word control-no-op         # 07 - BEL - 
             .word cursor-backspace      # 08 - BS  - Backspace
-            .word control-no-op         # 09 - HT  - Tab
+            .word control-tab           # 09 - HT  - Tab
             .word cursor-down           # 10 - LF  - Line Feed
             .word control-no-op         # 11 - VT  -
             .word clear-screen          # 12 - FF  - Clear Screen
