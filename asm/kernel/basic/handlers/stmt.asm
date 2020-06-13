@@ -19,6 +19,73 @@
         ret
     }
 
+    handler-poke: {
+        enter 0x06
+        .const parms -6
+        .const pbank -6
+        .const paddr -4
+        .const pval  -2
+        push c
+        push y
+        push x
+        push a
+        y := 0
+    _main:
+        call gettok                             # check if we have a number to parse
+        cmp dl, 0                               # End of line?
+        br z _skip
+
+        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        br z _skip
+
+        call backtok
+        call eval                               # it to get the line #
+
+        cmp dl, 0                               # error?
+        br !z _out
+
+        call pop-param                          # get value to check type
+        cmp dl, brodata.TOK_WORD                # is it a word?
+        if !z {                                 # If not, it's a type mismatch
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        [bp+parms,y] := c                       # store this for future reference
+        inc y
+        inc y
+
+        al := 6
+        cmp yl, al                              # no more than three words
+        br z _skip
+        call gettok                             # check for comma
+        cmp dl, brodata.TOK_COMMA
+        if !z {
+            dl := brodata.SYNTAX_ERROR          # gotta have a COMMA
+            br _out
+        }
+        br _main                                # go back for more
+    _skip:
+        al := 6
+        cmp yl, al                              # no more than three words
+        if !z {
+            dl := brodata.SYNTAX_ERROR          # not enough? too many?
+            br _out                             # bail
+        }
+        a := [bp+pval]                          # get value
+        x := [bp+paddr]                         # get address
+        d := [bp+pbank]                         # get bank
+        shl d, 13
+        [d, x] := al                            # write value
+        dl := 0                                 # no error
+    _out:
+        pop a
+        pop x
+        pop y
+        pop c
+        exit 0x06
+        ret
+    }
+
     #
     # [LET] var=expr
     #
@@ -555,12 +622,8 @@
         [bp+emit-newline] := d
         br _main 
     _tab:
-        x := 8
-        do {
-            dl := asc(" ")
-            call [vectors.PUT_CHAR]
-            dec x
-        } while !z
+        dl := 0x09
+        call [vectors.PUT_CHAR]
         br _maybe-no-newline
     }
 }
