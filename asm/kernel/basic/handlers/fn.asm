@@ -23,6 +23,32 @@
         exit 0x00
         ret
     }
+    handler-rnd-expr: {
+        enter 0x00
+        push c
+        push a
+    _main:
+        call pop-param
+
+        cmp dl, brodata.TOK_WORD
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            brs _out
+        }
+        in al, 12                               # get high byte of random #
+        exc a
+        in al, 13                               # get low byte of random #
+        mod a, c                                # trim down to the parameter
+        c := a
+        call push-param
+        dl := 0
+
+    _out:
+        pop a
+        pop c
+        exit 0x00
+        ret
+    }
     #
     # Returns the value at the specified bank/memory offset
     #

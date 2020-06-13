@@ -257,7 +257,7 @@
         .word token-not-impl                ,0x0000 # 180, REM
         .word handler-syntax-error          ,0x0000 # 181, RETURN
         .word token-not-impl                ,0x3014 # 182, RIGHT
-        .word token-not-impl                ,0x1014 # 183, RND
+        .word handler-rnd-expr              ,0x1014 # 183, RND
         .word handler-syntax-error          ,0x0000 # 184, RENAME
         .word handler-syntax-error          ,0x0000 # 185, REMOVE
         .word handler-syntax-error          ,0x0000 # 186, RESTORE
@@ -281,15 +281,15 @@
         .word handler-add-expr              ,0x200E # 204, +  
         .word handler-sub-expr              ,0x200E # 205, -  
         .word handler-mul-expr              ,0x200F # 206, *
-        .word token-not-impl                ,0x200F # 207, /
-        .word token-not-impl                ,0x200F # 208, %
+        .word handler-div-expr              ,0x200F # 207, /
+        .word handler-mod-expr              ,0x200F # 208, %
         .word token-not-impl                ,0x2F10 # 209, ^        right associative
-        .word token-not-impl                ,0x200B # 210, <>, !=
-        .word token-not-impl                ,0x200C # 211, <=
-        .word token-not-impl                ,0x200C # 212, >=
-        .word token-not-impl                ,0x200C # 213, <
-        .word token-not-impl                ,0x200C # 214, >
-        .word token-not-impl                ,0x200B # 215, =
+        .word handler-neq-expr              ,0x200B # 210, <>, !=
+        .word handler-lte-expr              ,0x200C # 211, <=
+        .word handler-gte-expr              ,0x200C # 212, >=
+        .word handler-lt-expr               ,0x200C # 213, <
+        .word handler-gt-expr               ,0x200C # 214, >
+        .word handler-equ-expr              ,0x200B # 215, =
         .word 0xFFFE                        ,0x0015 # 216, (
         .word 0xFFFF                        ,0x0015 # 217, )
         .word token-not-impl                ,0x0014 # 218, [
@@ -430,7 +430,7 @@
                 dl := brodata.TOK_WORD
                 STPUSH_BP(d, value-stack)       # convert to word and push
                 d := 0                          # clear d in prep for next token (which will be a byte)
-                call gettok                     # next byte is our number
+                call gettok-raw                 # next byte is our number
                 STPUSH_BP(d, value-stack)       # stack has word on it
                 continue
             }
@@ -449,7 +449,7 @@
                 d := [bdata.current-line-aptr]
                 STPUSH_BP(d, value-stack)       # push POINTER to string
                 do {
-                    call gettok
+                    call gettok-raw
                     cmp dl, 0
                 } while !z                      # eat the rest of the string
                 continue
