@@ -55,6 +55,8 @@ export class Processor {
         this[_taskQueue] = [];
         this[_cache] = [];
 
+        this.useEquiv = true;
+
         this.tick = this.tick.bind(this);
         this.clock.addReceiver(this.tick);
 
@@ -237,7 +239,7 @@ export class Processor {
 
     _decode() {
         const cache = this[_cache];
-        const {tasks} = decodeInstruction(cache);
+        const {tasks} = decodeInstruction(cache, this.useEquiv);
         if (tasks) {
             this.stats.decodes++;
             this[_taskQueue] = tasks;
@@ -259,9 +261,17 @@ export class Processor {
 
         this.stats.insts++;
 
-        for (let i = 0, l = tasks.length; i < l; i++) {
+        if (Array.isArray(tasks)) {
+            for (let i = 0, l = tasks.length; i < l; i++) {
+                this.stats.tasks++;
+                executeTask(tasks[i], this._context);
+            }
+        } else {
             this.stats.tasks++;
-            executeTask(tasks[i], this._context);
+            tasks({alu: this.alu, 
+                   registerFile: this.registers, 
+                   ioBus: this.ioBus, 
+                   memory: this.memory});
         }
 
         if (this.registers.PC !== pc) {

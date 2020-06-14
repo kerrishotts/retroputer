@@ -64,7 +64,7 @@
 		"flags": {
 			"patterns": [{
 				"name": "constant.language.flags.6516asm",
-				"match":"\\b(?i:n?(ss|id|is|x|v|c|n|z))\\b"
+				"match":"\\b(?i:n?(ss|id|is|ex|x|v|c|n|z))\\b"
 			}]
 		},
 		"directives": {
@@ -88,7 +88,7 @@
 				"match": "\\b(?i:(brk|cmp|br|brs|call|calls|loop|loops|ret|trap))\\b"
 			}, {
 				"name": "keyword.stack.6516asm",
-				"match": "\\b(?i:(push|pop|pushall|popall|pushf|popf|enter|exit))\\b"
+				"match": "\\b(?i:(push|pop|pushall|popall|pushf|popf|pushmm|popmm|enter|exit))\\b"
 			}, {
 				"name": "keyword.math.6516asm",
 				"match": "\\b(?i:(add|sub|mul|div|mod|smul|sdiv|smod|neg|inc|dec))\\b"
@@ -97,7 +97,7 @@
 				"match": "\\b(?i:(and|or|xor|not))\\b"
 			}, {
 				"name": "keyword.bitplay.6516asm",
-				"match": "\\b(?i:(set|clr|xcb|shl|shr))\\b"
+				"match": "\\b(?i:(set|clr|exc|shl|shr))\\b"
 			}, {
 				"name": "keyword.memory.6516asm",
 				"match": "\\b(?i:(ld|st))\\b"
