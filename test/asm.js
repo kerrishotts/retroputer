@@ -43,7 +43,7 @@ segments.forEach(segment => {
         while (data.length > 0) {
             i += 1;
             const bytes = data.slice(0, i);
-            const {tasks: opTasks} = decodeInstruction(bytes);
+            const {tasks: opTasks} = decodeInstruction(bytes, false);
             if (opTasks) {
                 tasks.push(...opTasks);
                 data.splice(0, i);

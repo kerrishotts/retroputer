@@ -12,4 +12,7 @@
     .const TYPE_STRING 0b01
     .const TYPE_REAL   0b10
     .const TYPE_ARRAY  0b11
+
+    .const EXIT_EARLY 0xFF
+    .const NO_STMT_TERM_NEEDED 0xFE
 }

@@ -2,13 +2,16 @@
 
     peektok: {
         push x
+        push y
         x := [bdata.current-line-aptr]
+        y := 0
     _main:
-        dl := <bdata.current-line-ptr,x>
-        inc x
+        dl := <bdata.current-line-ptr>,y
+        inc y
         cmp dl, constants.SPACE                 # eat SPACEs
         brs z _main    
     _out:
+        pop y
         pop x
         ret
 

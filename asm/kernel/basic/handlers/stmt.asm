@@ -1,11 +1,23 @@
 .segment __current__ kmemmap.basic.code-start .append {
 
+    #
+    # CLS
+    #
+    # Clears the screen
+    #
+    ###########################################################################
     handler-clear-screen: {
         call [vectors.CLEAR_SCREEN]
         dl := 0
         ret
     }
 
+    #
+    # HOME
+    #
+    # Positions the cursor in the upper-left corner of the screen
+    #
+    ###########################################################################
     handler-home: {
         d := 0
         call [vectors.SET_CURSOR_POS]
@@ -13,12 +25,39 @@
         ret
     }
 
+    #
+    # NEW
+    #
+    # Resets BASIC to accept a new program (wiping out the existing code)
+    #
+    ###########################################################################
     handler-new: {
         call new
         dl := 0
         ret
     }
 
+    #
+    # REM | '
+    #
+    # Indicates a REMark. Execution of the line stops immediately
+    #
+    ###########################################################################
+    handler-rem: {
+        dl := constants.EXIT_EARLY
+        ret
+    }
+
+    #
+    # POKE bank, addr, byte
+    #
+    # Pokes _byte_ into _bank_:_addr_. If _byte_ is larger than 255, only the
+    # bottom eight bits are kept.
+    #
+    # ERRORS:
+    #  SYNTAX ERROR                    Missing one or more parameters or commas
+    #  TYPE MISMATCH                   Parameters must be integers
+    ###########################################################################
     handler-poke: {
         enter 0x06
         .const parms -6
@@ -204,6 +243,10 @@
     #
     # Moves execution to the given line number. If execution isn't in progress,
     # execution begins from the given line number (equivalent to `RUN line`).
+    #
+    # ERRORS
+    #  SYNTAX ERROR                    Missing the line number
+    #  TYPE MISMATCH                   Line number must be an integer
     ###########################################################################
     handler-goto: {
         enter 0x00
@@ -241,11 +284,69 @@
         exit 0x00
         ret
     }
+
+    #
+    # IF expr THEN statements
+    #
+    # Evaluates EXPR, and if it is nonzero, executes the statement(s) after
+    # the THEN. If it is zero, execution of the line stops.
+    #
+    # TODO: MULTI-LINE IF...ENDIF
+    #
+    # ERRORS
+    #  SYNTAX ERROR                    Missing THEN
+    #  TYPE MISMATCH                   Resutling expression must be an integer
+    ###########################################################################
+    handler-if: {
+        enter 0x00
+        push c
+    _main:
+        call peektok
+        cmp dl, 0                               # is this the end of the line?
+        if z {
+            dl := brodata.SYNTAX_ERROR
+            br _out
+        }
+        cmp dl, brodata.TOK_END_OF_STMT
+        if z {
+            dl := brodata.SYNTAX_ERROR
+            br _out
+        }
+        call eval                               # evaluate conditional
+        cmp dl, 0
+        br !z _out                             # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # it is the right type, right?
+        if !z {                                 # If not, it's a type mismatch
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        cmp c, 0
+        if z {
+            dl := constants.EXIT_EARLY          # it's zero, bail!
+            br _out
+        }
+        call gettok                             # next token had better be THEN
+        cmp dl, brodata.TOK_THEN
+        if !z {
+            dl := brodata.SYNTAX_ERROR
+            br _out
+        }
+        dl := constants.NO_STMT_TERM_NEEDED     # done; execution can pick up at this point
+    _out:
+        pop c
+        exit 0x00
+        ret
+    }
+
     #
     # RUN [start]
     #
     # Starts program execution from the first line, unless a starting line
     # number is supplied
+    #
+    # ERRORS
+    #  TYPE MISMATCH                   If specified, start must be an integer
     ###########################################################################
     handler-run: {
         enter 0x00
@@ -292,6 +393,10 @@
     #
     # List takes an option start value, and an optional end value.
     # If no value is specified, LIST will display the entire program.
+    #
+    # ERRORS
+    #  SYNTAX ERROR                    Missing COMMA between numbers
+    #  TYPE MISMATCH                   Line numbers must be integers
     ###########################################################################
     handler-list: {
         enter 0x04
@@ -550,6 +655,27 @@
         ret
     }
 
+    #
+    # PRINT [expr[[,|;|AT expr,expr|SPC(expr)|TAB(expr)] expr]...]
+    #
+    # Prints the value of any listed expressions to the screen. PRINT also
+    # accepts various positional and formatting tokens.
+    #
+    #    ,        Moves cursor position to next tab position (tabs are set each 
+    #             8 characters)
+    #    ;        Instructs BASIC not to print a carriage return. Also used
+    #             to separate items in the list. Unlike some BASICs, it is not
+    #             permissable to print items without using a COMMA or SEMICOLON
+    #             separator
+    #    AT       Moves the cursor to the specified row, col location
+    #    SPC()    Prints the specified number of spaces
+    #    TAB()    Prints the specified number of tabs
+    #
+    # ERRORS
+    #  SYNTAX ERROR                    Missing a separator
+    #  TYPE MISMATCH                   Values for AT, SPC and TAB must be
+    #                                  integers 
+    ###########################################################################
     handler-print: {
         enter 0x02
         .const emit-newline -2
@@ -564,6 +690,16 @@
         br z _maybe-no-newline              # semicolon suppresses CR at end of line
         cmp dl, brodata.TOK_COMMA
         br z _tab                           # comma emits some tabs
+        cmp dl, brodata.TOK_CHR             # Check for CHR$
+        br z _print-chr
+        cmp dl, brodata.TOK_CHRS            # Check for CHRS$
+        br z _print-chrs
+        cmp dl, brodata.TOK_AT              # Check for AT?
+        br z _print-at
+        cmp dl, brodata.TOK_SPC             # Check for SPC()
+        br z _print-spc-fn
+        cmp dl, brodata.TOK_TAB             # Check for TAB()
+        br z _print-tab-fn 
         call backtok                        # give eval a chance
 
         call eval
@@ -624,6 +760,100 @@
     _tab:
         dl := 0x09
         call [vectors.PUT_CHAR]
+        br _maybe-no-newline
+    _print-chr:
+        call eval                               # expecting an expression for CHR$
+        cmp dl, 0
+        br !z _out                              # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # has to be an integer
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        dl := cl
+        call [vectors.PUT_CHAR]
+        br _main
+    _print-chrs:
+        call eval                               # expecting the character # for CHRS$
+        cmp dl, 0
+        br !z _out                              # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # has to be an integer
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        bl := cl
+        call gettok
+        cmp dl, brodata.TOK_COMMA                   # expecting a comma
+        if !z {
+            dl := brodata.SYNTAX_ERROR
+            br _out
+        }
+        call eval                               # expecting number of times to repeat for CHRS$
+        cmp dl, 0
+        br !z _out                              # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # has to be an integer
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        br _print-lots                          # print them
+    _print-at:
+        call eval                               # expecting an expression for ROW
+        cmp dl, 0
+        br !z _out                              # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # has to be an integer
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        b := c
+        call gettok                             # Next, we expect a COMMA
+        cmp dl, brodata.TOK_COMMA
+        if !z {
+            dl := brodata.SYNTAX_ERROR
+            br _out
+        }
+        call eval                               # expecting an expression for COL
+        cmp dl, 0
+        br !z _out                              # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # has to be an integer
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        d := b
+        exc d
+        dl := cl                                # D should now be row (high), col (low)
+        call [vectors.SET_CURSOR_POS]
+        br _main 
+    _print-tab-fn:
+        bl := 9
+        br _print-multiples
+    _print-spc-fn:
+        bl := 32
+    _print-multiples:
+        call eval                               # expecting an expression for TAB
+        cmp dl, 0
+        br !z _out                              # an error happened, bail
+        call pop-param
+        cmp dl, brodata.TOK_WORD                # has to be an integer
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+    _print-lots:
+        cmp c, 0                                # TAB/SPC(0) does nothing
+        dl := bl
+        while !z do {
+            call [vectors.PUT_CHAR]
+            dec c
+        }
         br _maybe-no-newline
     }
 }

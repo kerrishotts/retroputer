@@ -30,7 +30,7 @@
         .word handler-goto                  # 155, GOTO
         .word handler-syntax-error          # 156, HEX
         .word handler-home                  # 157, HOME
-        .word token-not-impl                # 158, IF
+        .word handler-if                    # 158, IF
         .word token-not-impl                # 159, INPUT
         .word handler-syntax-error          # 160, INT
         .word handler-syntax-error          # 161, IN
@@ -52,7 +52,7 @@
         .word handler-poke                  # 177, POKE
         .word handler-print                 # 178, PRINT
         .word token-not-impl                # 179, READ
-        .word token-not-impl                # 180, REM
+        .word handler-rem                   # 180, REM
         .word token-not-impl                # 181, RETURN
         .word handler-syntax-error          # 182, RIGHT
         .word handler-syntax-error          # 183, RND
@@ -98,7 +98,7 @@
         .word handler-let                   # 223, LET
         .word token-not-impl                # 224, COMMA
         .word token-not-impl                # 225, SEMICOLON
-        .word token-not-impl                # 226
+        .word token-not-impl                # 226, CHRS$
         .word token-not-impl                # 227
         .word token-not-impl                # 228
         .word token-not-impl                # 229
@@ -178,6 +178,10 @@
             shl c, 1
             x := c
             call [statement-handlers, x]
+            cmp dl, constants.NO_STMT_TERM_NEEDED
+            if z {
+                continue                        # probably had a THEN or ELSE...
+            }
             cmp dl, 0
             brs !z _out  # an error occurred, get us out
 
@@ -196,6 +200,10 @@
             }
         } while z
     _out:
+        cmp dl, constants.EXIT_EARLY
+        if z {
+            dl := 0                             # Early exit is not an ERROR condition
+        }
         pop c
         pop y
         pop a

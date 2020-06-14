@@ -77,7 +77,13 @@ cli.withInput(...([sourceFile, "utf8", (line, newline, eof) => {
             const endTime = process.hrtime.bigint();
             const timeTaken = Number((endTime - startTime)) / 1000000000;
 
-            cli.info("Segment information:\n" + segments.map(seg => `${seg.adj ? "*" : " "}${seg.name.padEnd(32)} ${seg.addr.toString(16).padStart(5, "0")} ${seg.length.toString(16).padStart(5, "0")} ${seg.chain}`).join("\n"));
+            cli.info("Segment information:\n" + segments.map(seg => {
+                const adj = seg.adj ? "*": " ";
+                const name = seg.name.padEnd(24);
+                const [addr, len, end] = [seg.addr, seg.length, seg.addr+seg.length].map(i => i.toString(16).padStart(5, "0"));
+                const chain = seg.chain;
+                return `${adj}${name} ${addr}-${end} ${len} ${chain}`;
+            }).join("\n"));
             cli.debug("Assembled Segments:\n" + util.inspect(segments, false, 10, true));
             
             cli.info(`Time taken: ${Math.round(timeTaken*100)/100}s`);

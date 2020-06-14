@@ -6,6 +6,11 @@ import { ALU, COMMANDS, SIZES } from "../core/ALU.js";
 import { IOBus } from "../core/IOBus.js";
 
 const taskCache = new Map();
+const equivCache = new Map();
+
+const SIZE_BYTE = SIZES.BYTE;
+const SIZE_WORD = SIZES.WORD;
+const SIZE_ADDR = SIZES.ADDR;
 
 export function _constructArgs(instruction, operands) {
     const args = {};
@@ -35,6 +40,45 @@ export function decodeToTasks(instruction, { operands, decode }) {
     return tasks;
 }
 
+export function decodeToTaskEquiv(instruction, { operands, equiv }) {
+    const cachedInst = equivCache.get(instruction);
+    let args, fn;
+    if (cachedInst) {
+        args = cachedInst.args;
+        fn = cachedInst.fn;
+    } else {
+        args = _constructArgs(instruction, operands);
+        fn = equiv.bind(undefined, [args]);
+        equivCache.set(instruction, {args, fn});
+    }
+    return fn;
+}
+
+export function decode(instruction, opcode, useEquiv = true) {
+    if (opcode.equiv && useEquiv) return decodeToTaskEquiv(instruction,opcode);
+    return decodeToTasks(instruction, opcode);
+}
+
+const aluOp = ({alu, registerFile, command, op0, sz0, op1, sz1, flagHandling}) => {
+    const retSize = sz1 > sz0 ? sz1 : sz0;
+    alu.op1Bus.data = op0;
+    alu.op2Bus.data = op1;
+    alu.commandBus.data = (retSize << 8) | (sz1 << 6) | (sz0 << 4) | command;
+    alu.flagsBus.data = (flagHandling & FLAGS_PUSH_TO_ALU) ? (registerFile.FLAGS & 0xF) : 0;
+    alu.executeBus.signal();
+    if (flagHandling & FLAGS_PULL_FROM_ALU) {
+        registerFile.FLAGS = (registerFile.FLAGS & 0xF0) | alu.flagsBus.data;
+        // set exception when dividing by zero
+        if (command === COMMANDS.SDIV || command === COMMANDS.DIV ||
+            command === COMMANDS.SMOD || command === COMMANDS.MOD) {
+            if (s0 === 0) {
+                registerFile.EXCEPTION = 1;
+            }
+        }
+    }
+    return alu.retBus.data;
+}
+
 export const OPCODES = {};
 OPCODES["nop"] = {
     asm: "nop",
@@ -42,6 +86,7 @@ OPCODES["nop"] = {
     operands: {},
     description: "Performs no operation",
     flags: "xdshncvz",
+    equiv: () => {},
     decode: () => [
         TASKS.NOP
     ]
@@ -54,6 +99,7 @@ OPCODES["halt"] = {
     operands: {},
     description: "Halts the processor until an interrupt occurs",
     flags: "xdshncvz",
+    equiv: (_, {registerFile}) => registerFile.SINGLE_STEP = 1,
     decode: () => [
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
     ]
@@ -66,6 +112,7 @@ OPCODES["wait"] = {
     operands: {b: [7, 0]},
     description: "[TODO] Waits until a specific interrupt occurs",
     flags: "xdshncvz",
+    equiv: (_, {registerFile}) => registerFile.SINGLE_STEP = 1,
     decode: ({b = 0} = {}) => [
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
     ]
@@ -77,6 +124,10 @@ OPCODES["brk"] = {
     operands: {},
     description: "Halts the processor if a debugger is attached",
     flags: "xdshncvz",
+    equiv: (_, {registerFile}) => {
+        registerFile.SINGLE_STEP = 1;
+        registerFile.INTERRUPT_DISABLE = 1;
+    },
     decode: () => [
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.INTERRUPT_DISABLE,
         TASKS.SET_FLAG_IMM | FLAGS_INDEX.SINGLE_STEP
@@ -89,6 +140,13 @@ OPCODES["not"] = {
     operands: { r: [3, 0] },
     description: "!reg",
     flags: "xdshNcvZ",
+    equiv: ({r}, {alu, registerFile}) => {
+        registerFile.setRegister(r,aluOp({alu, registerFile, 
+            command: COMMANDS.XOR, 
+            op0: registerFile.getRegister(r), sz0: ((r & 0x01) ? SIZE_BYTE : SIZE_WORD), 
+            op1: ((r & 0x01) ? 0xFF : 0xFFFF), sz1: ((r & 0x01) ? SIZE_BYTE : SIZE_WORD),
+            flagHandling: FLAGS_PUSH_AND_PULL}));
+    },
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b, op2

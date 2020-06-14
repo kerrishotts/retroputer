@@ -1,5 +1,6 @@
 {
     const expectedRegister = () => expected("REGISTER");
+    const expectedDataRegister = () => expected("DATA_REGISTER");
     const expectedMemoryAddress = () => expected("MEMORY ADDRESS");
     const expectedComma = () => expected("COMMA");
     const expectedExpression = () => expected("EXPRESSION");
@@ -681,42 +682,49 @@ iBR "Branch Instruction"
 iADD "Add Instruction"
 = op:ADD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:ADD _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ ADD _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / ADD _ Register _ !COMMA { expectedComma() }
 / ADD _ !Register { expectedRegister() }
 
 iAND "And Instruction"
 = op:AND _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:AND _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ AND _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / AND _ Register _ !COMMA { expectedComma() }
 / AND _ !Register { expectedRegister() }
 
 iCMP "Compare Instruction"
 = op:CMP _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:CMP _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ CMP _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / CMP _ Register _ !COMMA { expectedComma() }
 / CMP _ !Register { expectedRegister() }
 
 iSUB "Subtract Instruction"
 = op:SUB _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:SUB _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ SUB _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / SUB _ Register _ !COMMA { expectedComma() }
 / SUB _ !Register { expectedRegister() }
 
 iOR "Or Instruction"
 = op:OR _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:OR _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ OR _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / OR _ Register _ !COMMA { expectedComma() }
 / OR _ !Register { expectedRegister() }
 
 iXOR "Exclusive Or Instruction"
 = op:XOR _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:XOR _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ XOR _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / XOR _ Register _ !COMMA { expectedComma() }
 / XOR _ !Register { expectedRegister() }
 
 iTEST "Test Instruction"
 = op:TEST _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / op:TEST _ dest:GeneralRegister _ COMMA _ imm:Expression { return tInstruction(op, {dest, imm}); }
+/ TEST _ NonGeneralRegister _ COMMA _ Expression { expectedDataRegister() }
 / TEST _ Register _ !COMMA { expectedComma() }
 / TEST _ !Register { expectedRegister() }
 
@@ -730,21 +738,27 @@ iSHR "Shift Right Instruction"
 
 iDIV "Divide Instruction"
 = op:DIV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ DIV _ Register _ COMMA _ Expression { expectedRegister() }
 
 iMUL "Multiply Instruction"
 = op:MUL _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ MUL _ Register _ COMMA _ Expression { expectedRegister() }
 
 iMOD "Modulo Instruction"
 = op:MOD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ MOD _ Register _ COMMA _ Expression { expectedRegister() }
 
 iSDIV "Signed Divide Instruction"
 = op:SDIV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ SDIV _ Register _ COMMA _ Expression { expectedRegister() }
 
 iSMUL "Singed Multiply Instruction"
 = op:SMUL _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ SMUL _ Register _ COMMA _ Expression { expectedRegister() }
 
 iSMOD "Signed Modulo Instruction"
 = op:SMOD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
+/ SMOD _ Register _ COMMA _ Expression { expectedRegister() }
 
 iSWAP "Swap Instruction"
 = op:SWAP _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
@@ -926,6 +940,8 @@ MemoryRegister "Memory Register"
 = rD / rBP
 / MacroExpansion
 
+NonGeneralRegister "Register other than General Purpose"
+= rXL / rX / rYL / rY / rSP / rBP
 
 //
 // Flags

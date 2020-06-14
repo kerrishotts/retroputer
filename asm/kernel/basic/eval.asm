@@ -300,7 +300,7 @@
         .word handler-syntax-error          ,0x0000 # 223, LET
         .word token-not-impl                ,0x0001 # 224, COMMA
         .word token-not-impl                ,0x0001 # 225, SEMICOLON
-        .word token-not-impl                ,0x0000 # 226
+        .word token-not-impl                ,0x2014 # 226, CHRS$
         .word token-not-impl                ,0x0000 # 227
         .word token-not-impl                ,0x0000 # 228
         .word token-not-impl                ,0x0000 # 229
@@ -411,8 +411,7 @@
             # is token of any value here? b will be non-zero
             cmp b, 0
             if z {
-                dl := brodata.SYNTAX_ERROR      # Nope; bail!
-                br _out
+                br _finish-eval                 # might be done?
             }
 
             # token is of value, what is it?
@@ -476,6 +475,7 @@
                     brs z _continue
                     call _do-operator           # pull an op and execute it
                     x := [bp+operator-stack]    # check stack size
+                    c := 0   
                     cmp x, c
                 }
                 dl := brodata.EXPECTED_LEFT_PARENTHESIS

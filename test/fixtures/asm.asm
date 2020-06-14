@@ -3,6 +3,14 @@
     brk                                 {$3F}
 }
 
+# test-not-db.regs: AL=0xF0
+# test-not-db.flags: N+ Z-
+.segment test-not-db 0x02000 {
+    ld al, 0x0F
+    not al
+    brk
+}
+
 # test-cmp-dw-1.regs: A=0x0123 B=0x0123
 # test-cmp-dw-1.flags: C- Z+ N-
 .segment test-cmp-dw-1 0x02000 {

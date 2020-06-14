@@ -1,4 +1,4 @@
-import { OPCODES, decodeToTasks } from "./opcodes.js";
+import { OPCODES, decodeToTasks, decode } from "./opcodes.js";
 
 export const INVALID_INSTRUCTION = {
     size: 0,
@@ -220,10 +220,10 @@ const __decodeInstruction = bytes => {
     return INVALID_DECODE;
 }
 
-export const decodeInstruction = bytes => {
+export const decodeInstruction = (bytes, useEquiv = true) => {
     const r = __decodeInstruction(bytes);
     if (r !== INVALID_DECODE) {
-        return { size: r.size, tasks: decodeToTasks(r.instruction, r.opcode) };
+        return { size: r.size, tasks: decode(r.instruction, r.opcode, useEquiv) };
     }
     return INVALID_INSTRUCTION;
 }
