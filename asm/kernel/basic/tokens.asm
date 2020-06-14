@@ -31,6 +31,8 @@
             _call-keyword:       .string "CALL"            , constants.NUL, TOK_CALL
                                  .const TOK_CATALOG                         134
             _catalog-keyword:    .string "CATALOG"         , constants.NUL, TOK_CATALOG
+                                 .const TOK_CHRS                            226
+            _chrs-keyword:       .string "CHRS$"           , constants.NUL, TOK_CHRS
                                  .const TOK_CHR                             135
             _chr-keyword:        .string "CHR$"            , constants.NUL, TOK_CHR
                                  .const TOK_CLS                             136
@@ -225,7 +227,7 @@
                                  .const TOK_CODE_STRING                     251
                                  .const TOK_VARIABLE                        250
                                  .const TOK_REAL                            249
-                                 .const MAX_TOKEN                           225
+                                 .const MAX_TOKEN                           226
             token-vectors: 
                 .word _abs-keyword, _and-keyword, _asc-keyword, _atn-keyword, _at-keyword
                 .word _call-keyword, _catalog-keyword, _chr-keyword, _cls-keyword, _close-keyword
@@ -244,5 +246,5 @@
                 .word _mul-operator, _div-operator, _mod-operator, _pow-operator, _neq-operator, _lte-operator
                 .word _gte-operator, _lt-operator, _gt-operator, _equ-operator, _lpar-token, _rpar-token
                 .word _lbracket-token, _rbracket-token, _end-of-stmt, _lower-keyword, _upper-keyword, _let-keyword
-                .word _comma, _semicolon
+                .word _comma, _semicolon, _chrs-keyword
 }
