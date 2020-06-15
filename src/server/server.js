@@ -21,7 +21,7 @@ import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagn
 
 import rom, { vectors } from "../roms/kernel.js";
 
-const DEFAULT_TIMEOUT = 6000;
+const DEFAULT_TIMEOUT = 30000; // 30s of runtime
 const MAX_FRAMES = 180; // roughly three seconds
 
 function createComputer({timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2} = {}) {
@@ -144,7 +144,7 @@ function startComputer({computer, screen, diag, timeout = DEFAULT_TIMEOUT, finis
 }
 
 
-function run(cb, {asm, at = 0x02000, timeout = 3000, finishScreen = false, timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2, recordBuffer = null} = {}) {
+function run(cb, {asm, at = 0x02000, timeout = DEFAULT_TIMEOUT, finishScreen = false, timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2, recordBuffer = null} = {}) {
     const {computer, memory, console, dma, keyboard, times, screen} = createComputer({timingMethod, sliceTime, sliceGranularity, adjustPerformance, ticksBetweenRasterLines, mode});
     const diag = new Diagnostics(computer);
     let halts = 0;
@@ -266,7 +266,7 @@ app.route("/")
 
         // timeout
         const requestedTimeout = Number(req.body.timeout || req.query.timeout || `${DEFAULT_TIMEOUT}`);
-        const timeout = Math.max(Math.min(Number.isNaN(requestedTimeout) ? DEFAULT_TIMEOUT : requestedTimeout, 10000), 1);
+        const timeout = Math.max(Math.min(Number.isNaN(requestedTimeout) ? DEFAULT_TIMEOUT : requestedTimeout, 60000), 1);
 
         // assembly code
         const asm = req.body.asm || req.body; // (if content type is text, asm will be in the body)
