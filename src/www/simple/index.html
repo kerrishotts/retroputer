@@ -316,6 +316,69 @@
             margin: 1em 0;
         }
 
+        .keyboardPanel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(45deg, #D1CBBC,  #DAD7C9);
+            border-radius: 10px;
+            padding: 4px;
+        }
+        .keyboardRow {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: row;
+            justify-content:space-evenly;
+        }
+        .keycap {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(45deg, #524836, #948D7E);
+            border: 2px solid #5C5544;
+            margin: 1px;
+            border-radius: 8px;
+        }
+        .keycap:hover {
+            background: linear-gradient(45deg, #948D7E, #524836);
+
+        }
+        .keycap .shift, .keycap .gr .keycap .grShift, .keycap .ctrl, .keycap .main {
+            flex: 0 0 auto;
+            width: 16px; height: 16px;
+            background-size: 320px 320px;
+            margin: auto auto;
+            mix-blend-mode: lighten;
+        }
+        .keycap .label {
+            width: auto;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 16px;
+        }
+        .keycap .grRow {
+            display: flex;
+            flex-direction: row;
+            height: 8px;
+        }
+        .keycap .shift, .keycap .gr, .keycap .grShift, .keycap .ctrl {
+            width: 8px; height: 8px;
+            background-size: 160px 160px;
+        }
+        .keycap .grRow, .keycap .ctrl {
+            display: none;
+        }
+        .key100 { width: 3em; }
+        .key125 { width: 5em; }
+        .key150 { width: 7em; }
+        .key175 { width: 9em; }
+        .key200 { width: 14em; flex: 1 1 auto; }
+
     </style>
     <!--<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
     <script type="text/javascript" src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
