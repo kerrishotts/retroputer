@@ -21,7 +21,7 @@ import { toHex, toHex2, toHex4, toHex5, STATE, Diagnostics } from "../core/Diagn
 
 import rom, { vectors } from "../roms/kernel.js";
 
-const DEFAULT_TIMEOUT = 30000; // 30s of runtime
+const DEFAULT_TIMEOUT = 20000; // 20s of runtime
 const MAX_FRAMES = 180; // roughly three seconds
 
 function createComputer({timingMethod = "AUTO", sliceTime = 16, sliceGranularity = 255, adjustPerformance = true, ticksBetweenRasterLines = 12, mode = 2} = {}) {

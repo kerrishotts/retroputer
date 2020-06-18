@@ -54,7 +54,7 @@ const DEL = 29;
 const ARU = 30;
 const ARD = 31;
 
-const KEYBOARD_MAP = [
+export const KEYBOARD_MAP = [
     /* Key        Unshifted Shf   GrU   GrS Ctl */
     [ ["Backquote",    "`", "~", 0xFF, 0x8E,  0], 
       [["Digit1", "Numpad1"],       "1", "!", 0xE4, 0x86, 0x1C], 
@@ -180,6 +180,44 @@ export class Keyboard extends Device {
         super({device, length, controller, memory, clock});
 
         this._buffer = "";
+    }
+
+    get isShifted() {
+        return (this._read(PORT_ROW_3_QUAD_0) & 1) || (this._read(PORT_ROW_3_QUAD_1) & 32);
+
+    }
+
+    get isGr() {
+        return !!(this._read(PORT_ROW_4_QUAD_0) & 2);
+
+    }
+
+    get isCtl() {
+        return !!(this._read(PORT_ROW_4_QUAD_0) & 4);
+    }
+
+    setRawKey(row, col) {
+        const bit  = col & 0b00000111;
+        const port = 2 + ((((row * 16) + col) & 0b11111000) >> 3);
+        const mask = ~(1 << bit);
+        const cur = this._read(port);
+        this._write(port, (cur & mask) | (1 << bit));
+    }
+
+    clearRawKey(row, col) {
+        const bit  = col & 0b00000111;
+        const port = 2 + ((((row * 16) + col) & 0b11111000) >> 3);
+        const mask = ~(1 << bit);
+        const cur = this._read(port);
+        this._write(port, (cur & mask));
+    }
+
+    getRawKey(row, col) {
+        const bit  = col & 0b00000111;
+        const port = 2 + ((((row * 16) + col) & 0b11111000) >> 3);
+        const mask = ~(1 << bit);
+        const cur = this._read(port);
+        return (cur & (1<< bit)) ? 1 : 0;
     }
 
     keyPressed(which) {

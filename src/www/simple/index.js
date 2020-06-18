@@ -22,6 +22,7 @@ import { ComputerMemory } from "./components/ComputerMemory.jsx";
 import { ComputerKeyboard } from "./components/ComputerKeyboard.jsx";
 import { ComputerIO } from "./components/ComputerIO.jsx";
 import { Docs } from "./components/Docs.jsx";
+import { Keyboard } from "./components/Keyboard.jsx";
 
 window.React = React;
 window.ReactDOM = ReactDOM;
@@ -63,26 +64,39 @@ const defaultConfig = {
             type: 'row',
             content: [
                 {
-                    type: 'stack',
+                    type: 'column',
                     content: [
                         {
-                            type: 'react-component',
-                            title: 'Screen',
-                            component: 'computer-screen',
-                            props: {store}
+                            type: 'stack',
+                            height: 75,
+                            content: [
+                                {
+                                    type: 'react-component',
+                                    title: 'Screen',
+                                    component: 'computer-screen',
+                                    props: {store}
+                                },
+                                {
+                                    type: 'react-component',
+                                    title: 'Console',
+                                    component: 'computer-console',
+                                    props: {store}
+                                },
+                                {
+                                    type: 'react-component',
+                                    title: 'Documentation',
+                                    component: 'docs',
+                                    props: {store}
+                                },
+                            ]
                         },
                         {
+                            height: 25,
                             type: 'react-component',
-                            title: 'Console',
-                            component: 'computer-console',
+                            title: 'Keyboard',
+                            component: 'keyboard',
                             props: {store}
-                        },
-                        {
-                            type: 'react-component',
-                            title: 'Documentation',
-                            component: 'docs',
-                            props: {store}
-                        },
+                        }
                     ]
                 },
                 {
@@ -199,6 +213,7 @@ function initGoldenLayout() {
     myLayout.registerComponent( 'computer-console', ComputerConsole);
     myLayout.registerComponent( 'computer-keyboard', ComputerKeyboard);
     myLayout.registerComponent( 'code-editor', CodeEditor);
+    myLayout.registerComponent( 'keyboard', Keyboard);
     myLayout.init();
 
     myLayout.on("stateChanged", () => {
