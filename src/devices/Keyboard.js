@@ -221,9 +221,7 @@ export class Keyboard extends Device {
     }
 
     keyPressed(which) {
-        if (this._buffer.length < 255 ) {
-            this._buffer += String.fromCharCode(which);
-        }
+        this._buffer += String.fromCharCode(which);
         this.requestService();
     }
     keyDown(which) {
@@ -263,7 +261,7 @@ export class Keyboard extends Device {
             data = this._buffer.charCodeAt(0);
         }
         if (address === PORT_BUFFER_REMAINING) {
-            data = 255 - this._buffer.length;
+            data = 255 - Math.min(this._buffer.length, 255);
         }
 
         return data;

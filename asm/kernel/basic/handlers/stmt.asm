@@ -49,6 +49,79 @@
     }
 
     #
+    # OUT port, byte
+    #
+    # Ouputs _byte_ into the port. If _byte_ is larger than 255, only the
+    # bottom eight bits are kept.
+    #
+    # ERRORS:
+    #  SYNTAX ERROR                    Missing one or more parameters or commas
+    #  TYPE MISMATCH                   Parameters must be integers
+    ###########################################################################
+    handler-out: {
+        enter 0x04
+        .const parms -4
+        .const paddr -4
+        .const pval  -2
+        push c
+        push y
+        push x
+        push a
+        y := 0
+    _main:
+        call gettok                             # check if we have a number to parse
+        cmp dl, 0                               # End of line?
+        br z _skip
+
+        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        br z _skip
+
+        call backtok
+        call eval                               # port #
+
+        cmp dl, 0                               # error?
+        br !z _out
+
+        call pop-param                          # get value to check type
+        cmp dl, brodata.TOK_WORD                # is it a word?
+        if !z {                                 # If not, it's a type mismatch
+            dl := brodata.TYPE_MISMATCH_ERROR
+            br _out
+        }
+        [bp+parms,y] := c                       # store this for future reference
+        inc y
+        inc y
+
+        al := 4
+        cmp yl, al                              # no more than two words
+        br z _skip
+        call gettok                             # check for comma
+        cmp dl, brodata.TOK_COMMA
+        if !z {
+            dl := brodata.SYNTAX_ERROR          # gotta have a COMMA
+            br _out
+        }
+        br _main                                # go back for more
+    _skip:
+        al := 4
+        cmp yl, al                              # no more than two words
+        if !z {
+            dl := brodata.SYNTAX_ERROR          # not enough? too many?
+            br _out                             # bail
+        }
+        a := [bp+pval]                          # get value
+        c := [bp+paddr]                         # get address
+        call bdata._out-port
+        dl := 0                                 # no error
+    _out:
+        pop a
+        pop x
+        pop y
+        pop c
+        exit 0x04
+        ret
+    }
+    #
     # POKE bank, addr, byte
     #
     # Pokes _byte_ into _bank_:_addr_. If _byte_ is larger than 255, only the
