@@ -323,19 +323,33 @@
             bottom: 0;
             right: 0;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             background: linear-gradient(45deg, #D1CBBC,  #DAD7C9);
             border-radius: 10px;
             padding: 4px;
+            overflow: auto;
+        }
+        .keyboardSection {
+            overflow: auto;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .keyboardSection:nth-of-type(1) {
+            flex-basis: 75%;
+        }
+        .keyboardSection:nth-of-type(2) {
+            flex-basis: 25%;
         }
         .keyboardRow {
-            flex: 1 1 auto;
+            flex: 1 1 64px;
             display: flex;
             flex-direction: row;
             justify-content:space-evenly;
         }
         .keycap {
-            flex: 0 0 auto;
+            overflow: hidden;
+            flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             background: linear-gradient(45deg, #524836, #948D7E);
@@ -373,11 +387,11 @@
         .keycap .grRow, .keycap .ctrl {
             display: none;
         }
-        .key100 { width: 3em; }
-        .key125 { width: 5em; }
-        .key150 { width: 7em; }
-        .key175 { width: 9em; }
-        .key200 { width: 14em; flex: 1 1 auto; }
+        .key100 { width: 3em; flex-basis: 3em; }
+        .key125 { width: 5em; flex-basis: 5em; }
+        .key150 { width: 7em; flex-basis: 7em; }
+        .key175 { width: 9em; flex-basis: 9em; }
+        .key200 { width: 14em; flex: 1 1 14em; }
 
     </style>
     <!--<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.min.js"></script>

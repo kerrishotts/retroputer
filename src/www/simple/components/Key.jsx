@@ -30,7 +30,7 @@ export const Key = ({ which: [_, normal, normalShift, gr, grShift, ctrl ],
             {label ? (
                 <div className="main label" >{label}</div>
             ) : (<>
-                <div className="shift" style={calcSpriteStyle(theKeyShift, 1)}></div>
+                {!(isShift || theKeyShift === theKey) && <div className="shift" style={calcSpriteStyle(theKeyShift, 1)}></div>}
                 <div className="main" style={calcSpriteStyle(theKey)}></div>
                 <div className="grRow">
                     <div className="gr" style={calcSpriteStyle(grKey, 1)}></div>
