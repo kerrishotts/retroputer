@@ -47,7 +47,7 @@
         .word token-not-impl                # 172, ON
         .word token-not-impl                # 173, OPEN
         .word handler-syntax-error          # 174, OR
-        .word token-not-impl                # 175, OUT
+        .word handler-out                   # 175, OUT
         .word handler-syntax-error          # 176, PEEK
         .word handler-poke                  # 177, POKE
         .word handler-print                 # 178, PRINT

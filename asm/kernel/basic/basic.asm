@@ -84,7 +84,7 @@
         _out-port: {
             [_out-instr+2] := cl 
         _out-instr:
-            out 0, cl
+            out 0, al
             ret
         }
     }
@@ -133,7 +133,7 @@
             .byte 0xa7                          # ret
             .byte 0x25, 0x40                    # [_out-instr+2] := cl
             .word bdata._out-port+6 
-            .byte 0x31, 0x50, 0x00              # out 0, cl
+            .byte 0x31, 0x10, 0x00              # out 0, al
             .byte 0xa7                          # ret
         }
 
