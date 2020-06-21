@@ -13,8 +13,9 @@ const calcSpriteStyle = (idx, scale = 2) => {
 
 export const Key = ({ which: [_, normal, normalShift, gr, grShift, ctrl ],  
                       label, coord: [row, col], toggle=false,
-                      size = "key100", pressed = false, keyState: {isShift, isGr, isCtrl} } = {}) => {
-    const theKey = (isGr && isShift) ? grShift :
+                      size = "key100", pressed = false, keyState: {isShift, isGr, isCtrl}, style } = {}) => {
+    const theKey = (isCtrl) ? ctrl :
+                   (isGr && isShift) ? grShift :
                    (isGr) ? gr :
                    (isShift) ? normalShift :
                    normal;
@@ -26,7 +27,7 @@ export const Key = ({ which: [_, normal, normalShift, gr, grShift, ctrl ],
 
 
     return (
-        <div className={`keycap ${pressed ? "pressed" : ""} ${size}`} dataValue={strOrAscii(theKey)} dataRow={row} dataCol={col} dataToggle={toggle ? "toggle" : undefined}>
+        <div style={style} className={`keycap ${pressed ? "pressed" : ""} ${size}`} dataValue={strOrAscii(theKey)} dataRow={row} dataCol={col} dataToggle={toggle ? "toggle" : undefined}>
             {label ? (
                 <div className="main label" >{label}</div>
             ) : (<>
