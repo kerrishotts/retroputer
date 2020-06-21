@@ -169,6 +169,9 @@ function evaluate(node, context) {
                     case "ASC":
                         return (evaluate(node.param, context).charCodeAt(0));
                     case "NEXT":
+                        const cur = evalaute(node.param, context);
+                        context[SCOPE.CONTENTS][node.param.ident] = cur + 1;
+                        return cur;
                         
                     default:
                         err(`Unimplemented function: ${node.fn}`);
