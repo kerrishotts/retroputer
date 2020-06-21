@@ -48,7 +48,7 @@ export function decodeToTaskEquiv(instruction, { operands, equiv }) {
         fn = cachedInst.fn;
     } else {
         args = _constructArgs(instruction, operands);
-        fn = equiv.bind(undefined, [args]);
+        fn = equiv.bind(undefined, args);
         equivCache.set(instruction, {args, fn});
     }
     return fn;
@@ -141,11 +141,17 @@ OPCODES["not"] = {
     description: "!reg",
     flags: "xdshNcvZ",
     equiv: ({r}, {alu, registerFile}) => {
-        registerFile.setRegister(r,aluOp({alu, registerFile, 
+        const mask = (r & 1) ? 0xFF : 0xFFFF; 
+        const sign = (r & 1) ? 0x80 : 0x8000;
+        const v = (~registerFile.getRegister(r)) & mask;
+        registerFile.setRegister(r, v);
+        registerFile.NEGATIVE = (v & sign) ? 1 : 0;
+        registerFile.ZERO = v === 0 ? 1 : 0;
+        /*registerFile.setRegister(r,aluOp({alu, registerFile, 
             command: COMMANDS.XOR, 
             op0: registerFile.getRegister(r), sz0: ((r & 0x01) ? SIZE_BYTE : SIZE_WORD), 
             op1: ((r & 0x01) ? 0xFF : 0xFFFF), sz1: ((r & 0x01) ? SIZE_BYTE : SIZE_WORD),
-            flagHandling: FLAGS_PUSH_AND_PULL}));
+            flagHandling: FLAGS_PULL_FROM_ALU}));*/
     },
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r, // a, op1
@@ -161,6 +167,14 @@ OPCODES["neg"] = {
     operands: { r: [3, 0] },
     description: "-1 * reg",
     flags: "xdshNcvZ",
+    equiv: ({r}, {alu, registerFile}) => {
+        const mask = (r & 1) ? 0xFF : 0xFFFF; 
+        const sign = (r & 1) ? 0x80 : 0x8000;
+        const v = (-registerFile.getRegister(r)) & mask;
+        registerFile.setRegister(r, v);
+        registerFile.NEGATIVE = (v & sign) ? 1 : 0;
+        registerFile.ZERO = v === 0 ? 1 : 0;
+    },
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r, // a
         ((r & 0x01) ? TASKS.PUSH_BYTE : TASKS.PUSH_WORD) | ((r & 0x01) ? 0xFF : 0xFFFF), // b
@@ -177,6 +191,21 @@ OPCODES["exc"] = {
     operands: { r: [3, 0] },
     description: "Swaps high and low regions of the register",
     flags: "xdshNcvZ",
+    equiv: ({r}, {alu, registerFile}) => {
+        const mask = (r & 1) ? 0xFF : 0xFFFF; 
+        const sign = (r & 1) ? 0x80 : 0x8000;
+        let v = registerFile.getRegister(r);
+        if (r & 1) {
+            // eight bit register; swap nibbles
+            v = ((v & 0x0F) << 4) | ((v & 0xF0) >> 4);
+        } else {
+            // word register; swap bytes
+            v = ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
+        }
+        registerFile.setRegister(r, v);
+        registerFile.NEGATIVE = (v & sign) ? 1 : 0;
+        registerFile.ZERO = v === 0 ? 1 : 0;
+    },
     decode: ({ r = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | r,
         ((r & 0x01) ? TASKS.DECOMPOSE_BYTE_TO_NIBBLE : TASKS.DECOMPOSE_WORD_TO_BYTES),
@@ -193,6 +222,12 @@ OPCODES["swap_ds"] = {
     operands: { s: [3, 0], d: [7, 4] },
     description: "Swaps register values",
     flags: "xdshncvz",
+    equiv: ({d, s}, {registerFile}) => {
+        const dV = registerFile.getRegister(d);
+        const sV = registerFile.getRegister(s);
+        registerFile.setRegister(d, sV);
+        registerFile.setRegister(s, dV);
+    },
     decode: ({ d = 0, s = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | d,
         TASKS.GET_REGISTER_AND_PUSH | s,
@@ -207,6 +242,10 @@ OPCODES["mov_ds"] = {
     operands: { s: [3, 0], d: [7, 4] },
     description: "Moves value of source to dest",
     flags: "xdshncvz",
+    equiv: ({d,s}, {registerFile}) => {
+        const sV = registerFile.getRegister(s);
+        registerFile.setRegister(d, sV);
+    },
     decode: ({ d = 0, s = 0 } = {}) => [
         TASKS.GET_REGISTER_AND_PUSH | s,
         TASKS.POP_INTO_REGISTER | d
@@ -220,15 +259,22 @@ OPCODES["mov_ds"] = {
 // faster to use them, but they are convenient from a typing
 // perspective
 [
-    ["inc", TASKS.ADD, `1100_rrrr`],
-    ["dec", TASKS.SUB, `1101_rrrr`]
-].forEach(([opcode, task, pattern]) => {
+    ["inc", TASKS.ADD, `1100_rrrr`, COMMANDS.ADD],
+    ["dec", TASKS.SUB, `1101_rrrr`, COMMANDS.SUB]
+].forEach(([opcode, task, pattern, command]) => {
     OPCODES[`${opcode}_r`] = {
         asm: `${opcode} $r`,
         pattern,
         operands: { r: [3, 0] },
     description: `${opcode}rements register`,
     flags: "xdshNCVZ",
+        equiv: ({r}, {registerFile, alu}) => {
+            registerFile.setRegister(r,aluOp({alu, registerFile, 
+                command, 
+                op0: registerFile.getRegister(r), sz0: ((r & 0x01) ? SIZE_BYTE : SIZE_WORD), 
+                op1: 1,                           sz1: ((r & 0x01) ? SIZE_BYTE : SIZE_WORD),
+                flagHandling: FLAGS_PULL_FROM_ALU}));
+        },
         decode: ({ r = 0 } = {}) => [
             // clear carry bit; inc & dec should never be affected
             //TASKS.CLEAR_FLAG_IMM | FLAGS_INDEX.CARRY,

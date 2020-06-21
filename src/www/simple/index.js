@@ -44,13 +44,13 @@ const defaultConfig = {
                     component: 'computer-control',
                     props: {store}
                 }, 
-                {
+                /*{
                     type: 'react-component',
                     width: 15,
                     title: 'Keyboard',
                     component: 'computer-keyboard',
                     props: {store}
-                },
+                },*/
                 {
                     type: 'react-component',
                     width: 15,
@@ -90,13 +90,13 @@ const defaultConfig = {
                                 },
                             ]
                         },
-                        {
+                        /*{
                             height: 25,
                             type: 'react-component',
                             title: 'Keyboard',
                             component: 'keyboard',
                             props: {store}
-                        }
+                        }*/
                     ]
                 },
                 {

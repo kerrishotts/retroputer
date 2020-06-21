@@ -13,15 +13,19 @@ export class ComputerKeyboard extends React.Component {
     }
 
     componentDidMount() {
+        /*
         document.addEventListener("keypress", this.keyPressed);
         document.addEventListener("keydown", this.keyDown);
         document.addEventListener("keyup", this.keyUp);
+        */
     }
 
     componentWillUnmount() {
+        /*
         document.removeEventListener("keypress", this.keyPressed);
         document.removeEventListener("keydown", this.keyDown);
         document.removeEventListener("keyup", this.keyUp);
+        */
     }
 
     keyPressed(e) {

@@ -1,5 +1,33 @@
 .segment __current__ kmemmap.basic.code-start .append {
     #
+    # negate
+    #
+    # @return dl 0 if no error
+    handler-neg-expr: {
+        enter 0x00
+        push a
+        push b
+        push c
+    _main:
+        call pop-param
+
+        cmp dl, brodata.TOK_WORD
+        if !z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            brs _out
+        }
+        neg  c
+        call push-param
+        dl := 0
+
+    _out:
+        pop c
+        pop b
+        pop a
+        exit 0x00
+        ret
+    }
+    #
     # Add accumulator and operand values together
     #
     # @return dl 0 if no error

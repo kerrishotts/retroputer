@@ -1,7 +1,7 @@
 import React from 'react';
 import scanlines from "../assets/scanlines.png";
 import shadowMask from "../assets/shadowmask.png";
-
+import { Keyboard } from "./Keyboard.jsx";
 /*
  * Modified from 
  * https://gist.github.com/KHN190/d7c467a471b15e72302b16a9336440a5
@@ -9,8 +9,10 @@ import shadowMask from "../assets/shadowmask.png";
 const ASPECT = .936; //91/100;
 function resizeCanvas(c) {
     // assume that c's grandparent has the width and height we need
+    const otherHeights = Array.from(c.parentElement.parentElement.children, (el, idx) => idx > 1 ? el.getBoundingClientRect().height : 0)
+        .reduce((acc, sz) => acc + sz, 0);
     const width = c.parentElement.parentElement.clientWidth - 40;
-    const height = c.parentElement.parentElement.clientHeight - 40;
+    const height = c.parentElement.parentElement.clientHeight - otherHeights - 20; //40;
     let aspectWidth = width;
     let aspectHeight = Math.floor(width * ASPECT);
     if (aspectHeight > height) {
@@ -108,6 +110,8 @@ export class ComputerScreen extends React.Component {
         this.renderFrame = this.renderFrame.bind(this);
         this.glChecked = this.glChecked.bind(this);
         this.accuracyChecked = this.accuracyChecked.bind(this);
+        this.keyboardChecked = this.keyboardChecked.bind(this);
+        this.hideToolsClicked = this.hideToolsClicked.bind(this);
 
         const frameCanvas = document.createElement("canvas");
         frameCanvas.setAttribute("width", "640");
@@ -129,6 +133,7 @@ export class ComputerScreen extends React.Component {
             frameCanvas,
             frames: 0,
             orphanedFrames: 0,
+            hideTools: false
         };
     }
     componentDidMount() {
@@ -141,6 +146,9 @@ export class ComputerScreen extends React.Component {
     }
     componentWillUnmount() {
         cancelAnimationFrame(this._cancelRAF);
+    }
+    hideToolsClicked(e) {
+        this.setState(nextState => ({hideTools: !nextState.hideTools}));
     }
     accuracyChecked(e) {
         const { computer, diagnostics, devices: { screen }, stats } = store;
@@ -159,6 +167,11 @@ export class ComputerScreen extends React.Component {
         if (!this.isGL) {
             this.ctx.scale(2, 2);
         }
+    }
+    keyboardChecked(e) {
+        const { computer, diagnostics, devices: { screen }, stats } = store;
+        this.props.store.showKeyboardOnScreen = e.target.checked;
+        this.setState({});
     }
     renderFrame(now) {
         const { store } = this.props;
@@ -213,19 +226,28 @@ export class ComputerScreen extends React.Component {
 
         this.setState({
             orphanedFrames,
-            frames
+            frames,
         });
 
         stats.end();
 
     }
     render() {
+        const showKeyboardOnScreen = this.props.store.showKeyboardOnScreen;
+        const hideTools = this.state.hideTools;
         return (
-            <div className="panel column" style={{position: "relative"}}>
-                <div className="row">
-                    <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> CRT Effect </label>
-                    &nbsp;
-                    <label><input type="checkbox" checked={this.props.store.accurateScreen} onChange={this.accuracyChecked}/> Accurate</label>
+            <div className="panel column" style={{position: "relative", overflow: "hidden"}}>
+                <div className="row" style={{position: "absolute", zIndex:"99", backgroundColor:(hideTools ? "": "rgba(0,0,0,0.2)"), right: "0", left: "0", margin:"-6px -6px 0 -6px", padding: "6px"}}>
+                    <button style={{padding: "0 6px", margin: 0, marginRight: "6px", height: "1.5em", color: "white", backgroundColor: "transparent"}} onClick={this.hideToolsClicked}>{`${hideTools ? ">" : "<"}`}</button>
+                    { !hideTools && 
+                        <>
+                            <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> CRT Effect </label>
+                            &nbsp;
+                            <label><input type="checkbox" checked={this.props.store.accurateScreen} onChange={this.accuracyChecked}/> Accurate</label>
+                            &nbsp;
+                            <label><input type="checkbox" checked={this.props.store.showKeyboardOnScreen} onChange={this.keyboardChecked}/> Keyboard</label>
+                        </>
+                    }   
                 </div>
                 <div style={{position: "relative"}} className="nogrow noshrink center">
                     <canvas width={1280} height={960} ref={this.canvas} className="screen nogrow noshrink center" />
@@ -233,6 +255,9 @@ export class ComputerScreen extends React.Component {
                     <img src={scanlines} style={{position: "absolute", opacity: 0.25, left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
                     <img src={shadowMask} style={{mixBlendMode: "overlay", opacity: 1, position: "absolute", left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
                     */}
+                </div>
+                <div className="noshrink" style={{position: "relative", minHeight: showKeyboardOnScreen ? "240px" : "48px"}}>
+                    <Keyboard mode={showKeyboardOnScreen? "full" : "mini"} store={this.props.store}/>
                 </div>
             </div>
         );

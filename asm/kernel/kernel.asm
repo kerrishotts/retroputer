@@ -9,6 +9,7 @@
     .import "./macros/pointers.asm"
     .import "./macros/io.asm"
     .import "./macros/stacks.asm"
+    .import "./macros/heap.asm"
 
 
     .import "./trapmap.asm"
@@ -52,6 +53,9 @@
         PRINT_RAW:                   .word core.screen.kcode.print-raw
         STACK_PUSH:                  .word core.stdlib.kcode.stack-push
         STACK_POP:                   .word core.stdlib.kcode.stack-pop
+        MAKE_HEAP:                   .word core.stdlib.kcode.make-heap 
+        GET_HEAP_FREE:               .word core.stdlib.kcode.get-heap-free 
+        ALLOC:                       .word core.stdlib.kcode.alloc
     }
 
     .import "./monitor/monitor.asm"

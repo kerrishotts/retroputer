@@ -3,11 +3,149 @@
     brk                                 {$3F}
 }
 
-# test-not-db.regs: AL=0xF0
-# test-not-db.flags: N+ Z-
-.segment test-not-db 0x02000 {
+# test-not-db-0.regs: CL=0xF0
+# test-not-db-0.flags: N+ Z-
+.segment test-not-db-1 0x02000 {
+    ld cl, 0x0F
+    not cl
+    brk
+}
+# test-not-db-1.regs: AL=0xF0
+# test-not-db-1.flags: N+ Z-
+.segment test-not-db-1 0x02000 {
     ld al, 0x0F
     not al
+    brk
+}
+# test-not-db-2.regs: AL=0xFF
+# test-not-db-2.flags: N+ Z-
+.segment test-not-db-2 0x02000 {
+    ld al, 0x00
+    not al
+    brk
+}
+# test-not-db-3.regs: AL=0x00
+# test-not-db-3.flags: N- Z+
+.segment test-not-db-3 0x02000 {
+    ld al, 0xFF
+    not al
+    brk
+}
+
+# test-neg-db-0.regs: CL=0xF1
+# test-neg-db-0.flags: N+ Z-
+.segment test-neg-db-1 0x02000 {
+    ld cl, 0x0F
+    neg cl
+    brk
+}
+# test-neg-db-1.regs: AL=0xF1
+# test-neg-db-1.flags: N+ Z-
+.segment test-neg-db-1 0x02000 {
+    ld al, 0x0F
+    neg al
+    brk
+}
+# test-neg-db-2.regs: AL=0x00
+# test-neg-db-2.flags: N- Z+
+.segment test-neg-db-2 0x02000 {
+    ld al, 0x00
+    neg al
+    brk
+}
+# test-neg-db-3.regs: AL=0xFF
+# test-neg-db-3.flags: N+ Z-
+.segment test-neg-db-3 0x02000 {
+    ld al, 0x01
+    neg al
+    brk
+}
+# test-neg-db-4.regs: AL=0x01
+# test-neg-db-4.flags: N- Z-
+.segment test-neg-db-4 0x02000 {
+    ld al, 0xFF
+    neg al
+    brk
+}
+
+# test-not-dw-0.regs: C=0xFFF0
+# test-not-dw-0.flags: N+ Z-
+.segment test-not-dw-1 0x02000 {
+    ld c, 0x000F
+    not c
+    brk
+}
+# test-not-dw-1.regs: A=0xFFF0
+# test-not-dw-1.flags: N+ Z-
+.segment test-not-dw-1 0x02000 {
+    ld a, 0x000F
+    not a
+    brk
+}
+# test-not-dw-2.regs: A=0xFFFF
+# test-not-dw-2.flags: N+ Z-
+.segment test-not-dw-2 0x02000 {
+    ld a, 0
+    not a
+    brk
+}
+# test-not-dw-3.regs: A=0x0000
+# test-not-dw-3.flags: N- Z+
+.segment test-not-dw-3 0x02000 {
+    ld a, 0xFFFF
+    not a
+    brk
+}
+
+# test-neg-dw-0.regs: C=0xFFF1
+# test-neg-dw-0.flags: N+ Z-
+.segment test-neg-dw-1 0x02000 {
+    ld c, 0xF
+    neg c
+    brk
+}
+# test-neg-dw-1.regs: A=0xFFF1
+# test-neg-dw-1.flags: N+ Z-
+.segment test-neg-dw-1 0x02000 {
+    ld a, 0xF
+    neg a
+    brk
+}
+# test-neg-dw-2.regs: A=0x0000
+# test-neg-dw-2.flags: N- Z+
+.segment test-neg-dw-2 0x02000 {
+    ld a, 0x0000
+    neg a
+    brk
+}
+# test-neg-dw-3.regs: A=0xFFFF
+# test-neg-dw-3.flags: N+ Z-
+.segment test-neg-dw-3 0x02000 {
+    ld a, 0x1
+    neg a
+    brk
+}
+# test-neg-dw-4.regs: A=0x0001
+# test-neg-dw-4.flags: N- Z-
+.segment test-neg-dw-4 0x02000 {
+    ld a, 0xFFFF
+    neg a
+    brk
+}
+
+# test-exc-db-1.regs: BL=0xF0
+# text-exc-db-1.flags: N+ Z-
+.segment test-exc-db-1 0x02000 {
+    ld bl, 0x0F
+    exc bl
+    brk
+}
+
+# test-exc-dw-1.regs: B=0x1200
+# text-exc-dw-1.flags: N- Z-
+.segment test-exc-dw-1 0x02000 {
+    ld b, 0x0012
+    exc b
     brk
 }
 

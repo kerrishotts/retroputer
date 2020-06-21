@@ -6,4 +6,4 @@
 21 poke 1,a+bg,rnd(256)
 22 poke 1,a,rnd(15)+219
 30 a=a+1
-40 goto (a<max)*20 + (a>=max)*99
+40 if a<max then goto 20

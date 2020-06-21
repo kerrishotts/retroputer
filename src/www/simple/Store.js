@@ -177,6 +177,16 @@ export class Store {
         this.notify();
     }
 
+    get showKeyboardOnScreen() {
+        return this.config.options.showKeyboardOnScreen;
+    }
+
+    set showKeyboardOnScreen(v) {
+        this.config.options.showKeyboardOnScreen = v;
+        this.save();
+        this.notify();
+    }
+
     addListener(cb) {
         if (this.listeners.indexOf(cb) < 0) {
             this.listeners.push(cb);
@@ -220,7 +230,8 @@ export class Store {
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",
                 useGL: true,
-                accurateScreen: false
+                accurateScreen: false,
+                showKeyboardOnScreen: false
             },
             panels: {
                 canvas: true,

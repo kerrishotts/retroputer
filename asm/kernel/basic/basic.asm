@@ -186,6 +186,9 @@
                 [d, x, y] := al                 # clear memory
             } while !z
 
+            # initialize heap
+            MAKE_HEAP(kmemmap.basic.heap-start, kmemmap.basic.heap-size)
+
         _out:
             ret
         }

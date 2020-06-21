@@ -65,7 +65,7 @@
         # String and Array Storage (Heap; will need GC'd)
         #######################################################################
         .const heap-start       0x20000           # Heap has room for 64k of strings or
-        .const heap-size        0x10000           # array data
+        .const heap-size        0x0FFFC           # array data
         #
         # Code Line Pointer Storage
         #######################################################################
