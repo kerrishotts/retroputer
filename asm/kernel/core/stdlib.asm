@@ -300,5 +300,121 @@
             exit 0x00
             ret
         }
+
+        ########################################################################
+        #
+        # HEAP ROUTINES
+        #
+        # Heaps are single contiguous areas of memory where new items can be
+        # added at the first available free slot. While heap management can be
+        # very sophisticated, our heaps are very dumb: they'll fill up fast and
+        # need to be garbage collected.
+        #
+        # offset 0, 1: first free byte (FREPTR) (e.g. 0x0004)
+        # offset 2, 3: size of heap (HEAPSZ) (e.g. 0xFFFC)
+        # offset 4, 5...: data in block
+        #
+        # When a new item needs to be added to the heap, a range check is
+        # performed. If there is insufficient space, EX is set so that the code
+        # knows that a failure occurred. Furthermore, a NUL pointer will be
+        # returned (instead of an actual pointer)
+        #
+        ########################################################################
+
+        ########################################################################
+        #
+        # MAKE-HEAP
+        #
+        # Creates a heap. The largest heap that can be created is 0xFFFC bytes,
+        # but there is no check done here. Furthermore, heaps must not span
+        # bank boundaries.
+        #
+        # @param D,X            (PTR) Heap          Heap 
+        # @param C              Size                Size of Heap
+        #
+        ########################################################################
+        make-heap: {
+            enter 0x00
+            push y
+        _main:
+            y := 2
+            [d, x, y] := c                      # set heap size
+            y := 4
+            [d, x] := y                         # set pointer to first free spot 
+        _out:
+            pop y
+            exit 0x00
+            ret
+        }
+
+        ########################################################################
+        #
+        # GET_HEAP_FREE
+        #
+        # Returns the amount of space available in the heap.
+        #
+        # @param D,X            (PTR) Heap          Heap 
+        # @return C             Size                Requested size of block
+        #
+        ########################################################################
+        get-heap-free: {
+            enter 0x00
+            push y
+        _main:
+            y := 2
+            c := [d, x, y]                      # c is HEAP SIZE
+            y := [d, x]                         # y is FREPTR
+            clr c
+            sub c, y                            # size is HEAPSZ-FREPTR
+        _out:
+            pop y
+            exit 0x00
+            ret
+        }
+
+        ########################################################################
+        #
+        # ALLOC
+        #
+        # Allocates memory on the heap. If there is space, a pointer to the new
+        # block will be returned. If there isn't space, EX will be set and the
+        # pointer will be NULL.
+        #
+        # @param D,X            (PTR) Heap          Heap 
+        # @param C              Size                Requested size of block
+        # @return D,X           (PTR) Block         Pointer to block.
+        # @return FLAGS
+        #   @flag EX            if set, heap didn't have enough space
+        #
+        ########################################################################
+        alloc: {
+            enter 0x00
+            push y
+            push b
+            push a
+        _main:
+            y := 2
+            b := [d, x, y]                      # B is the size of the heap
+            a := [d, x]                         # A is the FREPTR
+            add a, c                            # do we have space?
+            cmp a, b                            # if a < b, we do
+            if !n {
+                set ex                          # nope!
+                d := 0
+                x := 0                          # NULL pointer
+                br _out
+            }
+            clr ex                              # we had enough space
+            b := [d, x]                         # FREPTR will be what we want to return
+            [d, x] := a                         # FREPTR = FREPTR + Size
+            clr c
+            add x, b                            # X needs to point to base of heap (X) plus FREPTR
+        _out:
+            pop a
+            pop b
+            pop y
+            exit 0x00
+            ret
+        }
     }
 }

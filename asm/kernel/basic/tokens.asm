@@ -183,6 +183,8 @@
             _add-operator:       .string "+"               , constants.NUL, TOK_ADD
                                  .const TOK_SUB                             205
             _sub-operator:       .string "-"               , constants.NUL, TOK_SUB
+                                 .const TOK_NEG                             227
+            _neg-operator:       .string "-"               , constants.NUL, TOK_NEG
                                  .const TOK_MUL                             206
             _mul-operator:       .string "*"               , constants.NUL, TOK_MUL
                                  .const TOK_DIV                             207
@@ -193,6 +195,7 @@
             _pow-operator:       .string "^"               , constants.NUL, TOK_POW
                                  .const TOK_NEQ                             210
             _neq-operator:       .string "<>"              , constants.NUL, TOK_NEQ
+                                 .string "!="              , constants.NUL, TOK_NEQ
                                  .const TOK_LTE                             211
             _lte-operator:       .string "<="              , constants.NUL, TOK_LTE
                                  .string "=<"              , constants.NUL, TOK_LTE
@@ -227,7 +230,7 @@
                                  .const TOK_CODE_STRING                     251
                                  .const TOK_VARIABLE                        250
                                  .const TOK_REAL                            249
-                                 .const MAX_TOKEN                           226
+                                 .const MAX_TOKEN                           227
             token-vectors: 
                 .word _abs-keyword, _and-keyword, _asc-keyword, _atn-keyword, _at-keyword
                 .word _call-keyword, _catalog-keyword, _chr-keyword, _cls-keyword, _close-keyword
@@ -246,5 +249,5 @@
                 .word _mul-operator, _div-operator, _mod-operator, _pow-operator, _neq-operator, _lte-operator
                 .word _gte-operator, _lt-operator, _gt-operator, _equ-operator, _lpar-token, _rpar-token
                 .word _lbracket-token, _rbracket-token, _end-of-stmt, _lower-keyword, _upper-keyword, _let-keyword
-                .word _comma, _semicolon, _chrs-keyword
+                .word _comma, _semicolon, _chrs-keyword, _neg-operator
 }

@@ -301,7 +301,7 @@
         .word token-not-impl                ,0x0001 # 224, COMMA
         .word token-not-impl                ,0x0001 # 225, SEMICOLON
         .word token-not-impl                ,0x2014 # 226, CHRS$
-        .word token-not-impl                ,0x0000 # 227
+        .word handler-neg-expr              ,0x1011 # 227, Unary -
         .word token-not-impl                ,0x0000 # 228
         .word token-not-impl                ,0x0000 # 229
         .word token-not-impl                ,0x0000 # 230

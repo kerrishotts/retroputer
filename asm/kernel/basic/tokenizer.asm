@@ -152,19 +152,22 @@
     #          DH: size of resulting crunch
     #######################################################################
     crunch-line: {
-        enter 0x04
+        enter 0x06
         .const target 4
         .const source 8
         .const sourceBank 8
         .const sourceAddr 10
         .const sourceIndex -2
         .const targetIndex -4
+        .const expectUnary -6
         push x
         push y
         #push d
         push c
         push b
     _main:
+        y := 1
+        [bp+expectUnary] := y               # we're expecting a unary minus (negative) if we see a "-"
         y := 0
         [bp+sourceIndex] := y               # we're at position 0 in both
         [bp+targetIndex] := y               # source and target strings
@@ -261,6 +264,8 @@
                 inc y                       # move the index along
             }
             call _set-target-index          # update our target index
+
+            call _expect-subtract           # "-" after number is subtraction
             continue                        # back to the TOP
 
         not-a-number:
@@ -288,6 +293,7 @@
             call _adv-target-index
             cmp dl, 0                       # are we done?
             brs !Z still-a-string           # no, keep going
+            call _expect-subtract           # "-" after string is subtraction
             continue                        # next!
 
         not-a-string:
@@ -332,6 +338,7 @@
             add x, c
             inc x
             bl := [d, x]                    # should be the token #
+            call _handle-unary              # check what we should do with "-"
             call _get-target-index
             <bp+target>,y := bl             # write to target
             call _adv-target-index
@@ -499,6 +506,7 @@
             y := x
             call _set-source-index          # make sure to pick up at next position
 
+            call _expect-subtract           # "-" after variable is subtraction
             continue
 
         not-a-variable:
@@ -524,7 +532,7 @@
         #pop d
         pop y
         pop x
-        exit 0x04
+        exit 0x06
         ret
     _get-source-index:
         y := [bp+sourceIndex]
@@ -547,6 +555,39 @@
         calls _get-target-index
         inc y
         calls _set-target-index
+        ret
+    _handle-unary:
+        cmp bl, brodata.TOK_SUB
+        if z {
+            push y
+            push c
+            y := [bp+expectUnary]               # read unary expectation
+            c := 1
+            cmp y, c                            # is y set?
+            if z {
+                bl := brodata.TOK_NEG           # yes; we're a unary minus
+            }
+            pop c
+            pop y
+        }
+        cmp bl, brodata.TOK_RPAR
+        if z {
+            call _expect-subtract               # A "-" after ")" indicates subtraction
+        } else {
+            call _expect-unary                  # Only a unary minus makes sense
+        }
+        ret
+    _expect-subtract:
+        push y
+        y := 0
+        [bp+expectUnary] := y                   # A "-" is now treated as a subtract
+        pop y
+        ret
+    _expect-unary:
+        push y
+        y := 1
+        [bp+expectUnary] := y                   # A "-" is now treated as a unary minus (negative)
+        pop y
         ret
     }
 }
