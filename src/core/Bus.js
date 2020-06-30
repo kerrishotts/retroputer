@@ -13,6 +13,14 @@ const _value = Symbol("_value");
 const _receivers = Symbol("_receivers");
 const _mask = Symbol("_mask");
 
+const MASKS=[
+    0,
+    0xFF,
+    0xFFFF,
+    0xFFFFFF,
+    0xFFFFFFFF
+];
+
 export class Bus {
 
     /**
@@ -21,7 +29,8 @@ export class Bus {
     constructor(size = 2, mask = 0xFFFFFFFF) {
 
         this[_size] = size;
-        this[_mask] = mask; // lets us simulate a smaller bus width
+        this[_mask] = mask & MASKS[size]; // lets us simulate a smaller bus width
+        /*
         this[_buffer] = new ArrayBuffer(size);
 
         switch (size) {
@@ -31,6 +40,8 @@ export class Bus {
             default:
                 throw new Error("Bus must be eight, sixteen, or thirty-two bits wide.");
         }
+        */
+       this[_value] = 0;
 
         this[_receivers] = [];
     }
@@ -45,11 +56,13 @@ export class Bus {
     }
 
     set value(v) {
-        this[_value][0] = v & this[_mask];
+        //this[_value][0] = v & this[_mask];
+        this[_value] = (v < 0 ? ((~v)+1) : v) & this[_mask];
     }
 
     get value() {
-        return this[_value][0];
+        //return this[_value][0];
+        return this[_value];
     }
 
     get size() {

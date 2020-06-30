@@ -268,10 +268,7 @@ export class Processor {
             }
         } else {
             this.stats.tasks++;
-            tasks({alu: this.alu, 
-                   registerFile: this.registers, 
-                   ioBus: this.ioBus, 
-                   memory: this.memory});
+            tasks(this._context); 
         }
 
         if (this.registers.PC !== pc) {
