@@ -14,6 +14,7 @@ export const pages = {
     ["./programming-retroputer/basic/built-in-function-reference.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/built-in-function-reference.md")),
     ["./programming-retroputer/basic/README.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/README.md")),
     ["./programming-retroputer/basic/statement-reference/print.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/statement-reference/print.md")),
+    ["./programming-retroputer/basic/statement-reference/new.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/statement-reference/new.md")),
     ["./programming-retroputer/basic/statement-reference/README.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/statement-reference/README.md")),
     ["./programming-retroputer/basic/statement-reference/def.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/statement-reference/def.md")),
     ["./programming-retroputer/basic/technical-details/README.md".substr(2)]: React.lazy(() => import("./programming-retroputer/basic/technical-details/README.md")),
