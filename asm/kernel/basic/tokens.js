@@ -68,7 +68,7 @@ const tokens = [
     {tok: "INT",       keyword: ["INT"],             stmt: "handler-syntax-error", 
                        expr: "token-not-impl",       args: 1, assoc: 0, prec: 0x14},
     {tok: "IN",        keyword: ["IN"],              stmt: "handler-syntax-error", 
-                       expr: "token-in-expr",        args: 1, assoc: 0, prec: 0x14},
+                       expr: "handler-in-expr",        args: 1, assoc: 0, prec: 0x14},
     {tok: "LEFT",      keyword: ["LEFT$"],           stmt: "handler-syntax-error", 
                        expr: "token-not-impl",       args: 2, assoc: 0, prec: 0x14},
     {tok: "LEN",       keyword: ["LEN"],             stmt: "handler-syntax-error", 
@@ -102,7 +102,7 @@ const tokens = [
     {tok: "OUT",       keyword: ["OUT"],             stmt: "handler-out",          
                        expr: "handler-syntax-error", args: 0, assoc: 0, prec: 0x00},
     {tok: "PEEK",      keyword: ["PEEK"],            stmt: "handler-syntax-error", 
-                       expr: "token-not-impl",       args: 2, assoc: 0, prec: 0x14},
+                       expr: "handler-peek-expr",    args: 2, assoc: 0, prec: 0x14},
     {tok: "POKE",      keyword: ["POKE"],            stmt: "handler-poke",         
                        expr: "handler-syntax-error", args: 0, assoc: 0, prec: 0x00},
     {tok: "PRINT",     keyword: ["PRINT", "?"],      stmt: "handler-print",        
@@ -197,7 +197,7 @@ const tokens = [
                        expr: "token-not-impl",       args: 0, assoc: 0, prec: 0x01},
     {tok: "SEMICOLON", keyword: [";"],               stmt: "handler-syntax-error", 
                        expr: "token-not-impl",       args: 0, assoc: 0, prec: 0xFF},
-    {tok:"END_OF_STMT",keyword: [":"],               stmt: "handler-not-impl",     
+    {tok:"END_OF_STMT",keyword: [":"],               stmt: "token-not-impl",     
                        expr: "token-not-impl",       args: 0, assoc: 0, prec: 0xFF},
     {tok: "REAL",      idx: 249,                     stmt: "handler-syntax-error", 
                        expr: "token-not-impl",       args: 0, assoc: 0, prec: 0xFF},
@@ -283,7 +283,7 @@ function generateExprTable() {
     for (let entry of tokenTable) {
         if (entry && entry.idx > 127) {
             let {tok, idx, keyword, stmt, expr, args, assoc, prec} = entry;
-            const secondWord = ((args << 12) | (assoc << 8) | prec).toString(16).padStart(4, "0");
+            const secondWord = ((args << 12) | (assoc << 8) | prec).toString(16).toUpperCase().padStart(4, "0");
             code += `        .word ${expr.padEnd(32)},0x${secondWord} # ${idx}, ${keyword || tok}\n`
         }
     }

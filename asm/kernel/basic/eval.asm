@@ -200,136 +200,136 @@
         ret
     }
 
-
-    expression-handlers:        # vector, param#s, assoc (0=left,0F=right), precedence 
-        .word token-not-impl                ,0x1014 # 128, ABS
-        .word token-not-impl                ,0x2006 # 129, AND
-        .word token-not-impl                ,0x1014 # 130, ASC
-        .word token-not-impl                ,0x1014 # 131, ATN
-        .word handler-syntax-error          ,0x0000 # 132, AT
-        .word handler-syntax-error          ,0x0000 # 133, CALL
-        .word handler-syntax-error          ,0x0000 # 134, CATALOG
-        .word token-not-impl                ,0x1014 # 135, CHR
-        .word handler-syntax-error          ,0x0000 # 136, CLS
-        .word handler-syntax-error          ,0x0000 # 137, CLOSE
-        .word handler-syntax-error          ,0x0000 # 138, CONTINUE
-        .word token-not-impl                ,0x1014 # 139, COS
-        .word handler-syntax-error          ,0x0000 # 140, DATA
-        .word handler-syntax-error          ,0x0000 # 141, DEFFN
-        .word handler-syntax-error          ,0x0000 # 142, DEFSUB
-        .word handler-syntax-error          ,0x0000 # 143, DIM
-        .word handler-syntax-error          ,0x0000 # 144, DO
-        .word handler-syntax-error          ,0x0000 # 145, ELSEIF
-        .word handler-syntax-error          ,0x0000 # 146, ELSE
-        .word handler-syntax-error          ,0x0000 # 147, ENDSUB
-        .word handler-syntax-error          ,0x0000 # 148, ENDFN
-        .word handler-syntax-error          ,0x0000 # 149, ENDIF
-        .word handler-syntax-error          ,0x0000 # 150, END
-        .word token-not-impl                ,0x1014 # 151, EXP
-        .word handler-syntax-error          ,0x0000 # 152, FOR
-        .word token-not-impl                ,0x0014 # 153, GETKEY
-        .word handler-syntax-error          ,0x0000 # 154, GOSUB
-        .word handler-syntax-error          ,0x0000 # 155, GOTO
-        .word token-not-impl                ,0x1014 # 156, HEX
-        .word handler-syntax-error          ,0x0000 # 157, HOME
-        .word handler-syntax-error          ,0x0000 # 158, IF
-        .word handler-syntax-error          ,0x0000 # 159, INPUT
-        .word token-not-impl                ,0x1014 # 160, INT
-        .word handler-in-expr               ,0x1014 # 161, IN
-        .word token-not-impl                ,0x3014 # 162, LEFT
-        .word token-not-impl                ,0x1014 # 163, LEN
-        .word handler-syntax-error          ,0x0000 # 164, LIST
-        .word handler-syntax-error          ,0x0000 # 165, LOAD
-        .word token-not-impl                ,0x1014 # 166, LOG
-        .word handler-syntax-error          ,0x0000 # 167, LOOP
-        .word token-not-impl                ,0x3014 # 168, MID
-        .word handler-syntax-error          ,0x0000 # 169, NEW
-        .word handler-syntax-error          ,0x0000 # 170, NEXT
-        .word token-not-impl                ,0x1F11 # 171, NOT (right assoc)
-        .word handler-syntax-error          ,0x0000 # 172, ON
-        .word handler-syntax-error          ,0x0000 # 173, OPEN
-        .word token-not-impl                ,0x2005 # 174, OR
-        .word handler-syntax-error          ,0x0000 # 175, OUT
-        .word handler-peek-expr             ,0x2014 # 176, PEEK
-        .word handler-syntax-error          ,0x0000 # 177, POKE
-        .word handler-syntax-error          ,0x0000 # 178, PRINT
-        .word handler-syntax-error          ,0x0000 # 179, READ
-        .word token-not-impl                ,0x0000 # 180, REM
-        .word handler-syntax-error          ,0x0000 # 181, RETURN
-        .word token-not-impl                ,0x3014 # 182, RIGHT
-        .word handler-rnd-expr              ,0x1014 # 183, RND
-        .word handler-syntax-error          ,0x0000 # 184, RENAME
-        .word handler-syntax-error          ,0x0000 # 185, REMOVE
-        .word handler-syntax-error          ,0x0000 # 186, RESTORE
-        .word handler-syntax-error          ,0x0000 # 187, RUN
-        .word handler-syntax-error          ,0x0000 # 188, SAVE
-        .word token-not-impl                ,0x1014 # 189, SGN
-        .word token-not-impl                ,0x1014 # 190, SIN
-        .word token-not-impl                ,0x1014 # 191, SPC
-        .word token-not-impl                ,0x1014 # 192, SQR
-        .word handler-syntax-error          ,0x0000 # 193, STEP
-        .word handler-syntax-error          ,0x0000 # 194, STOP
-        .word token-not-impl                ,0x1014 # 195, STR
-        .word token-not-impl                ,0x1014 # 196, TAB
-        .word token-not-impl                ,0x1014 # 197, TAN
-        .word handler-syntax-error          ,0x0000 # 198, THEN
-        .word handler-syntax-error          ,0x0000 # 199, TO
-        .word handler-syntax-error          ,0x0000 # 200, UNTIL
-        .word token-not-impl                ,0x1014 # 201, USR
-        .word token-not-impl                ,0x1014 # 202, VAL
-        .word handler-syntax-error          ,0x0000 # 203, WHILE
-        .word handler-add-expr              ,0x200E # 204, +  
-        .word handler-sub-expr              ,0x200E # 205, -  
-        .word handler-mul-expr              ,0x200F # 206, *
-        .word handler-div-expr              ,0x200F # 207, /
-        .word handler-mod-expr              ,0x200F # 208, %
-        .word token-not-impl                ,0x2F10 # 209, ^        right associative
-        .word handler-neq-expr              ,0x200B # 210, <>, !=
-        .word handler-lte-expr              ,0x200C # 211, <=
-        .word handler-gte-expr              ,0x200C # 212, >=
-        .word handler-lt-expr               ,0x200C # 213, <
-        .word handler-gt-expr               ,0x200C # 214, >
-        .word handler-equ-expr              ,0x200B # 215, =
-        .word 0xFFFE                        ,0x0015 # 216, (
-        .word 0xFFFF                        ,0x0015 # 217, )
-        .word token-not-impl                ,0x0014 # 218, [
-        .word token-not-impl                ,0x0014 # 219, ]
-        .word token-not-impl                ,0x00FF # 220, :
-        .word token-not-impl                ,0x1014 # 221, LOWER
-        .word token-not-impl                ,0x1014 # 222, UPPER
-        .word handler-syntax-error          ,0x0000 # 223, LET
-        .word token-not-impl                ,0x0001 # 224, COMMA
-        .word token-not-impl                ,0x0001 # 225, SEMICOLON
-        .word token-not-impl                ,0x2014 # 226, CHRS$
-        .word handler-neg-expr              ,0x1011 # 227, Unary -
-        .word token-not-impl                ,0x0000 # 228
-        .word token-not-impl                ,0x0000 # 229
-        .word token-not-impl                ,0x0000 # 230
-        .word token-not-impl                ,0x0000 # 231
-        .word token-not-impl                ,0x0000 # 232
-        .word token-not-impl                ,0x0000 # 233
-        .word token-not-impl                ,0x0000 # 234
-        .word token-not-impl                ,0x0000 # 235
-        .word token-not-impl                ,0x0000 # 236
-        .word token-not-impl                ,0x0000 # 237
-        .word token-not-impl                ,0x0000 # 238
-        .word token-not-impl                ,0x0000 # 239
-        .word token-not-impl                ,0x0000 # 240
-        .word token-not-impl                ,0x0000 # 241
-        .word token-not-impl                ,0x0000 # 242
-        .word token-not-impl                ,0x0000 # 243
-        .word token-not-impl                ,0x0000 # 244
-        .word token-not-impl                ,0x0000 # 245
-        .word token-not-impl                ,0x0000 # 246
-        .word token-not-impl                ,0x0000 # 247
-        .word token-not-impl                ,0x0000 # 248
-        .word token-not-impl                ,0x00FF # 249, TOK_REAL
-        .word token-not-impl                ,0x00FF # 250, TOK_VARIABLE
-        .word token-not-impl                ,0x00FF # 251, TOK_CODE_STRING
-        .word token-not-impl                ,0x00FF # 252, TOK_STRING
-        .word token-not-impl                ,0x00FF # 253, TOK_DWORD
-        .word token-not-impl                ,0x00FF # 254, TOK_WORD
-        .word token-not-impl                ,0x00FF # 255, TOK_BYTE
+    .import "./expr-tokens.asm"
+    #expression-handlers:        # vector, param#s, assoc (0=left,0F=right), precedence 
+    #    .word token-not-impl                ,0x1014 # 128, ABS
+    #    .word token-not-impl                ,0x2006 # 129, AND
+    #    .word token-not-impl                ,0x1014 # 130, ASC
+    #    .word token-not-impl                ,0x1014 # 131, ATN
+    #    .word handler-syntax-error          ,0x0000 # 132, AT
+    #    .word handler-syntax-error          ,0x0000 # 133, CALL
+    #    .word handler-syntax-error          ,0x0000 # 134, CATALOG
+    #    .word token-not-impl                ,0x1014 # 135, CHR
+    #    .word handler-syntax-error          ,0x0000 # 136, CLS
+    #    .word handler-syntax-error          ,0x0000 # 137, CLOSE
+    #    .word handler-syntax-error          ,0x0000 # 138, CONTINUE
+    #    .word token-not-impl                ,0x1014 # 139, COS
+    #    .word handler-syntax-error          ,0x0000 # 140, DATA
+    #    .word handler-syntax-error          ,0x0000 # 141, DEFFN
+    #    .word handler-syntax-error          ,0x0000 # 142, DEFSUB
+    #    .word handler-syntax-error          ,0x0000 # 143, DIM
+    #    .word handler-syntax-error          ,0x0000 # 144, DO
+    #    .word handler-syntax-error          ,0x0000 # 145, ELSEIF
+    #    .word handler-syntax-error          ,0x0000 # 146, ELSE
+    #    .word handler-syntax-error          ,0x0000 # 147, ENDSUB
+    #    .word handler-syntax-error          ,0x0000 # 148, ENDFN
+    #    .word handler-syntax-error          ,0x0000 # 149, ENDIF
+    #    .word handler-syntax-error          ,0x0000 # 150, END
+    #    .word token-not-impl                ,0x1014 # 151, EXP
+    #    .word handler-syntax-error          ,0x0000 # 152, FOR
+    #    .word token-not-impl                ,0x0014 # 153, GETKEY
+    #    .word handler-syntax-error          ,0x0000 # 154, GOSUB
+    #    .word handler-syntax-error          ,0x0000 # 155, GOTO
+    #    .word token-not-impl                ,0x1014 # 156, HEX
+    #    .word handler-syntax-error          ,0x0000 # 157, HOME
+    #    .word handler-syntax-error          ,0x0000 # 158, IF
+    #    .word handler-syntax-error          ,0x0000 # 159, INPUT
+    #    .word token-not-impl                ,0x1014 # 160, INT
+    #    .word handler-in-expr               ,0x1014 # 161, IN
+    #    .word token-not-impl                ,0x3014 # 162, LEFT
+    #    .word token-not-impl                ,0x1014 # 163, LEN
+    #    .word handler-syntax-error          ,0x0000 # 164, LIST
+    #    .word handler-syntax-error          ,0x0000 # 165, LOAD
+    #    .word token-not-impl                ,0x1014 # 166, LOG
+    #    .word handler-syntax-error          ,0x0000 # 167, LOOP
+    #    .word token-not-impl                ,0x3014 # 168, MID
+    #    .word handler-syntax-error          ,0x0000 # 169, NEW
+    #    .word handler-syntax-error          ,0x0000 # 170, NEXT
+    #    .word token-not-impl                ,0x1F11 # 171, NOT (right assoc)
+    #    .word handler-syntax-error          ,0x0000 # 172, ON
+    #    .word handler-syntax-error          ,0x0000 # 173, OPEN
+    #    .word token-not-impl                ,0x2005 # 174, OR
+    #    .word handler-syntax-error          ,0x0000 # 175, OUT
+    #    .word handler-peek-expr             ,0x2014 # 176, PEEK
+    #    .word handler-syntax-error          ,0x0000 # 177, POKE
+    #    .word handler-syntax-error          ,0x0000 # 178, PRINT
+    #    .word handler-syntax-error          ,0x0000 # 179, READ
+    #    .word token-not-impl                ,0x0000 # 180, REM
+    #    .word handler-syntax-error          ,0x0000 # 181, RETURN
+    #    .word token-not-impl                ,0x3014 # 182, RIGHT
+    #    .word handler-rnd-expr              ,0x1014 # 183, RND
+    #    .word handler-syntax-error          ,0x0000 # 184, RENAME
+    #    .word handler-syntax-error          ,0x0000 # 185, REMOVE
+    #    .word handler-syntax-error          ,0x0000 # 186, RESTORE
+    #    .word handler-syntax-error          ,0x0000 # 187, RUN
+    #    .word handler-syntax-error          ,0x0000 # 188, SAVE
+    #    .word token-not-impl                ,0x1014 # 189, SGN
+    #    .word token-not-impl                ,0x1014 # 190, SIN
+    #    .word token-not-impl                ,0x1014 # 191, SPC
+    #    .word token-not-impl                ,0x1014 # 192, SQR
+    #    .word handler-syntax-error          ,0x0000 # 193, STEP
+    #    .word handler-syntax-error          ,0x0000 # 194, STOP
+    #    .word token-not-impl                ,0x1014 # 195, STR
+    #    .word token-not-impl                ,0x1014 # 196, TAB
+    #    .word token-not-impl                ,0x1014 # 197, TAN
+    #    .word handler-syntax-error          ,0x0000 # 198, THEN
+    #    .word handler-syntax-error          ,0x0000 # 199, TO
+    #    .word handler-syntax-error          ,0x0000 # 200, UNTIL
+    #    .word token-not-impl                ,0x1014 # 201, USR
+    #    .word token-not-impl                ,0x1014 # 202, VAL
+    #    .word handler-syntax-error          ,0x0000 # 203, WHILE
+    #    .word handler-add-expr              ,0x200E # 204, +  
+    #    .word handler-sub-expr              ,0x200E # 205, -  
+    #    .word handler-mul-expr              ,0x200F # 206, *
+    #    .word handler-div-expr              ,0x200F # 207, /
+    #    .word handler-mod-expr              ,0x200F # 208, %
+    #    .word token-not-impl                ,0x2F10 # 209, ^        right associative
+    #    .word handler-neq-expr              ,0x200B # 210, <>, !=
+    #    .word handler-lte-expr              ,0x200C # 211, <=
+    #    .word handler-gte-expr              ,0x200C # 212, >=
+    #    .word handler-lt-expr               ,0x200C # 213, <
+    #    .word handler-gt-expr               ,0x200C # 214, >
+    #    .word handler-equ-expr              ,0x200B # 215, =
+    #    .word 0xFFFE                        ,0x0015 # 216, (
+    #    .word 0xFFFF                        ,0x0015 # 217, )
+    #    .word token-not-impl                ,0x0014 # 218, [
+    #    .word token-not-impl                ,0x0014 # 219, ]
+    #    .word token-not-impl                ,0x00FF # 220, :
+    #    .word token-not-impl                ,0x1014 # 221, LOWER
+    #    .word token-not-impl                ,0x1014 # 222, UPPER
+    #    .word handler-syntax-error          ,0x0000 # 223, LET
+    #    .word token-not-impl                ,0x0001 # 224, COMMA
+    #    .word token-not-impl                ,0x0001 # 225, SEMICOLON
+    #    .word token-not-impl                ,0x2014 # 226, CHRS$
+    #    .word handler-neg-expr              ,0x1011 # 227, Unary -
+    #    .word token-not-impl                ,0x0000 # 228
+    #    .word token-not-impl                ,0x0000 # 229
+    #    .word token-not-impl                ,0x0000 # 230
+    #    .word token-not-impl                ,0x0000 # 231
+    #    .word token-not-impl                ,0x0000 # 232
+    #    .word token-not-impl                ,0x0000 # 233
+    #    .word token-not-impl                ,0x0000 # 234
+    #    .word token-not-impl                ,0x0000 # 235
+    #    .word token-not-impl                ,0x0000 # 236
+    #    .word token-not-impl                ,0x0000 # 237
+    #    .word token-not-impl                ,0x0000 # 238
+    #    .word token-not-impl                ,0x0000 # 239
+    #    .word token-not-impl                ,0x0000 # 240
+    #    .word token-not-impl                ,0x0000 # 241
+    #    .word token-not-impl                ,0x0000 # 242
+    #    .word token-not-impl                ,0x0000 # 243
+    #    .word token-not-impl                ,0x0000 # 244
+    #    .word token-not-impl                ,0x0000 # 245
+    #    .word token-not-impl                ,0x0000 # 246
+    #    .word token-not-impl                ,0x0000 # 247
+    #    .word token-not-impl                ,0x0000 # 248
+    #    .word token-not-impl                ,0x00FF # 249, TOK_REAL
+    #    .word token-not-impl                ,0x00FF # 250, TOK_VARIABLE
+    #    .word token-not-impl                ,0x00FF # 251, TOK_CODE_STRING
+    #    .word token-not-impl                ,0x00FF # 252, TOK_STRING
+    #    .word token-not-impl                ,0x00FF # 253, TOK_DWORD
+    #    .word token-not-impl                ,0x00FF # 254, TOK_WORD
+    #    .word token-not-impl                ,0x00FF # 255, TOK_BYTE
     #
     # EVAL is responsible for evaluating the current expression
     # 
