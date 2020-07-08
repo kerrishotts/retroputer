@@ -219,105 +219,105 @@
             _end-of-token-table: .byte constants.NUL
 
             token-vectors:
-               .word _abs-keyword
-               .word _and-keyword
-               .word _asc-keyword
-               .word _atn-keyword
-               .word _at-keyword
-               .word _call-keyword
-               .word _catalog-keyword
-               .word _chrs-keyword
-               .word _chr-keyword
-               .word _cls-keyword
-               .word _close-keyword
-               .word _continue-keyword
-               .word _cos-keyword
-               .word _data-keyword
-               .word _deffn-keyword
-               .word _defsub-keyword
-               .word _dim-keyword
-               .word _do-keyword
-               .word _elseif-keyword
-               .word _else-keyword
-               .word _endsub-keyword
-               .word _endfn-keyword
-               .word _endif-keyword
-               .word _end-keyword
-               .word _exp-keyword
-               .word _for-keyword
-               .word _getkey-keyword
-               .word _gosub-keyword
-               .word _goto-keyword
-               .word _hex-keyword
-               .word _home-keyword
-               .word _if-keyword
-               .word _input-keyword
-               .word _int-keyword
-               .word _in-keyword
-               .word _left-keyword
-               .word _len-keyword
-               .word _let-keyword
-               .word _list-keyword
-               .word _load-keyword
-               .word _log-keyword
-               .word _loop-keyword
-               .word _lower-keyword
-               .word _mid-keyword
-               .word _new-keyword
-               .word _next-keyword
-               .word _not-keyword
-               .word _on-keyword
-               .word _open-keyword
-               .word _or-keyword
-               .word _out-keyword
-               .word _peek-keyword
-               .word _poke-keyword
-               .word _print-keyword
-               .word _read-keyword
-               .word _rem-keyword
-               .word _return-keyword
-               .word _right-keyword
-               .word _rnd-keyword
-               .word _rename-keyword
-               .word _remove-keyword
-               .word _restore-keyword
-               .word _run-keyword
-               .word _save-keyword
-               .word _sgn-keyword
-               .word _sin-keyword
-               .word _spc-keyword
-               .word _sqr-keyword
-               .word _step-keyword
-               .word _stop-keyword
-               .word _str-keyword
-               .word _tab-keyword
-               .word _tan-keyword
-               .word _then-keyword
-               .word _to-keyword
-               .word _until-keyword
-               .word _upper-keyword
-               .word _usr-keyword
-               .word _val-keyword
-               .word _while-keyword
-               .word _add-keyword
-               .word _sub-keyword
-               .word _neg-keyword
-               .word _mul-keyword
-               .word _div-keyword
-               .word _mod-keyword
-               .word _pow-keyword
-               .word _neq-keyword
-               .word _lte-keyword
-               .word _gte-keyword
-               .word _lt-keyword
-               .word _gt-keyword
-               .word _equ-keyword
-               .word _lpar-keyword
-               .word _rpar-keyword
-               .word _lbracket-keyword
-               .word _rbracket-keyword
-               .word _comma-keyword
-               .word _semicolon-keyword
-               .word _end_of_stmt-keyword
+               .word _abs-keyword, 0b0000000000000001
+               .word _and-keyword, 0b0000000000000100
+               .word _asc-keyword, 0b0000000000000001
+               .word _atn-keyword, 0b0000000000000001
+               .word _at-keyword, 0b0000000000000010
+               .word _call-keyword, 0b0000000000000010
+               .word _catalog-keyword, 0b0000000000000010
+               .word _chrs-keyword, 0b0000000000000001
+               .word _chr-keyword, 0b0000000000000001
+               .word _cls-keyword, 0b0000000000000010
+               .word _close-keyword, 0b0000000000000010
+               .word _continue-keyword, 0b0000000000000010
+               .word _cos-keyword, 0b0000000000000001
+               .word _data-keyword, 0b0000000000000010
+               .word _deffn-keyword, 0b0100000000000010
+               .word _defsub-keyword, 0b0100000000000010
+               .word _dim-keyword, 0b0000000000000010
+               .word _do-keyword, 0b0100000000000010
+               .word _elseif-keyword, 0b1100000000000010
+               .word _else-keyword, 0b1100000000000010
+               .word _endsub-keyword, 0b1000000000000010
+               .word _endfn-keyword, 0b1000000000000010
+               .word _endif-keyword, 0b1000000000000010
+               .word _end-keyword, 0b0000000000000010
+               .word _exp-keyword, 0b0000000000000001
+               .word _for-keyword, 0b0100000000000010
+               .word _getkey-keyword, 0b0000000000000001
+               .word _gosub-keyword, 0b0000000000000010
+               .word _goto-keyword, 0b0000000000000010
+               .word _hex-keyword, 0b0000000000000001
+               .word _home-keyword, 0b0000000000000010
+               .word _if-keyword, 0b0000000000000010
+               .word _input-keyword, 0b0000000000000010
+               .word _int-keyword, 0b0000000000000001
+               .word _in-keyword, 0b0000000000000001
+               .word _left-keyword, 0b0000000000000001
+               .word _len-keyword, 0b0000000000000001
+               .word _let-keyword, 0b0000000000000010
+               .word _list-keyword, 0b0000000000000010
+               .word _load-keyword, 0b0000000000000010
+               .word _log-keyword, 0b0000000000000001
+               .word _loop-keyword, 0b1000000000000010
+               .word _lower-keyword, 0b0000000000000001
+               .word _mid-keyword, 0b0000000000000001
+               .word _new-keyword, 0b0000000000000010
+               .word _next-keyword, 0b1000000000000010
+               .word _not-keyword, 0b0000000000000100
+               .word _on-keyword, 0b0000000000000010
+               .word _open-keyword, 0b0000000000000010
+               .word _or-keyword, 0b0000000000000100
+               .word _out-keyword, 0b0000000000000010
+               .word _peek-keyword, 0b0000000000000001
+               .word _poke-keyword, 0b0000000000000010
+               .word _print-keyword, 0b0000000000000010
+               .word _read-keyword, 0b0000000000000010
+               .word _rem-keyword, 0b0000000000000010
+               .word _return-keyword, 0b0000000000000010
+               .word _right-keyword, 0b0000000000000001
+               .word _rnd-keyword, 0b0000000000000001
+               .word _rename-keyword, 0b0000000000000010
+               .word _remove-keyword, 0b0000000000000010
+               .word _restore-keyword, 0b0000000000000010
+               .word _run-keyword, 0b0000000000000010
+               .word _save-keyword, 0b0000000000000010
+               .word _sgn-keyword, 0b0000000000000001
+               .word _sin-keyword, 0b0000000000000001
+               .word _spc-keyword, 0b0000000000000001
+               .word _sqr-keyword, 0b0000000000000001
+               .word _step-keyword, 0b0000000000000010
+               .word _stop-keyword, 0b0000000000000010
+               .word _str-keyword, 0b0000000000000001
+               .word _tab-keyword, 0b0000000000000001
+               .word _tan-keyword, 0b0000000000000001
+               .word _then-keyword, 0b0110000000000010
+               .word _to-keyword, 0b0000000000000010
+               .word _until-keyword, 0b1000000000000010
+               .word _upper-keyword, 0b0000000000000001
+               .word _usr-keyword, 0b0000000000000001
+               .word _val-keyword, 0b0000000000000001
+               .word _while-keyword, 0b1000000000000001
+               .word _add-keyword, 0b0000000000000100
+               .word _sub-keyword, 0b0000000000000100
+               .word _neg-keyword, 0b0000000000000100
+               .word _mul-keyword, 0b0000000000000100
+               .word _div-keyword, 0b0000000000000100
+               .word _mod-keyword, 0b0000000000000100
+               .word _pow-keyword, 0b0000000000000100
+               .word _neq-keyword, 0b0000000000000100
+               .word _lte-keyword, 0b0000000000000100
+               .word _gte-keyword, 0b0000000000000100
+               .word _lt-keyword, 0b0000000000000100
+               .word _gt-keyword, 0b0000000000000100
+               .word _equ-keyword, 0b0000000000000100
+               .word _lpar-keyword, 0b0000000000001000
+               .word _rpar-keyword, 0b0000000000001000
+               .word _lbracket-keyword, 0b0000000000001000
+               .word _rbracket-keyword, 0b0000000000001000
+               .word _comma-keyword, 0b0000000000001000
+               .word _semicolon-keyword, 0b0000000000001000
+               .word _end_of_stmt-keyword, 0b0000000000001000
 
 }
