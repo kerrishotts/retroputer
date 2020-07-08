@@ -46,14 +46,7 @@
         and al, 0b0000_0001
         cmp al, 0x00
         if !z {
-            in al, 0x3A
-            and al, 0b0000_0010                  # is user holding GR?
-            cmp al, 0x00
-            if !z {
-                br kmemmap.user.start            # yes, jump to user code
-            } else {
-                br kmemmap.monitor.code-start    # shift only, start the monitor
-            }
+            br kmemmap.user.start                # yes, jump to user code
         } else {
             br kmemmap.basic.code-start          # otherwise, start BASIC
         }

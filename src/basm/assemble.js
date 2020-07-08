@@ -260,26 +260,55 @@ function tryToAssemble(node, context, pc, fail = false) {
         err(`Tried to assemble an unexpected token: ${node}`);
     }
 
-    let { op, dest, source, reg, addr, flag, imm, x, y, i, m } = node;
+    let { op, dest, source, reg, addr, flag, imm, x, y, i, m, bankReg, offsReg } = node;
 
 
     try {
-    let evalParts = 
-    [dest, source, reg, flag, imm].map(n => {
-        if ((n !== undefined && n !== null) && n.type === TOKENS.MACRO_EXPANSION) return evaluate(n, context);
-        return n;
-    });
-    //console.info(node, evalParts);
-    [dest, source, reg, flag, imm] = evalParts;
-    } catch (err) {
-        //console.error(err.message);
-    }
+        let evalParts = [dest, source, reg, flag, imm, bankReg, offsReg].map(n => {
+            if ((n !== undefined && n !== null) && n.type === TOKENS.MACRO_EXPANSION) return evaluate(n, context);
+            return n;
+        });
+        [dest, source, reg, flag, imm, bankReg, offsReg] = evalParts;
+    } catch (err) { }
 
     let size = 0,
         bytes = [];
 
     try {
         switch (op) {
+            case OPCODES.FCLR:   size = 2; bytes.push(0xAE, 0x00); break;
+            case OPCODES.FADD:   size = 2; bytes.push(0xAE, 0x10); break;
+            case OPCODES.FSUB:   size = 2; bytes.push(0xAE, 0x11); break;
+            case OPCODES.FCMP:   size = 2; bytes.push(0xAE, 0x12); break;
+            case OPCODES.FMUL:   size = 2; bytes.push(0xAE, 0x13); break;
+            case OPCODES.FMOD:   size = 2; bytes.push(0xAE, 0x14); break;
+            case OPCODES.FDIV:   size = 2; bytes.push(0xAE, 0x15); break;
+            case OPCODES.FPOW:   size = 2; bytes.push(0xAE, 0x16); break;
+            case OPCODES.FSQRT:  size = 2; bytes.push(0xAE, 0x17); break;
+            case OPCODES.FNEG:   size = 2; bytes.push(0xAE, 0x18); break;
+            case OPCODES.FEXC:   size = 2; bytes.push(0xAE, 0x19); break;
+            case OPCODES.FINT:   size = 2; bytes.push(0xAE, 0x1A); break;
+            case OPCODES.FABS:   size = 2; bytes.push(0xAE, 0x1B); break;
+            case OPCODES.FSIN:   size = 2; bytes.push(0xAE, 0x20); break;
+            case OPCODES.FCOS:   size = 2; bytes.push(0xAE, 0x21); break;
+            case OPCODES.FTAN:   size = 2; bytes.push(0xAE, 0x22); break;
+            case OPCODES.FASIN:  size = 2; bytes.push(0xAE, 0x24); break;
+            case OPCODES.FACOS:  size = 2; bytes.push(0xAE, 0x25); break;
+            case OPCODES.FATAN:  size = 2; bytes.push(0xAE, 0x26); break;
+            case OPCODES.FISNAN: size = 2; bytes.push(0xAE, 0x30); break;
+            case OPCODES.FISINF: size = 2; bytes.push(0xAE, 0x31); break;
+            case OPCODES.FLOG2:  size = 2; bytes.push(0xAE, 0x32); break;
+            case OPCODES.FLOG10: size = 2; bytes.push(0xAE, 0x33); break;
+            case OPCODES.FLD0:   size = 2; bytes.push(0xAE, 0x70); break;
+            case OPCODES.FLD1:   size = 2; bytes.push(0xAE, 0x71); break;
+            case OPCODES.FLDE:   size = 2; bytes.push(0xAE, 0x72); break;
+            case OPCODES.FLDPI:  size = 2; bytes.push(0xAE, 0x73); break;
+            case OPCODES.FLDR:   size = 3; bytes.push(0xAE, 0x80, reg); break;
+            case OPCODES.FLDM:   size = 3; bytes.push(0xAE, 0x81, (bankReg << 4) | offsReg); break;
+            case OPCODES.FLDIM:  size = 3; bytes.push(0xAE, 0x82, (bankReg << 4) | offsReg); break;
+            case OPCODES.FSTR:   size = 3; bytes.push(0xAE, 0x84, reg); break;
+            case OPCODES.FSTM:   size = 3; bytes.push(0xAE, 0x85, (bankReg << 4) | offsReg); break;
+            case OPCODES.FSTIM:  size = 3; bytes.push(0xAE, 0x86, (bankReg << 4) | offsReg); break;
             case OPCODES.NOP: size = 1; bytes.push(0x00); break;
             case OPCODES.HALT: size = 1; bytes.push(0x3E); break;
             case OPCODES.BRK: size = 1; bytes.push(0x3F); break;

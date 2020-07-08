@@ -85,6 +85,39 @@
         DEC: "dec",
         HALT: "halt",
         WAIT: "wait",
+        FCLR:   "fclr",
+        FLDR:   "fldr",
+        FLDM:   "fldm",
+        FLDIM:  "fldim",
+        FSTR:   "fstr",
+        FSTM:   "fstm",
+        FSTIM:  "fstim",
+        FADD:   "fadd",
+        FSUB:   "fsub",
+        FCMP:   "fcmp",
+        FMUL:   "fmul",
+        FDIV:   "fdiv",
+        FMOD:   "fmod",
+        FPOW:   "fpow",
+        FSQRT:  "fsqrt",
+        FABS:   "fabs",
+        FSIN:   "fsin",
+        FCOS:   "fcos",
+        FTAN:   "ftan",
+        FASIN:  "fasin",
+        FACOS:  "facos",
+        FATAN:  "fatan",
+        FNEG:   "fneg",
+        FEXC:   "fexc",
+        FINT:   "fint",
+        FISNAN: "fisnan",
+        FISINF: "fisinf",
+        FLOG2:  "flog2",
+        FLOG10: "flog10",
+        FLD0:   "fld0",
+        FLD1:   "fld1",
+        FLDE:   "flde",
+        FLDPI:  "fldpi",
     };
 
     const DIRECTIVES = {
@@ -752,7 +785,7 @@ iSDIV "Signed Divide Instruction"
 = op:SDIV _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / SDIV _ Register _ COMMA _ Expression { expectedRegister() }
 
-iSMUL "Singed Multiply Instruction"
+iSMUL "Signed Multiply Instruction"
 = op:SMUL _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
 / SMUL _ Register _ COMMA _ Expression { expectedRegister() }
 
@@ -804,6 +837,43 @@ iINC "Increment Instruction" = op:INC _ reg:Register { return tInstruction(op, {
 iDEC "Decrement Instruction" = op:DEC _ reg:Register { return tInstruction(op, {reg}); }
 iPUSH "Push Instruction"     = op:PUSH _ reg:Register { return tInstruction(op, {reg}); }
 iPOP "Pop Instruction"       = op:POP _ reg:Register { return tInstruction(op, {reg}); }
+
+//
+// Floating Point Instructions
+////////////////////////////////////////
+iFCLR    "FP Clear"                 = op:FCLR   { return tInstruction(op); }
+iFLDR    "FP Load Register"         = op:FLDR _ reg:Register  { return tInstruction(op, {reg}); }
+iFLDM    "FP Load Memory"           = op:FLDM _ addr:FPAbsolute { return tInstruction(op, {bankReg: addr.bank, offsReg: addr.offs, immediate: addr.immediate}); }
+iFLDIM   "FP Load Indirect"         = op:FLDIM _ addr:FPIndirect  { return tInstruction(op, {bankReg: addr.bank, offsReg: addr.offs, immediate: addr.immediate}); }
+iFSTR    "FP Store Register"        = op:FSTR _ reg:Register  { return tInstruction(op, {reg}); }
+iFSTM    "FP Store Memory"          = op:FSTM _ addr:FPAbsolute { return tInstruction(op, {bankReg: addr.bank, offsReg: addr.offs, immediate: addr.immediate}); }
+iFSTIM   "FP Store Indirect"        = op:FSTIM _ addr:FPIndirect  { return tInstruction(op, {bankReg: addr.bank, offsReg: addr.offs, immediate: addr.immediate}); }
+iFADD    "FP Add"                   = op:FADD   { return tInstruction(op); }
+iFSUB    "FP Subtract"              = op:FSUB   { return tInstruction(op); }
+iFCMP    "FP Compare"               = op:FCMP   { return tInstruction(op); }
+iFMUL    "FP Multiply"              = op:FMUL   { return tInstruction(op); }
+iFMOD    "FP Modulo"                = op:FMOD   { return tInstruction(op); }
+iFDIV    "FP Divide"                = op:FDIV   { return tInstruction(op); }
+iFABS    "FP Absolute Value"        = op:FABS   { return tInstruction(op); }
+iFPOW    "FP Power"                 = op:FPOW   { return tInstruction(op); }
+iFSQRT   "FP Square Root"           = op:FSQRT  { return tInstruction(op); }
+iFSIN    "FP Sine"                  = op:FSIN   { return tInstruction(op); }
+iFCOS    "FP Cosine"                = op:FCOS   { return tInstruction(op); }
+iFTAN    "FP Tangent"               = op:FTAN   { return tInstruction(op); }
+iFASIN   "FP Arc Sine"              = op:FASIN  { return tInstruction(op); }
+iFACOS   "FP Arc Cosine"            = op:FACOS  { return tInstruction(op); }
+iFATAN   "FP Arc Tangent"           = op:FATAN  { return tInstruction(op); }
+iFNEG    "FP Negate"                = op:FNEG   { return tInstruction(op); }
+iFEXC    "FP Exchange"              = op:FEXC   { return tInstruction(op); }
+iFINT    "FP To Int"                = op:FINT   { return tInstruction(op); }
+iFISNAN  "FP Is NaN"                = op:FISNAN { return tInstruction(op); }
+iFISINF  "FP Is Infinite"           = op:FISINF { return tInstruction(op); }
+iFLOG2   "FP Log 2"                 = op:FLOG2  { return tInstruction(op); }
+iFLOG10  "FP Log 10"                = op:FLOG10 { return tInstruction(op); }
+iFLD0    "FP Load 0"                = op:FLD0   { return tInstruction(op); }
+iFLD1    "FP Load 1"                = op:FLD1   { return tInstruction(op); }
+iFLDE    "FP Load E"                = op:FLDE   { return tInstruction(op); }
+iFLDPI   "FP Load Pi"               = op:FLDPI  { return tInstruction(op); }
 
 //
 // Keyword Definitions
@@ -858,6 +928,41 @@ TEST  "Test"          = "TEST"i !IdentifierPart { return OPCODES.TEST; }
 TRAP  "Trap"          = "TRAP"i !IdentifierPart { return OPCODES.TRAP; }
 WAIT  "Wait"          = "WAIT"i !IdentifierPart { return OPCODES.WAIT; }
 XOR   "Exclusive Or"  = "XOR"i !IdentifierPart { return OPCODES.XOR; }
+
+FCLR    "FP Clear"      = "FCLR"i   !IdentifierPart { return OPCODES.FCLR; }
+FLDR    "FP Load Reg"   = "FLDR"i   !IdentifierPart { return OPCODES.FLDR; }
+FLDM    "FP Load Memory"= "FLDM"i   !IdentifierPart { return OPCODES.FLDM; }
+FLDIM   "FP Load Indir."= "FLDIM"i  !IdentifierPart { return OPCODES.FLDIM; }
+FSTR    "FP Store Reg"  = "FSTR"i   !IdentifierPart { return OPCODES.FSTR; }
+FSTM    "FP Store Mem"  = "FSTM"i   !IdentifierPart { return OPCODES.FSTM; }
+FSTIM   "FP Store Indir"= "FSTIM"i  !IdentifierPart { return OPCODES.FSTIM; }
+FADD    "FP Add"        = "FADD"i   !IdentifierPart { return OPCODES.FADD; }
+FSUB    "FP Subtract"   = "FSUB"i   !IdentifierPart { return OPCODES.FSUB; }
+FCMP    "FP Compare"    = "FCMP"i   !IdentifierPart { return OPCODES.FCMP; }
+FMUL    "FP Multiply"   = "FMUL"i   !IdentifierPart { return OPCODES.FMUL; }
+FDIV    "FP Divide"     = "FDIV"i   !IdentifierPart { return OPCODES.FDIV; }
+FMOD    "FP Modulo"     = "FMOD"i   !IdentifierPart { return OPCODES.FMOD; }
+FPOW    "FP Power"      = "FPOW"i   !IdentifierPart { return OPCODES.FPOW; }
+FSQRT   "FP Square Root"= "FSQRT"i  !IdentifierPart { return OPCODES.FSQRT; }
+FABS    "FP ABS"        = "FABS"i   !IdentifierPart { return OPCODES.FABS; }
+FSIN    "FP Sine"       = "FSIN"i   !IdentifierPart { return OPCODES.FSIN; }
+FCOS    "FP Cosine"     = "FCOS"i   !IdentifierPart { return OPCODES.FCOS; }
+FTAN    "FP Tangent"    = "FTAN"i   !IdentifierPart { return OPCODES.FTAN; }
+FASIN   "FP Arc Sine"   = "FASIN"i  !IdentifierPart { return OPCODES.FASIN; }
+FACOS   "FP Arc Cosine" = "FACOS"i  !IdentifierPart { return OPCODES.FACOS; }
+FATAN   "FP Arc Tangent"= "FATAN"i  !IdentifierPart { return OPCODES.FATAN; }
+FNEG    "FP Negate"     = "FNEG"i   !IdentifierPart { return OPCODES.FNEG; }
+FEXC    "FP Exchange"   = "FEXC"i   !IdentifierPart { return OPCODES.FEXC; }
+FINT    "FP To Int"     = "FINT"i   !IdentifierPart { return OPCODES.FINT; }
+FISNAN  "FP Is NaN"     = "FISNAN"i !IdentifierPart { return OPCODES.FISNAN; }
+FISINF  "FP Is Infinite"= "FISINF"i !IdentifierPart { return OPCODES.FISINF; }
+FLOG2   "FP Log 2"      = "FLOG2"i  !IdentifierPart { return OPCODES.FLOG2; }
+FLOG10  "FP Log 10"     = "FLOG10"i !IdentifierPart { return OPCODES.FLOG10; }
+FLD0    "FP Load 0"     = "FLD0"i   !IdentifierPart { return OPCODES.FLD0; }
+FLD1    "FP Load 1"     = "FLD1"i   !IdentifierPart { return OPCODES.FLD1; }
+FLDE    "FP Load E"     = "FLDE"i   !IdentifierPart { return OPCODES.FLDE; }
+FLDPI   "FP Load PI"    = "FLDPi"i  !IdentifierPart { return OPCODES.FLDPI; }
+
 IF    "IF"            = "IF"i !IdentifierPart { return "IF"; }
 ELSE  "ELSE"          = "ELSE"i !IdentifierPart { return "ELSE"; }
 DO    "DO"            = "DO"i !IdentifierPart { return "DO"; }
@@ -892,6 +997,14 @@ Keyword "Keyword"
 / WAIT / HALT
 / Function
 / DirectiveKeywords
+/ FloatingPointKeyword
+
+FloatingPointKeyword "Floating Point Keyword"
+= FCLR / FLDR / FLDM / FLDIM / FSTR / FSTM / FSTIM
+/ FADD / FSUB / FCMP / FMUL / FMOD / FDIV / FPOW / FSQRT
+/ FABS / FSIN / FCOS / FTAN / FASIN / FACOS / FATAN
+/ FNEG / FEXC / FINT / FISNAN / FISINF / FLOG2 / FLOG10
+/ FLD0 / FLD1 / FLDE / FLDPI
 
 Function "Function"
 = ADDRBANK / ADDRBOFS / ADDRPAGE / ADDRPOFS
@@ -1056,6 +1169,17 @@ BranchAddressingMode "Branch Addressing Mode"
 / Absolute18
 / Indirect18
 // / Identifier
+
+FPAbsolute "Floating Point Absolute Mode"
+= LBRACKET _ bank:Register _ offs:Register _ RBRACKET { return {indirect: false, bank, offs}; }
+
+FPIndirect "Floating Point Indirect Mode"
+= LANGLE _ bank:Register _ offs:Register _ RANGLE { return {indirect: false, bank, offs}; }
+
+FPAddressingMode "Floating Point Addressing Mode"
+= MacroExpansion
+/ FPAbsolute
+/ FPIndirect
 
 
 //

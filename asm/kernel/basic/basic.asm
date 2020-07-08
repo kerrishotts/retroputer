@@ -44,7 +44,6 @@
                                                 #         31:30 = type (0=FOR, 1=GOSUB, 2=CALL) 
                                                 #         29:16 = variable (for FOR)
                                                 #         15:0  = line number to return to
-        expr-area:           .byte[256]         # (0x100) Area for evaluating expressions
 
         # 0x300 bytes remaining for non-array data
         forsub-stack-ptr:    .byte 0            # pointer into forsub stack
@@ -62,13 +61,20 @@
         param-types:         .byte[10]          # tracks the types of each parameter on the queue
         params:              .byte[80]          # Up to 10 parameters (8 bytes)
 
-        accumulator-token:   .byte 0            # current accumulator type
-        accumulator:         .word 0, 0, 0, 0   # current accumulator value (or ptr, if string)
-
-        operand-token:       .byte 0            # second operand type
-        operand:             .word 0, 0, 0, 0   # value of second operand
-
         itoa-buffer:         .byte[32]          # buffer for int-to-string ops
+
+        list-options:
+          highlight:         .byte 1            # if !0, use syntax highlighting
+          indent:            .byte 1            # if !0, enable block indentation
+          list-colors:
+            linenum-color:   .byte constants.LINENUM_COLOR
+            function-color:  .byte constants.FUNCTION_COLOR
+            operator-color:  .byte constants.OPERATOR_COLOR
+            grouping-color:  .byte constants.GROUPING_COLOR
+            command-color:   .byte constants.COMMAND_COLOR
+            number-color:    .byte constants.NUMBER_COLOR 
+            string-color:    .byte constants.STRING_COLOR 
+            variable-color:  .byte constants.VARIABLE_COLOR
 
 
         # some self-modifying code lives here too :-/
@@ -111,6 +117,9 @@
         .import "./handlers/fn.asm"
         .import "./handlers/stmt.asm"
 
+        .import "./expr-tokens.asm"
+        .import "./stmt-tokens.asm"
+
         .import "./eval.asm"
         .import "./exec.asm"
 
@@ -146,6 +155,29 @@
             x := brodata.welcome & 7
             call [vectors.PRINT]
             call new
+            call init-list-options
+            ret
+        }
+
+        init-list-options: {
+            dl := 1
+            [bdata.indent] := dl
+            dl := constants.LINENUM_COLOR
+            [bdata.linenum-color] := dl
+            dl := constants.FUNCTION_COLOR
+            [bdata.function-color] := dl
+            dl := constants.OPERATOR_COLOR
+            [bdata.operator-color] := dl
+            dl := constants.GROUPING_COLOR
+            [bdata.grouping-color] := dl
+            dl := constants.NUMBER_COLOR
+            [bdata.number-color] := dl
+            dl := constants.STRING_COLOR
+            [bdata.string-color] := dl
+            dl := constants.VARIABLE_COLOR
+            [bdata.variable-color] := dl
+            dl := constants.COMMAND_COLOR
+            [bdata.command-color] := dl
             ret
         }
 

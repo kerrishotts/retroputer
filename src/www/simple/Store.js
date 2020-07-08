@@ -226,7 +226,7 @@ export class Store {
             },
             options: {
                 timingMethod: TIMING_METHODS.FIXED,
-                sliceGranularity: 4096,
+                sliceGranularity: 16384,
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",
                 useGL: true,

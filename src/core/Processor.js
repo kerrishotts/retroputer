@@ -1,4 +1,5 @@
 import { ALU } from "./ALU.js";
+import { FPU } from "./FPU.js";
 import { Memory } from "./Memory.js";
 import { Bus } from "./Bus.js";
 import { SystemBus } from "./SystemBus.js";
@@ -9,6 +10,7 @@ import { decodeInstruction, necessaryBytesForInstruction } from "../isa/decodeIn
 import { executeTask } from "../isa/tasks.js";
 
 const _alu = Symbol("_alu");
+const _fpu = Symbol("_fpu");
 const _registerFile = Symbol("_registerFile");
 
 const _controller = Symbol("_controller");
@@ -39,6 +41,7 @@ export class Processor {
      */
     constructor({memory, systemBus, ioBus, clock, debug = null} = {}) {
         this[_alu] = new ALU();
+        this[_fpu] = new FPU();
         this[_registerFile] = new RegisterFile();
 
         this[_memory] = memory;
@@ -76,6 +79,7 @@ export class Processor {
             stack: this[_stack],
             registerFile: this[_registerFile],
             alu: this[_alu],
+            fpu: this[_fpu],
             memory: this[_memory],
             ioBus: this[_ioBus]
         };
@@ -112,6 +116,8 @@ export class Processor {
      * @memberof Processor
      */
     get alu() { return this[_alu]; }
+
+    get fpu() { return this[_fpu]; }
 
     /**
      * @type {RegisterFile}

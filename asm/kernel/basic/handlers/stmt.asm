@@ -472,19 +472,23 @@
     #  TYPE MISMATCH                   Line numbers must be integers
     ###########################################################################
     handler-list: {
-        enter 0x04
+        enter 0x06
         .const start-line -2
         .const end-line -4
+        .const cur-indent -5
+        .const past-line-start -6
         push c
         push x
         push a
         push b
     _main:
+        call [vectors.GET_FG_COLOR]
+        push d
         c := 0
+        [bp+cur-indent] := cl               # default indent is also zero
+        [bp+past-line-start] := cl          # indicates if we are at the start of a line (if 0)
         [bp+start-line] := c                # default is to start at line 0
-        c := [bdata.maximum-line-number]    
-        inc c                               # our list algo isn't inclusive, so fake it
-        [bp+end-line] := c                  # default is to end at the highest we've seen
+        call _set-end-range-to-max
         call gettok                         # we want to see if the next token is
         cmp dl, 0                           # a number or not. This here means it
         if z {
@@ -510,6 +514,8 @@
             br _out
         }
         [bp+start-line] := c                # store 
+        inc c
+        [bp+end-line] := c                  # store end-of-line +1; a single start line is intended to list a single line
 
     _get-end:
         call gettok                         # we may be looking at the ending number
@@ -544,6 +550,9 @@
         c := [bp+start-line]
         d := [bp+end-line]
         do {
+            call bcode.checkbreak
+            br EX _break                        # If EXCEPTION, CTRL+C is pressed
+
             # is there a line to print?
             d := addrbank(kmemmap.basic.lptr-start)
             x := c
@@ -551,6 +560,9 @@
             a := [d, x]                         # read the line pointer
             cmp a, 0
             if !z {                             # we have something to print!
+                dl := [bdata.linenum-color]
+                call [vectors.SET_FG_COLOR]
+
                 push d
                 push x
                 b := 10                         # print the line number in base 10
@@ -560,11 +572,21 @@
                 pop x
                 pop d
 
+                bl := [bp+cur-indent]
                 dl := constants.SPACE
-                call [vectors.PUT_CHAR]         # space between line numbers
+                do {
+                    call [vectors.PUT_CHAR]         # space between line numbers
+                    dec bl
+                } while !n                
+
+                dl := 0
+                [bp+past-line-start] := dl      # we're at the start of the line
+
                 d := addrbank(kmemmap.basic.prog-start)
                 x := a                          # d,x is now pointing at our program code
-                al := [d, x]                    # read the token
+                a := [d, x]                     # read the token (plus one more)
+                bl := al                        # bl is next token
+                exc a                           # al is now first token (ah is garbage now)
                 do {
                     cmp al, 0b1000_0000         # ... but we might be a regular character
                     if n {
@@ -607,11 +629,89 @@
                         # it's a keyword -- look it up
                         push d
                         push x
+                        dl := [bdata.command-color]
+                        call [vectors.SET_FG_COLOR]
                         d := addrbank(brodata.token-vectors)
                         x := addrbofs(brodata.token-vectors)
-                        and al, 0b0111_1111     # lose the top bit
-                        shl al, 1
-                        add x, al               # x is pointing at the right token vector
+                        and a, 0b0111_1111      # lose the top bits
+                        shl a, 2                # * 4 (ptr to text, and skip over metadata)
+                        add x, a                # x is pointing at the right token vector
+                        inc x
+                        inc x
+                        a := [d, x]             # get metadata
+                        and a, 0b0000_0001      # is it a function?
+                        cmp a, 0b0000_0001
+                        if z {
+                            push d
+                            dl := [bdata.function-color]
+                            call [vectors.SET_FG_COLOR]
+                            pop d
+                        }
+                        a := [d, x]             # get metadata
+                        and a, 0b0000_0100      # is it an operator
+                        cmp a, 0b0000_0100
+                        if z {
+                            push d
+                            dl := [bdata.operator-color]
+                            call [vectors.SET_FG_COLOR]
+                            pop d
+                        }
+                        a := [d, x]             # get metadata
+                        and a, 0b0000_1000      # is it a group?
+                        cmp a, 0b0000_1000
+                        if z {
+                            push d
+                            dl := [bdata.grouping-color]
+                            call [vectors.SET_FG_COLOR]
+                            pop d
+                        }
+                        a := [d, x]             # get metadata
+                        and a, 0b0100_0000_0000_0000      # is it entering a block
+                        cmp a, 0b0100_0000_0000_0000
+                        if z {
+                            a := [d, x]             # get metadata
+                            and a, 0b0010_0000_0000_0000      # no trailing?
+                            cmp a, 0b0010_0000_0000_0000
+                            if z {
+                                cmp bl, 0
+                                br !z skip-indent
+                            }
+
+                            push d
+                            dl := [bdata.indent]
+                            al := [bp+cur-indent]
+                            clr c
+                            add al, dl
+                            [bp+cur-indent] := al
+                            pop d
+                        skip-indent:
+                        }
+                        a := [d, x]             # get metadata
+                        and a, 0b1000_0000_0000_0000      # is it leaving a block
+                        cmp a, 0b1000_0000_0000_0000
+                        if z {
+                            push d
+                            bl := [bp+past-line-start]
+                            cmp bl, 0
+                            if z {                          # de-dent, if at start of line
+                                bl := [bdata.indent]
+                                dec bl                      # do one less than our space between line number
+                                dl := constants.CURSOR_LEFT
+                                do {
+                                    call [vectors.PUT_CHAR]
+                                    dec bl
+                                } while !n
+                            }
+                            dl := [bdata.indent]
+                            al := [bp+cur-indent]
+                            clr c
+                            sub al, dl
+                            [bp+cur-indent] := al
+                            pop d
+                        }
+
+                        dec x
+                        dec x
                         x := [d, x]             # pointing at token in memory
                         call [vectors.PRINT]
                         pop x
@@ -620,13 +720,17 @@
                     _continue:
                     }
                     inc x
+                    al := 1
+                    [bp+past-line-start] := al  # we're now past the start
                     al := [d, x]                # read the next token
                     cmp al, 0                   
                 } while !z                      # end of line
 
+
                 push d 
                 dl := constants.CR
                 call [vectors.PUT_CHAR]         # print NEWLINE
+
 
                 # do we need to pause for a second?
                 in dl, 0x38                         # left SHIFT will be here
@@ -651,23 +755,35 @@
             cmp c, d
         } while n
 
+    _break:
         dl := 0                                 # no error
     _out:
+        cl := dl
+        pop d
+        call [vectors.SET_FG_COLOR]
+        dl := cl
         pop b
         pop a
         pop x
         pop c
-        exit 0x04
+        exit 0x06
+        ret
+    _set-end-range-to-max:
+        c := [bdata.maximum-line-number]    
+        inc c                               # our list algo isn't inclusive, so fake it
+        [bp+end-line] := c                  # default is to end at the highest we've seen
         ret
     _print-word:
         push b
         push c
         push d
         push x
+        dl := [bdata.number-color]
+        call [vectors.SET_FG_COLOR]
         LDPTR(d, x, bdata.itoa-buffer)          # have to convert to string
         c := a
-        call [vectors.U16_TO_STR]               # these are always unsigned
         b := 10
+        call [vectors.U16_TO_STR]               # these are always unsigned
         call [vectors.PRINT]                    # output in base 10
         pop x
         pop d
@@ -677,6 +793,8 @@
     _print-string:
         push x
         push d
+        dl := [bdata.string-color]
+        call [vectors.SET_FG_COLOR]
         dl := constants.QUOTE
         call [vectors.PUT_CHAR]                 # print the quote
         pop d
@@ -695,6 +813,10 @@
         ret
     _print-variable:
         # @todo: need to get the sigil so we can print it!
+        push d
+        dl := [bdata.variable-color]
+        call [vectors.SET_FG_COLOR]
+        pop d
         push b
         b := [d, x]                             # get the index so we can get sigil
         shr b, 14                               # only care about top two bits

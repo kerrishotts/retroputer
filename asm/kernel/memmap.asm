@@ -42,7 +42,7 @@
         # some variables to keep track of heaps and other things
         #######################################################################
         .const data-start       0x0B000 # BASIC scratch data
-        .const data-size        0x00800
+        .const data-size        0x01000
         #
         # Variable Storage
         #######################################################################
@@ -84,18 +84,18 @@
         #
         # BASIC Executable Code and read-only data (ROM)
         #######################################################################
-        .const code-start       0x7E000 # start of BASIC code
+        .const code-start       0x7D000 # start of BASIC code
         .const rodata-start     0x7A000 # basic-rodata
         .const rodata-size      0x02000
     }
 
-    .namespace monitor {
-        .const data-start       0x0B800 # monitor scratch data
-        .const data-size        0x00800
-        .const code-start       0x7D800 # start of monitor code
-        .const rodata-start     0x76000 # read only data for monitor
-        .const rodata-size      0x02000
-    }
+#    .namespace monitor {
+#        .const data-start       0x0B800 # monitor scratch data
+#        .const data-size        0x00800
+#        .const code-start       0x7D800 # start of monitor code
+#        .const rodata-start     0x76000 # read only data for monitor
+#        .const rodata-size      0x02000
+#    }
 
     .namespace screen {
         .const charmap-start    0x70000

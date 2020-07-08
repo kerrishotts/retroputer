@@ -1,4 +1,26 @@
 .segment __current__ kmemmap.basic.code-start .append {
+    checkbreak: {
+        enter 0
+        push d
+    _main:
+        clr EX
+        in dl, 0x38                             # Check for CTRL+C
+        and dl, 0b0000_1000
+        cmp dl, 0
+        if !z {                                 # Got CTRL
+            in dl, 0x3A
+            and dl, 0b0000_0100
+            cmp dl, 0b0000_0100
+            if z {                              # Got C
+                set EX
+            }
+        }
+    _out:
+        pop d
+        exit 0
+        ret
+    }
+
     #
     # Prints the error message (if any) specified by DL. If C is other than
     # zero, will also print C as a line number

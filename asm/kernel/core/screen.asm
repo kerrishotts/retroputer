@@ -846,6 +846,16 @@
             ret
         }
 
+        set-fg-color: {
+            [screen.kdata.cursor-fg] := dl
+            [screen.kdata.screen-text-fg] := dl
+            ret
+        }
+        get-fg-color: {
+            dl := [screen.kdata.screen-text-fg]
+            ret
+        }
+
         control-set-fg-color: {
             pushf
             push a
@@ -856,6 +866,16 @@
         _out:
             pop a
             popf
+            ret
+        }
+
+        set-bg-color: {
+            [screen.kdata.cursor-bg] := dl
+            [screen.kdata.screen-text-bg] := dl
+            ret
+        }
+        get-bg-color: {
+            dl := [screen.kdata.screen-text-bg]
             ret
         }
 
