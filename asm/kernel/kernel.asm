@@ -32,6 +32,10 @@
         SET_CURSOR_POS:              .word core.screen.kcode.set-cursor-pos
         GET_CURSOR_POS:              .word core.screen.kcode.get-cursor-pos
         GET_CURSOR_ADDR:             .word core.screen.kcode.get-cursor-addr
+        SET_FG_COLOR:                .word core.screen.kcode.set-fg-color
+        GET_FG_COLOR:                .word core.screen.kcode.get-fg-color
+        SET_BG_COLOR:                .word core.screen.kcode.set-bg-color
+        GET_BG_COLOR:                .word core.screen.kcode.get-bg-color
         CVT_ADDR_TO_POS:             .word core.screen.kcode.cvt-addr-to-pos
         GET_CHAR_UNDER_CURSOR:       .word core.screen.kcode.get-char-under-cursor
         GET_LOGICAL_LINE_START_ADDR: .word core.screen.kcode.get-logical-line-start-addr
@@ -45,12 +49,12 @@
         GET_CHAR:                    .word core.screen.kcode.get-char
         PRINT:                       .word core.screen.kcode.print
         INPUT:                       .word core.screen.kcode.input
-        U16_TO_STR:                  .word core.stdlib.kcode.u16-to-str
-        I16_TO_STR:                  .word core.stdlib.kcode.i16-to-str
-        STRCMP:                      .word core.stdlib.kcode.strcmp
         SHOW_CURSOR:                 .word core.screen.kcode.show-cursor
         HIDE_CURSOR:                 .word core.screen.kcode.hide-cursor
         PRINT_RAW:                   .word core.screen.kcode.print-raw
+        U16_TO_STR:                  .word core.stdlib.kcode.u16-to-str
+        I16_TO_STR:                  .word core.stdlib.kcode.i16-to-str
+        STRCMP:                      .word core.stdlib.kcode.strcmp
         STACK_PUSH:                  .word core.stdlib.kcode.stack-push
         STACK_POP:                   .word core.stdlib.kcode.stack-pop
         MAKE_HEAP:                   .word core.stdlib.kcode.make-heap 
@@ -58,7 +62,7 @@
         ALLOC:                       .word core.stdlib.kcode.alloc
     }
 
-    .import "./monitor/monitor.asm"
+#    .import "./monitor/monitor.asm"
     .import "./basic/basic.asm"
     
 #  .segment kcode kmemmap.kernel.code-start .append{
