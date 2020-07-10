@@ -1324,10 +1324,10 @@ Integer "Integer"
     { return tLiteral(toNumber(text())); }
 / "0b" head:[0-1] tail:[0-1_]*
     { return tLiteral(toNumber(text())); }
-/ head:[0-9A-Fa-f] tail:[0-9A-Fa-f_]* "h"
-    { return tLiteral(toNumber(text())); }
-/ head:[0-1] tail:[0-1_]* "b"
-    { return tLiteral(toNumber(text())); }
+// / head:[0-9A-Fa-f] tail:[0-9A-Fa-f_]* "h"
+//    { return tLiteral(toNumber(text())); }
+// / head:[0-1] tail:[0-1_]* "b"
+//    { return tLiteral(toNumber(text())); }
 / negative:"-"? head:[0-9] tail:[0-9_]*
     { return tLiteral(toNumber(text())); }
 
