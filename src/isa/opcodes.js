@@ -308,21 +308,21 @@ OPCODES["mov_ds"] = {
 
 // add, sub, cmp, and, or, test, xor
 [
-    ["add", TASKS.ADD, "0000_0001", "0100_1dd1", "0100_1dd0", COMMANDS.ADD, FLAGS_PUSH_AND_PULL],
-    ["sub", TASKS.SUB, "0000_0010", "0101_0dd1", "0101_0dd0", COMMANDS.SUB, FLAGS_PUSH_AND_PULL],
-    ["cmp", TASKS.CMP, "0000_0011", "0101_1dd1", "0101_1dd0", COMMANDS.SUB, FLAGS_PULL_FROM_ALU],
-    ["and", TASKS.AND, "0000_0100", "0110_0dd1", "0110_0dd0", COMMANDS.AND, FLAGS_PUSH_AND_PULL],
-    ["or", TASKS.OR, "0000_0101", "0110_1dd1", "0110_1dd0", COMMANDS.OR, FLAGS_PUSH_AND_PULL],
-    ["test", TASKS.TEST, "0000_0110", "0111_0dd1", "0111_0dd0", COMMANDS.TEST],    // TODO: incorrect; the alu doesn't support test ATM
-    ["xor", TASKS.XOR, "0000_0111", "0111_1dd1", "0111_1dd0", COMMANDS.XOR, FLAGS_PUSH_AND_PULL],
-].forEach(([opcode, task, ds, db, dw, command, flagHandling], idx) => {
+    ["add", TASKS.ADD, "0000_0001", "0100_1dd1", "0100_1dd0", COMMANDS.ADD, FLAGS_PUSH_AND_PULL, true],
+    ["sub", TASKS.SUB, "0000_0010", "0101_0dd1", "0101_0dd0", COMMANDS.SUB, FLAGS_PUSH_AND_PULL, true],
+    ["cmp", TASKS.CMP, "0000_0011", "0101_1dd1", "0101_1dd0", COMMANDS.SUB, FLAGS_PULL_FROM_ALU, false],
+    ["and", TASKS.AND, "0000_0100", "0110_0dd1", "0110_0dd0", COMMANDS.AND, FLAGS_PUSH_AND_PULL, true],
+    ["or", TASKS.OR, "0000_0101", "0110_1dd1", "0110_1dd0", COMMANDS.OR, FLAGS_PUSH_AND_PULL, true],
+    ["test", TASKS.AND, "0000_0110", "0111_0dd1", "0111_0dd0", COMMANDS.AND, FLAGS_PULL_FROM_ALU, false],
+    ["xor", TASKS.XOR, "0000_0111", "0111_1dd1", "0111_1dd0", COMMANDS.XOR, FLAGS_PUSH_AND_PULL, true],
+].forEach(([opcode, task, ds, db, dw, command, flagHandling, storeReturn], idx) => {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
         pattern: `${ds} dddd_ssss`,
         operands: { s: [3, 0], d: [7, 4] },
         description: `${opcode}s dest and source, storing result in dest`,
         flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
-        equiv: opcode==="cmp" ? (({d,s}, {registerFile, alu}) => {
+        equiv: (!storeReturn) ? (({d,s}, {registerFile, alu}) => {
             aluOp({alu, registerFile, 
                 command, 
                 op0: registerFile.getRegister(d), sz0: ((d & 0x01) ? SIZE_BYTE : SIZE_WORD), 
@@ -336,7 +336,7 @@ OPCODES["mov_ds"] = {
                 flagHandling}));
         }),
         decode: (
-            opcode === "cmp"
+            (!storeReturn)
                 ? ({ d = 0, s = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | d, // a
                     TASKS.GET_REGISTER_AND_PUSH | s, // b
@@ -356,7 +356,7 @@ OPCODES["mov_ds"] = {
         operands: { d: [10, 9], b: [7, 0] },
         description: `${opcode}s dest and imm8, storing result in dest`,
         flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
-        equiv: opcode==="cmp" ? (({d,b}, {registerFile, alu}) => {
+        equiv: (!storeReturn) ? (({d,b}, {registerFile, alu}) => {
             aluOp({alu, registerFile, 
                 command, 
                 op0: registerFile.getRegister(d*2+1), sz0:               SIZE_BYTE             , 
@@ -370,7 +370,7 @@ OPCODES["mov_ds"] = {
                 flagHandling}));
         }),
         decode: (
-            opcode === "cmp"
+            (!storeReturn)
                 ? ({ d = 0, b = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | ((d << 1) | 1), // a
                     TASKS.PUSH_BYTE | b, //b
@@ -390,7 +390,7 @@ OPCODES["mov_ds"] = {
         operands: { d: [18, 17], w: [15, 0] },
         description: `${opcode}s dest and imm16, storing result in dest`,
         flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
-        equiv: opcode==="cmp" ? (({d,w}, {registerFile, alu}) => {
+        equiv: (!storeReturn) ? (({d,w}, {registerFile, alu}) => {
             aluOp({alu, registerFile, 
                 command, 
                 op0: registerFile.getRegister(d*2), sz0:               SIZE_WORD             , 
@@ -404,7 +404,7 @@ OPCODES["mov_ds"] = {
                 flagHandling}));
         }),
         decode: (
-            opcode === "cmp"
+            (!storeReturn)
                 ? ({ d = 0, w = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | (d << 1), // a
                     TASKS.PUSH_WORD | w, // b
