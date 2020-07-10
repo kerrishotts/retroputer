@@ -22,8 +22,8 @@
 
 
     .segment k-no-impl-trap kmemmap.traps.start {
-        ret   # by storing RET in trap 0, any traps that point to 0
-        ret   # will return immediately. TRAP 0 is not defined.
+        ret                                                 # by storing RET in trap 0, any traps that point to 0
+        ret                                                 # will return immediately. TRAP 0 is not defined.
     }
 
     .segment vectors kmemmap.kernel.vector-start .append {

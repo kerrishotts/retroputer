@@ -4,14 +4,12 @@
         push d
     _main:
         clr EX
-        in dl, 0x38                             # Check for CTRL+C
-        and dl, 0b0000_1000
-        cmp dl, 0
-        if !z {                                 # Got CTRL
+        in dl, 0x38                                         # Check for CTRL+C
+        test dl, 0b0000_1000
+        if !z {                                             # Got CTRL
             in dl, 0x3A
-            and dl, 0b0000_0100
-            cmp dl, 0b0000_0100
-            if z {                              # Got C
+            test dl, 0b0000_0100
+            if !z {                                         # Got C
                 set EX
             }
         }
@@ -36,36 +34,36 @@
     _main:
         cmp dl, 0
         if !z {
-            y := dl                          # get error #
+            y := dl                                         # get error 
             d := brodata.error-prefix >> 3
             x := brodata.error-prefix & 7
-            call [vectors.PRINT]             # NEWLINE + "?""
-            d := brodata.error-vectors >> 3  # PTR to error vectors
+            call [vectors.PRINT]                            # NEWLINE + "?""
+            d := brodata.error-vectors >> 3                 # PTR to error vectors
             x := brodata.error-vectors & 7
-            dec y                            # errors start at 0
-            shl y, 1                         # y *= 2
-            x := [d, x, y]                   # indirect
-            d := addrbank(brodata.error)     # PTR to error messages
-            call [vectors.PRINT]             # print the error
-            d := addrpage(brodata.error)     # >> 3
-            x := addrpofs(brodata.error)     # & 7
-            call [vectors.PRINT]             # " ERROR" + NEWLINE
+            dec y                                           # errors start at 0
+            shl y, 1                                        # y *= 2
+            x := [d, x, y]                                  # indirect
+            d := addrbank(brodata.error)                    # PTR to error messages
+            call [vectors.PRINT]                            # print the error
+            d := addrpage(brodata.error)                    # >> 3
+            x := addrpofs(brodata.error)                    # & 7
+            call [vectors.PRINT]                            # " ERROR" + NEWLINE
             cmp c, 0
             if !z {
                 d := brodata.at-line >> 3
                 x := brodata.at-line & 7
-                call [vectors.PRINT]         # " AT LINE "
+                call [vectors.PRINT]                        # " AT LINE "
 
                 d := bp
                 sub d, 10
                 x := d
                 d := 0
-                b := 10                      # No padding, base 10
-                call [vectors.U16_TO_STR]    # Convert C to a string
-                call [vectors.PRINT]         # ... and print it!
+                b := 10                                     # No padding, base 10
+                call [vectors.U16_TO_STR]                   # Convert C to a string
+                call [vectors.PRINT]                        # ... and print it!
                 d := brodata.newline >> 3
                 x := brodata.newline & 7
-                call [vectors.PRINT]         # NEWLINE, to be neat
+                call [vectors.PRINT]                        # NEWLINE, to be neat
             }
         }
     _out:
