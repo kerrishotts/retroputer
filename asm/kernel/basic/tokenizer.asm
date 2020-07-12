@@ -305,10 +305,9 @@
 
             push d  
             LDPTR(d, x, brodata.keywords)                   # we're potentially a keyword, so
-                                            # get the location of our keyword list
+                                                            # get the location of our keyword list
 
             b := [bp+sourceAddr]                            # get address of our current source
-            #call _get-source-index          # (no, really)
             clr c
             add b, y                                        # ... now were at the right spot
             dec b                                           # ... except we weren't!
@@ -322,22 +321,22 @@
             brs Z exit-keyword-search                       # so we're clearly not a keyword
             clr Z                                           # compare strings, but with partial equality
             call [vectors.STRCMP]                           # so that our source doesn't need NUL between
-                                            # tokens; c will now be how many chars got compared
+                                                            # tokens; c will now be how many chars got compared
             if !Z {
-                clr c                                       # clear the carry
+                #clr c                                       # clear the carry
                 do {
                     inc x
                     bl := [d, x]
                     cmp bl, constants.NUL
                 } while !z                                  # advance the rest of the token
                 inc x
-                inc x                       # ... and one more past the token  # in the table
+                inc x                                       # ... and one more past the token  # in the table
                 brs search-keywords                         # and keep going
             }
             clr c
             add x, c
             inc x
-            bl := [d, x]                    # should be the token  #
+            bl := [d, x]                                    # should be the token  #
             call _handle-unary                              # check what we should do with "-"
             call _get-target-index
             <bp+target>,y := bl                             # write to target
@@ -408,7 +407,7 @@
             call is-char-a-letter                           # variables can only start with alphabetical characters
             br !z not-a-variable
             clr c
-            sub dl, ASC("A")                # get letter    #
+            sub dl, ASC("A")                                # get letter
 
             call _get-target-index
             cl := brodata.TOK_VARIABLE
@@ -425,10 +424,10 @@
                 dl := 0xFF                                  # second character is not useful
             } else {
                 clr c
-                sub dl, ASC("A")            # get letter    #
+                sub dl, ASC("A")                            # get letter num
                 if n {                                      # if negative, we're a digit
                     clr c
-                    add dl, 43              # get digit     # (+26)
+                    add dl, 43                              # get digit num (+26)
                 }
             }
 

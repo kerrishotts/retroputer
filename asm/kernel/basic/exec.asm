@@ -24,8 +24,8 @@
             }
             call gettok
             c := dl
-            cmp c, 128
-            if n {
+            test c, 0b1000_0000
+            if z {
                 # not an executable token
                 cmp c, 0
                 if z {
@@ -35,8 +35,7 @@
                 dl := brodata.SYNTAX_ERROR
                 brs _out
             }
-            clr c
-            sub c, 128
+            and c, 0b0111_1111
             shl c, 1
             x := c
             call [statement-handlers, x]

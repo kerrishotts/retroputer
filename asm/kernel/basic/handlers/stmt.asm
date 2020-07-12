@@ -953,41 +953,20 @@
         call eval                                            # expecting an expression for CHR$
         cmp dl, 0
         br !z _out                                           # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                             # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        call pop-number-param
+        br ex _out
         dl := cl
         call [vectors.PUT_CHAR]
         br _main
     _print-chrs:
-        call eval                                            # expecting the character 
+        call eval
         cmp dl, 0
-        br !z _out                                           # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                             # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        br !z _out
+        call pop-number-param
+        br ex _out
         bl := cl
-        call gettok
-        cmp dl, brodata.TOK_COMMA                            # expecting a comma
-        if !z {
-            dl := brodata.SYNTAX_ERROR
-            br _out
-        }
-        call eval                                            # expecting number of times to repeat for CHRS$
-        cmp dl, 0
-        br !z _out                                           # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                             # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        call pop-number-param
+        br ex _out
         br _print-lots                                       # print them
     _print-at:
         call eval                                            # expecting an expression for ROW
@@ -1029,12 +1008,8 @@
         call eval                                            # expecting an expression for TAB
         cmp dl, 0
         br !z _out                                           # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                             # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        call pop-number-param
+        br ex _out
     _print-lots:
         cmp c, 0                                             # TAB/SPC(0) does nothing
         dl := bl

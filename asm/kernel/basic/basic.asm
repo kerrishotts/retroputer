@@ -22,9 +22,9 @@
             .string 0x1B, "20", 0x12, 0xDB, 0xE3, 0xDC, 0xE8, 0xDB, 0xDB, 0xDB, 0xDB, 0x1B, "255", 0x12, constants.CR
             .string 0x1B, "21", 0x12, 0xDB, 0xDE, 0xDB, 0xDD, 0xDB, 0xDB, 0xDB, 0x1B, "255", 0x12, "   131072 Code Bytes Free"
             .string 0x1B, "22", 0x12, 0xDB, 0xDE, 0xDB, 0xDD, 0xDB, 0xDB, 0x1B, "255", 0x12, "     65536 Heap Bytes Free"
-            .string 0x1B, "23", 0x12, 0xDB, 0xDB, 0xDB, 0xDB, 0xDB, 0x1B, "255", 0x12, constants.CR, constants.CR, constants.NUL
+            .string 0x1B, "23", 0x12, 0xDB, 0xDB, 0xDB, 0xDB, 0xDB, 0x1B, "255", 0x12, constants.CR, constants.NUL
         prompt:
-            .string "READY."
+            .string constants.CR, "READY."
         newline:
             .byte constants.CR, constants.NUL
     }
@@ -41,9 +41,9 @@
         buffer:              .byte[256]                                 # (0x100) input buffer
         crunch-buffer:       .byte[256]                                 # (0x100) line crunch buffer
         forsub-stack:        .word[256]                                 # (0x200) stack for FOR/GOSUB/CALL. 128 4-byte entries
-                                                #         31:30 = type (0=FOR, 1=GOSUB, 2=CALL) 
-                                                #         29:16 = variable (for FOR)
-                                                #         15:0  = line number to return to
+                                                                        #         31:30 = type (0=FOR, 1=GOSUB, 2=CALL) 
+                                                                        #         29:16 = variable (for FOR)
+                                                                        #         15:0  = line number to return to
 
         # 0x300 bytes remaining for non-array data
         forsub-stack-ptr:    .byte 0                                    # pointer into forsub stack

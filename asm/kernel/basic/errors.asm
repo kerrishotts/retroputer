@@ -89,8 +89,8 @@
                                     .const NOT_IMPLEMENTED                   39
         not-implemented:            .string "NOT IMPLEMENTED"             , constants.NUL
         error-prefix:               .string constants.CR, "?", constants.NUL
-        error:                      .string " ERROR", constants.CR, constants.NUL
-        at-line:                    .string " AT LINE ", constants.NUL
+        error:                      .string " ERROR", constants.NUL
+        at-line:                    .string constants.CR, " AT LINE ", constants.NUL
         error-vectors:
             .word syntax-err, type-mismatch-err, undefined-subroutine-err, undefined-function-err, undefined-statement-err
             .word insufficient-args-err, too-many-args-err, can-not-continue-err, out-of-data-err, deffn-without-endfn-err

@@ -200,6 +200,22 @@
         ret
     }
 
+    pop-number-param: {
+        call pop-param
+        if EX {
+            dl := brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out
+        }
+        cmp dl, brodata.TOK_WORD
+        if !Z {
+            dl := brodata.TYPE_MISMATCH_ERROR
+            set EX
+            br _out
+        }
+    _out:
+        ret
+    }
+
     #
     # EVAL is responsible for evaluating the current expression
     # 
@@ -207,7 +223,25 @@
     #
     #######################################################################
     eval: {
-        BIG_ENTER(270)
+        clr C
+        call clear-params
+        br _eval
+    }
+    eval-all: {
+        set C
+        call clear-params
+        br _eval
+    }
+    eval-next: {
+        clr C
+        br _eval
+    }
+    eval-next-all: {
+        set C
+        br _eval
+    }
+    _eval: {
+        BIG_ENTER(271)
         .const cur-precedence -2
         .const in-paren -3                                  # tracks if we're in parentheses
         .const expecting   -4                               # tracks what we're expecting next
@@ -216,6 +250,7 @@
         .const vector-offs -10
         .const operator-stack -140                          # operator stack has room for 32 ops (each op is 4 bytes)
         .const value-stack -270                             # value stack has room for 32 values
+        .const parse-all -271                               # parse-all indicates if we consume COMMAs at top level
         .const MAX_EXPR_SIZE 32 * 2                         # 32 operations or values (each is four bytes)
         push y
         push x
@@ -224,9 +259,15 @@
         push a
         [bp+orig-sp] := sp                                  # need a way to know when we've exhausted the stack
     _main:
+        if c {
+            al := 0xFF
+            [bp+parse-all] := al                            # if CARRY is set, we'll parse everything
+        } else {
+            al := 0x00
+            [bp+parse-all] := al                            # If NOT, we won't
+        }
         INIT_STACK_BP(operator-stack)
         INIT_STACK_BP(value-stack)
-        call clear-params
         a := 0
         [bp+expecting] := al                                # 0 = we're expecting a non-operator
         [bp+in-paren]  := al                                # 0 = not in a parenthesis
@@ -251,8 +292,14 @@
             al := [bp+in-paren]                             # check if we're in a parenthesis
             cmp al, 0
             if z {                                          # we aren't, so bail if we see , or ;
-                cmp dl, brodata.TOK_COMMA                   # comma is a valid exit
-                br z _finish-eval
+                #push al
+                al := [bp+parse-all]                        # should we parse COMMAS?
+                cmp al, 0                                   # if 0, NO.
+                #pop al
+                if z {
+                    cmp dl, brodata.TOK_COMMA               # comma is a valid exit (this time)
+                    br z _finish-eval
+                }
                 cmp dl, brodata.TOK_SEMICOLON               # as is a semicolon
                 br z _finish-eval
             } else {
@@ -405,12 +452,28 @@
             cmp x, c
         }
     _done:
-        STPOP_BP(d, value-stack)                            # pop off the last value -- this is our return
-        br ex _out-of-values
+        STPOP_BP(d, value-stack)                            # pop type
+        br ex _check-return                                 # if we exhaust the stack, check if we've returned at least one
         c := d
-        STPOP_BP(d, value-stack)
-        br ex _out-of-values
-        call push-param                                     # save the result globally
+        STPOP_BP(d, value-stack)                            # pop value
+        br ex _check-return
+        bl := [bdata.param-length]                          # check parameter length -- if it's too large, bail
+        cmp bl, 10
+        br z _too-complex                                   # it is? too complex, then
+        call push-param                                     # put it on the param stack
+
+        br _done                                            # keep going til we exhaust the stack
+    _check-return:
+        cl := [bdata.param-length]
+        cmp cl, 1
+        br n _out-of-values                                 # have to return at least ONE value
+
+#        STPOP_BP(d, value-stack)                            # pop off the last value -- this is our return
+#        br ex _out-of-values
+#        c := d
+#        STPOP_BP(d, value-stack)
+#        br ex _out-of-values
+#        call push-param                                     # save the result globally
         dl := 0                                             # if we're here, we evaluated without issue
     _out:
         sp := [bp+orig-sp]                                  # make sure stack is cleaned up if we exited early
@@ -419,7 +482,7 @@
         pop c
         pop x
         pop y
-        BIG_EXIT(270)
+        BIG_EXIT(271)
         ret
     _too-complex:
         dl := brodata.EXPRESSION_TOO_COMPLEX_ERROR
