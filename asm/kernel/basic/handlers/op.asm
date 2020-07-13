@@ -9,13 +9,8 @@
         push b
         push c
     _main:
-        call pop-param
+        call pop-number-param
 
-        cmp dl, brodata.TOK_WORD
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         neg  c
         call push-param
         dl := 0
@@ -70,16 +65,13 @@
         push b
         push c
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
         a := c
         b := d
-        call pop-param
+        call pop-number-param
+        brs ex _out
 
-        cmp bl, dl
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         sub a, c
         c := a
         call push-param
@@ -102,16 +94,13 @@
         push b
         push c
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
         a := c
         b := d
-        call pop-param
+        call pop-number-param
+        brs ex _out
 
-        cmp bl, dl
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         mul a, c
         c := a
         call push-param
@@ -131,16 +120,13 @@
         push b
         push c
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
         a := c
         b := d
-        call pop-param
+        call pop-number-param
+        brs ex _out
 
-        cmp bl, dl
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         div a, c
         c := a
         call push-param
@@ -160,16 +146,13 @@
         push b
         push c
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
         a := c
         b := d
-        call pop-param
+        call pop-number-param
+        brs ex _out
 
-        cmp bl, dl
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         mod a, c
         c := a
         call push-param

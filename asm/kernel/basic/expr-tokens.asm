@@ -118,7 +118,7 @@
         .word handler-equ-expr                ,0x200B # 243, =
         .word 0xFFFE                          ,0x2015 # 244, (
         .word 0xFFFF                          ,0x2015 # 245, )
-        .word token-not-impl                  ,0x0001 # 246, ,
+        .word 0x0000                          ,0x0001 # 246, ,
         .word token-not-impl                  ,0x00FF # 247, ;
         .word token-not-impl                  ,0x00FF # 248, :
         .word token-not-impl                  ,0x00FF # 249, REAL

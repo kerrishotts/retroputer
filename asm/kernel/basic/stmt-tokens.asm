@@ -41,7 +41,7 @@
         .word token-not-impl                   # 166, INPUT
         .word handler-syntax-error             # 167, INT
         .word handler-syntax-error             # 168, IN
-        .word token-not-impl                   # 169, LAYER
+        .word handler-layer                    # 169, LAYER
         .word handler-syntax-error             # 170, LEFT$
         .word handler-syntax-error             # 171, LEN
         .word handler-let                      # 172, LET

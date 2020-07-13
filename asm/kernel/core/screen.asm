@@ -1031,11 +1031,15 @@
         get-char: {
                 pushf
             _main:
-                do {
-                    halt
-                    in dl, 0x30
-                    cmp dl, 0
-                } while z
+                in dl, 0x30                                 # check if we have characters in the queue
+                cmp dl, 0                                   # if we do, return it immediately, otherwise
+                if z {                                      # wait until we have something
+                    do {                                    # why? this makes pasting / emptying the
+                        halt                                # keyboard buffer faster; halt means we wait
+                        in dl, 0x30                         # at least a frame, so we can only consume
+                        cmp dl, 0                           # the keyboard buffer at a slow speed. If
+                    } while z                               # we check first, we can consume it quickly.
+                }
             _out:
                 popf
                 ret

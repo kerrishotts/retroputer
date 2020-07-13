@@ -223,21 +223,21 @@
     #
     #######################################################################
     eval: {
-        clr C
         call clear-params
+        clr ex
         br _eval
     }
     eval-all: {
-        set C
         call clear-params
+        set ex
         br _eval
     }
     eval-next: {
-        clr C
+        clr ex
         br _eval
     }
     eval-next-all: {
-        set C
+        set ex
         br _eval
     }
     _eval: {
@@ -259,7 +259,7 @@
         push a
         [bp+orig-sp] := sp                                  # need a way to know when we've exhausted the stack
     _main:
-        if c {
+        if ex {
             al := 0xFF
             [bp+parse-all] := al                            # if CARRY is set, we'll parse everything
         } else {
@@ -496,6 +496,10 @@
         STPOP_BP(a, operator-stack)
         ret
     _do-operator:
+        cmp a, 0                                            # if no handler, just return
+        if z {
+            ret
+        }
 
         d := b
         and d, 0b1111_0000_0000_0000

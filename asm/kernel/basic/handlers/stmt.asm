@@ -844,6 +844,181 @@
     }
 
     #
+    # LAYER which [ON|OFF]|[MODE mode]|[SOURCE page]|
+    #       [SCALE scale]|[TILESET page]|[COLOR fg[, bg]]|
+    #       [AT x, y]|[SIZE w, h]|[LINE 0|1]
+    #
+    # Prints the value of any listed expressions to the screen. PRINT also
+    # accepts various positional and formatting tokens.
+    #
+    # ERRORS
+    ###########################################################################
+    handler-layer: {
+        enter 0x00
+        push a
+        push c
+    _main:
+        call eval
+        cmp dl, 0
+        br !z _out
+        #call !z _ignore-err
+        call pop-number-param
+        br ex _out
+        out 0x12, cl                                         # select the specified layer
+    _configs:
+        call gettok
+        cmp dl, 0
+        br z _bail                                           # next token was an end of the line
+        cmp dl, brodata.TOK_END_OF_STMT
+        br z _bail                                           # next token was an end of the statement
+        cmp dl, brodata.TOK_ON                               # Check for ON  
+        br z _layer-on
+        cmp dl, brodata.TOK_OFF                              # Check for OFF 
+        br z _layer-off
+        cmp dl, brodata.TOK_SOURCE                           # Check for SOURCE
+        br z _layer-source
+        cmp dl, brodata.TOK_SCALE                            # Check for SCALE
+        br z _layer-scale 
+        cmp dl, brodata.TOK_TILESET                          # Check for TILESET
+        br z _layer-tileset 
+        cmp dl, brodata.TOK_COLOR                            # Check for COLOR
+        br z _layer-color   
+        cmp dl, brodata.TOK_AT                               # Check for AT
+        br z _layer-at   
+        cmp dl, brodata.TOK_SIZE                             # Check for SIZE
+        br z _layer-size   
+        cmp dl, brodata.TOK_MODE                             # Check for MODE
+        br z _layer-mode   
+        cmp dl, brodata.TOK_LINE                             # Check for LINE
+        br z _layer-line
+        call backtok                                         # SYNTAX ERROR then
+        dl := brodata.SYNTAX_ERROR
+        br _out
+    _bail:
+        call backtok
+    _out-no-err:
+        dl := 0
+    _out:
+        pop c
+        pop a
+        exit 0x00
+        ret
+    _layer-on:
+        in cl, 0x13                                         # get layer src
+        or cl, 0b1000_0000                                  # turn on the top bit
+        out 0x13, cl                                        # layer visible!
+        br _configs
+        br _out-no-err
+    _layer-off:
+        in cl, 0x13
+        and cl, 0b0111_1111                                 # turn off the top bit
+        out 0x13, cl                                        # layer invisible
+        br _configs
+        br _out-no-err
+    _layer-source:
+        call eval                                           # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x13                                         # get layer source
+        and al, 0b1110_0000                                 # zero the page
+        or al, cl                                           # put new page
+        out 0x13, al                                        # layer has new page
+        br _configs
+        br _out-no-err
+    _layer-scale:
+        call eval                                           # get scale
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x14                                         # get layer config
+        and al, 0b0011_1111                                 # zero the scale
+        shl cl, 6
+        or al, cl                                           # put new scale
+        out 0x14, al                                        # layer has new page
+        br _configs
+        br _out-no-err
+    _layer-tileset:
+        call eval                                           # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x14                                         # get layer config
+        and al, 0b1110_0000                                 # zero the tileset
+        or al, cl                                           # put new page
+        out 0x14, al                                        # layer has new tileset
+        br _configs
+        br _out-no-err
+    _layer-color:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # foreground
+        br ex _out                                          # handle error
+        out 0x16, cl                                        # write foreground
+        call pop-number-param                               # background (optional)
+        if ex {
+            cmp dl, brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out-no-err                                  # not present, no error
+        }
+        out 0x15, cl
+        br _configs
+        br _out-no-err
+    _layer-at:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # x-position
+        br ex _out                                          # handle error
+        out 0x17, cl                                        # write X offset
+        call pop-number-param                               # y-position
+        br ex _out
+        out 0x18, cl                                        # write Y offset
+        br _configs
+        br _out-no-err
+    _layer-size:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # x size
+        br ex _out                                          # handle error
+        out 0x19, cl                                        # write X crop
+        call pop-number-param                               # y size
+        br ex _out
+        out 0x1A, cl                                        # write Y crop
+        br _configs
+        br _out-no-err
+    _layer-mode:
+        call eval                                           # get mode
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1B                                         # get layer mode
+        and al, 0b1111_1100                                 # zero the mode
+        or al, cl                                           # put new mode
+        out 0x1B, al                                        # layer has new mode
+        br _configs
+        br _out-no-err
+    _layer-line:
+        call eval                                           # get line
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x14                                         # get layer mode
+        and al, 0b1101_1111                                 # zero the line expander
+        shl cl, 5
+        or al, cl                                           # put new line expander
+        out 0x14, al                                        # layer has new lines
+        br _configs
+        br _out-no-err
+    }
+
+    #
     # PRINT [expr[[,|;|AT expr,expr|SPC(expr)|TAB(expr)] expr]...]
     #
     # Prints the value of any listed expressions to the screen. PRINT also
