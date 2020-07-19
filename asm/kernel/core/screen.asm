@@ -303,6 +303,8 @@
             push d
             pushf
         _main:
+            in al, PORT_SPRITE_SEL
+            push al
             # update cursor sprite visiblity
             ld al, CURSOR_SPRITE_SEL                        # select the cursor sprite
             out PORT_SPRITE_SEL, al
@@ -338,6 +340,8 @@
             out PORT_SPRITE_X_HI, al                        # and high bits
 
         _out:
+            pop al
+            OUT PORT_SPRITE_SEL, al
             popf
             pop d
             pop c
