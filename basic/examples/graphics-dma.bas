@@ -1,7 +1,7 @@
 0 REM Graphics DMA
 5 PRINT CHR$(27);"24";CHR$(19);:CLS
 9 PRINT AT 10,5;">-->";
-10 OUT 0x12,1: OUT 0x13, 0x98: OUT 0x14, 28: OUT 0x1B, 2: REM Layer 1 Graphics Mode
+10 LAYER 1 ON MODE 2 SOURCE 24: REM Layer 1 Graphics Mode at bank 6
 18 REM Set up DMA for Fill
 19 OUT 0xDE, 0x00: OUT 0xDF, 0x00: OUT 0xDA, 0x00: OUT 0xDB, 0x00: REM 0 Times, 0 skip
 20 OUT 0xD0, 0x06: OUT 0xD1, 0x00: OUT 0xD2, 0x00: REM Addr
@@ -29,4 +29,4 @@
 190 ZZ=IN(48):IF ZZ>64 THEN IF ZZ<128 THEN GOTO 200
 191 GOTO 190
 199 REM Reset Mode
-200 OUT 0x13, 18: REM Hide the layer
+200 LAYER 1 OFF
