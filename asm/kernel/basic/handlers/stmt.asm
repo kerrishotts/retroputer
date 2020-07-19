@@ -875,21 +875,21 @@
         br z _layer-on
         cmp dl, brodata.TOK_OFF                              # Check for OFF 
         br z _layer-off
-        cmp dl, brodata.TOK_SOURCE                           # Check for SOURCE
+        cmp dl, brodata.TOK_SOURCE                           # Check for SOURCE page
         br z _layer-source
-        cmp dl, brodata.TOK_SCALE                            # Check for SCALE
-        br z _layer-scale 
-        cmp dl, brodata.TOK_TILESET                          # Check for TILESET
+        cmp dl, brodata.TOK_SIZE                             # Check for SIZE scale
+        br z _layer-size  
+        cmp dl, brodata.TOK_TILESET                          # Check for TILESET page
         br z _layer-tileset 
-        cmp dl, brodata.TOK_COLOR                            # Check for COLOR
+        cmp dl, brodata.TOK_COLOR                            # Check for COLOR fg,bg
         br z _layer-color   
-        cmp dl, brodata.TOK_AT                               # Check for AT
+        cmp dl, brodata.TOK_AT                               # Check for AT x,y
         br z _layer-at   
-        cmp dl, brodata.TOK_SIZE                             # Check for SIZE
-        br z _layer-size   
-        cmp dl, brodata.TOK_MODE                             # Check for MODE
+        cmp dl, brodata.TOK_RECT                             # Check for RECT w,h
+        br z _layer-rect   
+        cmp dl, brodata.TOK_MODE                             # Check for MODE mode
         br z _layer-mode   
-        cmp dl, brodata.TOK_LINE                             # Check for LINE
+        cmp dl, brodata.TOK_LINE                             # Check for LINE height
         br z _layer-line
         call backtok                                         # SYNTAX ERROR then
         dl := brodata.SYNTAX_ERROR
@@ -908,13 +908,11 @@
         or cl, 0b1000_0000                                  # turn on the top bit
         out 0x13, cl                                        # layer visible!
         br _configs
-        br _out-no-err
     _layer-off:
         in cl, 0x13
         and cl, 0b0111_1111                                 # turn off the top bit
         out 0x13, cl                                        # layer invisible
         br _configs
-        br _out-no-err
     _layer-source:
         call eval                                           # get source page
         cmp dl, 0
@@ -926,8 +924,7 @@
         or al, cl                                           # put new page
         out 0x13, al                                        # layer has new page
         br _configs
-        br _out-no-err
-    _layer-scale:
+    _layer-size: 
         call eval                                           # get scale
         cmp dl, 0
         br !z _out                                          # handle errors
@@ -939,7 +936,6 @@
         or al, cl                                           # put new scale
         out 0x14, al                                        # layer has new page
         br _configs
-        br _out-no-err
     _layer-tileset:
         call eval                                           # get source page
         cmp dl, 0
@@ -951,7 +947,6 @@
         or al, cl                                           # put new page
         out 0x14, al                                        # layer has new tileset
         br _configs
-        br _out-no-err
     _layer-color:
         call eval-all
         cmp dl, 0
@@ -966,7 +961,6 @@
         }
         out 0x15, cl
         br _configs
-        br _out-no-err
     _layer-at:
         call eval-all
         cmp dl, 0
@@ -978,8 +972,7 @@
         br ex _out
         out 0x18, cl                                        # write Y offset
         br _configs
-        br _out-no-err
-    _layer-size:
+    _layer-rect:
         call eval-all
         cmp dl, 0
         br !z _out
@@ -990,7 +983,6 @@
         br ex _out
         out 0x1A, cl                                        # write Y crop
         br _configs
-        br _out-no-err
     _layer-mode:
         call eval                                           # get mode
         cmp dl, 0
@@ -1002,7 +994,6 @@
         or al, cl                                           # put new mode
         out 0x1B, al                                        # layer has new mode
         br _configs
-        br _out-no-err
     _layer-line:
         call eval                                           # get line
         cmp dl, 0
@@ -1015,7 +1006,6 @@
         or al, cl                                           # put new line expander
         out 0x14, al                                        # layer has new lines
         br _configs
-        br _out-no-err
     }
 
     #
@@ -1193,6 +1183,166 @@
             dec c
         }
         br _maybe-no-newline
+    }
+
+    #
+    # SPRITE which [ON|OFF]|[MODE mode]|[SOURCE page, idx]|
+    #              [TILESET page]|[COLOR fg[, bg]]|
+    #              [AT x, y]|[SIZE w, h, scale]|[LAYER lyr]
+    #
+    # Configures the given sprite.
+    #
+    # ERRORS
+    ###########################################################################
+    handler-sprite: {
+        enter 0x00
+        push a
+        push c
+    _main:
+        call eval
+        cmp dl, 0
+        br !z _out
+        call pop-number-param
+        br ex _out
+        out 0x1C, cl                                         # select the specified sprite
+    _configs:
+        call gettok
+        cmp dl, 0
+        br z _bail                                           # next token was an end of the line
+        cmp dl, brodata.TOK_END_OF_STMT
+        br z _bail                                           # next token was an end of the statement
+        cmp dl, brodata.TOK_ON                               # Check for ON  
+        br z _sprite-on
+        cmp dl, brodata.TOK_OFF                              # Check for OFF 
+        br z _sprite-off
+        cmp dl, brodata.TOK_SOURCE                           # Check for SOURCE page, idx
+        br z _sprite-source
+        cmp dl, brodata.TOK_SIZE                             # Check for SIZE w,h,scale
+        br z _sprite-size 
+        cmp dl, brodata.TOK_TILESET                          # Check for TILESET page
+        br z _sprite-tileset
+        cmp dl, brodata.TOK_COLOR                            # Check for COLOR fg,bg
+        br z _sprite-color  
+        cmp dl, brodata.TOK_AT                               # Check for AT x,y
+        br z _sprite-at  
+        cmp dl, brodata.TOK_LAYER                            # Check for LAYER lyr
+        br z _sprite-layer
+        call backtok                                         # SYNTAX ERROR then
+        dl := brodata.SYNTAX_ERROR
+        br _out
+    _bail:
+        call backtok
+    _out-no-err:
+        dl := 0
+    _out:
+        pop c
+        pop a
+        exit 0x00
+        ret
+    _sprite-on:
+        in cl, 0x1D                                         # get sprite src
+        or cl, 0b1000_0000                                  # turn on the top bit
+        out 0x1D, cl                                        # sprite visible!
+        br _configs
+    _sprite-off:
+        in cl, 0x1D
+        and cl, 0b0111_1111                                 # turn off the top bit
+        out 0x1D, cl                                        # sprite invisible
+        br _configs
+    _sprite-source:
+        call eval-all                                       # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1D                                         # get sprite source
+        and al, 0b1110_0000                                 # zero the page
+        or al, cl                                           # put new page
+        out 0x1D, al                                        # sprite has new page
+        call pop-number-param
+        br ex _out                                          # handle errors
+        out 0x1E, cl                                        # sprite index
+        br _configs
+    _sprite-size: 
+        call eval-all                                       # get scale
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        al := cl                                            # get width
+        and al, 0b0000_1111                                 # limit to 0-15
+        call pop-number-param
+        br ex _out                                          # handle errors
+        shl al, 4
+        and cl, 0b0000_1111
+        or al, cl                                           # height
+        exc al                                              # swap nibbles
+        out 0x20, al                                        # height, width
+        call pop-number-param
+        if ex {
+            cmp dl, brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out-no-err                                  # not present, no error
+        }
+        in al, 0x1F                                         # get sprite config
+        and al, 0b0011_1111                                 # zero the scale
+        shl cl, 6
+        or al, cl                                           # put new scale
+        out 0x1F, al                                        # sprite has new scale
+        br _configs
+    _sprite-tileset:
+        call eval                                           # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1F                                         # get sprite config
+        and al, 0b1110_0000                                 # zero the tileset
+        or al, cl                                           # put new page
+        out 0x1F, al                                        # sprite has new tileset
+        br _configs
+    _sprite-color:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # foreground
+        br ex _out                                          # handle error
+        out 0x22, cl                                        # write foreground
+        call pop-number-param                               # background (optional)
+        if ex {
+            cmp dl, brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out-no-err                                  # not present, no error
+        }
+        out 0x21, cl
+        br _configs
+    _sprite-at:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # x-position
+        br ex _out                                          # handle error
+        exc c
+        out 0x23, cl                                        # write X offset
+        exc c
+        out 0x24, cl
+        call pop-number-param                               # y-position
+        br ex _out
+        exc c
+        out 0x25, cl                                        # write Y offset
+        exc c
+        out 0x26, cl
+        br _configs
+    _sprite-layer:
+        call eval                                           # get layer
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1D                                         # get layer mode
+        and al, 0b1001_1111                                 # zero the layer
+        shl cl, 5
+        or al, cl                                           # put new layer
+        out 0x1D, al                                        # sprite has new layer
+        br _configs
     }
 }
 
