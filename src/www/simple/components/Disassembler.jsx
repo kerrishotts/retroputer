@@ -71,8 +71,8 @@ export class Disassembler extends AutoUpdateComponent {
                     <span className="divider"/>
                     <button onClick={this.refreshClicked} title="Refresh"><Icon icon={info} /></button>
                 </div>
-                <code>{asm.map(inst => 
-                    <div key={inst.address}>
+                <code>{asm.map((inst, idx) => 
+                    <div key={idx}>
                         <a style={{color: "currentColor"}} href="#" onClick={e => this.jumpTo("0x" + inst.address)}>{inst.address}</a>:&nbsp;
                         <span style={{display:"inline-block", width: "8em"}}>{inst.bytes}</span>
                         <span>{inst.asm}</span>

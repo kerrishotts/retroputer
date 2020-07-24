@@ -248,7 +248,7 @@
         D: 0b11
     };
 
-    function tInstruction(op, {dest, source, m, i, x, y, a, imm, reg, addr, flag} = {}) {
+    function tInstruction(op, {dest, source, m, i, x, y, a, imm, reg, addr, flag, bankReg, offsReg} = {}) {
         return {
             type: TOKENS.INSTRUCTION,
             op,
@@ -263,6 +263,8 @@
             reg,
             addr,
             flag,
+            bankReg,
+            offsReg,
             pos: location().start
         };
     }
@@ -654,7 +656,12 @@ Instruction "Instruction"
 / iCALL / iPUSHALL / iPOPALL / iPUSHF / iPOPMM / iPUSHMM
 / iPOPF / iPUSH / iPOP / iRET / iMUL
 / iMOD / iDIV / iSMUL / iSMOD / iSDIV
-/ iSET / iCLR / iDEC / iHALT / iWAIT) _ bytes:ExpectedAssembly? {
+/ iSET / iCLR / iDEC / iHALT / iWAIT
+/ iFCLR / iFADD / iFSUB / iFCMP / iFMUL / iFMOD / iFDIV
+/ iFPOW / iFSQRT / iFNEG / iFEXC / iFINT / iFABS / iFSIN
+/ iFCOS / iFTAN / iFASIN / iFACOS / iFATAN / iFISNAN / iFISINF
+/ iFLOG2 / iFLOG10 / iFLD0 / iFLD1 / iFLDE / iFLDPI
+/ iFLDR / iFLDM / iFLDIM / iFSTR / iFSTM / iFSTIM) _ bytes:ExpectedAssembly? {
     if (bytes) {
         ins.bytes = bytes;
     }
@@ -1171,10 +1178,10 @@ BranchAddressingMode "Branch Addressing Mode"
 // / Identifier
 
 FPAbsolute "Floating Point Absolute Mode"
-= LBRACKET _ bank:Register _ offs:Register _ RBRACKET { return {indirect: false, bank, offs}; }
+= LBRACKET _ bank:Register _ COMMA _ offs:Register _ RBRACKET { return {indirect: false, bank, offs}; }
 
 FPIndirect "Floating Point Indirect Mode"
-= LANGLE _ bank:Register _ offs:Register _ RANGLE { return {indirect: false, bank, offs}; }
+= LANGLE _ bank:Register _ COMMA _ offs:Register _ RANGLE { return {indirect: true, bank, offs}; }
 
 FPAddressingMode "Floating Point Addressing Mode"
 = MacroExpansion

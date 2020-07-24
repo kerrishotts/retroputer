@@ -125,6 +125,8 @@ export class ComputerControl extends React.Component {
         //computer.processor.registers.INTERRUPT_DISABLE = 1;
         //computer.processor.registers.SINGLE_STEP = 0;
         computer.step();
+        store.notify();
+        this.setState({});
         //computer.processor.registers.INTERRUPT_DISABLE = prevInterruptsDisabled;
     }
     jumpClicked() {

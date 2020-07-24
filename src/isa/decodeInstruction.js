@@ -101,6 +101,38 @@ function _decodeInstruction(bytes) {
             if (op === 0xAB) { opcode = OPCODES.smul_ds; }
             if (op === 0xAC) { opcode = OPCODES.sdiv_ds; }
             if (op === 0xAD) { opcode = OPCODES.smod_ds; }
+            if (op === 0xAE) { 
+                switch (p1) {
+                    case 0x00: opcode = OPCODES.fclr; break;
+                    case 0x10: opcode = OPCODES.fadd; break;
+                    case 0x11: opcode = OPCODES.fsub; break;
+                    case 0x12: opcode = OPCODES.fcmp; break;
+                    case 0x13: opcode = OPCODES.fmul; break;
+                    case 0x14: opcode = OPCODES.fmod; break;
+                    case 0x15: opcode = OPCODES.fdiv; break;
+                    case 0x16: opcode = OPCODES.fpow; break;
+                    case 0x17: opcode = OPCODES.fsqrt; break;
+                    case 0x18: opcode = OPCODES.fneg; break;
+                    case 0x19: opcode = OPCODES.fexc; break;
+                    case 0x1A: opcode = OPCODES.fint; break;
+                    case 0x1B: opcode = OPCODES.fabs; break;
+                    case 0x20: opcode = OPCODES.fsin; break;
+                    case 0x21: opcode = OPCODES.fcos; break;
+                    case 0x22: opcode = OPCODES.ftan; break;
+                    case 0x24: opcode = OPCODES.fasin; break;
+                    case 0x25: opcode = OPCODES.facos; break;
+                    case 0x26: opcode = OPCODES.fatan; break;
+                    case 0x30: opcode = OPCODES.fisnan; break;
+                    case 0x31: opcode = OPCODES.fisinf; break;
+                    case 0x32: opcode = OPCODES.flog2; break;
+                    case 0x33: opcode = OPCODES.flog10; break;
+                    case 0x70: opcode = OPCODES.fld0; break;
+                    case 0x71: opcode = OPCODES.fld1; break;
+                    case 0x72: opcode = OPCODES.flde; break;
+                    case 0x73: opcode = OPCODES.fldpi; break;
+                    default: 
+                }
+            }
             if (op === 0xAF) { opcode = OPCODES.wait; }
             if (op >= 0x48 && op <= 0x4F && (op & 1) === 1) { opcode = OPCODES.add_db; }
             if (op >= 0x50 && op <= 0x57 && (op & 1) === 1) { opcode = OPCODES.sub_db; }
@@ -124,6 +156,17 @@ function _decodeInstruction(bytes) {
             if (op === 0x31) { opcode = OPCODES.out_rp; }
             if ( op >= 0x80 && op <= 0x8F && (p1 & 1) === 1) { opcode = OPCODES.loops_r; }
             if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 1) { opcode = OPCODES.brs_calls_f; }
+            if (op === 0xAE) { 
+                switch (p1) {
+                    case 0x80: opcode = OPCODES.fldr; break;
+                    case 0x81: opcode = OPCODES.fldm; break;
+                    case 0x82: opcode = OPCODES.fldim; break;
+                    case 0x84: opcode = OPCODES.fstr; break;
+                    case 0x85: opcode = OPCODES.fstm; break;
+                    case 0x86: opcode = OPCODES.fstim; break;
+                    default:
+                }
+            }
         }
 
         if (size === 4) {

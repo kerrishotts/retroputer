@@ -32,7 +32,7 @@ export class FPU {
             this.SP = this.stack.length - 1;
             this.flags.stackException = true;
         }
-        this.SP = (this.SP - 1) & 7;
+        this.SP = this.SP & 7;
         return this.stack[this.SP];
     }
 
@@ -49,6 +49,29 @@ export class FPU {
         }
     }
 
+    pushBytes(bytes) {
+        const dataView = new DataView(this.stack.buffer);
+        for (let i = 0; i < 8; i++) {
+            dataView.setUint8(this.SP * 8 + i, bytes[i]);
+        }
+        this.SP++;
+        if (this.SP > this.stack.length - 1) {
+            this.SP = 0;
+            this.flags.stackException = true;
+        }
+    }
+
+    popBytes() {
+        this.SP--;
+        if (this.SP < 0) {
+            this.SP = this.stack.length - 1;
+            this.flags.stackException = true;
+        }
+        this.SP = this.SP & 7;
+        const dataView = new DataView(this.stack.buffer);
+        return Array.from({length: 8}, (_,i) => dataView.getUint8(this.SP*8+i));
+    }
+
     dup() {
         const v = this.peek();
         this.push(v);
@@ -59,6 +82,11 @@ export class FPU {
         const b = this.pop();
         this.push(a);
         this.push(b);
+    }
+
+    int() {
+        const a = this.pop();
+        this.push(Math.round(a));
     }
 
     add() {
@@ -169,6 +197,24 @@ export class FPU {
         this.push(Math.PI);
     }
 
-    
+    isnan() {
+        const a = this.pop();
+        if (Number.isNaN(a)) this.push(1)
+        else this.push(0);
+    }    
+
+    isinf() {
+        const a = this.pop();
+        if (Number.isFinite(a)) this.push(0)
+        else this.push(1);
+    }    
+
+    ld0() {
+        this.push(0);
+    }
+
+    ld1() {
+        this.push(1);
+    }
 
 }

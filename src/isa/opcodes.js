@@ -80,6 +80,85 @@ const aluOp = ({alu, registerFile, command, op0, sz0, op1, sz1, flagHandling}) =
 }
 
 export const OPCODES = {};
+
+[ 
+    [ "fclr", "Clears Floating Point Unit", "0000_0000", {}, (_, {fpu}) => fpu.init() ],
+    [ "fadd", "Add two FP numbers together", "0001_0000", {}, (_, {fpu}) => fpu.add() ],
+    [ "fsub", "Subtract two FP numbers", "0001_0001", {}, (_, {fpu}) => fpu.sub() ],
+    [ "fcmp", "Compare two FP numbers", "0001_0010", {}, (_, {fpu}) => fpu.sub() ],
+    [ "fmul", "Multiply two FP numbers", "0001_0011", {}, (_, {fpu}) => fpu.mul() ],
+    [ "fmod", "Return modulo of two FP numbers", "0001_0100", {}, (_, {fpu}) => fpu.mod() ],
+    [ "fdiv", "Divide two FP numbers", "0001_0101", {}, (_, {fpu}) => fpu.div() ],
+    [ "fpow", "Raise to power", "0001_0110", {}, (_, {fpu}) => fpu.pow() ],
+    [ "fsqrt","Square Root", "0001_0111", {}, (_, {fpu}) => fpu.sqrt() ],
+    [ "fneg", "Negate FP Number", "0001_1000", {}, (_, {fpu}) => fpu.neg() ],
+    [ "fexc", "Exchange top two FP numbers", "0001_1001", {}, (_, {fpu}) => fpu.swap() ],
+    [ "fint", "Convert FP number to integer", "0001_1010", {}, (_, {fpu}) => fpu.int() ],
+    [ "fabs", "Absolute Value of FP Number", "0001_1011", {}, (_, {fpu}) => fpu.abs() ],
+    [ "fsin", "Sine", "0010_0000", {}, (_, {fpu}) => fpu.sin() ],
+    [ "fcos", "Cosine", "0010_0001", {}, (_, {fpu}) => fpu.cos() ],
+    [ "ftan", "Tangent", "0010_0010", {}, (_, {fpu}) => fpu.tan() ],
+    [ "fasin","Arc Sine", "0010_0100", {}, (_, {fpu}) => fpu.asin() ],
+    [ "facos","Arc Cosine", "0010_0101", {}, (_, {fpu}) => fpu.acos() ],
+    [ "fatan","Arc Tangent", "0010_0110", {}, (_, {fpu}) => fpu.atan() ],
+    [ "fisnan","Check if FP Number is NaN", "0011_0000", {}, (_, {fpu}) => fpu.isnan() ],
+    [ "fisinf","Check if FP Number is Infinte", "0011_0001", {}, (_, {fpu}) => fpu.isinf() ],
+    [ "flog2","Perform Log 2", "0011_0010", {}, (_, {fpu}) => fpu.log2() ],
+    [ "flog10","Perform Log 10", "0011_0011", {}, (_, {fpu}) => fpu.log10() ],
+    [ "fld0", "Load zero constant", "0111_0000", {}, (_, {fpu}) => fpu.ld0() ],
+    [ "fld1", "Load one constant", "0111_0001", {}, (_, {fpu}) => fpu.ld1() ],
+    [ "flde", "Load e constant", "0111_0010", {}, (_, {fpu}) => fpu.e() ],
+    [ "fldpi","Load pi constant", "0111_0011", {}, (_, {fpu}) => fpu.pi() ],
+    [ "fldr","Load from register", "1000_0000", {r: [3, 0]}, ({r}, {registerFile, fpu}) => fpu.push(registerFile.getRegister(r)) ],
+    [ "fldm","Load from memory", "1000_0001", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            const addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            fpu.pushBytes([memory.readByte(addr+0), memory.readByte(addr+1), 
+                           memory.readByte(addr+2), memory.readByte(addr+3),
+                           memory.readByte(addr+4), memory.readByte(addr+5),
+                           memory.readByte(addr+6), memory.readByte(addr+7)]);
+        }],
+    [ "fldim","Load from memory, indirect", "1000_0010", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            let addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            const bank = memory.readWord(addr);
+            const offs = memory.readWord(addr+2);
+            addr = (bank << 3) + offs;
+            fpu.pushBytes([memory.readByte(addr+0), memory.readByte(addr+1), 
+                           memory.readByte(addr+2), memory.readByte(addr+3),
+                           memory.readByte(addr+4), memory.readByte(addr+5),
+                           memory.readByte(addr+6), memory.readByte(addr+7)]);
+        }],
+    [ "fstr","Store to register", "1000_0100", {r: [3, 0]}, ({r}, {registerFile, fpu}) => registerFile.setRegister(r, fpu.pop()) ],
+    [ "fstm","Store to memory", "1000_0101", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            const bytes = fpu.popBytes();
+            const addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            for (let i = 0; i < 8; i++) 
+                memory.writeByte(addr+i, bytes[i]);
+        }],
+    [ "fstim","Store to memory, indirect", "1000_0110", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            const bytes = fpu.popBytes();
+            let addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            const bank = memory.readWord(addr);
+            const offs = memory.readWord(addr+2);
+            addr = (bank << 3) + offs;
+            for (let i = 0; i < 8; i++) 
+                memory.writeByte(addr+i, bytes[i]);
+        }],
+].forEach(([asm, description, pattern, operands, equiv]) => {
+    OPCODES[asm] = {
+        asm,
+        pattern: `1010_1110 ${pattern}`,
+        operands,
+        description,
+        flags: "xdshncvz",
+        equiv
+    }
+});
+
+
 OPCODES["nop"] = {
     asm: "nop",
     pattern: "0000_0000",
