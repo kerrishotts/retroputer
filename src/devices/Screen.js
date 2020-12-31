@@ -396,6 +396,17 @@ export class Screen extends Device {
         }
         return spritesByLayer;
     }
+    _drawPixelOnRaster(x, y, scale, tilePixel, currentRaster) {
+        for (let sY = (1 << scale) - 1; sY >= 0; sY--) {
+            if ((y + sY) === currentRaster) {
+                for (let sX = (1 << scale) - 1; sX >= 0; sX--) {
+                    const offset = (y + sY) * SCREEN_COLUMNS + (x + sX);
+                    this._pixelFrame[offset] = tilePixel;
+                }
+            }
+        }
+        return;
+    }
     _drawPixel(x, y, scale, tilePixel) {
         // v1
         for (let sY = (1 << scale) - 1; sY >= 0; sY--) {
@@ -562,9 +573,9 @@ export class Screen extends Device {
                             tileBgColor = this.memory.readUnmappedByte(sprite.pageAddr + tilePos + 0x80);
                             scale = sprite.scale;
                             for (_y = 7; _y >= 0; _y--) {
+                                y = (((row * 8) + _y) << scale) + sprite.yOffset;
                                 for (_x = 7; _x >= 0; _x--) {
                                     x = (((col * 8) + _x) << scale) + sprite.xOffset;
-                                    y = (((row * 8) + _y) << scale) + sprite.yOffset;
                                     tilePixel = this.memory.readUnmappedByte(sprite.tilePageAddr + (tile << 6) + (_y << 3) + _x);
 
                                     tilePixel = (tilePixel < 1 ? tileBgColor : tilePixel < 0xFF ? tilePixel : tileFgColor);
@@ -727,26 +738,30 @@ export class Screen extends Device {
                 if (sprite.visible) {
                     const rows = sprite.height;
                     const cols = sprite.width;
+                    const scale = sprite.scale;
+                    if (currentRaster < sprite.yOffset) continue;
+                    if (currentRaster > sprite.yOffset + (rows * 8) << scale) continue;
                     for (let row = rows - 1; row >= 0; row--) {
                         for (let col = cols - 1; col >= 0; col--) {
                             const tilePos = (row * cols) + col;
                             const tile = this.memory.readUnmappedByte(sprite.pageAddr + tilePos)
                             const tileFgColor = this.memory.readUnmappedByte(sprite.pageAddr + tilePos + 0x40);
                             const tileBgColor = this.memory.readUnmappedByte(sprite.pageAddr + tilePos + 0x80);
-                            const scale = sprite.scale;
                             for (let _y = 7; _y >= 0; _y--) {
                                 const y = (((row * 8) + _y) << scale) + sprite.yOffset;
-                                if (y !== currentRaster) continue;
+                                //if (y !== currentRaster) continue;
                                 for (let _x = 7; _x >= 0; _x--) {
                                     const x = (((col * 8) + _x) << scale) + sprite.xOffset;
-                                    const offset = y * SCREEN_COLUMNS + x;
                                     let tilePixel = this.memory.readUnmappedByte(sprite.tilePageAddr + (tile << 6) + (_y << 3) + _x);
 
-                                    if (tilePixel === 0x00) tilePixel = tileBgColor;
+                                    tilePixel = (tilePixel < 1 ? tileBgColor : tilePixel < 0xFF ? tilePixel : tileFgColor);
+                                    tilePixel = (tilePixel < 1 ? sprite.bg : tilePixel < 0xFF ? tilePixel : sprite.fg);
+                                    /*if (tilePixel === 0x00) tilePixel = tileBgColor;
                                     if (tilePixel === 0xFF) tilePixel = tileFgColor;
                                     if (tilePixel === 0x00) tilePixel = sprite.bg;
                                     if (tilePixel === 0xFF) tilePixel = sprite.fg;
-                                    if (tilePixel !== 0) this._drawPixel(x, y, scale, tilePixel);
+                                    */
+                                    if (tilePixel !== 0) this._drawPixelOnRaster(x, y, scale, tilePixel, currentRaster);
                                 }
                             }
                             
