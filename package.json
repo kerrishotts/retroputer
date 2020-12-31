@@ -11,8 +11,10 @@
     "mode": "all",
     "sourceMap": true
   },
-  "main": "index.js",
-  "browser": "index.js",
+  "browser": {
+    "main": "index.js",
+    "path": "path-browserify"
+  },
   "browserslist": [
     "node 12",
     "last 2 chrome versions",
@@ -30,6 +32,7 @@
     "bufferutil": "^4.0.1",
     "cli": "^1.0.1",
     "cliffy": "^2.0.5",
+    "esbuild": "^0.8.5",
     "express": "^4.17.1",
     "get-pixels": "^3.3.2",
     "gif-encoder": "^0.7.2",
@@ -88,10 +91,11 @@
     "build:docs": "npm run docs:clean && npm run docs:update && npm run docs:toc",
     "build:basm": "pegjs --no-cache --format es -o src/basm/basm.peg.js src/basm/basm.pegjs",
     "build:basic:tokens": "node asm/kernel/basic/tokens.js tokens > asm/kernel/basic/tokens.asm",
-    "build:basic:stmts":  "node asm/kernel/basic/tokens.js stmt > asm/kernel/basic/stmt-tokens.asm",
-    "build:basic:exprs":  "node asm/kernel/basic/tokens.js expr > asm/kernel/basic/expr-tokens.asm",
+    "build:basic:stmts": "node asm/kernel/basic/tokens.js stmt > asm/kernel/basic/stmt-tokens.asm",
+    "build:basic:exprs": "node asm/kernel/basic/tokens.js expr > asm/kernel/basic/expr-tokens.asm",
     "build:basic": "npm run build:basic:tokens && npm run build:basic:stmts && npm run build:basic:exprs",
     "build:kernel": "npm run build:basic && src/basm/index.js -d asm/kernel -x vectors,kdata,krodata -i asm/kernel/kernel.asm -o src/roms/kernel.js",
+    "build:kernel:bin": "npm run build:basic && src/basm/index.js -d asm/kernel -x vectors,kdata,krodata -i asm/kernel/kernel.asm -f bin -a 0x70000 -z 0x7FFFF -o src/roms/kernel.bin",
     "watch:kernel": "nodemon asm/kernel/**/* --exec 'npm run build:kernel'",
     "build:font": "node --experimental-modules ./src/util/buildFont.js",
     "inspect:monitor": "node --inspect src/monitor/index.js",
@@ -101,8 +105,12 @@
     "perf": "node --prof-process --preprocess -j .perf/i*.log | flamebearer",
     "clean": "rimraf dist .cache",
     "clean:watch": "rimraf dist .watch-cache",
+    "clean:esbuild": "rimraf esdist",
     "watch": "parcel src/www/simple/index.html --out-dir .watch --cache-dir .watch-cache",
     "build": "parcel build src/www/simple/index.html",
+    "preesbuild": "npm run clean:esbuild && mkdir esdist && cp src/www/simple/index.html esdist/index.html && sed -i -e \"s|</head>|<link type='text/css' rel='stylesheet' href='index.css'/></head>|g\" esdist/index.html",
+    "esbuild": "esbuild src/www/simple/index.js --target=es2020 --outdir=esdist --bundle --minify --sourcemap --define:process.env.NODE_ENV='\"esbuild\"' --loader:.png=file --loader:.md=file --loader:.mdx=file",
+    "serve:esbuild": "http-server -c-1 esdist -p 1234",
     "serve": "http-server -c-1 dist -p 1234",
     "start": "node --experimental-modules src/server/server.js"
   },

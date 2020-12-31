@@ -383,4 +383,34 @@
                .word _semicolon-keyword, 0b0000000000001000
                .word _end_of_stmt-keyword, 0b0000000000001000
 
+            token-sections:
+
+                .word _abs-keyword, 6     # A
+                .word 0x0000, 0     # B
+                .word _call-keyword, 11     # C
+                .word _data-keyword, 5     # D
+                .word _else-keyword, 3     # E
+                .word _fill-keyword, 4     # F
+                .word _gosub-keyword, 2     # G
+                .word _hex-keyword, 1     # H
+                .word _if-keyword, 4     # I
+                .word 0x0000, 0     # J
+                .word _key-keyword, 1     # K
+                .word _layer-keyword, 11     # L
+                .word _mem-keyword, 4     # M
+                .word _new-keyword, 3     # N
+                .word _off-keyword, 5     # O
+                .word _peek-keyword, 5     # P
+                .word 0x0000, 0     # Q
+                .word _read-keyword, 10     # R
+                .word _save-keyword, 17     # S
+                .word _tab-keyword, 6     # T
+                .word _until-keyword, 3     # U
+                .word _val-keyword, 1     # V
+                .word _while-keyword, 1     # W
+                .word 0x0000, 0     # X
+                .word 0x0000, 0     # Y
+                .word 0x0000, 0     # Z
+                .word _add-keyword, 18     # op
+                .word _real-keyword, 7     # tok
 }
