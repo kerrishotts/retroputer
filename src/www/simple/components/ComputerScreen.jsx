@@ -65,8 +65,6 @@ function initGLCanvas(canvas, useGL) {
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.uniform3f(gl.getUniformLocation(program, "u_canvasSize"), gl.canvas.width, gl.canvas.height, 0.0 );
-
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.uniform2f(gl.getUniformLocation(program, "u_canvasSize"), gl.canvas.width, gl.canvas.height);
 
     var texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
@@ -83,8 +81,6 @@ function initGLCanvas(canvas, useGL) {
 
     const gltex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, gltex);
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT );
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -92,14 +88,14 @@ function initGLCanvas(canvas, useGL) {
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(gl.getUniformLocation(program, "u_texture0"), 0);
 
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
     return [true, gl, program];
 }
-function gldraw(gl, source)
+function gldraw(gl, source, program)
 {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    //requestAnimationFrame(gldraw);
 }
 /* end of shader stuff */
 
@@ -213,7 +209,7 @@ export class ComputerScreen extends React.Component {
                 const ctx = this.ctx; //canvas.getContext("2d");
 
                 if (this.isGL) {
-                    gldraw(ctx, frameCanvas);
+                    gldraw(ctx, frameBuffer, this.program);
                 } else {
                     ctx.drawImage(frameCanvas, 0, 0);
                 }
