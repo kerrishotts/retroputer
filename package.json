@@ -51,7 +51,7 @@
     "shelljs": "^0.8.3",
     "stats.js": "^0.17.0",
     "utf-8-validate": "^5.0.2",
-    "ws": "^7.2.5",
+    "ws": "^7.4.6",
     "yurnalist": "^1.0.5"
   },
   "devDependencies": {
