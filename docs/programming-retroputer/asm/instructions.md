@@ -162,30 +162,31 @@ brs z next-frame        # branch to next-frame if last ALU op was zero
 br !c end-game          # branch to end-game if carry is clear
 ```
 
-It should be noted that there are no concessions offered for checking multiple flags at once -- such as you might want to do when checking if a value is less than or equal to another value. Instead, you must make multiple branches:
+Special concession is provided for commonly used cases where you might want to branch if one number is less than another, as doing so effectively generally requires checking one or more flags.
 
 ```text
-ld a, 0x4000
-cmp a, 0x4001
-br z lte        # when zero is set, that signals equality
-br n lte        # when negative is set, that signals less-than
+cmp a, b
+br .lte next-frame      # branch to next-frame if a <= b (signed)
 ```
 
-For reference, the following conditions may prove useful when mapping flags to their mathematical equivalents:
+It is important to know if the result of the comparison was due to comparing two signed numbers or two unsigned numbers, as this determines the type of branch condition used. Using the wrong one will result in very strange bugs.
 
-| Result of Comparison | Flags |
-| :--- | :--- |
-| Equal | Z |
-| Not Equal | !Z |
-| Less Than | N |
-| Greater Than | C |
-| Less Than or Equal | Z, N |
-| Greater Than or Equal | Z, C |
+| Condition Operator | Signed | Unsigned |
+| :----------------: | :----: | :------: |
+| `<`                | `.lt`  | `.blo` (below)  |
+| `>`                | `.gt`  | `.abv` (above)  |
+| `<=`               | `.lte` | `.ble`   |
+| `>=`               | `.gte` | `.abe`   |
+
+In addition to the above, `.eq` and `.neq` are provided for consistency, although these are assembled to `br(s) z` and `br(s) !z`, respectively.
+
+Furthermore, each of the above conditions may be further negated by prepending `n` -- `.nlte` ("not less than or equal") will be translated to `.gt` (greater than).
 
 #### Grammar
 
 ```text
-BR[S] [!][flag]
+BR[S] [!][flag] <addr>
+BR[S] .[n](lt[e]|gt[e]|abv|blo|ble|abe|eq) <addr>
 ```
 
 #### Examples
@@ -197,7 +198,7 @@ BR[S] [!][flag]
 .segment code 0x02000 {
      ld al, [lives]
      cmp al, 0
-     br z game-over
+     br .eq game-over
      # more code
 game-over:
      # no more lives left!
@@ -244,22 +245,31 @@ calls z next-frame        # call next-frame if last ALU op was zero
 call !c end-game          # call end-game if carry is clear
 ```
 
-It should be noted that there are no concessions offered for checking multiple flags at once -- such as you might want to do when checking if a value is less than or equal to another value. Instead, you should make multiple branches and then call :
+Special concession is provided for commonly used cases where you might want to branch if one number is less than another, as doing so effectively generally requires checking one or more flags.
 
 ```text
-ld a, 0x4000
-cmp a, 0x4001
-br z _lte        # when zero is set, that signals equality
-br n _lte        # when negative is set, that signals less-than
-brk
-_lte:
-call lte         # call lte if less than or equal
+cmp a, b
+call .lte next-frame      # call next-frame if a <= b (signed)
 ```
+
+It is important to know if the result of the comparison was due to comparing two signed numbers or two unsigned numbers, as this determines the type of branch condition used. Using the wrong one will result in very strange bugs.
+
+| Condition Operator | Signed | Unsigned |
+| :----------------: | :----: | :------: |
+| `<`                | `.lt`  | `.blo` (below)  |
+| `>`                | `.gt`  | `.abv` (above)  |
+| `<=`               | `.lte` | `.ble`   |
+| `>=`               | `.gte` | `.abe`   |
+
+In addition to the above, `.eq` and `.neq` are provided for consistency, although these are assembled to `call(s) z` and `call(s) !z`, respectively.
+
+Furthermore, each of the above conditions may be further negated by prepending `n` -- `.nlte` ("not less than or equal") will be translated to `.gt` (greater than).
 
 #### Grammar
 
 ```text
-CALL[S] [!][flag]
+CALL[S] [!][flag] <addr>
+CALL[S] .[n](lt[e]|gt[e]|abv|blo|ble|abe|eq) <addr>
 ```
 
 #### Examples

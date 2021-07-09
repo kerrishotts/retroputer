@@ -1013,9 +1013,37 @@ OPCODES["ret"] = {
             addr = calcAddress({m, i, x, y, a: addr}, {registerFile, memory});
             if (m !== 0) addr = memory.readWord(addr);
             if (u === 1) {
-                // unconditional, so don't check any flags
-                // as such, the address is currently on the stack
-                registerFile.PC = addr;
+                switch (f) {
+                    case 0b000:
+                        // unconditional, so don't check any flags
+                        // as such, the address is currently on the stack
+                        registerFile.PC = addr;
+                        break;
+                    case 0b010:
+                        // lt (N != V) or blo (C=1)
+                        if ((n === 0 && registerFile.NEGATIVE !== registerFile.OVERFLOW) 
+                         || (n === 1 && registerFile.CARRY))    
+                            registerFile.PC = addr;
+                        break;
+                    case 0b011:
+                        // lte (N != V or Z=0) or ble (C=1 or Z=1)
+                        if ((n === 0 && ((registerFile.NEGATIVE !== registerFile.OVERFLOW) || registerFile.ZERO)) 
+                         || (n === 1 &&  (registerFile.CARRY                               || registerFile.ZERO)))
+                            registerFile.PC = addr;
+                        break;
+                    case 0b100:
+                        // gt (N=V and Z=0) or abv (C=0 and Z=0)
+                        if ((n === 0 && (registerFile.NEGATIVE === registerFile.OVERFLOW) && !registerFile.ZERO)
+                         || (n === 1 && (!registerFile.CARRY && !registerFile.ZERO))) 
+                            registerFile.PC = addr;
+                        break;
+                    case 0b101:
+                        // gte (N=V or Z=1) or abe (C=0 or Z=1)
+                        if ((n === 0 && (registerFile.NEGATIVE === registerFile.OVERFLOW) && registerFile.ZERO)
+                         || (n === 1 && (!registerFile.CARRY || registerFile.ZERO)))
+                            registerFile.PC = addr;
+                        break;
+                }
             } else {
                     let flagValue = (registerFile.FLAGS & (1<<f)) ? 1 : 0;
                     if (n === 1) flagValue = 1 - flagValue;

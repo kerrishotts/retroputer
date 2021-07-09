@@ -37,7 +37,7 @@
         cursor-col:           .byte 0x00
         cursor-fg:            .byte 0xFF
         cursor-bg:            .byte 0x00
-        cursor-tile:          .byte 0xDB
+        cursor-tile:          .byte 0xA4
         cursor-visible:       .byte 0x00
         cursor-blink-toggle:  .byte 0x00
         cursor-blink-speed:   .byte 19
@@ -552,6 +552,23 @@
             push y
             pushf
         _main:
+            # do we need to pause for a second?
+            in dl, 0x38                                  # left SHIFT will be here
+            test dl, 0b0000_0001                         # only care about left SHIFT
+            if !z {                                      # ZERO will be unset if pressed
+                push c
+                in dl, 0x03
+                ld cl, 25
+                add dl, cl
+                ld cl, 100
+                mod dl, cl 
+
+                do {
+                    in cl, 0x03
+                    cmp dl, cl
+                } while !z                                # wait half a second
+                pop c
+            }
             ld d, [screen.kdata.screen-page]                # get screen page
             xor y, y
             ld yl, [screen.kdata.screen-cols]               # 
@@ -874,7 +891,7 @@
         }
 
         set-bg-color: {
-            [screen.kdata.cursor-bg] := dl
+            # [screen.kdata.cursor-bg] := dl
             [screen.kdata.screen-text-bg] := dl
             ret
         }
@@ -888,7 +905,7 @@
             push a
         _main:
             ld al, [screen.kdata.print-control-param]
-            [screen.kdata.cursor-bg] := al
+            # [screen.kdata.cursor-bg] := al
             [screen.kdata.screen-text-bg] := al
         _out:
             pop a

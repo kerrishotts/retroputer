@@ -238,6 +238,7 @@ function evaluate(node, context) {
             return evaluate(node.addr, context);
         case TOKENS.REGISTER:
         case TOKENS.FLAG:
+        case TOKENS.CONDITIONAL:
             return node;
         default:
             err(`Unexpected token in expression ${node.type}`);
@@ -260,7 +261,7 @@ function tryToAssemble(node, context, pc, fail = false) {
         err(`Tried to assemble an unexpected token: ${node}`);
     }
 
-    let { op, dest, source, reg, addr, flag, imm, x, y, i, m, bankReg, offsReg } = node;
+    let { op, dest, source, reg, addr, flag, imm, x, y, i, m, bankReg, offsReg, condition } = node;
 
 
     try {
@@ -464,16 +465,45 @@ function tryToAssemble(node, context, pc, fail = false) {
                         }
                         */
                     }
-                    const neg = (flag && flag.neg);
-                    const flg = (flag && flag.flag) || 0;
-                    bytes.push(0x90 | (neg ? 1 : 0) << 3 | flg,
-                        (addr.m << 6) |
-                        ((addr.i ? 1 : 0) << 5) |
-                        ((addr.x ? 1 : 0) << 4) |
-                        ((addr.y ? 1 : 0) << 3) |
-                        ((!flag ? 1 : 0) << 2) | // unconditional
-                        ((isCall ? 1 : 0) << 1) | // BR | CALL
-                        ((size === 3 ? 1 : 0)));
+
+                    let flagSpecific = false;
+                    if ( (!flag && !condition) || flag) {
+                        const neg = (flag && flag.neg);
+                        const flg = (flag && flag.flag) || 0;
+                        bytes.push(0x90 | (neg ? 1 : 0) << 3 | flg);
+                        if (flag) flagSpecific = true;
+                    } else {
+                        // condition
+                        switch (condition.conditional) {
+                            case "==":
+                                bytes.push(0x90); flagSpecific = true; break;
+                            case "!=":
+                                bytes.push(0x98); flagSpecific = true; break;
+                            case "s<=":
+                                bytes.push(0x90 | 0b0011); break;
+                            case "s<":
+                                bytes.push(0x90 | 0b0010); break;
+                            case "s>=":
+                                bytes.push(0x90 | 0b0101); break;
+                            case "s>":
+                                bytes.push(0x90 | 0b0100); break;
+                            case "u<=":
+                                bytes.push(0x90 | 0b1011); break;
+                            case "u<":
+                                bytes.push(0x90 | 0b1010); break;
+                            case "u>=":
+                                bytes.push(0x90 | 0b1101); break;
+                            case "u>":
+                                bytes.push(0x90 | 0b1100); break;
+                        }
+                    }
+                    bytes.push( (addr.m << 6) |
+                                ((addr.i ? 1 : 0) << 5) |
+                                ((addr.x ? 1 : 0) << 4) |
+                                ((addr.y ? 1 : 0) << 3) |
+                                (((!flagSpecific) ? 1 : 0) << 2) | // not flag-specific
+                                ((isCall ? 1 : 0) << 1) | // BR | CALL
+                                ((size === 3 ? 1 : 0)));
                     if (size === 3) {
                         bytes.push((r & 0x000FF));
                     } else {

@@ -412,5 +412,4 @@
                 .word 0x0000, 0     # Y
                 .word 0x0000, 0     # Z
                 .word _add-keyword, 18     # op
-                .word _real-keyword, 7     # tok
 }

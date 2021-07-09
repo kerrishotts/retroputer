@@ -727,17 +727,17 @@
 
 
                 # do we need to pause for a second?
-                in dl, 0x38                                  # left SHIFT will be here
-                test dl, 0b0000_0001                         # only care about left SHIFT
-                if !z {                                      # ZERO will be unset if pressed
-                    push c
-                    in dl, 0x02
-                    do {
-                        in cl, 0x02
-                        cmp dl, cl
-                    } while z                                # wait a second
-                    pop c
-                }
+#                in dl, 0x38                                  # left SHIFT will be here
+#                test dl, 0b0000_0001                         # only care about left SHIFT
+#                if !z {                                      # ZERO will be unset if pressed
+#                    push c
+#                    in dl, 0x02
+#                    do {
+#                        in cl, 0x02
+#                        cmp dl, cl
+#                    } while z                                # wait a second
+#                    pop c
+#                }
 
                 pop d
             }

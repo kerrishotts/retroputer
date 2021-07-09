@@ -10,6 +10,7 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
     const modeByte = size === 3 ? (instruction & 0x0000FF00) >>> 8 : (instruction & 0x00FF0000) >>> 16;
     const reg = size === 3 ? (instruction & 0x000F0000) >>> 16 : (instruction & 0x0F000000) >>> 24;
     const flg = size === 3 ? (instruction & 0x00070000) >>> 16 : (instruction & 0x07000000) >>> 24;
+    const cond = size === 3 ? (instruction & 0x000F0000) >>> 16 : (instruction & 0x0F000000) >>> 24;
     const negate = !!(size === 3 ? (instruction & 0x00080000) : (instruction & 0x08000000));
     const indirect =     !!(modeByte & 0b00100000);
     const indexByX =     !!(modeByte & 0b00010000);
@@ -32,6 +33,29 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
     if (usesFlags) {
         if (!always) {
             out = `${out} ${negate ? "!" : ""}${FLAG_NAMES[flg]},`;
+        } else {
+            switch (cond) {
+                case 0b0000:
+                    break;
+                case 0b0010:
+                    out = `${out} .lt,`; break;
+                case 0b0011:
+                    out = `${out} .lte,`; break;
+                case 0b0100:
+                    out = `${out} .gt,`; break;
+                case 0b0101:
+                    out = `${out} .gte,`; break;
+                case 0b1010:
+                    out = `${out} .blo,`; break;
+                case 0b1011:
+                    out = `${out} .ble,`; break;
+                case 0b1100:
+                    out = `${out} .abv,`; break;
+                case 0b1101:
+                    out = `${out} .abe,`; break;
+                default:
+                    out = `${out} .???,`;
+            }
         }
     }  else {
         if (opcode === OPCODES.LD || opcode === OPCODES.LOOP || opcode === OPCODES.LOOPS) {

@@ -550,6 +550,7 @@
 	void main()
 	{
 		gl_FragColor.rgb = Tri(Warp(v_texCoord.xy))*Mask(v_texCoord.x*texSize.x);
+		//gl_FragColor.rgb = texture2D(u_texture,v_texCoord.xy).rgb;
 		gl_FragColor.a = 1.0;
 	}
 </script>

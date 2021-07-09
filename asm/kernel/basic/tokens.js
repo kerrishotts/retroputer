@@ -330,8 +330,8 @@ ${keywordsSection}
 ${tokenVectors}
             token-sections:
 ${Object.entries(sections).map(([k, section]) => {
-    return `
-                .word ${section.label || "0x0000"}, ${section.count}     # ${k}`
+    return section.label !== "_real-keyword" ? `
+                .word ${section.label || "0x0000"}, ${section.count}     # ${k}` : ``
 }).join("")}
 }
 `;
