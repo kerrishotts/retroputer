@@ -34,7 +34,7 @@
     "get-pixels": "^3.3.2",
     "gif-encoder": "^0.7.2",
     "golden-layout": "^1.5.9",
-    "handsontable": "^7.4.2",
+    "handsontable": "^10.0.0",
     "htm": "^2.2.1",
     "image-output": "^2.4.2",
     "jquery": "^3.4.1",
