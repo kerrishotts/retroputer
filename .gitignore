@@ -8,6 +8,7 @@ coverage
 src/www/bundle.js
 *.log
 .cache
+.parcel-cache
 .watch
 .watch-cache
 .DS_Store

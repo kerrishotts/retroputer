@@ -2,6 +2,7 @@ import React from 'react';
 import scanlines from "../assets/scanlines.png";
 import shadowMask from "../assets/shadowmask.png";
 import { Keyboard } from "./Keyboard.jsx";
+import { getLastFrame, frameDump } from "../System.js";
 /*
  * Modified from 
  * https://gist.github.com/KHN190/d7c467a471b15e72302b16a9336440a5
@@ -171,7 +172,8 @@ export class ComputerScreen extends React.Component {
     }
     renderFrame(now) {
         const { store } = this.props;
-        const { computer, diagnostics, devices: { screen }, stats } = store;
+        //const { computer, diagnostics, devices: { screen }, stats } = store;
+        const { stats } = store;
 
         stats.begin();
 
@@ -189,6 +191,24 @@ export class ComputerScreen extends React.Component {
         this._lastTimestamp = now;
 
         this._cancelRAF = requestAnimationFrame(this.renderFrame);
+
+        const lastFrame = getLastFrame();
+        if (lastFrame) {
+            frameBuffer.data.set(lastFrame);
+            frameCtx.putImageData(frameBuffer, 0, 0);
+
+            const canvas = this.canvas.current;
+            const ctx = this.ctx; //canvas.getContext("2d");
+
+            if (this.isGL) {
+                gldraw(ctx, frameBuffer, this.program);
+            } else {
+                ctx.drawImage(frameCanvas, 0, 0);
+            }
+        }
+        frameDump();
+
+        /* 
 
         if (diagnostics.state !== "running") {
             if (orphanedFrames < 3) {
@@ -219,6 +239,8 @@ export class ComputerScreen extends React.Component {
         if (diagnostics.state === "running") {
             orphanedFrames = 0;
         }
+
+        */
 
         this.setState({
             orphanedFrames,

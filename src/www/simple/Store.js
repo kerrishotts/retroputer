@@ -10,6 +10,8 @@ import { Timers } from "../../devices/Timers.js";
 
 import rom from "../../roms/kernel.js";
 
+import { sysInit, cpuReset } from "./System.js";
+
 export class Store {
     constructor() {
         this.listeners = [];
@@ -31,6 +33,9 @@ export class Store {
 
         this.config = {};
         this.load();
+
+        sysInit(this.config.options);
+/*
         const computer = new Computer({ 
             performance, 
             debug: true, 
@@ -101,7 +106,8 @@ export class Store {
         };
 
         computer.reset();
-
+*/
+        cpuReset();
     }
 
     get code() {

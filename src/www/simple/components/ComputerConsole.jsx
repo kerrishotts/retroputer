@@ -6,6 +6,8 @@ export class ComputerConsole extends React.Component {
         this._console = React.createRef();
     }
     componentDidMount() {
+        return;
+
         const { store } = this.props;
         const { devices: { console } } = store;
         console.target = this._console.current;

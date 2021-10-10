@@ -21,7 +21,7 @@ import { ComputerControl } from "./components/ComputerControl.jsx";
 import { ComputerMemory } from "./components/ComputerMemory.jsx";
 import { ComputerKeyboard } from "./components/ComputerKeyboard.jsx";
 import { ComputerIO } from "./components/ComputerIO.jsx";
-import { Docs } from "./components/Docs.jsx";
+//import { Docs } from "./components/Docs.jsx";
 import { Keyboard } from "./components/Keyboard.jsx";
 
 window.React = React;
@@ -82,12 +82,12 @@ const defaultConfig = {
                                     component: 'computer-console',
                                     props: {store}
                                 },
-                                {
+                                /*{
                                     type: 'react-component',
                                     title: 'Documentation',
                                     component: 'docs',
                                     props: {store}
-                                },
+                                },*/
                             ]
                         },
                         /*{
@@ -204,7 +204,7 @@ function initGoldenLayout() {
     const myLayout = new GoldenLayout( config );
     myLayout.registerComponent( 'computer-control', ComputerControl);
     myLayout.registerComponent( 'fps', FPS);
-    myLayout.registerComponent( 'docs', Docs);
+    //myLayout.registerComponent( 'docs', Docs);
     myLayout.registerComponent( 'computer-screen', ComputerScreen);
     myLayout.registerComponent( 'computer-state', ComputerState);
     myLayout.registerComponent( 'disassembler', Disassembler);

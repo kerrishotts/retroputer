@@ -20,6 +20,7 @@ export class Keyboard extends React.Component {
         this.realKeyUp = this.realKeyUp.bind(this);
     }
     componentDidMount() {
+        return; 
         const { store } = this.props;
         const { keyboard } = store.devices;
         this._watcher = setInterval(() => {
@@ -137,15 +138,15 @@ export class Keyboard extends React.Component {
         const keyState = this.state;
         const mode = this.props.mode || "full";
         return (
-            <div class="keyboardPanel" onMouseDown={this.keyDown} onMouseUp={this.keyUp} >
+            <div className="keyboardPanel" onMouseDown={this.keyDown} onMouseUp={this.keyUp} >
                 <img style={{position: "absolute", right: 0, flex: "0 0 auto", height:"40px", mixBlendMode: "exclusion"}} src={Logo}/>
-                <div class="keyboardSection">
-                    <div class="keyboardRow">
+                <div className="keyboardSection">
+                    <div className="keyboardRow">
                         <Key style={{minWidth: "50px",  }} coord={[-1, 0]} label="Paste" which={[]} keyState={keyState} />
                         <span style={{flex: "1 1 80%"}}></span>
                     </div>
                     {mode === "full" && <>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[0, 0]} which={KEYBOARD_MAP[0][ 0]} keyState={keyState} />
                             <Key coord={[0, 1]} which={KEYBOARD_MAP[0][ 1]} keyState={keyState} />
                             <Key coord={[0, 2]} which={KEYBOARD_MAP[0][ 2]} keyState={keyState} />
@@ -161,7 +162,7 @@ export class Keyboard extends React.Component {
                             <Key coord={[0,12]} which={KEYBOARD_MAP[0][12]} keyState={keyState} />
                             <Key coord={[0,13]} label="Back" which={KEYBOARD_MAP[0][13]} keyState={keyState} size="key125"/>
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[1, 0]} label="tab"  which={KEYBOARD_MAP[1][ 0]} keyState={keyState} size="key125"/>
                             <Key coord={[1, 1]} which={KEYBOARD_MAP[1][ 1]} keyState={keyState} />
                             <Key coord={[1, 2]} which={KEYBOARD_MAP[1][ 2]} keyState={keyState} />
@@ -178,7 +179,7 @@ export class Keyboard extends React.Component {
                             <Key coord={[1,13]} which={KEYBOARD_MAP[1][13]} keyState={keyState} />
 
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[2, 0]} toggle={true} label="caps"  which={KEYBOARD_MAP[2][ 0]} keyState={keyState} size="key150"/>
                             <Key coord={[2, 1]} which={KEYBOARD_MAP[2][ 1]} keyState={keyState} />
                             <Key coord={[2, 2]} which={KEYBOARD_MAP[2][ 2]} keyState={keyState} />
@@ -194,7 +195,7 @@ export class Keyboard extends React.Component {
                             <Key coord={[2,13]} label="enter" which={KEYBOARD_MAP[2][13]} keyState={keyState} size="key125" />
 
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[3, 0]} toggle={true} label="shift"  which={KEYBOARD_MAP[3][ 0]} keyState={keyState} size="key175"/>
                             <Key coord={[3, 1]} which={KEYBOARD_MAP[3][ 1]} keyState={keyState} />
                             <Key coord={[3, 2]} which={KEYBOARD_MAP[3][ 2]} keyState={keyState} />
@@ -210,7 +211,7 @@ export class Keyboard extends React.Component {
                             <Key coord={[3,13]} toggle={true} label="shift" which={KEYBOARD_MAP[3][13]} keyState={keyState} />
 
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[4, 0]} toggle={true} label="fn"    which={KEYBOARD_MAP[4][ 0]} keyState={keyState} size="key125"/>
                             <Key coord={[4, 1]} toggle={true} label="gr"    which={KEYBOARD_MAP[4][ 1]} keyState={keyState} size="key125"/>
                             <Key coord={[4, 2]} toggle={true} label="ctrl"  which={KEYBOARD_MAP[4][ 2]} keyState={keyState} size="key125"/>
@@ -223,28 +224,28 @@ export class Keyboard extends React.Component {
                         </div>
                     </>}
                 </div>
-                <div class="keyboardSection">
-                    <div class="keyboardRow">
+                <div className="keyboardSection">
+                    <div className="keyboardRow">
                         <span style={{height: "40px"}}></span>
                     </div>
                     {mode === "full" && <>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[0,14]} label="f1"   which={KEYBOARD_MAP[0][14]} keyState={keyState} size="key125"/>
                             <Key coord={[0,15]} label="f2"   which={KEYBOARD_MAP[0][15]} keyState={keyState} size="key125"/>
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[1,14]} label="f3"   which={KEYBOARD_MAP[1][14]} keyState={keyState} size="key125"/>
                             <Key coord={[1,15]} label="f4"   which={KEYBOARD_MAP[1][15]} keyState={keyState} size="key125"/>
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[2,14]} label="f5"   which={KEYBOARD_MAP[2][14]} keyState={keyState} size="key125"/>
                             <Key coord={[2,15]} label="f6"   which={KEYBOARD_MAP[2][15]} keyState={keyState} size="key125"/>
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[3,14]} label="f7"    which={KEYBOARD_MAP[3][14]} keyState={keyState} size="key125"/>
                             <Key coord={[3,15]} label="f8"    which={KEYBOARD_MAP[3][15]} keyState={keyState} size="key125"/>
                         </div>
-                        <div class="keyboardRow">
+                        <div className="keyboardRow">
                             <Key coord={[4,14]} label="f9"   which={KEYBOARD_MAP[3][14]} keyState={keyState} size="key125"/>
                             <Key coord={[4,15]} label="f10"  which={KEYBOARD_MAP[3][15]} keyState={keyState} size="key125"/>
                         </div>

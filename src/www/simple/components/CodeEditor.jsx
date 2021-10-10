@@ -1,5 +1,5 @@
 import React from 'react';
-import { ControlledEditor } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import { Icon } from 'react-icons-kit';
 import { pencil } from 'react-icons-kit/icomoon/pencil';
 import { floppyDisk } from 'react-icons-kit/icomoon/floppyDisk';
@@ -99,7 +99,7 @@ export class CodeEditor extends React.Component {
     }
     codeChanged(e, v) {
         const { store }  = this.props;
-        const code = v;
+        const code = v || e.target.value;
         store.code = code;
         this.setState({code});
     }
@@ -162,20 +162,20 @@ export class CodeEditor extends React.Component {
                     <button className="nogrow noshrink" title="Assemble" onClick={this.assembleClicked}><Icon icon={magicWand}/></button>
                 </div>
                 {view === "edit" ? (
-                    <ControlledEditor
+                    <textarea
                         className="grow shink"
                         height="100%"
                         language="asm"
                         value={code}
                         theme="dark"
-                        editorDidMount={this.editorDidMount}
+                        onMount={this.editorDidMount}
                         onChange={this.codeChanged}
                         options={{
                             lineNumbersMinChars: 3,
                             fixedOverflowWidgets: true,
                             minimap: { enabled: false }
                         }}
-                    />
+                    >{code}</textarea>
                 ) : (
                     <code className="nogrow noshrink" style={{whiteSpace: "pre-wrap"}}>{log}</code>
                 )

@@ -25,11 +25,11 @@ export class Docs extends React.Component {
             th: ({style, children, ...props}) => <th {...props}>{children}</th>,
             td: ({style, children, ...props}) => <td {...props}>{children}</td>,
             pre: ({children, ...props}) => 
-                <pre class="code">
-                    <div class="codebar">
+                <pre className="code">
+                    <div className="codebar">
                         <button onClick={e => this.copyToEditor(e.target.parentNode.nextSibling.innerText)}>Copy to Editor</button>
                     </div>
-                    <div class="codebody">
+                    <div className="codebody">
                         {children}
                     </div>
                 </pre>

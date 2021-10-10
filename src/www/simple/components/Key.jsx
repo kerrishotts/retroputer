@@ -27,7 +27,7 @@ export const Key = ({ which: [_, normal, normalShift, gr, grShift, ctrl ],
 
 
     return (
-        <div style={style} className={`keycap ${pressed ? "pressed" : ""} ${size}`} dataValue={strOrAscii(theKey)} dataRow={row} dataCol={col} dataToggle={toggle ? "toggle" : undefined}>
+        <div style={style} className={`keycap ${pressed ? "pressed" : ""} ${size}`} datavalue={strOrAscii(theKey)} datarow={row} datacol={col} datatoggle={toggle ? "toggle" : undefined}>
             {label ? (
                 <div className="main label" >{label}</div>
             ) : (<>

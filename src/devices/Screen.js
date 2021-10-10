@@ -154,6 +154,12 @@ export class Screen extends Device {
         return this._frame;
     }
 
+    get transferrableFrame() {
+        const _frame = this._frame;
+        this._frame = new Uint8Array(new ArrayBuffer(SCREEN_ROWS * SCREEN_COLUMNS * 4));
+        return _frame;
+    }
+
     get ticksBetweenRasterLines() {
         return this._ticksPerRaster;
     }

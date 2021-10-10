@@ -18,6 +18,7 @@ export class ComputerState extends AutoUpdateComponent {
         this.setState({});
     }
     render() {
+        return <></>;
         const { store } = this.props;
         const { computer, diagnostics, devices: {screen} } = store;
         const { updating, updateFrequency } = this.state;
