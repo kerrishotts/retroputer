@@ -48,7 +48,7 @@
     "react-window": "^1.8.5",
     "rgba-to-datauri": "^0.1.1",
     "sade": "^1.6.0",
-    "shelljs": "^0.8.3",
+    "shelljs": "^0.8.5",
     "stats.js": "^0.17.0",
     "utf-8-validate": "^5.0.2",
     "ws": "^7.2.5",
