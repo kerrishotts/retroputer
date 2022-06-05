@@ -15,7 +15,8 @@ const TIMING_METHOD_SELECT = {
     [TIMING_METHODS.RAF]:      { label: "Auto",     granularities: [0x01, 0x0F, 0xFF, 0x1FF, 0xFFF, 0x1FFF, 0x3FFF], default: 0xFF },
     [TIMING_METHODS.INTERVAL]: { label: "Interval", granularities: [0x01, 0x0F, 0xFF, 0x1FF, 0xFFF, 0x1FFF, 0x3FFF], default: 0xFF },
     [TIMING_METHODS.TIMEOUT]:  { label: "Timeout",  granularities: [0x01, 0x0F, 0xFF, 0x1FF, 0xFFF, 0x1FFF, 0x3FFF], default: 0xFF },
-    [TIMING_METHODS.FIXED]:    { label: "Fixed",    granularities: [256, 512, 1024, 2048, 3072, 4096, 6144, 8192, 10240, 12288, 16384, 24576, 32768], default: 12288}
+    [TIMING_METHODS.FIXED]:    { label: "Fixed",    granularities: [256, 512, 1024, 2048, 3072, 4096, 6144, 8192, 10240, 12288, 16384, 24576, 32768], default: 12288},
+    [TIMING_METHODS.SENTINEL]: { label: "Sentinel", granularities: [0x01], default: 0x01}
 };
 
 const TICKS_BETWEEN_RASTER_LINES = [ "AUTO", 8, 12, 16, 20, 24, 28, 32, 40, 48, 64, 96, 128 ];

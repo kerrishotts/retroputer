@@ -41,6 +41,7 @@
     "htm": "^2.2.1",
     "image-output": "^2.4.2",
     "jquery": "^3.4.1",
+    "local-web-server": "^5.2.1",
     "nodemon": "^2.0.13",
     "path-browserify": "^1.0.1",
     "pegjs": "^0.11.0-master.0b102d2",
@@ -110,8 +111,9 @@
     "build:worker": "npm run _build:worker -- --minify",
     "watch": "npm run _build -- --watch",
     "watch:worker": "npm run _build:worker -- --watch",
-    "serve": "http-server -c-1 esdist -p 1234",
-    "start": "node --experimental-modules src/server/server.js"
+    "serve": "ws -o -d esdist --static.maxage 0 -p 1234 --cors.opener-policy same-origin --cors.embedder-policy require-corp",
+    "start:server": "node --experimental-modules src/server/server.js",
+    "start": "npm run serve"
   },
   "repository": {
     "type": "git",

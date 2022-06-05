@@ -231,7 +231,7 @@ export class Store {
                 end:   "0x000FF"
             },
             options: {
-                timingMethod: TIMING_METHODS.FIXED,
+                timingMethod: TIMING_METHODS.SENTINEL,
                 sliceGranularity: 16384,
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",

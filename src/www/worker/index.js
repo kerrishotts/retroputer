@@ -12,11 +12,12 @@ class System {
     constructor(opts) {
         this.config = Object.assign({}, {
             options: {
-                timingMethod: TIMING_METHODS.FIXED,
+                timingMethod: TIMING_METHODS.SENTINEL,
                 sliceGranularity: 16384,
                 sliceTime: 16,
                 ticksBetweenRasterLines: "AUTO",
                 accurateScreen: true,
+                sentinel: undefined
             },
         }, opts);
         const computer = new Computer({ 
@@ -25,6 +26,7 @@ class System {
             timingMethod: this.config.options.timingMethod,
             sliceTime: this.config.options.sliceTime, 
             sliceGranularity: this.config.options.sliceGranularity,
+            sentinel: this.config.options.sentinel
         });
         computer.memory.loadFromJS(rom, true);
         const diagnostics = new Diagnostics(computer);
@@ -100,7 +102,7 @@ onmessage = evt => {
 
     switch (command) {
         case "sys-init":        /* initialize the system */
-            system = new System(options); 
+            system = new System({options}); 
             break;
         case "sys-config":      /* update the system configuration */
             break;

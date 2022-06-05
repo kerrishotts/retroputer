@@ -13,7 +13,8 @@ export const TIMING_METHODS = {
     TIMEOUT: 2,
     RAF: 3,
     BLOCKING: 4,
-    FIXED: 5
+    FIXED: 5,
+    SENTINEL: 6
 };
 
 export const SHARED_MEMORY = {
@@ -35,6 +36,7 @@ const _controller = Symbol("_controller");
 const _debug = Symbol("_debug");
 const _stopSignal = Symbol("_stopSignal");
 const _runID = Symbol("_runID");
+const _sentinel = Symbol("_sentinel");
 
 export class Computer {
     /**
@@ -44,8 +46,17 @@ export class Computer {
      * @param {number} [config.sliceTime=16] the amount of time to run, per slice
      * @param {number} [config.sliceGranularity=4095] the granularity when checking for slice timing
      * @param {number} [config.timingMethod=0] the timing method to use
+     * @param {SharedArrayBuffer} [config.sentinel] a shared array buffer for timing method Sentinel
      */
-    constructor({ performance, debug = false, sliceTime = 16, sliceGranularity = 0x0FFF, timingMethod = TIMING_METHODS.AUTO, shared = SHARED_MEMORY.AUTO, stats} = {}) {
+    constructor({ performance, 
+        debug = false, 
+        sliceTime = 16, 
+        sliceGranularity = 0x0FFF, 
+        timingMethod = TIMING_METHODS.AUTO, 
+        shared = SHARED_MEMORY.AUTO, 
+        stats,
+        sentinel
+    } = {}) {
 
         const clock = new Bus(1, 0b1);
         const systemBus = new SystemBus();
@@ -107,6 +118,7 @@ export class Computer {
         this[_debug] = debugLine;
         this[_processor] = processor;
         this[_controller] = controller;
+        this[_sentinel] = sentinel ? new Uint8Array(sentinel) : null;
 
 
         this._options = {
@@ -215,7 +227,21 @@ export class Computer {
         this[_stopSignal] = false;       // clear any stop signal for this slice
         this.stats.slices++;
         const start = performance.now();
-        if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
+        if (timingMethod === TIMING_METHODS.SENTINEL) {
+            while (!this[_stopSignal]) {
+                this.tick();
+                this.tick();
+                this.tick();
+                this.tick();
+                this.tick();
+                // check for a sentinel
+                if (Atomics.load(this[_sentinel], 0) !== 0) {
+                    Atomics.store(this[_sentinel], 0, 0); // clear the sentinel
+                    break;
+                }
+            }
+        }
+        else if (timeout > 0 && timingMethod !== TIMING_METHODS.BLOCKING) {
             let now = start;
             let slice = now;
             let delta = 0;
@@ -266,6 +292,15 @@ export class Computer {
         if (this.running) this.stop();
 
         switch (realTimingMethod) {
+            case TIMING_METHODS.SENTINEL: {
+                this[_runID] = setTimeout((function slice() {
+                    this.runSlice();
+                    if (this.running) {
+                        this[_runID] = setTimeout(slice.bind(this), 0);
+                    }
+                }).bind(this), 0);
+                break;
+            }
             case TIMING_METHODS.TIMEOUT: {
                 this[_runID] = setTimeout((function slice() {
                     const timeTaken = this.runSlice();
@@ -303,6 +338,7 @@ export class Computer {
         this[_stopSignal] = true;        // stop any running slice
         if (this[_runID]) {
             switch (realTimingMethod) {
+                case TIMING_METHODS.SENTINEL:
                 case TIMING_METHODS.BLOCKING:
                     break;
                 case TIMING_METHODS.TIMEOUT: {

@@ -1,5 +1,12 @@
 const worker = new Worker("./worker.js");
 
+const sentinel = new SharedArrayBuffer(1);
+const sentinelArray = new Uint8Array(sentinel);
+const sendMessage = (data) => {
+    Atomics.store(sentinelArray, 0, 1);
+    worker.postMessage(data);
+}
+
 let frame;
 worker.onmessage = evt => {
     const { data } = evt;
@@ -14,15 +21,15 @@ worker.onmessage = evt => {
 }
 
 export function sysInit(options) {
-    worker.postMessage({command: "sys-init", options});
+    sendMessage({command: "sys-init", options: Object.assign({}, options, {sentinel})});
 }
 
 export function cpuReset() {
-    worker.postMessage({command: "cpu-reset"});
+    sendMessage({command: "cpu-reset"});
 }
 
 export function frameDump() {
-    worker.postMessage({command: "frame-dump"});
+    sendMessage({command: "frame-dump"});
 }
 
 export function getLastFrame() {
