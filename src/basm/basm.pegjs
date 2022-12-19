@@ -176,6 +176,7 @@
         FUNCTION: "function",
         MACRO_DIRECTIVE: "directive.macro",
         MACRO_EXPANSION: "expand.macro",
+        CONDITIONAL: "conditional"
     };
 
     function tBlock(block) {
@@ -241,6 +242,13 @@
         };
     }
 
+    function tConditional(conditional) {
+        return {
+            type: TOKENS.CONDITIONAL,
+            conditional
+        };
+    }
+
     const MODES = {
         IMMEDIATE: 0b00,
         ABSOLUTE: 0b01,
@@ -248,7 +256,7 @@
         D: 0b11
     };
 
-    function tInstruction(op, {dest, source, m, i, x, y, a, imm, reg, addr, flag} = {}) {
+    function tInstruction(op, {dest, source, m, i, x, y, a, imm, reg, addr, flag, bankReg, offsReg, condition} = {}) {
         return {
             type: TOKENS.INSTRUCTION,
             op,
@@ -263,7 +271,10 @@
             reg,
             addr,
             flag,
-            pos: location().start
+            bankReg,
+            offsReg,
+            pos: location().start,
+            condition
         };
     }
 
@@ -485,14 +496,14 @@ hlContinue
 }
 
 hlIF
-= _ IF _ f:AllFlags _ t:Block _ e:hlElse? {
+= _ IF _ f:(AllFlags / AllConditionals) _ t:Block _ e:hlElse? {
     newScope();
     const THEN = uniqIdent("__then");
     const ELSE = uniqIdent("__else");
     const ENDIF = uniqIdent("__endif");
     const ast = tBlock([
         tInstruction("br", {
-            flag: f,
+            [f.type === "flag" ? "flag" : "condition"]: f,
             addr: addressingMode({ addr: tIdentifier(THEN), m: 0 })
         }),
         tInstruction("br", {
@@ -515,7 +526,7 @@ hlIF
     return ast;
 }
 hlDO
-= _ DO _ l:Block _ WHILE _ f:AllFlags _ {
+= _ DO _ l:Block _ WHILE _ f:(AllFlags / AllConditionals) _ {
     newScope();
     const BEGIN = uniqIdent("__begin");
     const END = uniqIdent("__end");
@@ -523,7 +534,7 @@ hlDO
         tLabel(tIdentifier(BEGIN)),
         rewriteIdents(l),
         tInstruction("br", {
-            flag: f,
+            [f.type==="flag" ? "flag" : "condition"]: f,
             addr: addressingMode({ addr: tIdentifier(BEGIN), m: 0 })
         }),
         tLabel(tIdentifier(END)),
@@ -531,7 +542,7 @@ hlDO
     exitScope();
     return ast;
 }
-/ _ WHILE _ f:AllFlags _ DO _ l:Block _ {
+/ _ WHILE _ f:(AllFlags / AllConditionals) _ DO _ l:Block _ {
     newScope();
     const BEGIN = uniqIdent("__begin");
     const END = uniqIdent("__end");
@@ -539,7 +550,7 @@ hlDO
     const ast = tBlock([
         tLabel(tIdentifier(BEGIN)),
         tInstruction("br", {
-            flag: f,
+            [f.type==="flag" ? "flag" : "condition"]: f,
             addr: addressingMode({ addr: tIdentifier(DO), m: 0 })
         }),
         tInstruction("br", {
@@ -563,6 +574,7 @@ hlDO
 AST
 = Register
 / AllFlags
+/ AllConditionals
 /// / CommaSepStringOrConstantExpressions
 / StringOrConstantExpression
 / MemoryAddressingMode
@@ -654,7 +666,12 @@ Instruction "Instruction"
 / iCALL / iPUSHALL / iPOPALL / iPUSHF / iPOPMM / iPUSHMM
 / iPOPF / iPUSH / iPOP / iRET / iMUL
 / iMOD / iDIV / iSMUL / iSMOD / iSDIV
-/ iSET / iCLR / iDEC / iHALT / iWAIT) _ bytes:ExpectedAssembly? {
+/ iSET / iCLR / iDEC / iHALT / iWAIT
+/ iFCLR / iFADD / iFSUB / iFCMP / iFMUL / iFMOD / iFDIV
+/ iFPOW / iFSQRT / iFNEG / iFEXC / iFINT / iFABS / iFSIN
+/ iFCOS / iFTAN / iFASIN / iFACOS / iFATAN / iFISNAN / iFISINF
+/ iFLOG2 / iFLOG10 / iFLD0 / iFLD1 / iFLDE / iFLDPI
+/ iFLDR / iFLDM / iFLDIM / iFSTR / iFSTM / iFSTIM) _ bytes:ExpectedAssembly? {
     if (bytes) {
         ins.bytes = bytes;
     }
@@ -702,15 +719,23 @@ iLOOP "Loop Instruction"
 
 iCALL "Call Instruction"
 = op:CALLS _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ op:CALLS _ condition:AllConditionals? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, condition}); }
 / op:CALL _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ op:CALL _ condition:AllConditionals? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, condition}); }
 / CALLS _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
+/ CALLS _ AllConditionals? _ !BranchAddressingMode { expectedMemoryAddress() }
 / CALL _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
+/ CALL _ AllConditionals? _ !BranchAddressingMode { expectedMemoryAddress() }
 
 iBR "Branch Instruction"
 = op:BRS _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ op:BRS _ condition:AllConditionals? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, condition}); }
 / op:BR _ flag:AllFlags? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, flag}); }
+/ op:BR _ condition:AllConditionals? _ COMMA? _ addr:BranchAddressingMode { return tInstruction(op, {addr, condition}); }
 / BRS _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
+/ BRS _ AllConditionals? _ !BranchAddressingMode { expectedMemoryAddress() }
 / BR _ AllFlags? _ !BranchAddressingMode { expectedMemoryAddress() }
+/ BR _ AllConditionals? _ !BranchAddressingMode { expectedMemoryAddress() }
 
 iADD "Add Instruction"
 = op:ADD _ dest:Register _ COMMA _ source:Register { return tInstruction(op, {dest, source}); }
@@ -1094,6 +1119,32 @@ AllFlags "All Flags"
 / MacroExpansion
 
 //
+// Conditionals
+////////////////////////////////////////
+cLTE      "Less Than or Equal"    = (".LTE"i / ".NGT"i ) { return tConditional("s<="); }
+cLT       "Less Than"             = (".LT"i  / ".NGTE"i) { return tConditional("s<"); }
+cGTE      "Greater Than or Equal" = (".GTE"i / ".NLT"i ) { return tConditional("s>="); }
+cGT       "Greater Than"          = (".GT"i  / ".NLTE"i) { return tConditional("s>"); }
+cABE      "Above or Equal"        = (".ABE"i / ".NBLO"i) { return tConditional("u>="); }
+cABV      "Above"                 = (".ABV"i / ".NBLE"i) { return tConditional("u>"); }
+cBLE      "Below or Equal"        = (".BLE"i / ".NABV"i) { return tConditional("u<="); }
+cBLO      "Below"                 = (".BLO"i / ".NABE"i) { return tConditional("u<"); }
+cEQ       "Equal To"              = ".EQ"i               { return tConditional("=="); }
+cNEQ      "Not Equal To"          = ".NEQ"i              { return tConditional("!="); }
+
+Conditionals = cLTE / cLT / cGTE / cGT / cABE / cABV / cBLE / cBLO / cEQ / cNEQ
+
+AllConditionals "All Conditionals"
+= Conditionals
+/ MacroExpansion
+
+ConditionalOrFlag
+= Conditionals
+/ Flags
+/ MacroExpansion
+
+
+//
 // Addressing Modes
 ////////////////////////////////////////
 
@@ -1171,10 +1222,10 @@ BranchAddressingMode "Branch Addressing Mode"
 // / Identifier
 
 FPAbsolute "Floating Point Absolute Mode"
-= LBRACKET _ bank:Register _ offs:Register _ RBRACKET { return {indirect: false, bank, offs}; }
+= LBRACKET _ bank:Register _ COMMA _ offs:Register _ RBRACKET { return {indirect: false, bank, offs}; }
 
 FPIndirect "Floating Point Indirect Mode"
-= LANGLE _ bank:Register _ offs:Register _ RANGLE { return {indirect: false, bank, offs}; }
+= LANGLE _ bank:Register _ COMMA _ offs:Register _ RANGLE { return {indirect: true, bank, offs}; }
 
 FPAddressingMode "Floating Point Addressing Mode"
 = MacroExpansion
@@ -1324,10 +1375,10 @@ Integer "Integer"
     { return tLiteral(toNumber(text())); }
 / "0b" head:[0-1] tail:[0-1_]*
     { return tLiteral(toNumber(text())); }
-/ head:[0-9A-Fa-f] tail:[0-9A-Fa-f_]* "h"
-    { return tLiteral(toNumber(text())); }
-/ head:[0-1] tail:[0-1_]* "b"
-    { return tLiteral(toNumber(text())); }
+// / head:[0-9A-Fa-f] tail:[0-9A-Fa-f_]* "h"
+//    { return tLiteral(toNumber(text())); }
+// / head:[0-1] tail:[0-1_]* "b"
+//    { return tLiteral(toNumber(text())); }
 / negative:"-"? head:[0-9] tail:[0-9_]*
     { return tLiteral(toNumber(text())); }
 

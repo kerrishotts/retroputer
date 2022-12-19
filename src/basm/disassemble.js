@@ -10,6 +10,7 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
     const modeByte = size === 3 ? (instruction & 0x0000FF00) >>> 8 : (instruction & 0x00FF0000) >>> 16;
     const reg = size === 3 ? (instruction & 0x000F0000) >>> 16 : (instruction & 0x0F000000) >>> 24;
     const flg = size === 3 ? (instruction & 0x00070000) >>> 16 : (instruction & 0x07000000) >>> 24;
+    const cond = size === 3 ? (instruction & 0x000F0000) >>> 16 : (instruction & 0x0F000000) >>> 24;
     const negate = !!(size === 3 ? (instruction & 0x00080000) : (instruction & 0x08000000));
     const indirect =     !!(modeByte & 0b00100000);
     const indexByX =     !!(modeByte & 0b00010000);
@@ -32,6 +33,29 @@ const address = ( {size, instruction, opcode, base} = {} ) => {
     if (usesFlags) {
         if (!always) {
             out = `${out} ${negate ? "!" : ""}${FLAG_NAMES[flg]},`;
+        } else {
+            switch (cond) {
+                case 0b0000:
+                    break;
+                case 0b0010:
+                    out = `${out} .lt,`; break;
+                case 0b0011:
+                    out = `${out} .lte,`; break;
+                case 0b0100:
+                    out = `${out} .gt,`; break;
+                case 0b0101:
+                    out = `${out} .gte,`; break;
+                case 0b1010:
+                    out = `${out} .blo,`; break;
+                case 0b1011:
+                    out = `${out} .ble,`; break;
+                case 0b1100:
+                    out = `${out} .abv,`; break;
+                case 0b1101:
+                    out = `${out} .abe,`; break;
+                default:
+                    out = `${out} .???,`;
+            }
         }
     }  else {
         if (opcode === OPCODES.LD || opcode === OPCODES.LOOP || opcode === OPCODES.LOOPS) {
@@ -159,7 +183,37 @@ export function disassemble(bytes, { base = 16 } = {}) {
             if (op === 0xAB) { code = `${OPCODES.SMUL} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
             if (op === 0xAC) { code = `${OPCODES.SDIV} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
             if (op === 0xAD) { code = `${OPCODES.SMOD} ${REGISTER_NAMES[(p1 & 0xF0) >> 4]}, ${REGISTER_NAMES[p1 & 0x0F]}`; }
-            if (op === 0xAE) { code = `${OPCODES.WAIT} ${toNum(p1, 2, base)}`; }
+            if (op === 0xAE) { 
+                switch (p1) {
+                    case 0x00: code = `${OPCODES.FCLR}`; break;
+                    case 0x10: code = `${OPCODES.FADD}`; break;
+                    case 0x11: code = `${OPCODES.FSUB}`; break;
+                    case 0x12: code = `${OPCODES.FCMP}`; break;
+                    case 0x13: code = `${OPCODES.FMUL}`; break;
+                    case 0x14: code = `${OPCODES.FMOD}`; break;
+                    case 0x15: code = `${OPCODES.FDIV}`; break;
+                    case 0x16: code = `${OPCODES.FPOW}`; break;
+                    case 0x17: code = `${OPCODES.FSQRT}`; break;
+                    case 0x18: code = `${OPCODES.FNEG}`; break;
+                    case 0x19: code = `${OPCODES.FEXC}`; break;
+                    case 0x1A: code = `${OPCODES.FINT}`; break;
+                    case 0x1B: code = `${OPCODES.FABS}`; break;
+                    case 0x20: code = `${OPCODES.FSIN}`; break;
+                    case 0x21: code = `${OPCODES.FCOS}`; break;
+                    case 0x22: code = `${OPCODES.FTAN}`; break;
+                    case 0x24: code = `${OPCODES.FASIN}`; break;
+                    case 0x25: code = `${OPCODES.FACOS}`; break;
+                    case 0x26: code = `${OPCODES.FATAN}`; break;
+                    case 0x30: code = `${OPCODES.FISNAN}`; break;
+                    case 0x31: code = `${OPCODES.FISINF}`; break;
+                    case 0x32: code = `${OPCODES.FLOG2}`; break;
+                    case 0x33: code = `${OPCODES.FLOG10}`; break;
+                    case 0x70: code = `${OPCODES.FLD0}`; break;
+                    case 0x71: code = `${OPCODES.FLD1}`; break;
+                    case 0x72: code = `${OPCODES.FLDE}`; break;
+                    case 0x73: code = `${OPCODES.FLDPI}`; break;
+                }
+            }
             if (op >= 0x48 && op <= 0x4F && (op & 1) === 1) { code = `${OPCODES.ADD} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
             if (op >= 0x50 && op <= 0x57 && (op & 1) === 1) { code = `${OPCODES.SUB} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
             if (op >= 0x58 && op <= 0x5F && (op & 1) === 1) { code = `${OPCODES.CMP} ${REGISTER_NAMES[op & 0x07]}, ${toNum(p1, 2, base)}`; }
@@ -183,6 +237,18 @@ export function disassemble(bytes, { base = 16 } = {}) {
             if (op === 0x31) { code = `${OPCODES.OUT} ${toNum(p2, 2, base)}, ${REGISTER_NAMES[p1 >>> 4]}`; }
             if ( op >= 0x80 && op <= 0x8F && (p1 & 1) === 1) { code = address({size, instruction, base,  opcode: OPCODES.LOOPS}); }
             if ( op >= 0x90 && op <= 0x9F && (p1 & 1) === 1) { code = address({size, instruction, base, opcode: (p1 & 0b10) ? OPCODES.CALLS : OPCODES.BRS}); }
+            if (op === 0xAE) {
+                switch (p1) {
+                    case 0x80: code = `${OPCODES.FLDR} ${REGISTER_NAMES[p2 & 0x0F]}`; break;
+                    case 0x81: code = `${OPCODES.FLDM} [${REGISTER_NAMES[(p2 & 0xF0) >> 4]}, ${REGISTER_NAMES[p2 & 0x0F]}]`; break;
+                    case 0x82: code = `${OPCODES.FLDIM} <${REGISTER_NAMES[(p2 & 0xF0) >> 4]}, ${REGISTER_NAMES[p2 & 0x0F]}>`; break;
+                    case 0x84: code = `${OPCODES.FSTR} ${REGISTER_NAMES[p2 & 0x0F]}`; break;
+                    case 0x85: code = `${OPCODES.FSTM} [${REGISTER_NAMES[(p2 & 0xF0) >> 4]}, ${REGISTER_NAMES[p2 & 0x0F]}]`; break;
+                    case 0x86: code = `${OPCODES.FSTIM} <${REGISTER_NAMES[(p2 & 0xF0) >> 4]}, ${REGISTER_NAMES[p2 & 0x0F]}>`; break;
+                    default: 
+                        code = `???`;
+                }
+            }
         }
 
         const p3 = size > 3 ? ((instruction >> ((size - 4) << 3)) & 0xFF) : 0;

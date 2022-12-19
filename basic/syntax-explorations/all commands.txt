@@ -1,0 +1,167 @@
+ABS(x)                  - Absolute value of X
+AND
+ASC(x$)                 - byte value of x$[0]
+ASM AT addr, code$      - Parse assembly language at address
+ASM CALL addr           - start assembly language
+ASM LIST addr[, len]    - list assembly language
+ASM PRINT addr[, len]   - print bytes
+ASM STATUS?             - Print registers
+ASM STEP                - step assembly language
+ASM STOP AT addr        - add break point
+ASM REMOVE STOP AT addr - remove break point
+ATN()
+[AT]
+CALL subroutine
+CATALOG
+CHRS$(chr,num)
+CHR$(chr)
+[CIRCLE]
+CLS
+CLOSE file
+CONT[INUE]
+COLOR fg, bg, border
+COLOR SOURCE page
+COPY file TO newfile
+COS(angle)
+DATA
+DEF FN
+DEF SUB
+DIM
+DO [WHILE|UNTIL]
+DRAW CIRCLE x,y TO x,y FILL color COLOR color FROM angle TO angle 
+DRAW FILL x,y FILL color COLOR color
+DRAW LINE x,y TO x,y COLOR color STEP step
+DRAW POINT x,y COLOR color
+DRAW PRINT AT x,y COLOR color; print-list
+DRAW RECT x,y TO x,y FILL color COLOR color
+ELSE [IF]
+END [IF|SUB|FN]
+EXP()
+[FILL]
+FN(fnName, args)? or FN fnName (args)?
+FOR var = start TO finish STEP step
+[FROM]
+GOSUB line
+GOTO line
+HEX$(v)
+IF expr THEN ...
+IF expr THEN \n ... \n ELSE ... \n END IF
+INPUT input-list
+INT(float)
+IN(port)
+KEY$()
+LAYER num [ON|OFF] 
+          [SIZE scale] 
+          [SOURCE page] 
+          [TILESET page] [AT x,y] 
+          [RECT w,h] [COLOR fg,bg] 
+          [MODE mode] 
+          [LINE size]
+LEFT$(str$, num)
+LEN(str$)
+LET
+LINE INPUT str$
+LIST
+LOAD
+LOCAL var-list
+LOG(n)
+LOOP [WHILE|UNTIL]
+LOWER$(s$)
+MEM COPY length FROM bank, source TO bank, target FOR times STEP step
+MEM FILL byte FROM bank, start TO finish FOR times STEP step
+MEM SWAP length FROM bank, source TO bank, target FOR times, STEP step
+MID$(str$, start, len)
+[MODE]
+MOUSE ON|OFF
+MOUSE(axis)
+NEW
+NEXT
+NOT
+[OFF]
+ON x GOTO|GOSUB line | CALL subroutine
+ON KEY$ GOTO|GOSUB LINE | CALL subroutine
+ON MOUSE GOTO|GOSUB line | CALL subroutine
+ON STICK GOTO|GOSUB line | CALL subroutine
+ON STATUS?
+OPEN file,device,filename$
+OR
+OUT port, value
+PEEK(bank, addr)
+PLAY freq FOR duration AT volume
+PLAY playStr$
+[POINT]
+POKE bank,addr,value
+PRINT [AT row, col]
+      CHR$(chr)
+      CHRS$(chr, num)
+      SPC(num)
+      TAB(num)
+      [TO file]
+READ read-list    
+[RECT]
+REM comment
+RIGHT$(str$,num)
+RND(max)
+RENAME filename TO newfile
+REMOVE filename
+RESTORE [line]
+RUN [line]
+SAVE filename
+SCREEN [SOURCE page] 
+       [SIZE row, col, scale] 
+       [LINE size]
+SGN(n)
+SIN(angle)
+[SIZE]
+[SOURCE]
+[SPC]
+SPRATTR()
+SPRITE num [ON|OFF] 
+           [SIZE x,y,scale] 
+           [SOURCE page, idx] 
+           [TILESET page] 
+           [COLOR fg,bg] 
+           [LAYER num] 
+           [AT x,y]
+SQR(n)
+STATUS(filenum)
+STICK which ON|OFF
+STICK(which,axis)
+STOP
+STR$(num)
+[SUB]
+SWAP a,b
+[TAB]
+TAN(angle)
+[THEN]
+[TILESET]
+TIME()
+[TO]
+[UNTIL]
+UPPER$(s$)
+USR(addr)
+VAL(s$)
++
+-
+*
+/
+%
+^
+<>, !=
+<=
+>=
+=
+(
+)
+,
+;
+:
+
+
+
+
++ STATUS?
++ LOCAL?
++ WINDOW?
+? HOME
+? SCALE

@@ -42,13 +42,12 @@
         # jump to program start
         # br kmemmap.user.start
 
-        in al, 0x38                              # Check if user is holding SHIFT
-        and al, 0b0000_0001
-        cmp al, 0x00
+        in al, 0x38                                         # Check if user is holding SHIFT
+        test al, 0b0000_0001
         if !z {
-            br kmemmap.user.start                # yes, jump to user code
+            br kmemmap.user.start                           # yes, jump to user code
         } else {
-            br kmemmap.basic.code-start          # otherwise, start BASIC
+            br kmemmap.basic.code-start                     # otherwise, start BASIC
         }
     }
 }

@@ -2,6 +2,7 @@ import React from 'react';
 
 import { Key } from "./Key.jsx";
 import { KEYBOARD_MAP } from "../../../devices/Keyboard.js";
+import { paste } from "../util/keyboard.js";
 import Logo from "../assets/Logo@3x.png";
 
 export class Keyboard extends React.Component {
@@ -90,7 +91,8 @@ export class Keyboard extends React.Component {
         if (row === -1) {
             switch (col) {
                 case 0: // paste
-                    navigator.clipboard.readText().then(
+                    paste({keyboard});
+                    /*navigator.clipboard.readText().then(
                         str => {
                             Array.from(str).forEach((ch) => {
                                 const c = ch.charCodeAt(0);
@@ -107,7 +109,7 @@ export class Keyboard extends React.Component {
                                 }
                             }) 
                         }
-                    );
+                    );*/
                     break; 
                 default:
             }

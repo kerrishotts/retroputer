@@ -150,6 +150,7 @@ export const TOKENS = {
     FUNCTION: "function",
     MACRO_DIRECTIVE: "directive.macro",
     MACRO_EXPANSION: "expand.macro",
+    CONDITIONAL: "conditional"
 };
 
 export const MODES = {

@@ -69,50 +69,50 @@
         push a
         y := 0
     _main:
-        call gettok                             # check if we have a number to parse
-        cmp dl, 0                               # End of line?
+        call gettok                                          # check if we have a number to parse
+        cmp dl, 0                                            # End of line?
         br z _skip
 
-        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        cmp dl, brodata.TOK_END_OF_STMT                      # End of statement?
         br z _skip
 
         call backtok
-        call eval                               # port #
+        call eval                                            # port 
 
-        cmp dl, 0                               # error?
+        cmp dl, 0                                            # error?
         br !z _out
 
-        call pop-param                          # get value to check type
-        cmp dl, brodata.TOK_WORD                # is it a word?
-        if !z {                                 # If not, it's a type mismatch
+        call pop-param                                       # get value to check type
+        cmp dl, brodata.TOK_WORD                             # is it a word?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
-        [bp+parms,y] := c                       # store this for future reference
+        [bp+parms,y] := c                                    # store this for future reference
         inc y
         inc y
 
         al := 4
-        cmp yl, al                              # no more than two words
+        cmp yl, al                                           # no more than two words
         br z _skip
-        call gettok                             # check for comma
+        call gettok                                          # check for comma
         cmp dl, brodata.TOK_COMMA
         if !z {
-            dl := brodata.SYNTAX_ERROR          # gotta have a COMMA
+            dl := brodata.SYNTAX_ERROR                       # gotta have a COMMA
             br _out
         }
-        br _main                                # go back for more
+        br _main                                             # go back for more
     _skip:
         al := 4
-        cmp yl, al                              # no more than two words
+        cmp yl, al                                           # no more than two words
         if !z {
-            dl := brodata.SYNTAX_ERROR          # not enough? too many?
-            br _out                             # bail
+            dl := brodata.SYNTAX_ERROR                       # not enough? too many?
+            br _out                                          # bail
         }
-        a := [bp+pval]                          # get value
-        c := [bp+paddr]                         # get address
+        a := [bp+pval]                                       # get value
+        c := [bp+paddr]                                      # get address
         call bdata._out-port
-        dl := 0                                 # no error
+        dl := 0                                              # no error
     _out:
         pop a
         pop x
@@ -143,52 +143,52 @@
         push a
         y := 0
     _main:
-        call gettok                             # check if we have a number to parse
-        cmp dl, 0                               # End of line?
+        call gettok                                          # check if we have a number to parse
+        cmp dl, 0                                            # End of line?
         br z _skip
 
-        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        cmp dl, brodata.TOK_END_OF_STMT                      # End of statement?
         br z _skip
 
         call backtok
-        call eval                               # it to get the line #
+        call eval                                            # it to get the line 
 
-        cmp dl, 0                               # error?
+        cmp dl, 0                                            # error?
         br !z _out
 
-        call pop-param                          # get value to check type
-        cmp dl, brodata.TOK_WORD                # is it a word?
-        if !z {                                 # If not, it's a type mismatch
+        call pop-param                                       # get value to check type
+        cmp dl, brodata.TOK_WORD                             # is it a word?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
-        [bp+parms,y] := c                       # store this for future reference
+        [bp+parms,y] := c                                    # store this for future reference
         inc y
         inc y
 
         al := 6
-        cmp yl, al                              # no more than three words
+        cmp yl, al                                           # no more than three words
         br z _skip
-        call gettok                             # check for comma
+        call gettok                                          # check for comma
         cmp dl, brodata.TOK_COMMA
         if !z {
-            dl := brodata.SYNTAX_ERROR          # gotta have a COMMA
+            dl := brodata.SYNTAX_ERROR                       # gotta have a COMMA
             br _out
         }
-        br _main                                # go back for more
+        br _main                                             # go back for more
     _skip:
         al := 6
-        cmp yl, al                              # no more than three words
+        cmp yl, al                                           # no more than three words
         if !z {
-            dl := brodata.SYNTAX_ERROR          # not enough? too many?
-            br _out                             # bail
+            dl := brodata.SYNTAX_ERROR                       # not enough? too many?
+            br _out                                          # bail
         }
-        a := [bp+pval]                          # get value
-        x := [bp+paddr]                         # get address
-        d := [bp+pbank]                         # get bank
+        a := [bp+pval]                                       # get value
+        x := [bp+paddr]                                      # get address
+        d := [bp+pbank]                                      # get bank
         shl d, 13
-        [d, x] := al                            # write value
-        dl := 0                                 # no error
+        [d, x] := al                                         # write value
+        dl := 0                                              # no error
     _out:
         pop a
         pop x
@@ -211,40 +211,40 @@
         push x
         push y
     _main:
-        call backtok                            # by the time we're here, we're too far ahead
+        call backtok                                         # by the time we're here, we're too far ahead
         call gettok
-        cmp dl, brodata.TOK_VARIABLE            # is next token a variable?
+        cmp dl, brodata.TOK_VARIABLE                         # is next token a variable?
         if !z {
-            dl := brodata.SYNTAX_ERROR          # No; bail!
+            dl := brodata.SYNTAX_ERROR                       # No; bail!
             br _out
         }
 
-        call gettok-word                        # get index
+        call gettok-word                                     # get index
         b := d
-        shr b, 14                               # need the type of variable
-        and d, 0b0011_1111_1111_1111            # mask off the type for index
+        shr b, 14                                            # need the type of variable
+        and d, 0b0011_1111_1111_1111                         # mask off the type for index
         y := d
 
-        d := 0                                  # coming from bank 0
-        cmp bl, constants.TYPE_WORD             # is this a word variable?
+        d := 0                                               # coming from bank 0
+        cmp bl, constants.TYPE_WORD                          # is this a word variable?
         if z {
-            bl := brodata.TOK_WORD              # enable type match
-            x := kmemmap.basic.ints-start       # set base
+            bl := brodata.TOK_WORD                           # enable type match
+            x := kmemmap.basic.ints-start                    # set base
             br _continue
         }
 
-        cmp bl, constants.TYPE_STRING           # is it a string?
+        cmp bl, constants.TYPE_STRING                        # is it a string?
         if z {
-            bl := brodata.TOK_STRING            # enable type match
+            bl := brodata.TOK_STRING                         # enable type match
             x := kmemmap.basic.strs-start
             br _continue
         }
 
-        cmp bl, constants.TYPE_REAL             # is it a real?
+        cmp bl, constants.TYPE_REAL                          # is it a real?
         if z {
-            bl := brodata.TOK_REAL              # enable type match
+            bl := brodata.TOK_REAL                           # enable type match
             x := kmemmap.basic.dbls-start
-            shl y, 2                            # advance y correctly
+            shl y, 2                                         # advance y correctly
             br _continue
         }
 
@@ -254,41 +254,41 @@
 
     _continue:
 
-        a := d                                  # preserve bank
+        a := d                                               # preserve bank
 
-        call gettok-raw                         # get length of variable name to skip
+        call gettok-raw                                      # get length of variable name to skip
         do {
-            call gettok-raw                     # but we actually don't care about it...
-            cmp dl, 0                           # end of line? That's bad.
+            call gettok-raw                                  # but we actually don't care about it...
+            cmp dl, 0                                        # end of line? That's bad.
             if z {
                 dl := brodata.SYNTAX_ERROR
                 br _out
             }
-            cmp dl, brodata.TOK_END_OF_STMT     # end of statement?
+            cmp dl, brodata.TOK_END_OF_STMT                  # end of statement?
             if z {
-                dl := brodata.SYNTAX_ERROR      # also bad
+                dl := brodata.SYNTAX_ERROR                   # also bad
                 br _out
             }
-            cmp dl, brodata.TOK_EQU             # keep going til we see an equal sign
+            cmp dl, brodata.TOK_EQU                          # keep going til we see an equal sign
         } while !z
 
 
-        call eval                               # evaluate expression
-        cmp dl, 0                               # was there an error?
-        br !z _out                              # ... bail
+        call eval                                            # evaluate expression
+        cmp dl, 0                                            # was there an error?
+        br !z _out                                           # ... bail
 
-        call pop-param                          # get the result of the expression
-        cmp dl, bl                              # do types match?
+        call pop-param                                       # get the result of the expression
+        cmp dl, bl                                           # do types match?
         if !z {
             # @TODO check for string and code strings
             dl := brodata.TYPE_MISMATCH_ERROR
-            br _out                             # NOPE
+            br _out                                          # NOPE
         }
 
-        swap a, d                               # need d to be the bank
-        [d, x, y] := c                          # store value (WRONG FOR STRINGS and REALS, @FIXME)
+        swap a, d                                            # need d to be the bank
+        [d, x, y] := c                                       # store value (WRONG FOR STRINGS and REALS, @FIXME)
 
-        dl := 0                                 # no error
+        dl := 0                                              # no error
 
     _out:
         pop y
@@ -303,8 +303,8 @@
     handler-let: {
         enter 0x00
     _main:
-        call gettok                             # simulate advancement past variable
-        call handler-assignment                 # We're just eating LET
+        call gettok                                          # simulate advancement past variable
+        call handler-assignment                              # We're just eating LET
     _out:
         exit 0x00
         ret
@@ -325,33 +325,33 @@
         enter 0x00
         push c
     _main:
-        call gettok                             # check if we have a number to parse
-        cmp dl, 0                               # End of line?
+        call gettok                                          # check if we have a number to parse
+        cmp dl, 0                                            # End of line?
         if z {
-            dl := brodata.SYNTAX_ERROR          # that's a syntax error
+            dl := brodata.SYNTAX_ERROR                       # that's a syntax error
             br _out
         }
-        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        cmp dl, brodata.TOK_END_OF_STMT                      # End of statement?
         if z {
-            dl := brodata.SYNTAX_ERROR          # that's a syntax error
+            dl := brodata.SYNTAX_ERROR                       # that's a syntax error
             br _out
         }
-        call backtok                            # put the token back so we can eval
-        call eval                               # it to get the line #
-        cmp dl, 0                               # error?
+        call backtok                                         # put the token back so we can eval
+        call eval                                            # it to get the line 
+        cmp dl, 0                                            # error?
         br !z _out
 
-        call pop-param                          # get starting line number
-        cmp dl, brodata.TOK_WORD                # is it a word?
-        if !z {                                 # If not, it's a type mismatch
+        call pop-param                                       # get starting line number
+        cmp dl, brodata.TOK_WORD                             # is it a word?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
-        [bdata.current-line-number] := c        # store the line number
+        [bdata.current-line-number] := c                     # store the line number
 
         dl := 0
         cl := 1
-        [bdata.execution-mode] := cl            # put us in run mode
+        [bdata.execution-mode] := cl                         # put us in run mode
     _out:
         pop c
         exit 0x00
@@ -375,7 +375,7 @@
         push c
     _main:
         call peektok
-        cmp dl, 0                               # is this the end of the line?
+        cmp dl, 0                                            # is this the end of the line?
         if z {
             dl := brodata.SYNTAX_ERROR
             br _out
@@ -385,27 +385,27 @@
             dl := brodata.SYNTAX_ERROR
             br _out
         }
-        call eval                               # evaluate conditional
+        call eval                                            # evaluate conditional
         cmp dl, 0
-        br !z _out                             # an error happened, bail
+        br !z _out                                           # an error happened, bail
         call pop-param
-        cmp dl, brodata.TOK_WORD                # it is the right type, right?
-        if !z {                                 # If not, it's a type mismatch
+        cmp dl, brodata.TOK_WORD                             # it is the right type, right?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
         cmp c, 0
         if z {
-            dl := constants.EXIT_EARLY          # it's zero, bail!
+            dl := constants.EXIT_EARLY                       # it's zero, bail!
             br _out
         }
-        call gettok                             # next token had better be THEN
+        call gettok                                          # next token had better be THEN
         cmp dl, brodata.TOK_THEN
         if !z {
             dl := brodata.SYNTAX_ERROR
             br _out
         }
-        dl := constants.NO_STMT_TERM_NEEDED     # done; execution can pick up at this point
+        dl := constants.NO_STMT_TERM_NEEDED                  # done; execution can pick up at this point
     _out:
         pop c
         exit 0x00
@@ -426,35 +426,35 @@
         push c
     _main:
         c := 0
-        [bdata.current-line-number] := c        # start at line zero
+        [bdata.current-line-number] := c                     # start at line zero
 
-        call gettok                             # check if we have a number to parse
-        cmp dl, 0                               # End of line?
+        call gettok                                          # check if we have a number to parse
+        cmp dl, 0                                            # End of line?
         if z {
             call backtok
             br _do-run
         }
-        cmp dl, brodata.TOK_END_OF_STMT         # End of statement?
+        cmp dl, brodata.TOK_END_OF_STMT                      # End of statement?
         if z {
             call backtok
             br _do-run
         }
-        call backtok                            # put the token back so we can eval
-        call eval                               # it to get the line #
-        cmp dl, 0                               # error?
+        call backtok                                         # put the token back so we can eval
+        call eval                                            # it to get the line 
+        cmp dl, 0                                            # error?
         br !z _out
 
-        call pop-param                          # get starting line number
-        cmp dl, brodata.TOK_WORD                # is it a word?
-        if !z {                                 # If not, it's a type mismatch
+        call pop-param                                       # get starting line number
+        cmp dl, brodata.TOK_WORD                             # is it a word?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
-        [bdata.current-line-number] := c        # store the line number
+        [bdata.current-line-number] := c                     # store the line number
     _do-run:
         dl := 0
         cl := 1
-        [bdata.execution-mode] := cl            # put us in run mode
+        [bdata.execution-mode] := cl                         # put us in run mode
     _out:
         pop c
         exit 0x00
@@ -485,114 +485,114 @@
         call [vectors.GET_FG_COLOR]
         push d
         c := 0
-        [bp+cur-indent] := cl               # default indent is also zero
-        [bp+past-line-start] := cl          # indicates if we are at the start of a line (if 0)
-        [bp+start-line] := c                # default is to start at line 0
+        [bp+cur-indent] := cl                                # default indent is also zero
+        [bp+past-line-start] := cl                           # indicates if we are at the start of a line (if 0)
+        [bp+start-line] := c                                 # default is to start at line 0
         call _set-end-range-to-max
-        call gettok                         # we want to see if the next token is
-        cmp dl, 0                           # a number or not. This here means it
+        call gettok                                          # we want to see if the next token is
+        cmp dl, 0                                            # a number or not. This here means it
         if z {
             call backtok
             br _do-list
         }
-        cmp dl, brodata.TOK_END_OF_STMT     # ... as does this
+        cmp dl, brodata.TOK_END_OF_STMT                      # ... as does this
         if z {
             call backtok
             br _do-list
         }
-        cmp dl, brodata.TOK_COMMA           # ... but this means no start, but maybe an end
+        cmp dl, brodata.TOK_COMMA                            # ... but this means no start, but maybe an end
         br z _get-end 
-        call backtok                        # put the token back so we can eval
-        call eval                           # it to get the line #
-        cmp dl, 0                           # error?
+        call backtok                                         # put the token back so we can eval
+        call eval                                            # it to get the line 
+        cmp dl, 0                                            # error?
         br !z _out
 
-        call pop-param                      # get starting line number
-        cmp dl, brodata.TOK_WORD            # is it a word?
-        if !z {                             # If not, it's a type mismatch
+        call pop-param                                       # get starting line number
+        cmp dl, brodata.TOK_WORD                             # is it a word?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
-        [bp+start-line] := c                # store 
+        [bp+start-line] := c                                 # store 
         inc c
-        [bp+end-line] := c                  # store end-of-line +1; a single start line is intended to list a single line
+        [bp+end-line] := c                                   # store end-of-line +1; a single start line is intended to list a single line
 
     _get-end:
-        call gettok                         # we may be looking at the ending number
-        cmp dl, brodata.TOK_COMMA           # ... but also a comma
-        brs z _get-end                      # eat commas 
-        cmp dl, 0                           # end of line?
+        call gettok                                          # we may be looking at the ending number
+        cmp dl, brodata.TOK_COMMA                            # ... but also a comma
+        brs z _get-end                                       # eat commas 
+        cmp dl, 0                                            # end of line?
         if z {
             call backtok
             br _do-list
         }
-        cmp dl, brodata.TOK_END_OF_STMT     # ... as does this
+        cmp dl, brodata.TOK_END_OF_STMT                      # ... as does this
         if z {
             call backtok
             br _do-list
         }
 
-        call backtok                        # put the token back so we can eval
-        call eval                           # it to get the line #
-        cmp dl, 0                           # error?
+        call backtok                                         # put the token back so we can eval
+        call eval                                            # it to get the line 
+        cmp dl, 0                                            # error?
         br !z _out
 
-        call pop-param                          # get starting line number
-        cmp dl, brodata.TOK_WORD                # is it a word?
-        if !z {                                 # If not, it's a type mismatch
+        call pop-param                                       # get starting line number
+        cmp dl, brodata.TOK_WORD                             # is it a word?
+        if !z {                                              # If not, it's a type mismatch
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
-        inc c                                   # we need +1, since list is not inclusive
-        [bp+end-line] := c                      # store 
+        inc c                                                # we need +1, since list is not inclusive
+        [bp+end-line] := c                                   # store 
 
     _do-list:
         c := [bp+start-line]
         d := [bp+end-line]
         do {
-            call bcode.checkbreak
-            br EX _break                        # If EXCEPTION, CTRL+C is pressed
+            call checkbreak
+            br EX _break                                     # If EXCEPTION, CTRL+C is pressed
 
             # is there a line to print?
             d := addrbank(kmemmap.basic.lptr-start)
             x := c
             shl x, 1
-            a := [d, x]                         # read the line pointer
+            a := [d, x]                                      # read the line pointer
             cmp a, 0
-            if !z {                             # we have something to print!
+            if !z {                                          # we have something to print!
                 dl := [bdata.linenum-color]
                 call [vectors.SET_FG_COLOR]
 
                 push d
                 push x
-                b := 10                         # print the line number in base 10
+                b := 10                                      # print the line number in base 10
                 LDPTR(d, x, bdata.itoa-buffer)
-                call [vectors.U16_TO_STR]       # convert line number to a string
-                call [vectors.PRINT]            # and print it (note this is unsigned)
+                call [vectors.U16_TO_STR]                    # convert line number to a string
+                call [vectors.PRINT]                         # and print it (note this is unsigned)
                 pop x
                 pop d
 
                 bl := [bp+cur-indent]
                 dl := constants.SPACE
                 do {
-                    call [vectors.PUT_CHAR]         # space between line numbers
+                    call [vectors.PUT_CHAR]                  # space between line numbers
                     dec bl
                 } while !n                
 
                 dl := 0
-                [bp+past-line-start] := dl      # we're at the start of the line
+                [bp+past-line-start] := dl                   # we're at the start of the line
 
                 d := addrbank(kmemmap.basic.prog-start)
-                x := a                          # d,x is now pointing at our program code
-                a := [d, x]                     # read the token (plus one more)
-                bl := al                        # bl is next token
-                exc a                           # al is now first token (ah is garbage now)
+                x := a                                       # d,x is now pointing at our program code
+                a := [d, x]                                  # read the token (plus one more)
+                bl := al                                     # bl is next token
+                exc a                                        # al is now first token (ah is garbage now)
                 do {
-                    cmp al, 0b1000_0000         # ... but we might be a regular character
+                    cmp al, 0b1000_0000                      # ... but we might be a regular character
                     if n {
                         push d
                         dl := al
-                        call [vectors.PUT_CHAR] # write the character as-is; @todo, does this need to be RAW?
+                        call [vectors.PUT_CHAR]              # write the character as-is; @todo, does this need to be RAW?
                         pop d
                     } else {
                         cmp al, brodata.TOK_BYTE
@@ -618,7 +618,7 @@
                             br _continue
                         }
                         cmp al, brodata.TOK_REAL  
-                        br z _continue          # @fixme: wrong for reals
+                        br z _continue                       # @fixme: wrong for reals
                         cmp al, brodata.TOK_VARIABLE
                         if z {
                             inc x
@@ -633,69 +633,60 @@
                         call [vectors.SET_FG_COLOR]
                         d := addrbank(brodata.token-vectors)
                         x := addrbofs(brodata.token-vectors)
-                        and a, 0b0111_1111      # lose the top bits
-                        shl a, 2                # * 4 (ptr to text, and skip over metadata)
-                        add x, a                # x is pointing at the right token vector
+                        and a, 0b0111_1111                   # lose the top bits
+                        shl a, 2                             # * 4 (ptr to text, and skip over metadata)
+                        add x, a                             # x is pointing at the right token vector
                         inc x
                         inc x
-                        a := [d, x]             # get metadata
-                        and a, 0b0000_0001      # is it a function?
-                        cmp a, 0b0000_0001
-                        if z {
+                        a := [d, x]                          # get metadata
+                        test a, 0b0000_0001                  # is it a function?
+                        if !z {
                             push d
                             dl := [bdata.function-color]
                             call [vectors.SET_FG_COLOR]
                             pop d
                         }
-                        a := [d, x]             # get metadata
-                        and a, 0b0000_0100      # is it an operator
-                        cmp a, 0b0000_0100
-                        if z {
+                        test a, 0b0000_0100                  # is it an operator
+                        if !z {
                             push d
                             dl := [bdata.operator-color]
                             call [vectors.SET_FG_COLOR]
                             pop d
                         }
-                        a := [d, x]             # get metadata
-                        and a, 0b0000_1000      # is it a group?
-                        cmp a, 0b0000_1000
-                        if z {
+                        test a, 0b0000_1000                  # is it a group?
+                        if !z {
                             push d
                             dl := [bdata.grouping-color]
                             call [vectors.SET_FG_COLOR]
                             pop d
                         }
-                        a := [d, x]             # get metadata
-                        and a, 0b0100_0000_0000_0000      # is it entering a block
-                        cmp a, 0b0100_0000_0000_0000
-                        if z {
-                            a := [d, x]             # get metadata
-                            and a, 0b0010_0000_0000_0000      # no trailing?
-                            cmp a, 0b0010_0000_0000_0000
-                            if z {
+                        test a, 0b0100_0000_0000_0000        # is it entering a block
+                        if !z {
+                            test a, 0b0010_0000_0000_0000        # no trailing?
+                            if !z {
                                 cmp bl, 0
                                 br !z skip-indent
                             }
 
                             push d
+                            push a
                             dl := [bdata.indent]
                             al := [bp+cur-indent]
                             clr c
                             add al, dl
                             [bp+cur-indent] := al
+                            pop a
                             pop d
                         skip-indent:
                         }
-                        a := [d, x]             # get metadata
-                        and a, 0b1000_0000_0000_0000      # is it leaving a block
-                        cmp a, 0b1000_0000_0000_0000
-                        if z {
+                        test a, 0b1000_0000_0000_0000        # is it leaving a block
+                        if !z {
                             push d
                             bl := [bp+past-line-start]
                             cmp bl, 0
-                            if z {                          # de-dent, if at start of line
+                            if z {                            # de-dent, if at start of line
                                 bl := [bdata.indent]
-                                dec bl                      # do one less than our space between line number
+                                dec bl                        # do one less than our space between line number
                                 dl := constants.CURSOR_LEFT
                                 do {
                                     call [vectors.PUT_CHAR]
@@ -712,7 +703,7 @@
 
                         dec x
                         dec x
-                        x := [d, x]             # pointing at token in memory
+                        x := [d, x]                          # pointing at token in memory
                         call [vectors.PRINT]
                         pop x
                         pop d
@@ -721,30 +712,32 @@
                     }
                     inc x
                     al := 1
-                    [bp+past-line-start] := al  # we're now past the start
-                    al := [d, x]                # read the next token
+                    [bp+past-line-start] := al               # we're now past the start
+                    #al := [d, x]                # read the next token
+                    a := [d, x]                              # read the token (plus one more)
+                    bl := al                                 # bl is next token
+                    exc a                                    # al is now first token (ah is garbage now)
                     cmp al, 0                   
-                } while !z                      # end of line
+                } while !z                                   # end of line
 
 
                 push d 
                 dl := constants.CR
-                call [vectors.PUT_CHAR]         # print NEWLINE
+                call [vectors.PUT_CHAR]                      # print NEWLINE
 
 
                 # do we need to pause for a second?
-                in dl, 0x38                         # left SHIFT will be here
-                and dl, 0b0000_0001                 # only care about left SHIFT
-                cmp dl, 1                           # it'll be 1 if set
-                if z {
-                    push c
-                    in dl, 0x02
-                    do {
-                        in cl, 0x02
-                        cmp dl, cl
-                    } while z                       # wait a second
-                    pop c
-                }
+#                in dl, 0x38                                  # left SHIFT will be here
+#                test dl, 0b0000_0001                         # only care about left SHIFT
+#                if !z {                                      # ZERO will be unset if pressed
+#                    push c
+#                    in dl, 0x02
+#                    do {
+#                        in cl, 0x02
+#                        cmp dl, cl
+#                    } while z                                # wait a second
+#                    pop c
+#                }
 
                 pop d
             }
@@ -756,7 +749,7 @@
         } while n
 
     _break:
-        dl := 0                                 # no error
+        dl := 0                                              # no error
     _out:
         cl := dl
         pop d
@@ -770,8 +763,8 @@
         ret
     _set-end-range-to-max:
         c := [bdata.maximum-line-number]    
-        inc c                               # our list algo isn't inclusive, so fake it
-        [bp+end-line] := c                  # default is to end at the highest we've seen
+        inc c                                                # our list algo isn't inclusive, so fake it
+        [bp+end-line] := c                                   # default is to end at the highest we've seen
         ret
     _print-word:
         push b
@@ -780,11 +773,11 @@
         push x
         dl := [bdata.number-color]
         call [vectors.SET_FG_COLOR]
-        LDPTR(d, x, bdata.itoa-buffer)          # have to convert to string
+        LDPTR(d, x, bdata.itoa-buffer)                       # have to convert to string
         c := a
         b := 10
-        call [vectors.U16_TO_STR]               # these are always unsigned
-        call [vectors.PRINT]                    # output in base 10
+        call [vectors.U16_TO_STR]                            # these are always unsigned
+        call [vectors.PRINT]                                 # output in base 10
         pop x
         pop d
         pop c
@@ -796,18 +789,18 @@
         dl := [bdata.string-color]
         call [vectors.SET_FG_COLOR]
         dl := constants.QUOTE
-        call [vectors.PUT_CHAR]                 # print the quote
+        call [vectors.PUT_CHAR]                              # print the quote
         pop d
-        call [vectors.PRINT_RAW]                # print the string
+        call [vectors.PRINT_RAW]                             # print the string
         push d
         dl := constants.QUOTE
-        call [vectors.PUT_CHAR]                 # print the ending quote
+        call [vectors.PUT_CHAR]                              # print the ending quote
         pop d
         pop x
         do {
             al := [d, x]
             inc x
-            cmp al, 0                           # seek ahead to the end of the string
+            cmp al, 0                                        # seek ahead to the end of the string
         } while !z
         dec x
         ret
@@ -818,16 +811,16 @@
         call [vectors.SET_FG_COLOR]
         pop d
         push b
-        b := [d, x]                             # get the index so we can get sigil
-        shr b, 14                               # only care about top two bits
+        b := [d, x]                                          # get the index so we can get sigil
+        shr b, 14                                            # only care about top two bits
         inc x
         inc x
-        al := [d, x]                            # length of variable name
+        al := [d, x]                                         # length of variable name
         do {
             inc x
             push d
             dl := [d, x]
-            call [vectors.PUT_CHAR]             # print the variable name
+            call [vectors.PUT_CHAR]                          # print the variable name
             pop d
             dec al
         } while !z
@@ -841,13 +834,178 @@
             cmp bl, constants.TYPE_REAL
             if z {
                 push d
-                dl := ASC("#")
+                dl := ASC("#")                               # @todo REAL
                 call [vectors.PUT_CHAR]
                 pop d
             }
         }
         pop b
         ret
+    }
+
+    #
+    # LAYER which [ON|OFF]|[MODE mode]|[SOURCE page]|
+    #       [SCALE scale]|[TILESET page]|[COLOR fg[, bg]]|
+    #       [AT x, y]|[SIZE w, h]|[LINE 0|1]
+    #
+    # Prints the value of any listed expressions to the screen. PRINT also
+    # accepts various positional and formatting tokens.
+    #
+    # ERRORS
+    ###########################################################################
+    handler-layer: {
+        enter 0x00
+        push a
+        push c
+    _main:
+        call eval
+        cmp dl, 0
+        br !z _out
+        #call !z _ignore-err
+        call pop-number-param
+        br ex _out
+        out 0x12, cl                                         # select the specified layer
+    _configs:
+        call gettok
+        cmp dl, 0
+        br z _bail                                           # next token was an end of the line
+        cmp dl, brodata.TOK_END_OF_STMT
+        br z _bail                                           # next token was an end of the statement
+        cmp dl, brodata.TOK_ON                               # Check for ON  
+        br z _layer-on
+        cmp dl, brodata.TOK_OFF                              # Check for OFF 
+        br z _layer-off
+        cmp dl, brodata.TOK_SOURCE                           # Check for SOURCE page
+        br z _layer-source
+        cmp dl, brodata.TOK_SIZE                             # Check for SIZE scale
+        br z _layer-size  
+        cmp dl, brodata.TOK_TILESET                          # Check for TILESET page
+        br z _layer-tileset 
+        cmp dl, brodata.TOK_COLOR                            # Check for COLOR fg,bg
+        br z _layer-color   
+        cmp dl, brodata.TOK_AT                               # Check for AT x,y
+        br z _layer-at   
+        cmp dl, brodata.TOK_RECT                             # Check for RECT w,h
+        br z _layer-rect   
+        cmp dl, brodata.TOK_MODE                             # Check for MODE mode
+        br z _layer-mode   
+        cmp dl, brodata.TOK_LINE                             # Check for LINE height
+        br z _layer-line
+        call backtok                                         # SYNTAX ERROR then
+        dl := brodata.SYNTAX_ERROR
+        br _out
+    _bail:
+        call backtok
+    _out-no-err:
+        dl := 0
+    _out:
+        pop c
+        pop a
+        exit 0x00
+        ret
+    _layer-on:
+        in cl, 0x13                                         # get layer src
+        or cl, 0b1000_0000                                  # turn on the top bit
+        out 0x13, cl                                        # layer visible!
+        br _configs
+    _layer-off:
+        in cl, 0x13
+        and cl, 0b0111_1111                                 # turn off the top bit
+        out 0x13, cl                                        # layer invisible
+        br _configs
+    _layer-source:
+        call eval                                           # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x13                                         # get layer source
+        and al, 0b1110_0000                                 # zero the page
+        or al, cl                                           # put new page
+        out 0x13, al                                        # layer has new page
+        br _configs
+    _layer-size: 
+        call eval                                           # get scale
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x14                                         # get layer config
+        and al, 0b0011_1111                                 # zero the scale
+        shl cl, 6
+        or al, cl                                           # put new scale
+        out 0x14, al                                        # layer has new page
+        br _configs
+    _layer-tileset:
+        call eval                                           # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x14                                         # get layer config
+        and al, 0b1110_0000                                 # zero the tileset
+        or al, cl                                           # put new page
+        out 0x14, al                                        # layer has new tileset
+        br _configs
+    _layer-color:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # foreground
+        br ex _out                                          # handle error
+        out 0x16, cl                                        # write foreground
+        call pop-number-param                               # background (optional)
+        if ex {
+            cmp dl, brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out-no-err                                  # not present, no error
+        }
+        out 0x15, cl
+        br _configs
+    _layer-at:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # x-position
+        br ex _out                                          # handle error
+        out 0x17, cl                                        # write X offset
+        call pop-number-param                               # y-position
+        br ex _out
+        out 0x18, cl                                        # write Y offset
+        br _configs
+    _layer-rect:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # x size
+        br ex _out                                          # handle error
+        out 0x19, cl                                        # write X crop
+        call pop-number-param                               # y size
+        br ex _out
+        out 0x1A, cl                                        # write Y crop
+        br _configs
+    _layer-mode:
+        call eval                                           # get mode
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1B                                         # get layer mode
+        and al, 0b1111_1100                                 # zero the mode
+        or al, cl                                           # put new mode
+        out 0x1B, al                                        # layer has new mode
+        br _configs
+    _layer-line:
+        call eval                                           # get line
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x14                                         # get layer mode
+        and al, 0b1101_1111                                 # zero the line expander
+        shl cl, 5
+        or al, cl                                           # put new line expander
+        out 0x14, al                                        # layer has new lines
+        br _configs
     }
 
     #
@@ -878,41 +1036,41 @@
 
         call gettok
         cmp dl, 0
-        br z _bail                          # next token was an end of the line
+        br z _bail                                           # next token was an end of the line
         cmp dl, brodata.TOK_END_OF_STMT
-        br z _bail                          # next token was an end of the statement
+        br z _bail                                           # next token was an end of the statement
         cmp dl, brodata.TOK_SEMICOLON
-        br z _maybe-no-newline              # semicolon suppresses CR at end of line
+        br z _maybe-no-newline                               # semicolon suppresses CR at end of line
         cmp dl, brodata.TOK_COMMA
-        br z _tab                           # comma emits some tabs
-        cmp dl, brodata.TOK_CHR             # Check for CHR$
+        br z _tab                                            # comma emits some tabs
+        cmp dl, brodata.TOK_CHR                              # Check for CHR$
         br z _print-chr
-        cmp dl, brodata.TOK_CHRS            # Check for CHRS$
+        cmp dl, brodata.TOK_CHRS                             # Check for CHRS$
         br z _print-chrs
-        cmp dl, brodata.TOK_AT              # Check for AT?
+        cmp dl, brodata.TOK_AT                               # Check for AT?
         br z _print-at
-        cmp dl, brodata.TOK_SPC             # Check for SPC()
+        cmp dl, brodata.TOK_SPC                              # Check for SPC()
         br z _print-spc-fn
-        cmp dl, brodata.TOK_TAB             # Check for TAB()
+        cmp dl, brodata.TOK_TAB                              # Check for TAB()
         br z _print-tab-fn 
-        call backtok                        # give eval a chance
+        call backtok                                         # give eval a chance
 
         call eval
         cmp dl, 0
-        brs !z _out                         # an error happened, bail
+        brs !z _out                                          # an error happened, bail
         call pop-param
-        cmp dl, brodata.TOK_CODE_STRING     # is the accumulator a code string?
+        cmp dl, brodata.TOK_CODE_STRING                      # is the accumulator a code string?
         if z {
-            dl := [bdata.execution-mode]        # make sure we select the right bank
+            dl := [bdata.execution-mode]                     # make sure we select the right bank
             cmp dl, 0
             if z {
-                d := 0                          # for direct mode, it's zero bank
-            } else {                            # but in run mode, it comes from code
+                d := 0                                       # for direct mode, it's zero bank
+            } else {                                         # but in run mode, it comes from code
                 d := addrbank(kmemmap.basic.prog-start)
             }
             x := c
             call [vectors.PRINT]
-        } else {                            # must be a string in the heap or number?
+        } else {                                             # must be a string in the heap or number?
             cmp dl, brodata.TOK_STRING
             if z {  
                 d := addrbank(kmemmap.basic.heap-start)
@@ -927,7 +1085,7 @@
             }
         }
         call _reset-newline
-        br _main                            # back for more!
+        br _main                                             # back for more!
 
     _out:
         exit 0x02
@@ -938,7 +1096,7 @@
         if !z {
             d := brodata.newline >> 3
             x := brodata.newline & 7
-            call [vectors.PRINT]            # NEWLINE, to be neat
+            call [vectors.PRINT]                             # NEWLINE, to be neat
         }
         dl := 0
 
@@ -957,74 +1115,53 @@
         call [vectors.PUT_CHAR]
         br _maybe-no-newline
     _print-chr:
-        call eval                               # expecting an expression for CHR$
+        call eval                                            # expecting an expression for CHR$
         cmp dl, 0
-        br !z _out                              # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        br !z _out                                           # an error happened, bail
+        call pop-number-param
+        br ex _out
         dl := cl
         call [vectors.PUT_CHAR]
         br _main
     _print-chrs:
-        call eval                               # expecting the character # for CHRS$
+        call eval
         cmp dl, 0
-        br !z _out                              # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        br !z _out
+        call pop-number-param
+        br ex _out
         bl := cl
-        call gettok
-        cmp dl, brodata.TOK_COMMA                   # expecting a comma
-        if !z {
-            dl := brodata.SYNTAX_ERROR
-            br _out
-        }
-        call eval                               # expecting number of times to repeat for CHRS$
-        cmp dl, 0
-        br !z _out                              # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
-        br _print-lots                          # print them
+        call pop-number-param
+        br ex _out
+        br _print-lots                                       # print them
     _print-at:
-        call eval                               # expecting an expression for ROW
+        call eval                                            # expecting an expression for ROW
         cmp dl, 0
-        br !z _out                              # an error happened, bail
+        br !z _out                                           # an error happened, bail
         call pop-param
-        cmp dl, brodata.TOK_WORD                # has to be an integer
+        cmp dl, brodata.TOK_WORD                             # has to be an integer
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
         b := c
-        call gettok                             # Next, we expect a COMMA
+        call gettok                                          # Next, we expect a COMMA
         cmp dl, brodata.TOK_COMMA
         if !z {
             dl := brodata.SYNTAX_ERROR
             br _out
         }
-        call eval                               # expecting an expression for COL
+        call eval                                            # expecting an expression for COL
         cmp dl, 0
-        br !z _out                              # an error happened, bail
+        br !z _out                                           # an error happened, bail
         call pop-param
-        cmp dl, brodata.TOK_WORD                # has to be an integer
+        cmp dl, brodata.TOK_WORD                             # has to be an integer
         if !z {
             dl := brodata.TYPE_MISMATCH_ERROR
             br _out
         }
         d := b
         exc d
-        dl := cl                                # D should now be row (high), col (low)
+        dl := cl                                             # D should now be row (high), col (low)
         call [vectors.SET_CURSOR_POS]
         br _main 
     _print-tab-fn:
@@ -1033,23 +1170,179 @@
     _print-spc-fn:
         bl := 32
     _print-multiples:
-        call eval                               # expecting an expression for TAB
+        call eval                                            # expecting an expression for TAB
         cmp dl, 0
-        br !z _out                              # an error happened, bail
-        call pop-param
-        cmp dl, brodata.TOK_WORD                # has to be an integer
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            br _out
-        }
+        br !z _out                                           # an error happened, bail
+        call pop-number-param
+        br ex _out
     _print-lots:
-        cmp c, 0                                # TAB/SPC(0) does nothing
+        cmp c, 0                                             # TAB/SPC(0) does nothing
         dl := bl
         while !z do {
             call [vectors.PUT_CHAR]
             dec c
         }
         br _maybe-no-newline
+    }
+
+    #
+    # SPRITE which [ON|OFF]|[MODE mode]|[SOURCE page, idx]|
+    #              [TILESET page]|[COLOR fg[, bg]]|
+    #              [AT x, y]|[SIZE w, h, scale]|[LAYER lyr]
+    #
+    # Configures the given sprite.
+    #
+    # ERRORS
+    ###########################################################################
+    handler-sprite: {
+        enter 0x00
+        push a
+        push c
+    _main:
+        call eval
+        cmp dl, 0
+        br !z _out
+        call pop-number-param
+        br ex _out
+        out 0x1C, cl                                         # select the specified sprite
+    _configs:
+        call gettok
+        cmp dl, 0
+        br z _bail                                           # next token was an end of the line
+        cmp dl, brodata.TOK_END_OF_STMT
+        br z _bail                                           # next token was an end of the statement
+        cmp dl, brodata.TOK_ON                               # Check for ON  
+        br z _sprite-on
+        cmp dl, brodata.TOK_OFF                              # Check for OFF 
+        br z _sprite-off
+        cmp dl, brodata.TOK_SOURCE                           # Check for SOURCE page, idx
+        br z _sprite-source
+        cmp dl, brodata.TOK_SIZE                             # Check for SIZE w,h,scale
+        br z _sprite-size 
+        cmp dl, brodata.TOK_TILESET                          # Check for TILESET page
+        br z _sprite-tileset
+        cmp dl, brodata.TOK_COLOR                            # Check for COLOR fg,bg
+        br z _sprite-color  
+        cmp dl, brodata.TOK_AT                               # Check for AT x,y
+        br z _sprite-at  
+        cmp dl, brodata.TOK_LAYER                            # Check for LAYER lyr
+        br z _sprite-layer
+        call backtok                                         # SYNTAX ERROR then
+        dl := brodata.SYNTAX_ERROR
+        br _out
+    _bail:
+        call backtok
+    _out-no-err:
+        dl := 0
+    _out:
+        pop c
+        pop a
+        exit 0x00
+        ret
+    _sprite-on:
+        in cl, 0x1D                                         # get sprite src
+        or cl, 0b1000_0000                                  # turn on the top bit
+        out 0x1D, cl                                        # sprite visible!
+        br _configs
+    _sprite-off:
+        in cl, 0x1D
+        and cl, 0b0111_1111                                 # turn off the top bit
+        out 0x1D, cl                                        # sprite invisible
+        br _configs
+    _sprite-source:
+        call eval-all                                       # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1D                                         # get sprite source
+        and al, 0b1110_0000                                 # zero the page
+        or al, cl                                           # put new page
+        out 0x1D, al                                        # sprite has new page
+        call pop-number-param
+        br ex _out                                          # handle errors
+        out 0x1E, cl                                        # sprite index
+        br _configs
+    _sprite-size: 
+        call eval-all                                       # get scale
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        al := cl                                            # get width
+        and al, 0b0000_1111                                 # limit to 0-15
+        call pop-number-param
+        br ex _out                                          # handle errors
+        shl al, 4
+        and cl, 0b0000_1111
+        or al, cl                                           # height
+        exc al                                              # swap nibbles
+        out 0x20, al                                        # height, width
+        call pop-number-param
+        if ex {
+            cmp dl, brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out-no-err                                  # not present, no error
+        }
+        in al, 0x1F                                         # get sprite config
+        and al, 0b0011_1111                                 # zero the scale
+        shl cl, 6
+        or al, cl                                           # put new scale
+        out 0x1F, al                                        # sprite has new scale
+        br _configs
+    _sprite-tileset:
+        call eval                                           # get source page
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1F                                         # get sprite config
+        and al, 0b1110_0000                                 # zero the tileset
+        or al, cl                                           # put new page
+        out 0x1F, al                                        # sprite has new tileset
+        br _configs
+    _sprite-color:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # foreground
+        br ex _out                                          # handle error
+        out 0x22, cl                                        # write foreground
+        call pop-number-param                               # background (optional)
+        if ex {
+            cmp dl, brodata.INSUFFICIENT_ARGUMENTS_ERROR
+            br _out-no-err                                  # not present, no error
+        }
+        out 0x21, cl
+        br _configs
+    _sprite-at:
+        call eval-all
+        cmp dl, 0
+        br !z _out
+        call pop-number-param                               # x-position
+        br ex _out                                          # handle error
+        exc c
+        out 0x23, cl                                        # write X offset
+        exc c
+        out 0x24, cl
+        call pop-number-param                               # y-position
+        br ex _out
+        exc c
+        out 0x25, cl                                        # write Y offset
+        exc c
+        out 0x26, cl
+        br _configs
+    _sprite-layer:
+        call eval                                           # get layer
+        cmp dl, 0
+        br !z _out                                          # handle errors
+        call pop-number-param
+        br ex _out                                          # handle errors
+        in al, 0x1D                                         # get layer mode
+        and al, 0b1001_1111                                 # zero the layer
+        shl cl, 5
+        or al, cl                                           # put new layer
+        out 0x1D, al                                        # sprite has new layer
+        br _configs
     }
 }
 

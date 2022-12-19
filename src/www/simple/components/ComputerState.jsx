@@ -30,6 +30,7 @@ export class ComputerState extends AutoUpdateComponent {
             dumpedStats.MMOPs, dumpedStats.MIPs, dumpedStats.MAOPs, dumpedStats.microOpsPerInst ];
         const regs = [ "", ...diagnostics.dumpRegisters().map(toHex4) ];
         const flags = diagnostics.dumpFlags();
+        const fpu = diagnostics.dumpFPU();
 
         return (
             <div className="panel">
@@ -51,24 +52,33 @@ export class ComputerState extends AutoUpdateComponent {
                 </tbody></table>
                 <table>
                     <thead>
-                        <th>7.EX</th>
-                        <th>6.ID</th>
-                        <th>5.IS</th>
-                        <th>4.SS</th>
-                        <th>3.N</th>
-                        <th>2.C</th>
-                        <th>1.V</th>
-                        <th>0.Z</th>
+                        <tr>
+                            <th>7.EX</th>
+                            <th>6.ID</th>
+                            <th>5.IS</th>
+                            <th>4.SS</th>
+                            <th>3.N</th>
+                            <th>2.C</th>
+                            <th>1.V</th>
+                            <th>0.Z</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <td>{flags.EX ? "+" : "-"}</td>
-                        <td>{flags.ID ? "+" : "-"}</td>
-                        <td>{flags.IS ? "+" : "-"}</td>
-                        <td>{flags.SS ? "+" : "-"}</td>
-                        <td>{flags.N  ? "+" : "-"}</td>
-                        <td>{flags.C  ? "+" : "-"}</td>
-                        <td>{flags.V  ? "+" : "-"}</td>
-                        <td>{flags.Z  ? "+" : "-"}</td>
+                        <tr>
+                            <td>{flags.EX ? "+" : "-"}</td>
+                            <td>{flags.ID ? "+" : "-"}</td>
+                            <td>{flags.IS ? "+" : "-"}</td>
+                            <td>{flags.SS ? "+" : "-"}</td>
+                            <td>{flags.N  ? "+" : "-"}</td>
+                            <td>{flags.C  ? "+" : "-"}</td>
+                            <td>{flags.V  ? "+" : "-"}</td>
+                            <td>{flags.Z  ? "+" : "-"}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table>
+                    <tbody>
+                        {fpu.map((n, idx) => <tr key={idx}><td>{`${idx}.`}</td><td>{`${n}`}</td></tr>)}
                     </tbody>
                 </table>
             </div>

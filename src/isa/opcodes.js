@@ -80,6 +80,85 @@ const aluOp = ({alu, registerFile, command, op0, sz0, op1, sz1, flagHandling}) =
 }
 
 export const OPCODES = {};
+
+[ 
+    [ "fclr", "Clears Floating Point Unit", "0000_0000", {}, (_, {fpu}) => fpu.init() ],
+    [ "fadd", "Add two FP numbers together", "0001_0000", {}, (_, {fpu}) => fpu.add() ],
+    [ "fsub", "Subtract two FP numbers", "0001_0001", {}, (_, {fpu}) => fpu.sub() ],
+    [ "fcmp", "Compare two FP numbers", "0001_0010", {}, (_, {fpu}) => fpu.sub() ],
+    [ "fmul", "Multiply two FP numbers", "0001_0011", {}, (_, {fpu}) => fpu.mul() ],
+    [ "fmod", "Return modulo of two FP numbers", "0001_0100", {}, (_, {fpu}) => fpu.mod() ],
+    [ "fdiv", "Divide two FP numbers", "0001_0101", {}, (_, {fpu}) => fpu.div() ],
+    [ "fpow", "Raise to power", "0001_0110", {}, (_, {fpu}) => fpu.pow() ],
+    [ "fsqrt","Square Root", "0001_0111", {}, (_, {fpu}) => fpu.sqrt() ],
+    [ "fneg", "Negate FP Number", "0001_1000", {}, (_, {fpu}) => fpu.neg() ],
+    [ "fexc", "Exchange top two FP numbers", "0001_1001", {}, (_, {fpu}) => fpu.swap() ],
+    [ "fint", "Convert FP number to integer", "0001_1010", {}, (_, {fpu}) => fpu.int() ],
+    [ "fabs", "Absolute Value of FP Number", "0001_1011", {}, (_, {fpu}) => fpu.abs() ],
+    [ "fsin", "Sine", "0010_0000", {}, (_, {fpu}) => fpu.sin() ],
+    [ "fcos", "Cosine", "0010_0001", {}, (_, {fpu}) => fpu.cos() ],
+    [ "ftan", "Tangent", "0010_0010", {}, (_, {fpu}) => fpu.tan() ],
+    [ "fasin","Arc Sine", "0010_0100", {}, (_, {fpu}) => fpu.asin() ],
+    [ "facos","Arc Cosine", "0010_0101", {}, (_, {fpu}) => fpu.acos() ],
+    [ "fatan","Arc Tangent", "0010_0110", {}, (_, {fpu}) => fpu.atan() ],
+    [ "fisnan","Check if FP Number is NaN", "0011_0000", {}, (_, {fpu}) => fpu.isnan() ],
+    [ "fisinf","Check if FP Number is Infinte", "0011_0001", {}, (_, {fpu}) => fpu.isinf() ],
+    [ "flog2","Perform Log 2", "0011_0010", {}, (_, {fpu}) => fpu.log2() ],
+    [ "flog10","Perform Log 10", "0011_0011", {}, (_, {fpu}) => fpu.log10() ],
+    [ "fld0", "Load zero constant", "0111_0000", {}, (_, {fpu}) => fpu.ld0() ],
+    [ "fld1", "Load one constant", "0111_0001", {}, (_, {fpu}) => fpu.ld1() ],
+    [ "flde", "Load e constant", "0111_0010", {}, (_, {fpu}) => fpu.e() ],
+    [ "fldpi","Load pi constant", "0111_0011", {}, (_, {fpu}) => fpu.pi() ],
+    [ "fldr","Load from register", "1000_0000", {r: [3, 0]}, ({r}, {registerFile, fpu}) => fpu.push(registerFile.getRegister(r)) ],
+    [ "fldm","Load from memory", "1000_0001", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            const addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            fpu.pushBytes([memory.readByte(addr+0), memory.readByte(addr+1), 
+                           memory.readByte(addr+2), memory.readByte(addr+3),
+                           memory.readByte(addr+4), memory.readByte(addr+5),
+                           memory.readByte(addr+6), memory.readByte(addr+7)]);
+        }],
+    [ "fldim","Load from memory, indirect", "1000_0010", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            let addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            const bank = memory.readWord(addr);
+            const offs = memory.readWord(addr+2);
+            addr = (bank << 3) + offs;
+            fpu.pushBytes([memory.readByte(addr+0), memory.readByte(addr+1), 
+                           memory.readByte(addr+2), memory.readByte(addr+3),
+                           memory.readByte(addr+4), memory.readByte(addr+5),
+                           memory.readByte(addr+6), memory.readByte(addr+7)]);
+        }],
+    [ "fstr","Store to register", "1000_0100", {r: [3, 0]}, ({r}, {registerFile, fpu}) => registerFile.setRegister(r, fpu.pop()) ],
+    [ "fstm","Store to memory", "1000_0101", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            const bytes = fpu.popBytes();
+            const addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            for (let i = 0; i < 8; i++) 
+                memory.writeByte(addr+i, bytes[i]);
+        }],
+    [ "fstim","Store to memory, indirect", "1000_0110", {b: [7, 4], r: [3, 0]}, 
+        ({b,r}, {memory, registerFile, fpu}) => {
+            const bytes = fpu.popBytes();
+            let addr = (registerFile.getRegister(b) << 3) + registerFile.getRegister(r);
+            const bank = memory.readWord(addr);
+            const offs = memory.readWord(addr+2);
+            addr = (bank << 3) + offs;
+            for (let i = 0; i < 8; i++) 
+                memory.writeByte(addr+i, bytes[i]);
+        }],
+].forEach(([asm, description, pattern, operands, equiv]) => {
+    OPCODES[asm] = {
+        asm,
+        pattern: `1010_1110 ${pattern}`,
+        operands,
+        description,
+        flags: "xdshncvz",
+        equiv
+    }
+});
+
+
 OPCODES["nop"] = {
     asm: "nop",
     pattern: "0000_0000",
@@ -308,21 +387,21 @@ OPCODES["mov_ds"] = {
 
 // add, sub, cmp, and, or, test, xor
 [
-    ["add", TASKS.ADD, "0000_0001", "0100_1dd1", "0100_1dd0", COMMANDS.ADD, FLAGS_PUSH_AND_PULL],
-    ["sub", TASKS.SUB, "0000_0010", "0101_0dd1", "0101_0dd0", COMMANDS.SUB, FLAGS_PUSH_AND_PULL],
-    ["cmp", TASKS.CMP, "0000_0011", "0101_1dd1", "0101_1dd0", COMMANDS.SUB, FLAGS_PULL_FROM_ALU],
-    ["and", TASKS.AND, "0000_0100", "0110_0dd1", "0110_0dd0", COMMANDS.AND, FLAGS_PUSH_AND_PULL],
-    ["or", TASKS.OR, "0000_0101", "0110_1dd1", "0110_1dd0", COMMANDS.OR, FLAGS_PUSH_AND_PULL],
-    ["test", TASKS.TEST, "0000_0110", "0111_0dd1", "0111_0dd0", COMMANDS.TEST],    // TODO: incorrect; the alu doesn't support test ATM
-    ["xor", TASKS.XOR, "0000_0111", "0111_1dd1", "0111_1dd0", COMMANDS.XOR, FLAGS_PUSH_AND_PULL],
-].forEach(([opcode, task, ds, db, dw, command, flagHandling], idx) => {
+    ["add", TASKS.ADD, "0000_0001", "0100_1dd1", "0100_1dd0", COMMANDS.ADD, FLAGS_PUSH_AND_PULL, true],
+    ["sub", TASKS.SUB, "0000_0010", "0101_0dd1", "0101_0dd0", COMMANDS.SUB, FLAGS_PUSH_AND_PULL, true],
+    ["cmp", TASKS.CMP, "0000_0011", "0101_1dd1", "0101_1dd0", COMMANDS.SUB, FLAGS_PULL_FROM_ALU, false],
+    ["and", TASKS.AND, "0000_0100", "0110_0dd1", "0110_0dd0", COMMANDS.AND, FLAGS_PUSH_AND_PULL, true],
+    ["or", TASKS.OR, "0000_0101", "0110_1dd1", "0110_1dd0", COMMANDS.OR, FLAGS_PUSH_AND_PULL, true],
+    ["test", TASKS.AND, "0000_0110", "0111_0dd1", "0111_0dd0", COMMANDS.AND, FLAGS_PULL_FROM_ALU, false],
+    ["xor", TASKS.XOR, "0000_0111", "0111_1dd1", "0111_1dd0", COMMANDS.XOR, FLAGS_PUSH_AND_PULL, true],
+].forEach(([opcode, task, ds, db, dw, command, flagHandling, storeReturn], idx) => {
     OPCODES[`${opcode}_ds`] = {
         asm: `${opcode} $d, $s`,
         pattern: `${ds} dddd_ssss`,
         operands: { s: [3, 0], d: [7, 4] },
         description: `${opcode}s dest and source, storing result in dest`,
         flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
-        equiv: opcode==="cmp" ? (({d,s}, {registerFile, alu}) => {
+        equiv: (!storeReturn) ? (({d,s}, {registerFile, alu}) => {
             aluOp({alu, registerFile, 
                 command, 
                 op0: registerFile.getRegister(d), sz0: ((d & 0x01) ? SIZE_BYTE : SIZE_WORD), 
@@ -336,7 +415,7 @@ OPCODES["mov_ds"] = {
                 flagHandling}));
         }),
         decode: (
-            opcode === "cmp"
+            (!storeReturn)
                 ? ({ d = 0, s = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | d, // a
                     TASKS.GET_REGISTER_AND_PUSH | s, // b
@@ -356,7 +435,7 @@ OPCODES["mov_ds"] = {
         operands: { d: [10, 9], b: [7, 0] },
         description: `${opcode}s dest and imm8, storing result in dest`,
         flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
-        equiv: opcode==="cmp" ? (({d,b}, {registerFile, alu}) => {
+        equiv: (!storeReturn) ? (({d,b}, {registerFile, alu}) => {
             aluOp({alu, registerFile, 
                 command, 
                 op0: registerFile.getRegister(d*2+1), sz0:               SIZE_BYTE             , 
@@ -370,7 +449,7 @@ OPCODES["mov_ds"] = {
                 flagHandling}));
         }),
         decode: (
-            opcode === "cmp"
+            (!storeReturn)
                 ? ({ d = 0, b = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | ((d << 1) | 1), // a
                     TASKS.PUSH_BYTE | b, //b
@@ -390,7 +469,7 @@ OPCODES["mov_ds"] = {
         operands: { d: [18, 17], w: [15, 0] },
         description: `${opcode}s dest and imm16, storing result in dest`,
         flags: idx < 3 ? "xdshNCVZ" : "xdshNcvZ",
-        equiv: opcode==="cmp" ? (({d,w}, {registerFile, alu}) => {
+        equiv: (!storeReturn) ? (({d,w}, {registerFile, alu}) => {
             aluOp({alu, registerFile, 
                 command, 
                 op0: registerFile.getRegister(d*2), sz0:               SIZE_WORD             , 
@@ -404,7 +483,7 @@ OPCODES["mov_ds"] = {
                 flagHandling}));
         }),
         decode: (
-            opcode === "cmp"
+            (!storeReturn)
                 ? ({ d = 0, w = 0 } = {}) => [
                     TASKS.GET_REGISTER_AND_PUSH | (d << 1), // a
                     TASKS.PUSH_WORD | w, // b
@@ -934,9 +1013,37 @@ OPCODES["ret"] = {
             addr = calcAddress({m, i, x, y, a: addr}, {registerFile, memory});
             if (m !== 0) addr = memory.readWord(addr);
             if (u === 1) {
-                // unconditional, so don't check any flags
-                // as such, the address is currently on the stack
-                registerFile.PC = addr;
+                switch (f) {
+                    case 0b000:
+                        // unconditional, so don't check any flags
+                        // as such, the address is currently on the stack
+                        registerFile.PC = addr;
+                        break;
+                    case 0b010:
+                        // lt (N != V) or blo (C=1)
+                        if ((n === 0 && registerFile.NEGATIVE !== registerFile.OVERFLOW) 
+                         || (n === 1 && registerFile.CARRY))    
+                            registerFile.PC = addr;
+                        break;
+                    case 0b011:
+                        // lte (N != V or Z=0) or ble (C=1 or Z=1)
+                        if ((n === 0 && ((registerFile.NEGATIVE !== registerFile.OVERFLOW) || registerFile.ZERO)) 
+                         || (n === 1 &&  (registerFile.CARRY                               || registerFile.ZERO)))
+                            registerFile.PC = addr;
+                        break;
+                    case 0b100:
+                        // gt (N=V and Z=0) or abv (C=0 and Z=0)
+                        if ((n === 0 && (registerFile.NEGATIVE === registerFile.OVERFLOW) && !registerFile.ZERO)
+                         || (n === 1 && (!registerFile.CARRY && !registerFile.ZERO))) 
+                            registerFile.PC = addr;
+                        break;
+                    case 0b101:
+                        // gte (N=V or Z=1) or abe (C=0 or Z=1)
+                        if ((n === 0 && (registerFile.NEGATIVE === registerFile.OVERFLOW) && registerFile.ZERO)
+                         || (n === 1 && (!registerFile.CARRY || registerFile.ZERO)))
+                            registerFile.PC = addr;
+                        break;
+                }
             } else {
                     let flagValue = (registerFile.FLAGS & (1<<f)) ? 1 : 0;
                     if (n === 1) flagValue = 1 - flagValue;

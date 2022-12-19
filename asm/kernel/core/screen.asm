@@ -27,17 +27,17 @@
 
     .segment krodata kmemmap.kernel.rodata-start .append {
         screen-init-start:
-        screen-width:         .byte 0x05       # amount to shift for (row << width) calculation 
-        screen-rows:          .byte 21         # number of rows
-        screen-cols:          .byte 32         # number of columns
+        screen-width:         .byte 0x05                    # amount to shift for (row << width) calculation 
+        screen-rows:          .byte 21                      # number of rows
+        screen-cols:          .byte 32                      # number of columns
         screen-length:        .word 0xFFF
-        screen-part-length:   .word 0x3FF      # screen length for one component (text, color, etc.)
-        cursor-scale:         .byte 0x04       # shifter for determining cursor position
+        screen-part-length:   .word 0x3FF                   # screen length for one component (text, color, etc.)
+        cursor-scale:         .byte 0x04                    # shifter for determining cursor position
         cursor-row:           .byte 0x00
         cursor-col:           .byte 0x00
         cursor-fg:            .byte 0xFF
         cursor-bg:            .byte 0x00
-        cursor-tile:          .byte 0xDB
+        cursor-tile:          .byte 0xA4
         cursor-visible:       .byte 0x00
         cursor-blink-toggle:  .byte 0x00
         cursor-blink-speed:   .byte 19
@@ -45,14 +45,14 @@
         screen-text-fg:       .byte 0xFF
         screen-text-bg:       .byte 0x00
         screen-page:          .word 0x10000 >> 3
-        screen-line-height:   .byte 18      # height of a row (8 or 9, 16 or 18)
+        screen-line-height:   .byte 18                      # height of a row (8 or 9, 16 or 18)
         screen-layer:         .byte 0
         screen-init-end:      .byte 00
 
         .const SCREEN-INIT-DATA-LENGTH ((screen.krodata.screen-init-end - screen.krodata.screen-init-start) - 1)
 
         screen-mode-start:
-            screen-mode-0-width:       .byte 0x05      # screen mode 0 is 32x21, with 9px cells
+            screen-mode-0-width:       .byte 0x05           # screen mode 0 is 32x21, with 9px cells
             screen-mode-0-rows:        .byte 21
             screen-mode-0-cols:        .byte 32
             screen-mode-0-length:      .byte 0xFFF
@@ -61,7 +61,7 @@
             screen-mode-0-line-height: .byte 18
             screen-mode-0-cfg:         .byte 0b00100000
 
-            screen-mode-1-width:       .byte 0x05      # screen mode 1 is 32x24, with 8px cells
+            screen-mode-1-width:       .byte 0x05           # screen mode 1 is 32x24, with 8px cells
             screen-mode-1-rows:        .byte 24
             screen-mode-1-cols:        .byte 32
             screen-mode-1-length:      .byte 0xFFF
@@ -70,7 +70,7 @@
             screen-mode-1-line-height: .byte 16
             screen-mode-1-cfg:         .byte 0b00000000
 
-            screen-mode-2-width:       .byte 0x06      # screen mode 2 is 64x42, with 9px cells
+            screen-mode-2-width:       .byte 0x06           # screen mode 2 is 64x42, with 9px cells
             screen-mode-2-rows:        .byte 42
             screen-mode-2-cols:        .byte 64
             screen-mode-2-length:      .byte 0xFFF
@@ -79,7 +79,7 @@
             screen-mode-2-line-height: .byte 9
             screen-mode-2-cfg:         .byte 0b00100000
 
-            screen-mode-3-width:       .byte 0x06      # screen mode 3 is 64x48, with 8px cells
+            screen-mode-3-width:       .byte 0x06           # screen mode 3 is 64x48, with 8px cells
             screen-mode-3-rows:        .byte 48
             screen-mode-3-cols:        .byte 64
             screen-mode-3-length:      .byte 0xFFF
@@ -114,8 +114,8 @@
         screen-layer:         .byte 0
 
         print-data-start:
-        print-mode:           .byte 0x00       # used to indicate the mode used for printing
-        print-control-param:  .byte 0x00       # control parameter
+        print-mode:           .byte 0x00                    # used to indicate the mode used for printing
+        print-control-param:  .byte 0x00                    # control parameter
     }
 
     .segment kcode kmemmap.kernel.code-start .append {
@@ -147,31 +147,31 @@
                 # set up the screen device to be what it would be at a cold
                 # start
 
-                OUTC(0x10, 29)      # rom palette is at page 29
-                OUTC(0x11, 9)       # background color is a dark blue
-                OUTC(0x2B, 0x80)    # border config
-                OUTC(0x2C, 0x80)    # and border color (light blue)
-                OUTC(0x2D, 0)       # trap-on-raster
+                OUTC(0x10, 29)                              # rom palette is at page 29
+                OUTC(0x11, 9)                               # background color is a dark blue
+                OUTC(0x2B, 0x80)                            # border config
+                OUTC(0x2C, 0x80)                            # and border color (light blue)
+                OUTC(0x2D, 0)                               # trap-on-raster
 
                 # ensure layer zero is visible and pointing at page 0x10000
 
                 ld al, 0
-                out 0x12, al        # select layer zero
-                out 0x17, al        # x offset is zero
-                out 0x18, al        # y offset is zero
-                out 0x19, al        # x crop is zero
-                out 0x1A, al        # y crop is zero
-                out 0x1B, al        # screen mode is zero (32x24)
+                out 0x12, al                                # select layer zero
+                out 0x17, al                                # x offset is zero
+                out 0x18, al                                # y offset is zero
+                out 0x19, al                                # x crop is zero
+                out 0x1A, al                                # y crop is zero
+                out 0x1B, al                                # screen mode is zero (32x24)
 
-                OUTC(0x13, 0x84)    # layer is visible, source is page 4 (0x10000)
-                OUTC(0x14, 0b00_1_00000 | 28) # tile page is from ROM, with spacing between lines
-                OUTC(0x15, [screen.kdata.screen-text-bg])    # background color (transparent)
-                OUTC(0x16, [screen.kdata.screen-text-fg])    # foreground color
+                OUTC(0x13, 0x84)                            # layer is visible, source is page 4 (0x10000)
+                OUTC(0x14, 0b00_1_00000 | 28)               # tile page is from ROM, with spacing between lines
+                OUTC(0x15, [screen.kdata.screen-text-bg])     # background color (transparent)
+                OUTC(0x16, [screen.kdata.screen-text-fg])     # foreground color
 
                 ld al, 0x00
-                [screen.kdata.print-control-param] := al     # control parameter
+                [screen.kdata.print-control-param] := al      # control parameter
                 ld al, PRINT_MODE_NORMAL
-                [screen.kdata.print-mode] := al              # normal printing mode
+                [screen.kdata.print-mode] := al               # normal printing mode
             }
 
             init-cursor-sprite: {
@@ -188,13 +188,13 @@
                 #
                 # configure the sprite for display
                 ###############################################################
-                OUTC(PORT_SPRITE_SEL, CURSOR_SPRITE_SEL)     # select the sprite we're going to set up
-                OUTC(PORT_SPRITE_SRC, 0b1_11_00000)          # Visible, above everything, page 0
-                OUTC(PORT_SPRITE_IDX, CURSOR_SPRITE_IDX)     # sprite offset
-                OUTC(PORT_SPRITE_CFG, 0b01_0_11100)          # scale for 32x24; tile page 28
-                OUTC(PORT_SPRITE_SIZE, 0x11)                 # cursor is 1x1
-                OUTC(PORT_SPRITE_BG, [screen.kdata.cursor-bg]) # background color
-                OUTC(PORT_SPRITE_FG, [screen.kdata.cursor-fg]) #forekground color
+                OUTC(PORT_SPRITE_SEL, CURSOR_SPRITE_SEL)      # select the sprite we're going to set up
+                OUTC(PORT_SPRITE_SRC, 0b1_11_00000)           # Visible, above everything, page 0
+                OUTC(PORT_SPRITE_IDX, CURSOR_SPRITE_IDX)      # sprite offset
+                OUTC(PORT_SPRITE_CFG, 0b01_0_11100)           # scale for 32x24; tile page 28
+                OUTC(PORT_SPRITE_SIZE, 0x11)                  # cursor is 1x1
+                OUTC(PORT_SPRITE_BG, [screen.kdata.cursor-bg])  # background color
+                OUTC(PORT_SPRITE_FG, [screen.kdata.cursor-fg])  #forekground color
             }
         
             calls clear-screen
@@ -262,11 +262,11 @@
             ld x, [screen.kdata.screen-length]
             do {
                 ld al, 0x00
-                st [d + 0x0000, x], al              # fill with null chars
+                st [d + 0x0000, x], al                      # fill with null chars
                 ld al, [screen.kdata.screen-text-fg]
-                st [d + 0x1000, x], al              # set foreground color
+                st [d + 0x1000, x], al                      # set foreground color
                 ld al, [screen.kdata.screen-text-bg]
-                st [d + 0x2000, x], al              # set background color
+                st [d + 0x2000, x], al                      # set background color
                 dec x
             } while !c
             d := 0
@@ -287,7 +287,7 @@
         }
 
         each-frame: {
-            set id                # turn off interrupts
+            set id                                          # turn off interrupts
         _main:
             calls draw-cursor
             calls update-cursor
@@ -303,41 +303,45 @@
             push d
             pushf
         _main:
+            in al, PORT_SPRITE_SEL
+            push al
             # update cursor sprite visiblity
-            ld al, CURSOR_SPRITE_SEL                  # select the cursor sprite
+            ld al, CURSOR_SPRITE_SEL                        # select the cursor sprite
             out PORT_SPRITE_SEL, al
-            in al, PORT_SPRITE_SRC                    # get current settings
-            ld bl, [screen.kdata.cursor-visible]      # is visible?
-            ld cl, [screen.kdata.cursor-blink-toggle] # is on? (based on blink cycle)
-            and bl, cl                                # only show if visible and on
-            shl bl, 7                                 # needs to be bit 7
-            and al, 0x0111_1111                       # clear top bit
-            or al, bl                                 # or in the right bit
+            in al, PORT_SPRITE_SRC                          # get current settings
+            ld bl, [screen.kdata.cursor-visible]            # is visible?
+            ld cl, [screen.kdata.cursor-blink-toggle]       # is on? (based on blink cycle)
+            and bl, cl                                      # only show if visible and on
+            shl bl, 7                                       # needs to be bit 7
+            and al, 0x0111_1111                             # clear top bit
+            or al, bl                                       # or in the right bit
             out PORT_SPRITE_SRC, al
 
-            OUTC(PORT_SPRITE_BG, [screen.kdata.cursor-bg]) # background color
-            OUTC(PORT_SPRITE_FG, [screen.kdata.cursor-fg]) #forekground color
+            OUTC(PORT_SPRITE_BG, [screen.kdata.cursor-bg])  # background color
+            OUTC(PORT_SPRITE_FG, [screen.kdata.cursor-fg])  #forekground color
 
             # put the sprite at the correct location on screen
             ld a, 0
-            ld al, [screen.kdata.cursor-row]         # a = current row
+            ld al, [screen.kdata.cursor-row]                # a = current row
             dl := [screen.kdata.screen-line-height]
-            mul a, dl                                #   * row height
-            add a, 48                                #   + 48 (top of screen)
-            out PORT_SPRITE_Y_LO, al                 # update lo bits of sprite pos
+            mul a, dl                                       #   * row height
+            add a, 48                                       #   + 48 (top of screen)
+            out PORT_SPRITE_Y_LO, al                        # update lo bits of sprite pos
             exc a
-            out PORT_SPRITE_Y_HI, al                 # and high bits
+            out PORT_SPRITE_Y_HI, al                        # and high bits
 
             dl := [screen.kdata.cursor-scale]
             ld a, 0
-            ld al, [screen.kdata.cursor-col]         # a = current col
-            shl a, dl                                #   * 16 (dl === multiplier)
-            add a, 64                                #   + 64 (left of screen)
-            out PORT_SPRITE_X_LO, al                 # update lo bits of sprite pos
+            ld al, [screen.kdata.cursor-col]                # a = current col
+            shl a, dl                                       #   * 16 (dl === multiplier)
+            add a, 64                                       #   + 64 (left of screen)
+            out PORT_SPRITE_X_LO, al                        # update lo bits of sprite pos
             exc a
-            out PORT_SPRITE_X_HI, al                 # and high bits
+            out PORT_SPRITE_X_HI, al                        # and high bits
 
         _out:
+            pop al
+            OUT PORT_SPRITE_SEL, al
             popf
             pop d
             pop c
@@ -351,7 +355,7 @@
             push b
             pushf
         _main:
-            ld al, [screen.kdata.cursor-blink-counter]   # get current counter  
+            ld al, [screen.kdata.cursor-blink-counter]      # get current counter  
             dec al
             if c {
                 # when carry, we've gone below 0; toggle the cursor
@@ -548,20 +552,37 @@
             push y
             pushf
         _main:
-            ld d, [screen.kdata.screen-page]     # get screen page
+            # do we need to pause for a second?
+            in dl, 0x38                                  # left SHIFT will be here
+            test dl, 0b0000_0001                         # only care about left SHIFT
+            if !z {                                      # ZERO will be unset if pressed
+                push c
+                in dl, 0x03
+                ld cl, 25
+                add dl, cl
+                ld cl, 100
+                mod dl, cl 
+
+                do {
+                    in cl, 0x03
+                    cmp dl, cl
+                } while !z                                # wait half a second
+                pop c
+            }
+            ld d, [screen.kdata.screen-page]                # get screen page
             xor y, y
-            ld yl, [screen.kdata.screen-cols]     # # of screen columns
-            ld x, 0                              # x + y == a line down
+            ld yl, [screen.kdata.screen-cols]               # 
+            ld x, 0                                         # x + y == a line down
             ld b, [screen.kdata.screen-part-length]
-            sub b, y                             # needs to be one line less
+            sub b, y                                        # needs to be one line less
             clr c
             do {
-                ld al, [d, x, y]                 # get char a row down
-                st [d, x], al                    # and scroll it up
+                ld al, [d, x, y]                            # get char a row down
+                st [d, x], al                               # and scroll it up
                 ld al, [d + 0x1000, x, y]
-                st [d + 0x1000, x], al           # set foreground color
+                st [d + 0x1000, x], al                      # set foreground color
                 ld al, [d + 0x2000, x, y]
-                st [d + 0x2000, x], al           # set background color
+                st [d + 0x2000, x], al                      # set background color
                 inc x
                 mov a, x
                 cmp a, b
@@ -590,12 +611,12 @@
             pushf
         _main:
             call get-cursor-pos
-            exc d                              # need to work on row 
-            dec dl                             # up a row
+            exc d                                           # need to work on row 
+            dec dl                                          # up a row
             if n {
-                inc dl                         # nope!
+                inc dl                                      # nope!
             }
-            exc d                              # switch back for set
+            exc d                                           # switch back for set
             call set-cursor-pos
         _out:
             popf
@@ -668,7 +689,7 @@
             # x is in dl
             inc dl
             ld al, [screen.kdata.screen-cols]
-            cmp dl, al   # right of screen
+            cmp dl, al                                      # right of screen
             if z {
                 # reset column
                 ld dl, 0
@@ -676,9 +697,9 @@
                 inc cl
             }
             ld al, [screen.kdata.screen-rows]
-            cmp cl, al   # bottom of screen
+            cmp cl, al                                      # bottom of screen
             if z {
-                dec cl   # keep at the bottom
+                dec cl                                      # keep at the bottom
                 call scroll-screen-up
             }
 
@@ -713,9 +734,9 @@
 
             inc dl
             ld al, [screen.kdata.screen-rows]
-            cmp dl, al   # bottom of screen
+            cmp dl, al                                      # bottom of screen
             if z {
-                dec dl   # keep at bottom
+                dec dl                                      # keep at bottom
                 call scroll-screen-up
             }
 
@@ -754,9 +775,9 @@
             # next row
             inc cl
             ld al, [screen.kdata.screen-rows]
-            cmp cl, al   # bottom of screen
+            cmp cl, al                                      # bottom of screen
             if z {
-                dec cl   # keep at bottom
+                dec cl                                      # keep at bottom
                 call scroll-screen-up
             }
 
@@ -870,7 +891,7 @@
         }
 
         set-bg-color: {
-            [screen.kdata.cursor-bg] := dl
+            # [screen.kdata.cursor-bg] := dl
             [screen.kdata.screen-text-bg] := dl
             ret
         }
@@ -884,7 +905,7 @@
             push a
         _main:
             ld al, [screen.kdata.print-control-param]
-            [screen.kdata.cursor-bg] := al
+            # [screen.kdata.cursor-bg] := al
             [screen.kdata.screen-text-bg] := al
         _out:
             pop a
@@ -909,38 +930,38 @@
         }
 
         control-vectors:
-            .word control-no-op         # 00 - NUL - 
-            .word control-no-op         # 01 - SOH - Home (top left)
-            .word control-no-op         # 02 - STX - Start of logical line
-            .word control-no-op         # 03 - ETX - Break (No visual)
-            .word control-no-op         # 04 - EOT - 
-            .word control-no-op         # 05 - ENQ - 
-            .word control-no-op         # 06 - ACK - 
-            .word control-no-op         # 07 - BEL - 
-            .word cursor-backspace      # 08 - BS  - Backspace
-            .word control-tab           # 09 - HT  - Tab
-            .word cursor-down           # 10 - LF  - Line Feed
-            .word control-no-op         # 11 - VT  -
-            .word clear-screen          # 12 - FF  - Clear Screen
-            .word cursor-newline        # 13 - CR  - ENTER
-            .word control-no-op         # 14 - SO  - End of logical line
-            .word control-no-op         # 15 - SI  - 
-            .word cursor-right          # 16 - DLE - Cursor Right
-            .word cursor-left           # 17 - DC1 - Cursor Left
-            .word control-set-fg-color  # 18 - DC2 - 
-            .word control-set-bg-color  # 19 - DC3 - 
-            .word control-no-op         # 20 - DC4 - 
-            .word control-no-op         # 21 - NAK - 
-            .word control-no-op         # 22 - SYN - 
-            .word control-no-op         # 23 - ETB - 
-            .word clear-screen          # 24 - CAN - Also clear screen
-            .word control-no-op         # 25 - EM  - 
-            .word control-stop-collect  # 26 - SUB - 
-            .word control-start-collect # 27 - ESC - 
-            .word control-no-op         # 28 - FS  -
-            .word control-no-op         # 29 - GS  - Delete
-            .word cursor-up             # 30 - RS  - Cursor Up
-            .word cursor-down           # 31 - MS  - Cursor Down
+            .word control-no-op                             # 00 - NUL - 
+            .word control-no-op                             # 01 - SOH - Home (top left)
+            .word control-no-op                             # 02 - STX - Start of logical line
+            .word control-no-op                             # 03 - ETX - Break (No visual)
+            .word control-no-op                             # 04 - EOT - 
+            .word control-no-op                             # 05 - ENQ - 
+            .word control-no-op                             # 06 - ACK - 
+            .word control-no-op                             # 07 - BEL - 
+            .word cursor-backspace                          # 08 - BS  - Backspace
+            .word control-tab                               # 09 - HT  - Tab
+            .word cursor-down                               # 10 - LF  - Line Feed
+            .word control-no-op                             # 11 - VT  -
+            .word clear-screen                              # 12 - FF  - Clear Screen
+            .word cursor-newline                            # 13 - CR  - ENTER
+            .word control-no-op                             # 14 - SO  - End of logical line
+            .word control-no-op                             # 15 - SI  - 
+            .word cursor-right                              # 16 - DLE - Cursor Right
+            .word cursor-left                               # 17 - DC1 - Cursor Left
+            .word control-set-fg-color                      # 18 - DC2 - 
+            .word control-set-bg-color                      # 19 - DC3 - 
+            .word control-no-op                             # 20 - DC4 - 
+            .word control-no-op                             # 21 - NAK - 
+            .word control-no-op                             # 22 - SYN - 
+            .word control-no-op                             # 23 - ETB - 
+            .word clear-screen                              # 24 - CAN - Also clear screen
+            .word control-no-op                             # 25 - EM  - 
+            .word control-stop-collect                      # 26 - SUB - 
+            .word control-start-collect                     # 27 - ESC - 
+            .word control-no-op                             # 28 - FS  -
+            .word control-no-op                             # 29 - GS  - Delete
+            .word cursor-up                                 # 30 - RS  - Cursor Up
+            .word cursor-down                               # 31 - MS  - Cursor Down
 
         ##
         ## Vector: PUT_CHAR
@@ -958,8 +979,8 @@
             pushf
         _main:
 
-            al := dl                              # char in
-            bl := [screen.kdata.print-mode]       # mode
+            al := dl                                        # char in
+            bl := [screen.kdata.print-mode]                 # mode
 
             cmp bl, PRINT_MODE_RAW
             brs z _always_print
@@ -996,8 +1017,8 @@
             d := control-vectors >> 3
             x := control-vectors & 7
             y := al
-            shl y, 1                   # shift to a word
-            call [d,x,y]               # perform the control char
+            shl y, 1                                        # shift to a word
+            call [d,x,y]                                    # perform the control char
             br _out 
 
         _put-non-control-char:
@@ -1031,11 +1052,15 @@
         get-char: {
                 pushf
             _main:
-                do {
-                    halt
-                    in dl, 0x30
-                    cmp dl, 0
-                } while z
+                in dl, 0x30                                 # check if we have characters in the queue
+                cmp dl, 0                                   # if we do, return it immediately, otherwise
+                if z {                                      # wait until we have something
+                    do {                                    # why? this makes pasting / emptying the
+                        halt                                # keyboard buffer faster; halt means we wait
+                        in dl, 0x30                         # at least a frame, so we can only consume
+                        cmp dl, 0                           # the keyboard buffer at a slow speed. If
+                    } while z                               # we check first, we can consume it quickly.
+                }
             _out:
                 popf
                 ret
@@ -1108,15 +1133,15 @@
                 .const source -8
             _main:
                 push x
-                push d                                # put PTR TO BUFFER on stack
+                push d                                      # put PTR TO BUFFER on stack
 
                 call show-cursor
             _loop:
-                call get-char                         # get user input
-                cmp dl, 13                            # wait for ENTER 
+                call get-char                               # get user input
+                cmp dl, 13                                  # wait for ENTER 
                 br z _done
-                call put-char                         # print any output
-                cmp dl, 34                            # is it a quote? If so, switch modes
+                call put-char                               # print any output
+                cmp dl, 34                                  # is it a quote? If so, switch modes
                 if z {
                     al := [screen.kdata.print-mode]
                     cmp al, PRINT_MODE_QUOTE
@@ -1130,38 +1155,38 @@
                 br _loop
             _done:
                 call hide-cursor
-                al := PRINT_MODE_NORMAL             # reset print mode, in case we were in a quote
+                al := PRINT_MODE_NORMAL                     # reset print mode, in case we were in a quote
                 [screen.kdata.print-mode] := al
-                call get-logical-line-end-addr       # d,x = end of logical line
+                call get-logical-line-end-addr              # d,x = end of logical line
                 b := x
-                call get-logical-line-start-addr     # d,x = start of line
-                sub b, x                             # b = # of chars in line
-                inc b                                # account for NUL
+                call get-logical-line-start-addr            # d,x = start of line
+                sub b, x                                    # b = 
+                inc b                                       # account for NUL
                 push x
-                push d                               # push PTR to SOURCE on stack
+                push d                                      # push PTR to SOURCE on stack
                 cmp b, 0x0000
                 if z {
-                    c := 0                           # ENTER with no input.
+                    c := 0                                  # ENTER with no input.
                     <BP+buffer> := cl
                     br _out
                 }
-                cmp c, b                             # check if we have space
+                cmp c, b                                    # check if we have space
                 if n {
-                    c := -1                          # no? fail
+                    c := -1                                 # no? fail
                     br _out
                 }
-                c := b                               # return the # of chars in the line
+                c := b                                      # return the 
                 push c
                 y := 0
                 do {
-                    cl := <bp+source>, y             # get char from screen
+                    cl := <bp+source>, y                    # get char from screen
                     <bp+buffer>, y := cl
                     inc y
-                    dec b                            # count down chars to copy
+                    dec b                                   # count down chars to copy
                     cmp b, 0x00
                 } while !z
                 cl := 0
-                <bp+buffer>, y := cl                 # write the NUL terminator
+                <bp+buffer>, y := cl                        # write the NUL terminator
                 pop c
             _out:
                 exit 8

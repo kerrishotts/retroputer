@@ -12,6 +12,8 @@ import { assemble, createScope, SCOPE } from "../../../basm/assemble.js";
 
 import { vectors } from "../../../roms/kernel.js";
 
+import { type } from "../util/keyboard.js";
+
 export class CodeEditor extends React.Component {
     constructor(props) {
         super(props);
@@ -36,7 +38,7 @@ export class CodeEditor extends React.Component {
 
         this.program = React.createRef();
 
-        this.assembleClicked();
+        //this.assembleClicked();
     }
 
     editorDidMount() {
@@ -105,27 +107,35 @@ export class CodeEditor extends React.Component {
         const code = store.code;
         this.setState({code});
         //this.editor.current.value = code;
-        this.assembleClicked();
+        //this.assembleClicked();
     }
     assembleClicked() {
         const { store } = this.props;
         const { code, computer } = store;
 
-        const asm = code;
-        const memory = computer.memory;
-        try {
-            const ast = parser.parse(asm);
-            const globals = createScope();
-            globals[SCOPE.CONTENTS] = Object.assign({}, vectors);
-            const segments = assemble(ast, globals);
-            segments.forEach(segment => {
-                const data = segment.data;
-                const name = segment.name;
-                data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte));
-            });
-            this.setState({log: "Assembled successfully.\n"});
-        } catch (e) {
-            this.setState({log: e.message, view: "logs"});
+        // is this a BASIC program? if so, type it in instead of assembling
+        const firstLineNumber = parseInt(code, 10);
+        if (Number.isNaN(firstLineNumber)) {
+            // it's an assembly language program -- assemble it!
+            const asm = code;
+            const memory = computer.memory;
+            try {
+                const ast = parser.parse(asm);
+                const globals = createScope();
+                globals[SCOPE.CONTENTS] = Object.assign({}, vectors);
+                const segments = assemble(ast, globals);
+                segments.forEach(segment => {
+                    const data = segment.data;
+                    const name = segment.name;
+                    data.forEach((byte, idx) => memory.writeByte(segment.addr + idx, byte));
+                });
+                this.setState({log: "Assembled successfully.\n"});
+            } catch (e) {
+                this.setState({log: e.message, view: "logs"});
+            }
+        } else {
+            // it's a BASIC program -- type it!
+            type({keyboard: store.devices.keyboard, str: `\nNEW\n${code}\n\nRUN\n`})
         }
     }
     render() {

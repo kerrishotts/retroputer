@@ -7,13 +7,9 @@
         enter 0x00
         push c
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
 
-        cmp dl, brodata.TOK_WORD
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         call bdata._in-port
         call push-param
         dl := 0
@@ -28,13 +24,9 @@
         push c
         push a
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
 
-        cmp dl, brodata.TOK_WORD
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
         in al, 12                               # get high byte of random #
         exc a
         in al, 13                               # get low byte of random #
@@ -60,21 +52,12 @@
         push c
         push x
     _main:
-        call pop-param
+        call pop-number-param
+        brs ex _out
         a := c
         b := d
-        call pop-param
-
-        cmp bl, brodata.TOK_WORD
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
-        cmp dl, brodata.TOK_WORD
-        if !z {
-            dl := brodata.TYPE_MISMATCH_ERROR
-            brs _out
-        }
+        call pop-number-param
+        brs ex _out
 
         x := c 
         d := a

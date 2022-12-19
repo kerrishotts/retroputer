@@ -63,6 +63,11 @@ export class Diagnostics {
         ];
     }
 
+    dumpFPU() {
+        return [...this.computer.processor.fpu.stack,
+                   this.computer.processor.fpu.SP];
+    }
+
     dumpFlags() {
         const reg = this.computer.processor.registers;
         return {

@@ -11,12 +11,16 @@ export class AutoUpdateComponent extends React.Component {
 
         this.setupUpdates = this.setupUpdates.bind(this);
         this.clearUpdates = this.clearUpdates.bind(this);
+        this.doUpdate = this.doUpdate.bind(this);
+    }
+    doUpdate() {
+        this.setState(next => ({updating: !next.updating}));
     }
 
     setupUpdates() {
         const { store } = this.props;
         this.clearUpdates();
-        if (store.autoUpdate) this._cancelUpdate = setInterval(() => this.setState({updating: true}), store.updateInterval);
+        if (store.autoUpdate) this._cancelUpdate = setInterval(this.doUpdate, store.updateInterval);
     }
     clearUpdates() {
         clearInterval(this._cancelUpdate);
@@ -25,6 +29,7 @@ export class AutoUpdateComponent extends React.Component {
     componentDidMount() {
         const { store } = this.props;
         store.addListener(this.setupUpdates);
+        store.addListener(this.doUpdate);
         this.setupUpdates();
     }
     componentWillUnmount() {

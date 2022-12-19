@@ -1,0 +1,26 @@
+.define IF_LT(addr) {
+    br n, addr()
+}
+
+.define IF_LTE(addr) {
+    br n, addr()
+    br z, addr()
+}
+
+.define IF_GTE(addr) {
+    br !n, addr()
+}
+
+.define IF_GT(addr) {
+    br z, _skip
+    br !n, addr()
+_skip:
+}
+
+.define IF_EQU(addr) {
+    br z, addr()
+}
+
+.define IF_NEQ(addr) {
+    br !z, addr()
+}
