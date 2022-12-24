@@ -4,7 +4,7 @@
   "description": "retroputer",
   "type": "module",
   "engines": {
-    "node": "15.x, 16.x"
+    "node": ">=15"
   },
   "esm": {
     "cjs": true,
