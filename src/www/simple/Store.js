@@ -12,6 +12,8 @@ import rom from "../../roms/kernel.js";
 
 import { sysInit, cpuReset } from "./System.js";
 
+import { isEdit, hasCode, getCode } from './util/runmode.js';
+
 export class Store {
     constructor() {
         this.listeners = [];
@@ -271,5 +273,9 @@ export class Store {
             }
             `.split("\n").map(l => l.substr(12)).join("\n"))
         }, savedConfig);
+
+        if (isEdit && hasCode()) {
+            this.config.code = getCode();
+        }
     }
 }

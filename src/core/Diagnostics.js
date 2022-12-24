@@ -3,7 +3,7 @@ import { mapTask, TASKS } from "../isa/tasks.js";
 import { disassembleAll } from "../basm/disassemble.js";
 
 /* Utility methods that are common for rendering statistics and diagnostics */
-export const toHex = (n, padding=4) => n.toString(16).padStart(padding, "0").toUpperCase();
+export const toHex = (n, padding=4) => (n||0).toString(16).padStart(padding, "0").toUpperCase();
 export const toHex2 = n => toHex(n, 2);
 export const toHex4 = n => toHex(n, 4);
 export const toHex5 = n => toHex(n, 5);

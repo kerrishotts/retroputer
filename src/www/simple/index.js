@@ -24,6 +24,9 @@ import { ComputerIO } from "./components/ComputerIO.jsx";
 //import { Docs } from "./components/Docs.jsx";
 import { Keyboard } from "./components/Keyboard.jsx";
 
+import { type } from './util/keyboard';
+import { isCart, isEdit, hasCode, getCode } from './util/runmode';
+
 window.React = React;
 window.ReactDOM = ReactDOM;
 
@@ -44,13 +47,6 @@ const defaultConfig = {
                     component: 'computer-control',
                     props: {store}
                 }, 
-                /*{
-                    type: 'react-component',
-                    width: 15,
-                    title: 'Keyboard',
-                    component: 'computer-keyboard',
-                    props: {store}
-                },*/
                 {
                     type: 'react-component',
                     width: 15,
@@ -90,13 +86,6 @@ const defaultConfig = {
                                 },*/
                             ]
                         },
-                        /*{
-                            height: 25,
-                            type: 'react-component',
-                            title: 'Keyboard',
-                            component: 'keyboard',
-                            props: {store}
-                        }*/
                     ]
                 },
                 {
@@ -157,6 +146,57 @@ const defaultConfig = {
     }]
 };
 
+const cartConfig = {
+    settings: {
+        showPopoutIcon: false,
+        showCloseIcon: false,
+    },
+    content: [{
+        type: 'column',
+        content:[{
+            type: 'row',
+            content: [
+                {
+                    type: 'react-component',
+                    title: 'Screen',
+                    component: 'computer-screen',
+                    props: {store}
+                },
+            ]
+        }]
+    }]
+};
+
+const editConfig = {
+    settings: {
+        showPopoutIcon: false,
+        showCloseIcon: false,
+    },
+    content: [{
+        type: 'column',
+        content:[{
+            type: 'row',
+            height: 14,
+            content: [
+                {
+                    type: 'react-component',
+                    title: 'Screen',
+                    component: 'computer-screen',
+                    width: 75,
+                    props: {store}
+                },
+                {
+                    type: 'react-component',
+                    title: 'Code',
+                    component: 'code-editor',
+                    width: 25,
+                    props: {store}
+                },
+            ]
+        }]
+    }]
+}
+
 function setProps(node) {
     if (Array.isArray(node)) {
         node.forEach(node => setProps(node));
@@ -188,19 +228,26 @@ function removeProps(node) {
 
 let lastConfigSaveTimer = null;
 
+
 function initGoldenLayout() {
     let config;
-    const storedConfig = localStorage.getItem("panelConfig");
-    if (storedConfig) {
-        config = JSON.parse(storedConfig); 
-        Object.assign(config.settings, defaultConfig.settings);
-        setProps(config.content);
+
+    if (isCart || isEdit) {
+        config = isCart ? cartConfig : editConfig;
     } else {
-        config = defaultConfig;
+        const storedConfig = localStorage.getItem("panelConfig");
+        if (storedConfig) {
+            config = JSON.parse(storedConfig); 
+            Object.assign(config.settings, defaultConfig.settings);
+            setProps(config.content);
+        } else {
+            config = defaultConfig;
+        }
+        if(window.location.search.includes("reset-layout")) {
+            config = defaultConfig;
+        }
     }
-    if(window.location.search.includes("reset-layout")) {
-        config = defaultConfig;
-    }
+
     const myLayout = new GoldenLayout( config );
     myLayout.registerComponent( 'computer-control', ComputerControl);
     myLayout.registerComponent( 'fps', FPS);
@@ -216,27 +263,37 @@ function initGoldenLayout() {
     myLayout.registerComponent( 'keyboard', Keyboard);
     myLayout.init();
 
-    myLayout.on("stateChanged", () => {
-        // only allow saving our state once a second
-        if (!lastConfigSaveTimer) {
-            lastConfigSaveTimer = setTimeout( () => 
-                {
-                    lastConfigSaveTimer = null;
-                    try {
-                        const curConfig = myLayout.toConfig();
-                        removeProps(curConfig.content)
-                        localStorage.setItem("panelConfig", JSON.stringify(curConfig));
-                    }
-                    catch (err) {
-                        console.log(err.message);
-                    }
-                }, 1000
-            );
-        }
-    });
-
+    if (!(isCart || isEdit)) {
+        // layout changes are only saved when not in cart or editor mode
+        myLayout.on("stateChanged", () => {
+            // only allow saving our state once a second
+            if (!lastConfigSaveTimer) {
+                lastConfigSaveTimer = setTimeout( () => 
+                    {
+                        lastConfigSaveTimer = null;
+                        try {
+                            const curConfig = myLayout.toConfig();
+                            removeProps(curConfig.content)
+                            localStorage.setItem("panelConfig", JSON.stringify(curConfig));
+                        }
+                        catch (err) {
+                            console.log(err.message);
+                        }
+                    }, 1000
+                );
+            }
+        });
+    }
 }
 
 initGoldenLayout();
 
-setTimeout(() => document.getElementById("start").click(), 250);
+//setTimeout(() => document.getElementById("start").click(), 250);
+
+if (isCart || (isEdit && hasCode)) {
+    const cartCode = getCode();
+    setTimeout(() => type(`${cartCode}
+
+RUN
+`), 250);    
+}

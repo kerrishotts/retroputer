@@ -2,6 +2,8 @@ import React from 'react';
 import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
 import { BufferEditor } from './BufferEditor.jsx';
 
+import { dumpMemory, getLastMemoryDump } from '../System.js';
+
 export class ComputerMemory extends AutoUpdateComponent {
     constructor(props) {
         super(props);
@@ -13,7 +15,13 @@ export class ComputerMemory extends AutoUpdateComponent {
         const { store } = this.props;
         store.memoryStart = start || store.memoryStart;
         store.memoryEnd = end || store.memoryEnd;
+        dumpMemory({address: Number(store.memoryStart), length: Number(store.memoryEnd) - Number(store.memoryStart) + 1});
         this.setState({});
+    }
+
+    onWillUpdate() {
+        const { store } = this.props;
+        dumpMemory({address: Number(store.memoryStart), length: Number(store.memoryEnd) - Number(store.memoryStart) + 1});
     }
 
     render() {
@@ -23,7 +31,7 @@ export class ComputerMemory extends AutoUpdateComponent {
 
         return (
             <BufferEditor range={range} 
-                          buffer={store.computer.memory} 
+                          buffer={getLastMemoryDump()} 
                           readFn="readByte" 
                           writeFn="writeByte" 
                           onRangeChanged={this.rangeChanged} 

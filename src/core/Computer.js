@@ -230,10 +230,6 @@ export class Computer {
         if (timingMethod === TIMING_METHODS.SENTINEL) {
             while (!this[_stopSignal]) {
                 this.tick();
-                this.tick();
-                this.tick();
-                this.tick();
-                this.tick();
                 // check for a sentinel
                 if (Atomics.load(this[_sentinel], 0) !== 0) {
                     Atomics.store(this[_sentinel], 0, 0); // clear the sentinel

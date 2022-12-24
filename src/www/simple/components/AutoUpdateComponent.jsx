@@ -14,6 +14,7 @@ export class AutoUpdateComponent extends React.Component {
         this.doUpdate = this.doUpdate.bind(this);
     }
     doUpdate() {
+        if (this.onWillUpdate) this.onWillUpdate();
         this.setState(next => ({updating: !next.updating}));
     }
 

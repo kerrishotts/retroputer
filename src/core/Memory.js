@@ -188,6 +188,10 @@ export class Memory {
     return page.read(address);
   }
 
+  readBytes(address, length) {
+    return Array.from({length}, (_, idx) => this.readByte(address + idx));
+  }
+
   /**
    * @param {number} address
    */

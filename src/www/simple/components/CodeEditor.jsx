@@ -6,6 +6,7 @@ import { floppyDisk } from 'react-icons-kit/icomoon/floppyDisk';
 import { eye } from 'react-icons-kit/icomoon/eye';
 import { copy } from 'react-icons-kit/icomoon/copy';
 import { magicWand } from 'react-icons-kit/icomoon/magicWand';
+import {link} from 'react-icons-kit/icomoon/link';
 
 import { parser } from "../../../basm/parser.js";
 import { assemble, createScope, SCOPE } from "../../../basm/assemble.js";
@@ -13,6 +14,8 @@ import { assemble, createScope, SCOPE } from "../../../basm/assemble.js";
 import { vectors } from "../../../roms/kernel.js";
 
 import { type } from "../util/keyboard.js";
+
+import { generateLink } from '../util/runmode.js';
 
 export class CodeEditor extends React.Component {
     constructor(props) {
@@ -35,6 +38,7 @@ export class CodeEditor extends React.Component {
         this.saveProgram = this.saveProgram.bind(this);
         this.saveProgramAs = this.saveProgramAs.bind(this);
         this.editorDidMount = this.editorDidMount.bind(this);
+        this.cartLink = this.cartLink.bind(this);
 
         this.program = React.createRef();
 
@@ -135,8 +139,13 @@ export class CodeEditor extends React.Component {
             }
         } else {
             // it's a BASIC program -- type it!
-            type({keyboard: store.devices.keyboard, str: `\nNEW\n${code}\n\nRUN\n`})
+            type(`\nNEW\n${code}\n\nRUN\n`)
         }
+    }
+    cartLink() {
+        const { store } = this.props;
+        const { code } = store;
+        navigator.clipboard.writeText(generateLink(code));
     }
     render() {
         const { store } = this.props;
@@ -147,6 +156,7 @@ export class CodeEditor extends React.Component {
                 <div className="nogrow noshrink row">
                     <button onClick={this.showEditor} className="nogrow noshrink" title="Editor"><Icon icon={pencil}/></button>
                     <button onClick={this.showLogs} className="nogrow noshrink" title="Logs"><Icon icon={eye}/></button>
+                    <button onClick={this.cartLink} className="nogrow noshrink" title="Cart Link"><Icon icon={link}/></button>
                     <div style={{display: "inline-block"}} className="grow shrink"></div>
                     <select value={curProgram} onChange={this.selectProgram} ref={this.program}>
                         <option value="_selected">Programs...</option>

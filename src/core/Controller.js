@@ -69,6 +69,10 @@ export class Controller {
         if (actualDevice) actualDevice._write(address - actualDevice.addrStart, value);
     }
 
+    readBytes(address = 0, length = 256) {
+        return Array.from({length}, (_, idx) => this.pureRead(address + idx));
+    }
+
     /**
      * @param {Device} device 
      */

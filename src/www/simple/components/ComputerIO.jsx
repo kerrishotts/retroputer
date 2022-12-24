@@ -2,6 +2,8 @@ import React from 'react';
 import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
 import { BufferEditor } from './BufferEditor.jsx';
 
+import { dumpIO, getLastIODump } from '../System.js';
+
 export class ComputerIO extends AutoUpdateComponent {
     constructor(props) {
         super(props);
@@ -16,7 +18,12 @@ export class ComputerIO extends AutoUpdateComponent {
     rangeChanged({start, end} = {}) {
         this.state.ioStart = start || this.state.ioStart;
         this.state.ioEnd = end || this.state.ioEnd;
+        dumpIO();
         this.setState({});
+    }
+
+    onWillUpdate() {
+        dumpIO();
     }
 
     render() {
@@ -26,7 +33,7 @@ export class ComputerIO extends AutoUpdateComponent {
 
         return (
             <BufferEditor range={range} 
-                          buffer={store.computer.controller} 
+                          buffer={getLastIODump()} 
                           readFn="pureRead" 
                           writeFn="pureWrite" 
                           onRangeChanged={this.rangeChanged} 

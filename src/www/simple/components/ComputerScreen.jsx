@@ -1,6 +1,6 @@
 import React from 'react';
-import scanlines from "../assets/scanlines.png";
-import shadowMask from "../assets/shadowmask.png";
+import crtVertexShader from '../shaders/crtVertexShader';
+import crtFragmentShader from '../shaders/crtFragmentShader';
 import { Keyboard } from "./Keyboard.jsx";
 import { getLastFrame, frameDump } from "../System.js";
 /*
@@ -49,9 +49,9 @@ function initGLCanvas(canvas, useGL) {
     if (!gl) return [false, canvas.getContext("2d")];
 
     var vs_script = document.getElementById("some-vertex-shader");
-    var vs = compileShader(gl, vs_script.text, gl.VERTEX_SHADER);
+    var vs = compileShader(gl, crtVertexShader, gl.VERTEX_SHADER);
     var fs_script = document.getElementById("some-fragment-shader");
-    var fs = compileShader(gl, fs_script.text, gl.FRAGMENT_SHADER);
+    var fs = compileShader(gl, crtFragmentShader, gl.FRAGMENT_SHADER);
 
     const program = gl.createProgram();
     gl.attachShader(program, vs);
@@ -130,7 +130,7 @@ export class ComputerScreen extends React.Component {
             frameCanvas,
             frames: 0,
             orphanedFrames: 0,
-            hideTools: false
+            hideTools: true
         };
     }
     componentDidMount() {
@@ -148,9 +148,10 @@ export class ComputerScreen extends React.Component {
         this.setState(nextState => ({hideTools: !nextState.hideTools}));
     }
     accuracyChecked(e) {
-        const { computer, diagnostics, devices: { screen }, stats } = store;
-        this.props.store.accurateScreen = e.target.checked;
-        screen.mode = this.props.store.accurateScreen ? 2 : 1;
+        const { store } = this.props;
+        //const { computer, diagnostics, devices: { screen }, stats } = store;
+        store.accurateScreen = e.target.checked;
+        //screen.mode = this.props.store.accurateScreen ? 2 : 1;
         this.setState({});
     }
     glChecked(e) {
@@ -166,8 +167,8 @@ export class ComputerScreen extends React.Component {
         }
     }
     keyboardChecked(e) {
-        const { computer, diagnostics, devices: { screen }, stats } = store;
-        this.props.store.showKeyboardOnScreen = e.target.checked;
+        const { store } = this.props;
+        store.showKeyboardOnScreen = e.target.checked;
         this.setState({});
     }
     renderFrame(now) {
@@ -256,7 +257,7 @@ export class ComputerScreen extends React.Component {
         return (
             <div className="panel column" style={{position: "relative", overflow: "hidden"}}>
                 <div className="row" style={{position: "absolute", zIndex:"99", backgroundColor:(hideTools ? "": "rgba(0,0,0,0.2)"), right: "0", left: "0", margin:"-6px -6px 0 -6px", padding: "6px"}}>
-                    <button style={{padding: "0 6px", margin: 0, marginRight: "6px", height: "1.5em", color: "white", backgroundColor: "transparent"}} onClick={this.hideToolsClicked}>{`${hideTools ? ">" : "<"}`}</button>
+                    <button style={{padding: "0 6px", margin: 0, marginRight: "6px", height: "1.5em", color: "white", backgroundColor: "transparent"}} onClick={this.hideToolsClicked}>{`${hideTools ? "→" : "←"}`}</button>
                     { !hideTools && 
                         <>
                             <label><input type="checkbox" checked={this.props.store.useGL} onChange={this.glChecked}/> CRT Effect </label>
@@ -269,10 +270,6 @@ export class ComputerScreen extends React.Component {
                 </div>
                 <div style={{position: "relative"}} className="nogrow noshrink center">
                     <canvas width={1280} height={960} ref={this.canvas} className="screen nogrow noshrink center" />
-                    {/*
-                    <img src={scanlines} style={{position: "absolute", opacity: 0.25, left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
-                    <img src={shadowMask} style={{mixBlendMode: "overlay", opacity: 1, position: "absolute", left: 0, top: 0}} width={640} height={480} className="nogrow noshrink center"/>
-                    */}
                 </div>
                 <div className="noshrink" style={{position: "relative", minHeight: showKeyboardOnScreen ? "240px" : "48px"}}>
                     <Keyboard mode={showKeyboardOnScreen? "full" : "mini"} store={this.props.store}/>

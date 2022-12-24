@@ -139,7 +139,7 @@ export class BufferEditor extends React.Component /*AutoUpdateComponent*/ {
         const rowAddr = rowIndex * 8;
         const whichByte = (columnIndex % 9) - 1;
         const realAddr = Number(start) + rowAddr + Math.max(whichByte, 0);
-        const byteAtAddr = buffer[readFn](realAddr); 
+        const byteAtAddr = buffer[realAddr - Number(start)]; //buffer[readFn](realAddr); 
         const charAtAddr = byteAtAddr < 32 ? "." : String.fromCharCode(byteAtAddr);
         const newStyle = Object.assign({}, style, {
             opacity: (columnIndex > 0) ? (byteAtAddr === 0) ? "0.25" : (byteAtAddr < 32 ? "0.5" : "1")

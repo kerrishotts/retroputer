@@ -7,6 +7,7 @@ import { Keyboard } from "../../devices/Keyboard.js";
 import { Timers } from "../../devices/Timers.js";
 
 import rom from "../../roms/kernel.js";
+import o from "htm";
 
 class System {
     constructor(opts) {
@@ -63,7 +64,7 @@ class System {
             screen.ticksBetweenRasterLines = Number(this.config.options.ticksBetweenRasterLines);
         }
 
-        screen.mode = this.config.accurateScreen ? 2 : 1;
+        screen.mode = 2; //this.config.accurateScreen ? 2 : 1;
 
         const dma = new DMA({
             device: 13,
@@ -112,12 +113,14 @@ onmessage = evt => {
             system.computer.run();
 
 // temporary
+/*
 const text = `10 PRINT CHR$(RND(2)+238);:GOTO 10
 RUN
 `;
 Array.from(text).forEach(ch => {
     system.devices.keyboard.keyPressed(ch==="\n"?13:ch.charCodeAt(0));
 });
+*/
 
 
             break;
@@ -173,17 +176,27 @@ Array.from(text).forEach(ch => {
             break;
         case "key-get-shifted": /* is SHIFT down? */
             break;
-        case "key-down":        /* send key down */
+        case "key-down": {      /* send key down */
+            const { keyboard } = system.devices;
+            keyboard.keyDown(options.which);
             break;
-        case "key-up":          /* send key up */
+        }
+        case "key-up": {        /* send key up */
+            const { keyboard } = system.devices;
+            keyboard.keyUp(options.which);
             break;
-        case "key-pressed":     /* send key press */
+        }
+        case "key-pressed": {   /* send key press */
+            const { keyboard } = system.devices;
+            keyboard.keyPressed(options.which);
             break;
-        case "key-set-raw":     /* set raw matrix value */
+        }
+        case "key-set-raw": {   /* set raw matrix value */
             break;
-        case "key-clear-raw":   /* clear raw matrix value */
+        }
+        case "key-clear-raw": { /* clear raw matrix value */
             break;
-
+        }
         case "mem-peek":        /* peek a value from memory */
             break;
         case "mem-poke":        /* poke a value into memory */
@@ -192,10 +205,42 @@ Array.from(text).forEach(ch => {
             break;
         case "io-poke":         /* poke a value into i/o */
             break;
-        case "io-dump":         /* get the IO from the computer */
+        case "io-dump": {       /* get the IO from the computer */
+            postMessage({
+                command: "io-dump",
+                io: system.computer.controller.readBytes(0, 256)
+            });
             break;
-        case "mem-dump":        /* get a range of memory from the computer */
+        }
+        case "mem-dump": {      /* get a range of memory from the computer */
+            postMessage({
+                command:"mem-dump",
+                memory:system.computer.memory.readBytes(options.address, options.length)
+            })
             break;
+        }
+        case "disassemble": {   /* disassemble a range of memory */
+            const { address, length } = options;
+            
+            let realAddress = Number(address);
+            if (address === "PC") {
+                realAddress = system.computer.processor.registers.PC
+            }
+            
+            const asm = system.diagnostics.disassembleMemory({start: Number(realAddress), length: Number(length)})
+                        .split("\n")
+                        .map(str => ({
+                            address: str.substr(0, 5), 
+                            bytes: str.substr(7, 11).trim(),
+                            asm: str.substr(22).trim()
+                        }));
+            
+            postMessage({
+                command:"disassemble",
+                asm
+            });
+            break;
+        }
         default:
             console.log(`Received unsupported event: ${evt}`)
     }

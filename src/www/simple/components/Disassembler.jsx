@@ -3,6 +3,8 @@ import { AutoUpdateComponent } from './AutoUpdateComponent.jsx';
 import { Icon } from 'react-icons-kit';
 import { info } from 'react-icons-kit/icomoon/info';
 
+import { disassemble, getLastDisassembly } from '../System.js';
+
 export class Disassembler extends AutoUpdateComponent {
     constructor(props) {
         super(props);
@@ -31,6 +33,7 @@ export class Disassembler extends AutoUpdateComponent {
     }
     
     refreshClicked() {
+        disassemble({address: this.state.address, length: this.state.count});
         this.setState({});
     }
     refreshIfNeeded() {
@@ -41,21 +44,9 @@ export class Disassembler extends AutoUpdateComponent {
 
     render() {
         const { store } = this.props;
-        const { computer, diagnostics } = store;
         const { address, count } = this.state;
 
-        let realAddress = Number(address);
-        if (address === "PC") {
-            realAddress = computer.processor.registers.PC
-        }
-
-        const asm = diagnostics.disassembleMemory({start: Number(realAddress), length: Number(count)})
-                    .split("\n")
-                    .map(str => ({
-                        address: str.substr(0, 5), 
-                        bytes: str.substr(7, 11).trim(),
-                        asm: str.substr(22).trim()
-                    }));
+        const asm = getLastDisassembly();
 
         return (
             <div className="panel">

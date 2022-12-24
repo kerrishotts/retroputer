@@ -42,6 +42,7 @@
     "image-output": "^2.4.2",
     "jquery": "^3.4.1",
     "local-web-server": "^5.2.1",
+    "lzbase62": "^2.0.0",
     "nodemon": "^2.0.13",
     "path-browserify": "^1.0.1",
     "pegjs": "^0.11.0-master.0b102d2",

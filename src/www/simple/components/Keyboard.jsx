@@ -5,6 +5,8 @@ import { KEYBOARD_MAP } from "../../../devices/Keyboard.js";
 import { paste } from "../util/keyboard.js";
 import Logo from "../assets/Logo@3x.png";
 
+import { keyDown, keyPressed, keyUp} from "../System.js";
+
 export class Keyboard extends React.Component {
     constructor(props) {
         super(props);
@@ -20,16 +22,15 @@ export class Keyboard extends React.Component {
         this.realKeyUp = this.realKeyUp.bind(this);
     }
     componentDidMount() {
-        return; 
         const { store } = this.props;
-        const { keyboard } = store.devices;
+        /*const { keyboard } = store.devices;
         this._watcher = setInterval(() => {
             this.setState({
                 isGr: keyboard.isGr,
                 isCtrl: keyboard.isCtl,
                 isShift: keyboard.isShifted
             });
-        }, 100);
+        }, 100);*/
         document.addEventListener("keypress", this.realKeyPressed);
         document.addEventListener("keydown", this.realKeyDown);
         document.addEventListener("keyup", this.realKeyUp);
@@ -53,23 +54,20 @@ export class Keyboard extends React.Component {
     realKeyDown(e) {
         if (e.target.tagName === "INPUT" && !e.target.classList.contains("keyboard")) { return; }
         if (e.target.tagName === "TEXTAREA") { return; }
-        const { store } = this.props;
-        const { keyboard } = store.devices;
-        keyboard.keyDown(e.nativeEvent ? e.nativeEvent.code : e.code);
+        keyDown(e.nativeEvent ? e.nativeEvent.code : e.code);
         e.preventDefault();
     }
 
     realKeyUp(e) {
         if (e.target.tagName === "INPUT" && !e.target.classList.contains("keyboard")) { return; }
         if (e.target.tagName === "TEXTAREA") { return; }
-        const { store } = this.props;
-        const { keyboard } = store.devices;
-        keyboard.keyUp(e.nativeEvent ? e.nativeEvent.code : e.code);
+        keyUp(e.nativeEvent ? e.nativeEvent.code : e.code);
         e.preventDefault();
     }
     keyDown(evt) {
         const { store } = this.props;
-        const { keyboard } = store.devices;
+        const keyboard = {}; 
+        //const { keyboard } = store.devices;
         let target = evt.target;
         if (!target.classList.contains("keycap")) target = target.parentElement;
         const row = Number(target.getAttribute("datarow"));
@@ -92,7 +90,7 @@ export class Keyboard extends React.Component {
         if (row === -1) {
             switch (col) {
                 case 0: // paste
-                    paste({keyboard});
+                    paste();
                     /*navigator.clipboard.readText().then(
                         str => {
                             Array.from(str).forEach((ch) => {
