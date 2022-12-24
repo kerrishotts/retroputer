@@ -4,7 +4,7 @@
   "description": "retroputer",
   "type": "module",
   "engines": {
-    "node": ">=15"
+    "node": ">=15 "
   },
   "esm": {
     "cjs": true,
@@ -104,15 +104,15 @@
     "perf:monitor": "node --prof src/monitor/index.js && mv isolate*.log .perf",
     "perf:build:kernel": "node --prof src/basm/index.js -d asm/kernel -x vectors,kdata,krodata -i asm/kernel/kernel.asm -o src/roms/kernel.js && mv isolate*.log .perf",
     "perf": "node --prof-process --preprocess -j .perf/i*.log | flamebearer",
-    "clean": "rimraf esdist",
-    "prebuild": "npm run clean && mkdir esdist && cp src/www/simple/index.html esdist/index.html && sed -i -e \"s|</head>|<link type='text/css' rel='stylesheet' href='index.css'/></head>|g\" esdist/index.html",
-    "_build": "esbuild src/www/simple/index.js --target=es2020 --outdir=esdist --bundle --sourcemap --define:process.env.NODE_ENV='\"esbuild\"' --loader:.png=file --loader:.md=file --loader:.mdx=file",
-    "_build:worker": "esbuild src/www/worker/index.js --target=es2020 --outfile=./esdist/worker.js --bundle --sourcemap --define:process.env.NODE_ENV='\"esbuild\"'",
+    "clean": "rimraf dist",
+    "prebuild": "npm run clean && mkdir dist && cp src/www/simple/index.html dist/index.html && sed -i -e \"s|</head>|<link type='text/css' rel='stylesheet' href='index.css'/></head>|g\" dist/index.html",
+    "_build": "esbuild src/www/simple/index.js --target=es2020 --outdir=dist --bundle --sourcemap --define:process.env.NODE_ENV='\"esbuild\"' --loader:.png=file --loader:.md=file --loader:.mdx=file",
+    "_build:worker": "esbuild src/www/worker/index.js --target=es2020 --outfile=./dist/worker.js --bundle --sourcemap --define:process.env.NODE_ENV='\"esbuild\"'",
     "build": "npm run _build -- --minify",
     "build:worker": "npm run _build:worker -- --minify",
     "watch": "npm run _build -- --watch",
     "watch:worker": "npm run _build:worker -- --watch",
-    "serve": "ws -o -d esdist --static.maxage 0 -p 1234 --cors.opener-policy same-origin --cors.embedder-policy require-corp",
+    "serve": "ws -o -d dist --static.maxage 0 -p 1234 --cors.opener-policy same-origin --cors.embedder-policy require-corp",
     "start:server": "node --experimental-modules src/server/server.js",
     "start": "npm run serve"
   },

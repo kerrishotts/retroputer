@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import './style.css';
+
 var $ = require('jquery');
 window.$ = $;
 var GoldenLayout = require('golden-layout');

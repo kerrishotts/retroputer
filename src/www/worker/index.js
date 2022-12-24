@@ -7,7 +7,6 @@ import { Keyboard } from "../../devices/Keyboard.js";
 import { Timers } from "../../devices/Timers.js";
 
 import rom from "../../roms/kernel.js";
-import o from "htm";
 
 class System {
     constructor(opts) {

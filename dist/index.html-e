@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Retroputer</title>
     <link type="text/css" rel="stylesheet" href="./style.css">
-<link type='text/css' rel='stylesheet' href='index.css'/></head>
+</head>
 <body>
     <script src="index.js" /></script>
 </body>
