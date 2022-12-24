@@ -289,11 +289,11 @@ export class Computer {
 
         switch (realTimingMethod) {
             case TIMING_METHODS.SENTINEL: {
-                this[_runID] = setTimeout((function slice() {
+                this[_runID] = setInterval((function slice() {
                     this.runSlice();
-                    if (this.running) {
-                        this[_runID] = setTimeout(slice.bind(this), 0);
-                    }
+                //    if (this.running) {
+                //        this[_runID] = setTimeout(slice.bind(this), 0);
+                //    }
                 }).bind(this), 0);
                 break;
             }
@@ -335,6 +335,8 @@ export class Computer {
         if (this[_runID]) {
             switch (realTimingMethod) {
                 case TIMING_METHODS.SENTINEL:
+                    clearInterval(this[_runID]);
+                    break;
                 case TIMING_METHODS.BLOCKING:
                     break;
                 case TIMING_METHODS.TIMEOUT: {
