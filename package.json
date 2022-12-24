@@ -111,7 +111,7 @@
     "build": "npm run build:webapp && npm run build:worker",
     "build:webapp": "npm run _build:webapp -- --minify",
     "build:worker": "npm run _build:worker -- --minify",
-    "watch": "npm run _build -- --watch",
+    "watch:webapp": "npm run _build:webapp -- --watch",
     "watch:worker": "npm run _build:worker -- --watch",
     "serve": "ws -o -d dist --static.maxage 0 -p 1234 --cors.opener-policy same-origin --cors.embedder-policy require-corp",
     "start:server": "node --experimental-modules src/server/server.js",
